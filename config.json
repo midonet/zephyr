@@ -1,0 +1,342 @@
+{
+    "bridges": [
+        {
+            "name": "br0", 
+            "ip_list": [
+                {
+                    "ip": "10.0.0.240", 
+                    "subnet": "24"
+                }
+            ]
+        }, 
+        {
+            "name": "brv0", 
+            "options": "stp"
+        }
+    ], 
+    "computes": [
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.8", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "cmp1"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.9", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "cmp2"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.10", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "cmp3"
+        }
+    ],
+    "hosts": [
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "brv0"
+                    }, 
+                    "name": "eth0"
+                },
+                {
+                    "bridge_link": {
+                       "name": "brv0"
+                    },
+                    "name": "eth1"
+                }
+            ], 
+            "name": "v1.1"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "brv0"
+                    }, 
+                    "name": "eth0"
+                }
+            ], 
+            "name": "v1.2"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "brv0"
+                    }, 
+                    "name": "eth0"
+                }
+            ], 
+            "name": "v2.1"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "brv0"
+                    }, 
+                    "name": "eth0"
+                }
+            ], 
+            "name": "v2.2"
+        }
+    ],
+    "vlans": [
+        {
+            "host_list": [
+                {
+                    "interface_list": [
+                        {
+                            "name": "eth0",
+                            "ip_list": [
+                                {
+                                    "ip": "172.16.0.224",
+                                    "subnet": "24"
+                                }
+                            ]
+                        },
+                        {
+                            "name": "eth1",
+                            "ip_list": [
+                                {
+                                    "ip": "172.16.0.223",
+                                    "subnet": "24"
+                                }
+                            ]
+                        }
+                    ],
+                    "name": "v1.1"
+                },
+                {
+                    "interface_list": [
+                        {
+                            "name": "eth0",
+                            "ip_list": [
+                                {
+                                    "ip": "172.16.0.225",
+                                    "subnet": "24"
+                                }
+                            ]
+                        }
+                    ],
+                    "name": "v2.1"
+                }
+            ],
+            "vlan_id": "1"
+        },
+        {
+            "host_list": [
+                {
+                    "interface_list": [
+                        {
+                            "name": "eth0",
+                                "ip_list": [
+                                {
+                                    "ip": "172.16.0.224",
+                                    "subnet": "24"
+                                }
+                            ]
+                        }
+                      ],
+                  "name": "v1.2"
+                },
+                {
+                    "interface_list": [
+                        {
+                            "name": "eth0",
+                            "ip_list": [
+                                {
+                                    "ip": "172.16.0.225",
+                                    "subnet": "24"
+                                }
+                            ]
+                        }
+                    ],
+                    "name": "v2.2"
+                }
+          ],
+          "vlan_id": "2"
+        }
+    ],
+    "hosted_vms": [],
+    "routers": [
+        {
+            "peer_interface_list": [
+                {
+                    "interface_name": "eth0",
+                    "target_host": "cmp1",
+                    "target_interface": {
+                        "name": "eth1",
+                        "ip_list": [
+                            {
+                                "ip": "10.0.1.240", 
+                                "subnet": "16"
+                            }
+                        ]
+                    }
+                }, 
+                {
+                    "interface_name": "eth1",
+                    "target_host": "cmp2",
+                    "target_interface": {
+                        "name": "eth1",
+                        "ip_list": [
+                            {
+                                "ip": "10.0.1.240",
+                                "subnet": "16"
+                            }
+                        ]
+                    }
+                }
+            ], 
+            "name": "quagga"
+        }
+    ], 
+    "cassandras": [
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.5", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "cass1", 
+            "options": "56713727820156410577229101238628035242"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.6", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "cass2", 
+            "options": "113427455640312821154458202477256070484"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.7", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "cass3", 
+            "options": "170141183460469231731687303715884105726"
+        }
+    ], 
+    "zookeepers": [
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.2", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "zoo1"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.3", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "zoo2"
+        }, 
+        {
+            "interface_list": [
+                {
+                    "bridge_link": {
+                        "name": "br0"
+                    }, 
+                    "name": "eth0", 
+                    "ip_list": [
+                        {
+                            "ip": "10.0.0.4", 
+                            "subnet": "24"
+                        }
+                    ]
+                }
+            ], 
+            "name": "zoo3"
+        }
+    ]
+}
