@@ -23,9 +23,9 @@ class EnvSetup:
         cli_safe = LinuxCLI(priv=False)
 
         if LinuxCLI().exists('devstack') is True:
-            pass #cli_safe.cmd('cd devstack ; git pull; cd ..')
+            cli_safe.cmd('cd devstack ; git pull; cd ..')
         else:
-            pass #cli_safe.cmd('git clone http://github.com/openstack-dev/devstack',)
+            cli_safe.cmd('git clone http://github.com/openstack-dev/devstack',)
 
         cli = LinuxCLI(priv=False)
 
@@ -42,6 +42,7 @@ class EnvSetup:
         cli.add_environment_variable('NEUTRON_REPO', 'http://github.com/tomoe/neutron')
         cli.add_environment_variable('NEUTRON_REPO', 'http://github.com/tomoe/neutron')
         cli.add_environment_variable('NEUTRON_BRANCH', 'midonet1')
+
 
         cf_str = '#!/usr/bin/env bash\n' \
                  '[[local|localrc]]\n' \
