@@ -14,7 +14,7 @@ __author__ = 'micucci'
 # limitations under the License.
 
 
-class MDTSException(Exception):
+class TestException(Exception):
     def __init__(self, info):
         self.info = info
         """ :type: str"""
@@ -23,52 +23,52 @@ class MDTSException(Exception):
         return repr(self.info)
 
 
-class HostNotFoundException(MDTSException):
+class HostNotFoundException(TestException):
     def __init__(self, info):
         super(HostNotFoundException, self).__init__(info)
 
 
-class HostAlreadyStartedException(MDTSException):
+class HostAlreadyStartedException(TestException):
     def __init__(self, info):
         super(HostAlreadyStartedException, self).__init__(info)
 
 
-class ObjectNotFoundException(MDTSException):
+class ObjectNotFoundException(TestException):
     def __init__(self, info):
         super(ObjectNotFoundException, self).__init__(info)
 
 
-class ObjectAlreadyAddedException(MDTSException):
+class ObjectAlreadyAddedException(TestException):
     def __init__(self, info):
         super(ObjectAlreadyAddedException, self).__init__(info)
 
 
-class ArgMismatchException(MDTSException):
+class ArgMismatchException(TestException):
     def __init__(self, info):
         super(ArgMismatchException, self).__init__(info)
 
 
-class SubprocessFailedException(MDTSException):
+class SubprocessFailedException(TestException):
     def __init__(self, info):
         super(SubprocessFailedException, self).__init__(info)
 
 
-class ExitCleanException(MDTSException):
+class ExitCleanException(TestException):
     def __init__(self):
         super(ExitCleanException, self).__init__('')
 
 
-class SocketException(MDTSException):
+class SocketException(TestException):
     def __init__(self, info):
         super(SocketException, self).__init__(info)
 
 
-class InvallidConfigurationException(MDTSException):
+class InvallidConfigurationException(TestException):
     def __init__(self, config, reason):
         super(InvallidConfigurationException, self).__init__(reason + " in config <" + str(config) + ">")
 
 
-class PacketParsingException(MDTSException):
+class PacketParsingException(TestException):
     def __init__(self, info, fatal=True):
         super(PacketParsingException, self).__init__(info)
         self.fatal = fatal
