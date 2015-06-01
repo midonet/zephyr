@@ -65,10 +65,10 @@ class RouterHost(Host):
         for j in self.hwinterfaces.itervalues():
             j.print_config(indent + 2)
 
-    def start(self):
+    def start_process(self):
         self.cli.cmd_unshare_control('control router ' + self.num_id + ' start')
 
-    def stop(self):
+    def stop_process(self):
         self.cli.cmd_unshare_control('control router ' + self.num_id + ' stop')
 
     def mount_shares(self):

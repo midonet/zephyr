@@ -77,7 +77,7 @@ class CassandraHost(Host):
         self.cli.mkdir(var_run_dir)
         self.cli.chown(var_run_dir, 'cassandra', 'cassandra')
 
-    def start(self):
+    def start_process(self):
         self.cli.cmd_unshare_control('control cassandra ' + self.num_id + ' start')
         
         # Wait a couple seconds for the process to start before polling nodetool
@@ -95,7 +95,7 @@ class CassandraHost(Host):
                     raise SocketException('Zookeeper host ' + self.num_id + ' timed out while starting')
                 time.sleep(2)
 
-    def stop(self):
+    def stop_process(self):
         self.cli.cmd_unshare_control('control cassandra ' + self.num_id + ' stop')
 
     def mount_shares(self):

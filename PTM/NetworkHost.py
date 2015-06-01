@@ -64,9 +64,9 @@ class NetworkHost(Host):
                                 ('s%https://example.com/midonet-api%http://$public:8080/midonet-api%'
                                  'g;s/example.com/$public:8443/g'))
 
-    def start(self):
+    def start_process(self):
         self.cli.cmd('/etc/init.d/tomcat7 restart')
         self.cli.cmd('/etc/init.d/apache2 restart')
 
-    def stop(self):
+    def stop_process(self):
         self.cli.cmd('/etc/init.d/tomcat7 stop')

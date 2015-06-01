@@ -36,49 +36,48 @@ class Host(NetworkObject):
         self.root_host = root_host
         """ :type: Host"""
 
-    def setup(self):
+    def create(self):
         self.create_func(self.name)
 
+    def remove(self):
+        self.remove_func(self.name)
+
+    def add_interfaces(self):
         for bridge in self.bridges.values():
-            bridge.setup()
+            bridge.add()
             bridge.up()
 
         for iface in self.hwinterfaces.itervalues():
-            iface.setup()
+            iface.add()
             iface.up()
 
         self.set_loopback()
 
-    def get_bridge(self, name):
-        if name not in self.bridges:
-            return None
-        return self.bridges[name]
+    def delete_interfaces(self):
+        for bridge in self.bridges.itervalues():
+            bridge.down()
+            bridge.delete()
 
-    def setup_host_interfaces(self, host):
+        for interface in self.hwinterfaces.itervalues():
+            interface.down()
+            interface.delete()
+
+    def add_host_interfaces(self, host):
         for interface in self.get_interfaces_for_host(host.get_name()).values():
-            interface.setup()
+            interface.add()
             interface.up()
             if interface.linked_bridge is not None:
-                br = self.root_host.get_bridge(interface.linked_bridge)
+                br = self.root_host.get_bridge(interface.linked_bridge.name)
+                if br is None:
+                    raise ObjectNotFoundException('No such bridge: ' + br.name + ' on root host')
                 br.add_link_interface(interface.get_name())
                 if len(br.ip_list) is not 0:
                     interface.add_peer_route(IPDef('0.0.0.0', '0'), br.ip_list[0])
 
-    def cleanup(self):
-        for bridge in self.bridges.itervalues():
-            bridge.down()
-            bridge.cleanup()
-
-        for interface in self.hwinterfaces.itervalues():
-            interface.down()
-            interface.cleanup()
-
-        self.remove_func(self.name)
-
-    def cleanup_interfaces(self, host):
+    def delete_host_interfaces(self, host):
         for interface in self.get_interfaces_for_host(host.get_name()).values():
             interface.down()
-            interface.cleanup()
+            interface.delete()
 
     def set_loopback(self, ip=IPDef('127.0.0.1', '8')):
         self.cli.cmd('ip addr add ' + str(ip) + ' dev lo')
@@ -126,6 +125,11 @@ class Host(NetworkObject):
         self.interfaces_for_host[far_host.get_name()][far_iface_name] = new_if
         return new_if
 
+    def get_bridge(self, name):
+        if name not in self.bridges:
+            return None
+        return self.bridges[name]
+
     def get_interfaces_for_host(self, far_host):
         if far_host not in self.interfaces_for_host:
             raise ObjectNotFoundException(far_host)
@@ -134,10 +138,10 @@ class Host(NetworkObject):
     def print_config(self, indent=0):
         print ('    ' * indent) + self.name
 
-    def start(self):
+    def start_process(self):
         pass
 
-    def stop(self):
+    def stop_process(self):
         pass
 
     def control_start(self, *args):

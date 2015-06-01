@@ -106,7 +106,7 @@ class PCAP_GreaterThanEqual(PCAP_Comparison):
         :param lhs: str
         :param rhs: str
         """
-        super(PCAP_GreaterThanEqual, self).__init__('>=', lhs, rhs)
+        super(PCAP_GreaterThanEqual, self).__init__('\>=', lhs, rhs)
 
 
 class PCAP_GreaterThan(PCAP_Comparison):
@@ -115,7 +115,7 @@ class PCAP_GreaterThan(PCAP_Comparison):
         :param lhs: str
         :param rhs: str
         """
-        super(PCAP_GreaterThan, self).__init__('>', lhs, rhs)
+        super(PCAP_GreaterThan, self).__init__('\>', lhs, rhs)
 
 
 class PCAP_Equal(PCAP_Comparison):
@@ -142,7 +142,7 @@ class PCAP_LessThan(PCAP_Comparison):
         :param lhs: str
         :param rhs: str
         """
-        super(PCAP_LessThan, self).__init__('<', lhs, rhs)
+        super(PCAP_LessThan, self).__init__('\<', lhs, rhs)
 
 
 class PCAP_LessThanEqual(PCAP_Comparison):
@@ -151,7 +151,7 @@ class PCAP_LessThanEqual(PCAP_Comparison):
         :param lhs: str
         :param rhs: str
         """
-        super(PCAP_LessThanEqual, self).__init__('<=', lhs, rhs)
+        super(PCAP_LessThanEqual, self).__init__('\<=', lhs, rhs)
 
 
 class PCAP_PrimitiveTypeRule(PCAP_Rule):

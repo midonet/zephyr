@@ -17,8 +17,8 @@ from common.Exceptions import *
 
 import multiprocessing
 
-def send_packet(**kwargs):
-    TCPSender.send_packet(**kwargs)
+def send_packet(tcp_event, **kwargs):
+    TCPSender.send_packet(tcp_ready=tcp_event, **kwargs)
 
 class TCPSender(object):
 
@@ -29,8 +29,14 @@ class TCPSender(object):
         if self.process is not None:
             raise SubprocessFailedException('tcp send process already started')
 
-        self.process = multiprocessing.Process(target=send_packet, kwargs=kwargs)
+        tcp_ready = multiprocessing.Event()
+        tcp_ready.clear()
+        self.process = multiprocessing.Process(target=send_packet, args=(tcp_ready,), kwargs=kwargs)
+        self.process.daemon = True
         self.process.start()
+        if tcp_ready.wait(10) is False:
+            raise SubprocessFailedException("mz failed to send within timeout")
+
         if blocking is True:
             self.process.join()
 
@@ -46,7 +52,8 @@ class TCPSender(object):
 
 
     @staticmethod
-    def send_packet(cli=LinuxCLI(), interface='any', packet_type=None, source_port=None, dest_port=None,
+    def send_packet(cli=LinuxCLI(), tcp_ready=None, interface='any', packet_type=None,
+                    source_port=None, dest_port=None,
                     source_ip=None, dest_ip=None,  source_mac=None,
                     dest_mac=None, packet_cmd=None, packet_options=None, count=None,
                     delay=None, byte_data=None, timeout=None):
@@ -82,7 +89,9 @@ class TCPSender(object):
                            {'iface': interface,
                             'arglist': arg_str,
                             'bytes': byte_data}
-            return cli.cmd(full_cmd_str, return_output=True, timeout=timeout)
+            out = cli.cmd(full_cmd_str, return_output=True, timeout=timeout)
+            tcp_ready.set()
+            return out
 
         # Packet-builder mode, supports various opts (supported opts depend on packet type)
         pkt_type_str = '-t %s' % packet_type if packet_type is not None else ''
@@ -112,4 +121,6 @@ class TCPSender(object):
                         'pkttype': pkt_type_str,
                         'cmd': cmd_str}
 
-        return cli.cmd(full_cmd_str, return_output=True, timeout=timeout)
+        out = cli.cmd(full_cmd_str, return_output=True, timeout=timeout)
+        tcp_ready.set()
+        return out

@@ -34,10 +34,10 @@ class VLAN(NetworkObject):
             print ('    ' * (indent + 3)) + ifaces[0].get_interface_name() + \
                   ' on IPs: ' + ', '.join(str(ip) for ip in ifaces[1])
 
-    def setup(self):
+    def link_interfaces(self):
         for iface in self.interfaces:
             iface[0].link_vlan(self.vlan_id, iface[1])
 
-    def cleanup(self):
+    def unlink_interfaces(self):
         for iface in self.interfaces:
             iface[0].unlink_vlan(self.vlan_id)

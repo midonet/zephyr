@@ -34,7 +34,7 @@ class VirtualInterface(Interface):
         self.far_host = far_host
         self.far_iface_name = far_iface_name
 
-    def setup(self):
+    def add(self):
         # add a veth-type interface with a peer
         self.cli.cmd('ip link add dev ' + self.name + ' type veth peer name ' + self.peer_name)
         # move peer iface onto far host's namespace
@@ -42,7 +42,7 @@ class VirtualInterface(Interface):
                            self.far_host.name + ' name ' + self.far_iface_name)
         # add ips
         for ip in self.ip_list:
-            self.far_host.cli.cmd('ip addr add ' + ip + ' dev ' + self.far_iface_name)
+            self.far_host.cli.cmd('ip addr add ' + str(ip) + ' dev ' + self.far_iface_name)
 
     def up(self):
         # Set main iface up
@@ -55,10 +55,10 @@ class VirtualInterface(Interface):
         self.far_host.cli.cmd('ip link set dev ' + self.far_iface_name + ' down')
 
     def add_peer_route(self, route_ip, gw_ip):
-        self.far_host.cli.cmd('ip route add ' + route_ip + ' via ' + gw_ip.ip_address)
+        self.far_host.cli.cmd('ip route add ' + str(route_ip) + ' via ' + gw_ip.ip_address)
 
     def del_peer_route(self, route_ip):
-        self.far_host.cli.cmd('ip route del ' + route_ip)
+        self.far_host.cli.cmd('ip route del ' + str(route_ip))
 
     def link_vlan(self, vlan_id, ip_list):
         vlan_iface = self.far_iface_name + '.' + str(vlan_id)
@@ -66,7 +66,7 @@ class VirtualInterface(Interface):
                            ' name ' + vlan_iface + ' type vlan id ' + str(vlan_id))
         self.far_host.cli.cmd('ip link set dev ' + vlan_iface + ' up')
         for ip in ip_list:
-            self.far_host.cli.cmd('ip addr add ' + ip + ' dev ' + vlan_iface)
+            self.far_host.cli.cmd('ip addr add ' + str(ip) + ' dev ' + vlan_iface)
 
     def unlink_vlan(self, vlan_id):
         vlan_iface = self.far_iface_name + '.' + str(vlan_id)

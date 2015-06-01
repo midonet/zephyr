@@ -14,15 +14,16 @@
 
 import os
 import subprocess
+
 from common.Exceptions import *
 
 CREATENSCMD = lambda name: LinuxCLI().cmd('ip netns add ' + name)
 REMOVENSCMD = lambda name: LinuxCLI().cmd('ip netns del ' + name)
-CONTROL_CMD_NAME = './mdts-ctl.py'
-DEBUG=False
+CONTROL_CMD_NAME = './ptm-ctl.py'
+DEBUG=1
 
 class LinuxCLI(object):
-    def __init__(self, priv=True, debug=DEBUG, print_cmd=DEBUG):
+    def __init__(self, priv=True, debug=(DEBUG >= 2), print_cmd=(DEBUG >= 1)):
         self.env_map = None
         """ :type: dict[str, str]"""
         self.priv = priv
@@ -41,7 +42,17 @@ class LinuxCLI(object):
         if (self.env_map is not None):
             self.env_map.pop(name)
 
-    def cmd(self, cmd_line, return_output=False, timeout=None):
+    def cmd(self, cmd_line, return_output=False, timeout=None, blocking=True):
+        """
+        Execute a command on the system.  The exact command will be transformed based
+         on the timeout parameter and whether or not the command is being run against
+         an IP net namespace.
+        :param cmd_line: str The base command to run
+        :param return_output: bool True to return the output, False to simply execute command
+        :param timeout: int Timeout value, None for no timeout
+        :param cmd_event: A threading.Event object to set when command is run, or None for no synchronization
+        :return:
+        """
         new_cmd_line = ('timeout ' + str(timeout) + ' ' if timeout is not None else '') + cmd_line
 
         if self.priv is True:
@@ -58,14 +69,16 @@ class LinuxCLI(object):
         if return_output is False:
             return subprocess.call(cmd, shell=True, env=self.env_map)
 
-        try:
-            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, env=self.env_map)
-            out = ''
-            for line in p.stdout:
-                out += line
-            return out
-        except subprocess.CalledProcessError:
-            return -1
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE, env=self.env_map)
+
+        if blocking is False:
+            return p
+
+        out = ''
+        for line in p.stdout:
+            out += line
+        return out
 
     def create_cmd(self, cmd_line):
         return cmd_line

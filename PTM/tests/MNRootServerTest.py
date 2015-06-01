@@ -1,22 +1,23 @@
 __author__ = 'micucci'
 
-from PTM.RootServer import RootServer
+from PTM.MNRootServer import MNRootServer
 from PTM.MapConfigReader import MapConfigReader
 from PTM.PhysicalTopologyConfig import *
 import unittest
 import json
+from common.CLI import LinuxCLI
 
 class RootServerUnitTest(unittest.TestCase):
 
     def test_server_init(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
         test_server1.init()
 
         self.assertEqual(len(test_server1.network_hosts), 1)
         self.assertEqual(test_server1.network_hosts[0].name, 'net-node')
 
     def test_server_init_sets_up_zk_and_cass_ips(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
         test_server1.config_compute(HostDef('cmp1', [InterfaceDef('eth0', BridgeLinkDef(name='br0'),
                                                                   [IPDef('10.0.0.8')])]))
         test_server1.config_compute(HostDef('cmp2', [InterfaceDef('eth0', BridgeLinkDef(name='br0'),
@@ -83,7 +84,7 @@ class RootServerUnitTest(unittest.TestCase):
                          test_server1.zookeeper_ips[0])
 
     def test_config_bridge(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
         test_server1.config_bridge(BridgeDef(name='br0', ip_list=[IPDef('10.0.0.240', '16')]))
         test_server1.config_bridge(BridgeDef(name='brv0', options='stp'))
         self.assertEqual(len(test_server1.bridges), 2)
@@ -104,7 +105,7 @@ class RootServerUnitTest(unittest.TestCase):
         self.assertIs(test_server1.bridges['brv0'].near_host, test_server1)
 
     def test_config_zookeeper(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
         test_server1.config_bridge(BridgeDef(name='br0', ip_list=[IPDef('10.0.0.240', '16')]))
         test_server1.config_zookeeper(HostDef('zoo1', [InterfaceDef('eth0', BridgeLinkDef(name='br0'),
                                                                     [IPDef('10.0.0.2')])]))
@@ -193,7 +194,7 @@ class RootServerUnitTest(unittest.TestCase):
         self.assertEqual(test_if3.ip_list[0].subnet_mask, '24')
 
     def test_config_cassandra(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
 
         test_server1.config_bridge(BridgeDef(name='br0', ip_list=[IPDef('10.0.0.240', '16')]))
         test_server1.config_cassandra(HostDef('cass1', [InterfaceDef('eth0', BridgeLinkDef(name='br0'),
@@ -289,7 +290,7 @@ class RootServerUnitTest(unittest.TestCase):
         self.assertEqual(test_if3.ip_list[0].subnet_mask, '24')
         
     def test_config_compute(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
 
         test_server1.config_bridge(BridgeDef(name='br0', ip_list=[IPDef('10.0.0.240', '16')]))
         test_server1.config_compute(HostDef('cmp1', [InterfaceDef('eth0', BridgeLinkDef(name='br0'),
@@ -370,7 +371,7 @@ class RootServerUnitTest(unittest.TestCase):
         self.assertEqual(test_if3.ip_list[0].subnet_mask, '24')
 
     def test_config_router(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
 
         test_server1.config_compute(HostDef('cmp1', [InterfaceDef('eth0', BridgeLinkDef(name='br0'),
                                                                   [IPDef('10.0.0.8')])]))
@@ -385,7 +386,7 @@ class RootServerUnitTest(unittest.TestCase):
                                                                             ip_list=[IPDef('10.0.0.240')]))]))
 
     def test_config_generic_host(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
 
         test_server1.config_bridge(BridgeDef(name='brv0', options='stp'))
         test_server1.config_generic_host(HostDef('v1.1', [InterfaceDef('eth0', BridgeLinkDef(name='brv0')),
@@ -437,7 +438,7 @@ class RootServerUnitTest(unittest.TestCase):
         self.assertEqual(len(test_if2.ip_list), 0)
 
     def test_config_vlan(self):
-        test_server1 = RootServer()
+        test_server1 = MNRootServer()
 
         test_server1.config_bridge(BridgeDef(name='brv0', options='stp'))
         test_server1.config_generic_host(HostDef('v1.1', [InterfaceDef('eth0', BridgeLinkDef(name='brv0')),
@@ -485,11 +486,12 @@ class RootServerUnitTest(unittest.TestCase):
         self.assertEqual(test_server1.vlans[1].interfaces[1][0].far_iface_name, 'eth0')
 
     def test_create_test_server_from_json(self):
-        with open('../../config.json', 'r') as f:
+        with open('test-config.json', 'r') as f:
             config_obj = json.load(f)
 
         config = MapConfigReader.get_physical_topology_config(config_obj)
-        test_server2 = RootServer.create_from_physical_topology_config(config)
+        test_server2 = MNRootServer('root', './test-logs')
+        test_server2.config_from_physical_topology_config(config)
         test_server2.init()
         self.assertEqual(True, True)
 
@@ -509,7 +511,7 @@ class RootServerUnitTest(unittest.TestCase):
                                                '')],
                                  ''))
 
-        test_server = RootServer.create_from_physical_topology_config(ptc)
+        test_server = MNRootServer.create_from_physical_topology_config(ptc)
         test_server.init()
         # test_server.prepare_files()
         # test_server.setup()
@@ -520,14 +522,14 @@ class RootServerUnitTest(unittest.TestCase):
         self.assertEqual(True, True)
 
     def test_get_host_on_server(self):
-        test_system = RootServer()
+        test_system = MNRootServer()
         test_system.config_compute(HostDef('cmp1', [InterfaceDef(name='eth0', ip_list=[IPDef('2.2.2.2', '32')])]))
         h = test_system.get_host('cmp1')
 
         self.assertNotEqual(h, None)
 
     def test_get_vm_host_on_server(self):
-        test_system = RootServer()
+        test_system = MNRootServer()
         test_system.config_compute(HostDef('cmp1', [InterfaceDef(name='eth0', ip_list=[IPDef('2.2.2.2', '32')])]))
         test_system.config_vm(VMDef('cmp1', HostDef('vm1', [InterfaceDef(name='eth0',
                                                                          ip_list=[IPDef('3.3.3.3', '32')])])))
@@ -540,13 +542,100 @@ class RootServerUnitTest(unittest.TestCase):
         self.assertNotEqual(vm, None)
 
     def test_print_config(self):
-        with open('../../config.json', 'r') as f:
+        with open('test-config.json', 'r') as f:
             config_obj = json.load(f)
 
         config = MapConfigReader.get_physical_topology_config(config_obj)
-        test_server2 = RootServer.create_from_physical_topology_config(config)
-        test_server2.init()
-        test_server2.print_config()
+        ts = MNRootServer('root', './test-logs')
+        ts.create_from_physical_topology_config(config)
+        ts.init()
+        ts.print_config()
+
+    def test_create_remove_host(self):
+        with open('test-config.json', 'r') as f:
+            config_obj = json.load(f)
+
+        config = MapConfigReader.get_physical_topology_config(config_obj)
+        ts = MNRootServer('root', './test-logs')
+        ts.create_from_physical_topology_config(config)
+
+        ts.create_hosts()
+
+        ts.remove_hosts()
+
+    def test_add_delete_interfaces(self):
+        with open('test-config.json', 'r') as f:
+            config_obj = json.load(f)
+
+        config = MapConfigReader.get_physical_topology_config(config_obj)
+        ts = MNRootServer('root', './test-logs')
+        ts.create_from_physical_topology_config(config)
+
+        ts.create_hosts()
+        ts.add_interfaces()
+
+        ts.delete_interfaces()
+        ts.remove_hosts()
+
+    def test_prepare_files(self):
+        with open('test-config.json', 'r') as f:
+            config_obj = json.load(f)
+
+        config = MapConfigReader.get_physical_topology_config(config_obj)
+        ts = MNRootServer('root', './test-logs')
+        ts.create_from_physical_topology_config(config)
+
+        ts.create_hosts()
+        ts.add_interfaces()
+        ts.prepare_files()
+
+        ts.delete_interfaces()
+        ts.remove_hosts()
+
+    def test_full_start_simple(self):
+        with open('test-config.json', 'r') as f:
+            config_obj = json.load(f)
+
+        config = MapConfigReader.get_physical_topology_config(config_obj)
+        ts = MNRootServer('root', './test-logs')
+        ts.create_from_physical_topology_config(config)
+
+        ts.startup()
+        ts.shutdown()
+
+    def tearDown(self):
+        self.clear_test()
+
+    def clear_test(self):
+        with open('test-config.json', 'r') as f:
+            config_obj = json.load(f)
+
+        config = MapConfigReader.get_physical_topology_config(config_obj)
+        for h in config.zookeeper_config:
+            LinuxCLI().cmd('ip netns del ' + h.name)
+            for i in h.interface_list:
+                LinuxCLI().cmd('ip l del v' + h.name + i.name)
+        for h in config.cassandra_config:
+            LinuxCLI().cmd('ip netns del ' + h.name)
+            for i in h.interface_list:
+                LinuxCLI().cmd('ip l del v' + h.name + i.name)
+        for h in config.compute_config:
+            LinuxCLI().cmd('ip netns del ' + h.name)
+            for i in h.interface_list:
+                LinuxCLI().cmd('ip l del v' + h.name + i.name)
+        for h in config.host_config:
+            LinuxCLI().cmd('ip netns del ' + h.name)
+            for i in h.interface_list:
+                LinuxCLI().cmd('ip l del v' + h.name + i.name)
+        for h in config.router_config:
+            LinuxCLI().cmd('ip netns del ' + h.name)
+            for i in h.peer_interface_list:
+                LinuxCLI().cmd('ip l del v' + h.name + i.interface_name)
+        for h in config.vm_config:
+            LinuxCLI().cmd('ip netns del ' + h.name)
+        for b in config.bridge_config:
+            LinuxCLI().cmd('ip l set dev ' + b.name + ' down')
+            LinuxCLI().cmd('brctl delbr ' + b.name)
 
 
 try:

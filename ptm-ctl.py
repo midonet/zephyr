@@ -14,11 +14,11 @@
 # limitations under the License.
 
 import sys
-import json
 
 from common.Exceptions import *
 from PTM.MapConfigReader import MapConfigReader
 from PTM.RootServer import RootServer
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from common.CLI import CONTROL_CMD_NAME
 from CBT.EnvSetup import EnvSetup
 import traceback
@@ -35,28 +35,20 @@ try:
         usage(ExitCleanException)
     else:
         cmd = sys.argv[1]
-        with open('config.json', 'r') as f:
-            config_obj = json.load(f)
+        ptm = PhysicalTopologyManager('./tmp/logs')
 
-        config = MapConfigReader.get_physical_topology_config(config_obj)
-        os_host = RootServer.create_from_physical_topology_config(config)
-        os_host.init()
+        os_host = ptm.config_mn_from_file()
+        """ :type: RootServer"""
 
         if cmd == 'neutron':
             if len(sys.argv) < 3:
                 usage(ExitCleanException)
             if sys.argv[2] == 'install':
                 EnvSetup.install_neutron_client()
-        elif cmd == 'boot':
-            os_host.setup()
-        elif cmd == 'init':
-            os_host.prepare_files()
-        elif cmd == 'start':
-            os_host.start()
-        elif cmd == 'stop':
-            os_host.stop()
+        elif cmd == 'startup':
+            os_host.startup()
         elif cmd == 'shutdown':
-            os_host.cleanup()
+            os_host.shutdown()
         elif cmd == 'config':
             os_host.print_config()
         elif cmd == 'control':
@@ -79,7 +71,7 @@ except SubprocessFailedException as e:
     print 'Subprocess failed to execute: ' + str(e)
     traceback.print_tb(sys.exc_traceback)
     exit(2)
-except MDTSException as e:
+except TestException as e:
     print 'Unknown exception: ' + str(e)
     traceback.print_tb(sys.exc_traceback)
     exit(2)

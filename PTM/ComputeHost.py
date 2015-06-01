@@ -117,7 +117,7 @@ class ComputeHost(Host):
         self.cli.regex_file(mmenv, 's/MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE="300M"/')
         self.cli.regex_file(mmenv, 's/HEAP_NEWSIZE=.*/HEAP_NEWSIZE="200M"/')
 
-    def start(self):
+    def start_process(self):
         if self.num_id == '1':
             pid_file = '/run/midolman.' + self.num_id + '/dnsmasq.pid'
 
@@ -127,7 +127,7 @@ class ComputeHost(Host):
 
         self.cli.cmd_unshare_control('control compute ' + self.num_id + ' start')
 
-    def stop(self):
+    def stop_process(self):
         self.cli.cmd_unshare_control('control compute ' + self.num_id + ' stop')
 
         if self.num_id == '1':
@@ -175,22 +175,22 @@ class ComputeHost(Host):
     def setup_vms(self):
         for name, vm in self.vms.iteritems():
             print 'Booting vm ' + name
-            vm.setup()
-            self.setup_host_interfaces(vm)
+            vm.add()
+            self.add_host_interfaces(vm)
 
     def cleanup_vms(self):
         for name, vm in self.vms.iteritems():
-            self.cleanup_interfaces(vm)
-            vm.cleanup()
+            self.delete_host_interfaces(vm)
+            vm.unlink_interfaces()
 
     def start_vms(self):
         for name, vm in self.vms.iteritems():
             print 'Starting vm ' + name
-            vm.start()
+            vm.start_process()
 
     def stop_vms(self):
         for name, vm in self.vms.iteritems():
-            vm.stop()
+            vm.stop_process()
 
     def connect_iface_to_port(self, vm_name, iface, port_id):
         if vm_name not in self.interfaces_for_host:

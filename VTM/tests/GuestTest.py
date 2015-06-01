@@ -23,7 +23,7 @@ from VTM.VirtualTopologyConfig import VirtualTopologyConfig
 from VTM.tests.VirtualTopologyConfigTest import MockClient
 from PTM.VMHost import VMHost
 from PTM.ComputeHost import ComputeHost
-from PTM.RootServer import RootServer
+from PTM.MNRootServer import MNRootServer
 from VTM.Network import Network
 from VTM.Port import Port
 
@@ -34,7 +34,7 @@ class GuestTest(unittest.TestCase):
 
     def test_host_plugin_vm(self):
         vtc = VirtualTopologyConfig(client_api_impl=MockClient)
-        test_system = RootServer()
+        test_system = MNRootServer()
         hv = test_system.config_compute(HostDef('cmp1', [InterfaceDef(name='eth0', ip_list=[IPDef('2.2.2.2', '32')])]))
         vm = test_system.config_vm(VMDef('cmp1', HostDef('vm1', [InterfaceDef(name='eth0',
                                                                          ip_list=[IPDef('3.3.3.3', '32')])])))
@@ -49,7 +49,7 @@ class GuestTest(unittest.TestCase):
 
     def test_host_unplug_vm(self):
         vtc = VirtualTopologyConfig(client_api_impl=MockClient)
-        test_system = RootServer()
+        test_system = MNRootServer()
         test_system.config_compute(HostDef('cmp1', [InterfaceDef(name='eth0', ip_list=[IPDef('2.2.2.2', '32')])]))
         vm = test_system.config_vm(VMDef('cmp1', HostDef('vm1', [InterfaceDef(name='eth0',
                                                                          ip_list=[IPDef('3.3.3.3', '32')])])))

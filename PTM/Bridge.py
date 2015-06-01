@@ -35,12 +35,12 @@ class Bridge(Interface):
 
         self.options = options
 
-    def setup(self):
+    def add(self):
         self.cli.cmd('brctl addbr ' + self.get_name())
         for ip in self.ip_list:
             self.cli.cmd('ip addr add ' + str(ip) + ' dev ' + self.get_name())
 
-    def cleanup(self):
+    def delete(self):
         self.cli.cmd('brctl delbr ' + self.get_name())
 
     def up(self):

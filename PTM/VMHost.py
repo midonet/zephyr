@@ -20,10 +20,10 @@ class VMHost(Host):
     def __init__(self, name, cli, host_create_func, host_remove_func, root_host):
         super(VMHost, self).__init__(name, cli, host_create_func, host_remove_func, root_host)
 
-    def start(self):
+    def start_process(self):
         pass
 
-    def stop(self):
+    def stop_process(self):
         pass
 
     def plugin_iface(self, iface, port_id):

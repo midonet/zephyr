@@ -32,7 +32,7 @@ class Interface(NetworkObject):
         self.ip_list = ip_list
         self.mac = mac
 
-    def setup(self):
+    def add(self):
         self.cli.cmd('ip link add dev ' + self.get_name())
 
         if self.mac != 'default':
@@ -41,7 +41,7 @@ class Interface(NetworkObject):
         for ip in self.ip_list:
             self.cli.cmd('ip addr add ' + str(ip) + ' dev ' + self.get_name())
 
-    def cleanup(self):
+    def delete(self):
         self.cli.cmd('ip link del dev ' + self.get_name())
 
     def up(self):

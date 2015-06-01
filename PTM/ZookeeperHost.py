@@ -39,7 +39,6 @@ class ZookeeperHost(Host):
         print ('    ' * (indent + 1)) + 'Self-IP: ' + str(self.ip)
         print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(str(ip) for ip in self.zookeeper_ips)
 
-
     def prepare_files(self):
         if self.num_id == '1':
             etc_dir = '/etc/zookeeper.test'
@@ -72,7 +71,7 @@ class ZookeeperHost(Host):
         self.cli.mkdir(var_run_dir)
         self.cli.chown(var_run_dir, 'zookeeper', 'zookeeper')
 
-    def start(self):
+    def start_process(self):
         self.cli.cmd_unshare_control('control zookeeper ' + self.num_id + ' start')
 
         # Checking Zookeeper status
@@ -96,7 +95,7 @@ class ZookeeperHost(Host):
             except Exception:
                 pass
 
-    def stop(self):
+    def stop_process(self):
         self.cli.cmd_unshare_control('control zookeeper ' + self.num_id + ' stop')
 
     def mount_shares(self):

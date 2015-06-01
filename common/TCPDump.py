@@ -18,11 +18,16 @@ from common.PCAPRules import *
 from common.PCAPPacket import *
 
 import multiprocessing
+import threading
+import os
+from fcntl import fcntl, F_GETFL, F_SETFL
 
-def tcpdump(data_q, timeout, **kwargs):
-    packet = TCPDump.read_packet(timeout=timeout, **kwargs)
+import time
+
+def tcpdump(data_q, tcp_event, timeout, **kwargs):
+    packet = TCPDump.read_packet(timeout=timeout,
+                                 tcp_ready=tcp_event, **kwargs)
     data_q.put(packet)
-    print 'Here'
 
 class TCPDump(object):
 
@@ -31,10 +36,20 @@ class TCPDump(object):
 
     def start_capture(self, timeout=None, blocking=False, **kwargs):
         self.data_queue = multiprocessing.Queue()
+
         if self.process is not None:
             raise SubprocessFailedException('tcpdump process already started')
-        self.process = multiprocessing.Process(target=tcpdump, args=(self.data_queue, timeout), kwargs=kwargs)
+
+        tcpdump_ready = multiprocessing.Event()
+        tcpdump_ready.clear()
+        self.process = multiprocessing.Process(target=tcpdump,
+                                               args=(self.data_queue, tcpdump_ready, timeout),
+                                               kwargs=kwargs)
+        self.process.daemon = True
         self.process.start()
+        if tcpdump_ready.wait(timeout) is False:
+            raise SubprocessFailedException("tcpdump failed to start within timeout")
+
         if blocking is True:
             self.process.join()
         return self.data_queue
@@ -50,9 +65,8 @@ class TCPDump(object):
         self.process = None
 
     @staticmethod
-    def read_packet(cli=LinuxCLI(), interface='any', max_size=0, count=1, packet_type='',
-                    pcap_filter=PCAP_Null(),
-                    timeout=None):
+    def read_packet(cli=LinuxCLI(), tcp_ready=None, interface='any', max_size=0,
+                    count=1, packet_type='', pcap_filter=PCAP_Null(), timeout=None):
         """
         Sniff packets on an interface and return the data (optionally returning ALL packet data
         as well).  Returns a list, <count> in length, of matching data (or the entire packet data
@@ -66,6 +80,7 @@ class TCPDump(object):
         :param packet_type: str If set, watch for a particular specialized packet type (e.g. 'vxlan')
         :param pcap_filter: PCAP_Rule Rule object (corresponding to PCAP rulesets) to filter the packets
         :param timeout: int Time to wait for packet in seconds, 'None' for indefinite (default)
+        :param tcp_ready: multiprocessing.Event Flag to set when tcpdump is ready, 'None' to not set any flag
         :return: list[PCAPPacket]
         """
         count_str = '-c ' + str(count)
@@ -76,7 +91,29 @@ class TCPDump(object):
         cmd_str = 'tcpdump -n -xx -l ' + count_str + ' ' + iface_str + ' ' + \
                   max_size_str + ' ' + type_str + pcap_filter.to_str()
         cli.print_cmd = True
-        ret_data = cli.cmd(cmd_line=cmd_str, return_output=True, timeout=timeout)
+        p = cli.cmd(cmd_line=cmd_str, return_output=True, timeout=timeout, blocking=False)
+
+        flags_se = fcntl(p.stderr, F_GETFL) # get current p.stderr flags
+        fcntl(p.stderr, F_SETFL, flags_se | os.O_NONBLOCK)
+
+        if tcp_ready is not None:
+            while tcp_ready.is_set() is False:
+                try:
+                    line = os.read(p.stderr.fileno(), 256)
+                    if line.find('listening on') != -1:
+                        #TODO: Replace sleep after TCPDump starts with a real check
+                        # This is dangerous, and might not actually be enough to signal the
+                        # tcpdump is actually running.  Instead, let's create a Cython module that
+                        # passes calls through to libpcap (there are 0 good libpcap implementations
+                        # for Python that are maintained, documented, and simple).
+                        time.sleep(1)
+                        tcp_ready.set()
+                except OSError:
+                    pass
+
+        out = ''
+        for line in p.stdout:
+            out += line
 
         packet_list = []
         byte_data = []
@@ -90,7 +127,7 @@ class TCPDump(object):
         # \t0x<addr>:  FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF\n
         # \t0x<addr>:  FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF\n
 
-        for line in ret_data.split('\n'):
+        for line in out.split('\n'):
             if not line.startswith('\t'):
                 if len(byte_data) != 0:
                     # If we already have byte_data, then parse it and push the packet onto the return list
@@ -105,9 +142,10 @@ class TCPDump(object):
                 if len(data) == 2:
                     for octet_pair in data[1].split():
                         lbyte = int(octet_pair[0:2], 16)
-                        hbyte = int(octet_pair[2:4], 16)
                         byte_data.append(lbyte)
-                        byte_data.append(hbyte)
+                        if (len(octet_pair) > 2):
+                            hbyte = int(octet_pair[2:4], 16)
+                            byte_data.append(hbyte)
 
         return packet_list
 

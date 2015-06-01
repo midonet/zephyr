@@ -8,7 +8,7 @@ from VTM.VirtualTopologyConfig import VirtualTopologyConfig
 from PTM.VMHost import VMHost
 from PTM.ComputeHost import ComputeHost
 from PTM.PhysicalTopologyConfig import *
-from PTM.RootServer import RootServer
+from PTM.MNRootServer import MNRootServer
 from VTM.Network import Network
 from VTM.Port import Port
 
@@ -91,7 +91,7 @@ class MyTestCase(unittest.TestCase):
     def test_ping_between_two_hosts(self):
         vtc = VirtualTopologyConfig(client_api_impl=MockClient)
 
-        test_system = RootServer()
+        test_system = MNRootServer()
         hv = test_system.config_compute(HostDef('cmp1', [InterfaceDef(name='eth0', ip_list=[IPDef('2.2.2.2', '32')])]))
         vm = test_system.config_vm(VMDef('cmp1', HostDef('vm1', [InterfaceDef(name='eth0',
                                                                          ip_list=[IPDef('3.3.3.3', '32')])])))

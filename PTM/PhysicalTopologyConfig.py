@@ -49,7 +49,7 @@ class IPDef(object):
         """
         self.ip_address = ip_address
         self.subnet_mask = subnet_mask
-    def __repr__(self):
+    def __str__(self):
         return self.ip_address + "/" + self.subnet_mask
 
 
