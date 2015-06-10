@@ -29,10 +29,10 @@ class EnvSetup:
 
         cli = LinuxCLI(priv=False)
 
-        cli.add_environment_variable('HOME', cli_safe.cmd('echo $HOME', return_output=True).strip('\n'))
-        cli.add_environment_variable('PATH', cli_safe.cmd('echo $PATH', return_output=True).strip('\n'))
-        cli.add_environment_variable('USER', cli_safe.cmd('echo $USER', return_output=True).strip('\n'))
-        cli.add_environment_variable('WORKSPACE',cli_safe.cmd('pwd', return_output=True).strip('\n'))
+        cli.add_environment_variable('HOME', cli_safe.cmd('echo $HOME').strip('\n'))
+        cli.add_environment_variable('PATH', cli_safe.cmd('echo $PATH').strip('\n'))
+        cli.add_environment_variable('USER', cli_safe.cmd('echo $USER').strip('\n'))
+        cli.add_environment_variable('WORKSPACE', cli_safe.cmd('pwd').strip('\n'))
         cli.add_environment_variable('MIDONET_ENABLE_Q_SVC_ONLY', 'True')
         cli.add_environment_variable('LOG_COLOR', 'False')
         cli.add_environment_variable('LOGDIR',cli_safe.cmd('echo `pwd`/logs'))

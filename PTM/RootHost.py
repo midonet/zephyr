@@ -1,4 +1,4 @@
-__author__ = 'tomoe'
+__author__ = 'micucci'
 # Copyright 2015 Midokura SARL
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +13,15 @@ __author__ = 'tomoe'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from common.CLI import LinuxCLI
+from Host import Host
 
-class VirtualTopologyConfig(object):
-    pass
+class RootHost(Host):
+    def __init__(self, name):
+        """
+        Implement a basic Host which just accesses the local Linux OS without using
+        IP Net namespaces
+        :param name:
+        :return:
+        """
+        super(RootHost, self).__init__(name, LinuxCLI(), lambda n: None, lambda n: None)

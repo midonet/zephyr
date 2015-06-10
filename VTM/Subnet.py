@@ -60,21 +60,17 @@ class Subnet(object):
 
     @staticmethod
     def from_json(config):
-        if 'subnet' not in config:
-            raise InvallidConfigurationException(config, 'no subnet')
-
-        sn_map = config['subnet']
-
-        return Subnet(id=sn_map['id'] if 'id' in sn_map else '',
-                      name=sn_map['name'] if 'name' in sn_map else '',
-                      network_id=sn_map['network_id'] if 'network_id' in sn_map else '',
-                      ip_version=sn_map['ip_version'] if 'ip_version' in sn_map else 4,
-                      cidr=sn_map['cidr'] if 'cidr' in sn_map else '',
-                      gateway_ip=sn_map['gateway_ip'] if 'gateway_ip' in sn_map else '',
-                      dns_nameservers=sn_map['dns_nameservers'] if 'dns_nameservers' in sn_map else [],
-                      allocation_pools=sn_map['allocation_pools'] if 'allocation_pools' in sn_map else [],
-                      host_routes=sn_map['host_routes'] if 'host_routes' in sn_map else [],
-                      enable_dhcp=sn_map['enable_dhcp'] if 'enable_dhcp' in sn_map else False)
+        obj = json.loads(config)
+        return Subnet(id=obj['id'] if 'id' in obj else '',
+                      name=obj['name'] if 'name' in obj else '',
+                      network_id=obj['network_id'] if 'network_id' in obj else '',
+                      ip_version=obj['ip_version'] if 'ip_version' in obj else 4,
+                      cidr=obj['cidr'] if 'cidr' in obj else '',
+                      gateway_ip=obj['gateway_ip'] if 'gateway_ip' in obj else '',
+                      dns_nameservers=obj['dns_nameservers'] if 'dns_nameservers' in obj else [],
+                      allocation_pools=obj['allocation_pools'] if 'allocation_pools' in obj else [],
+                      host_routes=obj['host_routes'] if 'host_routes' in obj else [],
+                      enable_dhcp=obj['enable_dhcp'] if 'enable_dhcp' in obj else False)
 
     @staticmethod
     def to_json(me):

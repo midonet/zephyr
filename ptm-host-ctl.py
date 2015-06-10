@@ -14,49 +14,35 @@
 # limitations under the License.
 
 import sys
+import traceback
+import json
+import importlib
 
 from common.Exceptions import *
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager, CONTROL_CMD_NAME
 from common.CLI import LinuxCLI
-from CBT.EnvSetup import EnvSetup
-import traceback
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager, HOST_CONTROL_CMD_NAME
+from PTM.Host import Host
 
 def usage(exceptClass):
-    print 'Usage: ' + CONTROL_CMD_NAME + ' {startup|shutdown|config} [options]'
-    print 'Usage: ' + CONTROL_CMD_NAME + ' neutron {install} [options]'
+    print 'Usage: ' + HOST_CONTROL_CMD_NAME + ' <command> <host_json>'
     if exceptClass is not None:
         raise exceptClass()
 
 try:
-
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         usage(ExitCleanException)
-    else:
-        cmd = sys.argv[1]
 
-        config_file = 'config.json'
+    host_cmd = sys.argv[1]
+    host_json = sys.argv[2]
 
-        root_dir = LinuxCLI().cmd('pwd').strip()
+    root_dir = LinuxCLI().cmd('pwd').strip()
 
-        print "Setting root dir to: " + root_dir
-        ptm = PhysicalTopologyManager(root_dir=root_dir, log_root_dir='./tmp/logs')
+    print "Setting root dir to: " + root_dir
+    ptm = PhysicalTopologyManager(root_dir=root_dir, log_root_dir='./tmp/logs')
 
-        ptm.configure(config_file)
+    ptm.ptm_host_control(host_cmd, host_json)
+    print "finished"
 
-        if cmd == 'neutron':
-            if len(sys.argv) < 3:
-                usage(ExitCleanException)
-            if sys.argv[2] == 'install':
-                EnvSetup.install_neutron_client()
-        elif cmd == 'startup':
-            ptm.startup()
-        elif cmd == 'shutdown':
-            ptm.shutdown()
-        elif cmd == 'config':
-            ptm.print_config()
-        else:
-            raise ArgMismatchException(' '.join(sys.argv[1:]))
-   
 except ExitCleanException:
     exit(1)
 except ArgMismatchException as a:

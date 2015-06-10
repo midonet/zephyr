@@ -1,10 +1,12 @@
 __author__ = 'micucci'
 
 import unittest
-from VTM.VirtualTopologyConfig import VirtualTopologyConfig
+from VTM.VirtualTopologyManager import VirtualTopologyManager
+from VTM.NeutronStubClientInterface import NeutronStubClientInterface
 
-class MockClient():
+class MockClient(NeutronStubClientInterface):
     def __init__(self, *args, **kwargs):
+        super(MockClient, self).__init__(*args, **kwargs)
         self.subnet = {}
         self.options = {}
         if kwargs is not None:
@@ -36,16 +38,16 @@ class MockClient():
         return None
 
 
-class VirtualTopologyConfigUnitTest(unittest.TestCase):
+class VirtualTopologyManagerUnitTest(unittest.TestCase):
     def test_creation(self):
-        api = VirtualTopologyConfig(MockClient, endpoint_url='test', auth_strategy='test2', option1='test3')
+        api = VirtualTopologyManager(MockClient, endpoint_url='test', auth_strategy='test2', option1='test3')
 
         self.assertEqual(api.get_client().get_option('endpoint_url'), 'test')
         self.assertEqual(api.get_client().get_option('auth_strategy'), 'test2')
         self.assertEqual(api.get_client().get_option('option1'), 'test3')
 
     def test_subnet(self):
-        api = VirtualTopologyConfig(MockClient)
+        api = VirtualTopologyManager(MockClient)
         subnet =  {'subnet': {
             'name': 'test-l2',
             'enable_dhcp': True,

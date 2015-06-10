@@ -1,4 +1,4 @@
-__author__ = 'tomoe'
+__author__ = 'micucci'
 # Copyright 2015 Midokura SARL
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +13,22 @@ __author__ = 'tomoe'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from common.CLI import LinuxCLI
 
-class VirtualTopologyConfig(object):
-    pass
+
+class PTMObject(object):
+    def __init__(self, name, cli):
+        super(PTMObject, self).__init__()
+        self.name = name
+        """ :type: str """
+        self.cli = cli
+        """ :type: LinuxCLI """
+
+    def get_name(self):
+        return self.name
+
+    def get_cli(self):
+        return self.cli
+
+    def print_config(self, indent=0):
+        pass

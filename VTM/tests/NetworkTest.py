@@ -3,12 +3,13 @@ __author__ = 'micucci'
 import unittest
 from datetime import datetime
 
+from common.IP import IP
+
 from VTM.Guest import Guest
 from VTM.VirtualTopologyConfig import VirtualTopologyConfig
 from PTM.VMHost import VMHost
 from PTM.ComputeHost import ComputeHost
 from PTM.PhysicalTopologyConfig import *
-from PTM.MNRootServer import MNRootServer
 from VTM.Network import Network
 from VTM.Port import Port
 
@@ -16,8 +17,6 @@ from VTM.Port import Port
 class MockNetwork(Network):
     def __init__(self, vtc):
         super(MockNetwork, self).__init__(vtc)
-
-
 
 
 class MockClient(object):
@@ -92,9 +91,9 @@ class MyTestCase(unittest.TestCase):
         vtc = VirtualTopologyConfig(client_api_impl=MockClient)
 
         test_system = MNRootServer()
-        hv = test_system.config_compute(HostDef('cmp1', [InterfaceDef(name='eth0', ip_list=[IPDef('2.2.2.2', '32')])]))
+        hv = test_system.config_compute(HostDef('cmp1', [InterfaceDef(name='eth0', ip_list=[IP('2.2.2.2', '32')])]))
         vm = test_system.config_vm(VMDef('cmp1', HostDef('vm1', [InterfaceDef(name='eth0',
-                                                                         ip_list=[IPDef('3.3.3.3', '32')])])))
+                                                                         ip_list=[IP('3.3.3.3', '32')])])))
 
         virtual_host = Guest(vtc,vtc)
 

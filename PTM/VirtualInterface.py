@@ -14,75 +14,75 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from Interface import Interface
+from common.IP import IP
+from common.Exceptions import *
 
 
 class VirtualInterface(Interface):
-    def __init__(self, name, near_host, far_host, far_iface_name, linked_bridge=None,
-                 ip_list=list(), mac='default', peer_ext='.p'):
+    def __init__(self, name, host, mac=None, ip_addr=list(), linked_bridge=None, vlans=None,
+                 far_interface=None):
         """
+        A virtual interface using the veth driver to create a pair of connected interfaces.
+        One side of the pair is usually set to a far-end IP namespace, while the near end
+        can be used in a Linux bridge, or directly as a separate interface.
         :type name: str
-        :type near_host: Host
-        :type far_host: Host
-        :type far_iface_name: str
-        :type linked_bridge: Bridge
-        :type ip_list: list[IPDef]
+        :type host: Host Near host to start tunnel from
         :type mac: str
-        :type peer_ext: str
+        :type ip_addr: list[IP]
+        :type linked_bridge: Bridge Bridge to link to
+        :type vlans: dict [str, list[IP]]
+        :type far_interface: Interface
         """
-        super(VirtualInterface, self).__init__(name, near_host, linked_bridge, ip_list, mac)
-        self.peer_name = self.name + peer_ext
-        self.far_host = far_host
-        self.far_iface_name = far_iface_name
+        self.peer_name = name + '.p'
+        super(VirtualInterface, self).__init__(name=name, host=host, mac=mac,
+                                               ip_addr=ip_addr, linked_bridge=linked_bridge,
+                                               vlans=vlans)
 
-    def add(self):
-        # add a veth-type interface with a peer
-        self.cli.cmd('ip link add dev ' + self.name + ' type veth peer name ' + self.peer_name)
-        # move peer iface onto far host's namespace
+        # Set up an interface to represent the peer
+        self.peer_interface = far_interface
+
+    def create(self):
+        """
+        Link a veth peer to a far host and return the new interface
+        :return: Interface The peer on the far host, configured and ready
+        """
+        self.cli.cmd('ip link add dev ' + self.get_name() + ' type veth peer name ' + self.peer_name)
+
+        # Add interface to the linked bridge, if there is one
+        if self.linked_bridge is not None:
+            self.linked_bridge.link_interface(self)
+
+        # Don't set the peer interface if it is null
+        if self.peer_interface is None:
+            return
+
+        # move peer interface onto far host's namespace
         self.cli.cmd('ip link set dev ' + self.peer_name + ' netns ' +
-                           self.far_host.name + ' name ' + self.far_iface_name)
-        # add ips
-        for ip in self.ip_list:
-            self.far_host.cli.cmd('ip addr add ' + str(ip) + ' dev ' + self.far_iface_name)
+                     self.peer_interface.host.name + ' name ' + self.peer_interface.name)
 
-    def up(self):
-        # Set main iface up
-        super(VirtualInterface, self).up()
-        # Set peer iface up on far host's namespace
-        self.far_host.cli.cmd('ip link set dev ' + self.far_iface_name + ' up')
-        
-    def down(self):
-        super(VirtualInterface, self).down()
-        self.far_host.cli.cmd('ip link set dev ' + self.far_iface_name + ' down')
+        # In the unlikely chance that the peer is also linked to a bridge, go ahead and link
+        if self.peer_interface.linked_bridge is not None:
+            self.peer_interface.linked_bridge.link_interface(self.peer_interface)
 
-    def add_peer_route(self, route_ip, gw_ip):
-        self.far_host.cli.cmd('ip route add ' + str(route_ip) + ' via ' + gw_ip.ip_address)
+        # Now the peer can act like a separate, normal interface on the far host and
+        # should be treated accordingly
+        return self.peer_interface
 
-    def del_peer_route(self, route_ip):
-        self.far_host.cli.cmd('ip route del ' + str(route_ip))
+    def remove(self):
+        self.cli.cmd('ip link del dev ' + self.get_name())
 
-    def link_vlan(self, vlan_id, ip_list):
-        vlan_iface = self.far_iface_name + '.' + str(vlan_id)
-        self.far_host.cli.cmd('ip link add link ' + self.far_iface_name +
-                           ' name ' + vlan_iface + ' type vlan id ' + str(vlan_id))
-        self.far_host.cli.cmd('ip link set dev ' + vlan_iface + ' up')
-        for ip in ip_list:
-            self.far_host.cli.cmd('ip addr add ' + str(ip) + ' dev ' + vlan_iface)
+    def config_addr(self):
+        # Perform the normal address configuration, then set the peer's default route
+        # to
+        super(VirtualInterface, self).config_addr()
 
-    def unlink_vlan(self, vlan_id):
-        vlan_iface = self.far_iface_name + '.' + str(vlan_id)
-        self.far_host.cli.cmd('ip link set dev ' + vlan_iface + ' down')
-        self.far_host.cli.cmd('ip link del ' + vlan_iface)
-
-    def get_far_host(self):
-        return self.far_host
-
-    def get_host_name(self):
-        return self.far_host.name
-
-    def get_interface_name(self):
-        return self.far_iface_name
+    def add_peer_route(self):
+        # If linked bridge has an IP, and the interface is a veth device, add a route
+        # on the peer's host (far-end) for all default traffic to come to the linked bridge
+        if self.linked_bridge is not None and len(self.linked_bridge.ip_list) > 0:
+            self.peer_interface.host.add_route(IP('0.0.0.0', '0'),
+                                               self.linked_bridge.ip_list[0])
 
     def print_config(self, indent=0):
-        link = ' linked on bridge ' + self.linked_bridge.name + ', ' if self.linked_bridge is not None else ' '
-        print ('    ' * indent) + self.name + link + 'peered as ' + self.far_host.name + \
-               '/' + self.far_iface_name + ' with ips: ' + ', '.join(str(ip) for ip in self.ip_list)
+        print ('    ' * indent) + self.name + ' with peer: ' + \
+              self.peer_interface.host.name + '/' + self.peer_interface.name

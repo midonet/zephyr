@@ -17,8 +17,9 @@ from common.Exceptions import InvallidConfigurationException
 import json
 
 class Port(object):
-    def __init__(self, id, name, network_id, admin_state_up, status,
-                 mac_address, fixed_ips, device_id, device_owner, tenant_id):
+    def __init__(self, id, name='', network_id='', admin_state_up='', status='',
+                 mac_address='', fixed_ips=list(), device_id='', device_owner='', tenant_id='',
+                 security_groups=''):
         """
         :type id: str
         :type name: str
@@ -30,6 +31,7 @@ class Port(object):
         :type device_id: str
         :type device_owner: str
         :type tenant_id: str
+        :type security_groups: str
         :return:
         """
         self.id = id
@@ -42,24 +44,21 @@ class Port(object):
         self.device_id = device_id
         self.device_owner = device_owner
         self.tenant_id = tenant_id
+        self.security_groups = security_groups
 
     @staticmethod
     def from_json(config):
-        if 'port' not in config:
-            raise InvallidConfigurationException(config, 'no port')
-
-        port_map = config['port']
-
-        return Port(name = port_map['name'] if 'name' in port_map else '',
-                    tenant_id = port_map['tenant_id'] if 'tenant_id' in port_map else '',
-                    id = port_map['id'] if 'id' in port_map else '',
-                    network_id = port_map['network_id'] if 'network_id' in port_map else '',
-                    admin_state_up = port_map['admin_state_up'] if 'admin_state_up' in port_map else False,
-                    status = port_map['status'] if 'status' in port_map else '',
-                    mac_address = port_map['mac_address'] if 'mac_address' in port_map else '',
-                    fixed_ips = port_map['fixed_ips'] if 'fixed_ips' in port_map else [],
-                    device_id = port_map['device_id'] if 'device_id' in port_map else '',
-                    device_owner = port_map['device_owner'] if 'device_owner' in port_map else '')
+        obj = json.loads(config)
+        return Port(name=obj['name'] if 'name' in obj else '',
+                    tenant_id=obj['tenant_id'] if 'tenant_id' in obj else '',
+                    id=obj['id'] if 'id' in obj else '',
+                    network_id=obj['network_id'] if 'network_id' in obj else '',
+                    admin_state_up=obj['admin_state_up'] if 'admin_state_up' in obj else False,
+                    status=obj['status'] if 'status' in obj else '',
+                    mac_address=obj['mac_address'] if 'mac_address' in obj else '',
+                    fixed_ips=obj['fixed_ips'] if 'fixed_ips' in obj else [],
+                    device_id=obj['device_id'] if 'device_id' in obj else '',
+                    device_owner=obj['device_owner'] if 'device_owner' in obj else '')
 
     @staticmethod
     def to_json(me):

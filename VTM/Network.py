@@ -47,23 +47,17 @@ class Network(object):
 
     @staticmethod
     def from_json(config):
-        map_cfg = json.loads(config)
-        if 'network' not in map_cfg:
-            raise InvallidConfigurationException(config, 'no network')
-        network_cfg = map_cfg['network']
-        return Network(name=network_cfg['name'] if 'name' in network_cfg else '',
-                       id=network_cfg['id'] if 'id' in network_cfg else '',
-                       tenant_id=network_cfg['tenant_id'] if 'tenant_id' in network_cfg else '',
-                       admin_state_up=network_cfg['admin_state_up'] if 'admin_state_up' in network_cfg else False,
-                       status=network_cfg['status'] if 'status' in network_cfg else '',
-                       subnets=network_cfg['subnets'] if 'subnets' in network_cfg else {},
-                       shared=network_cfg['shared'] if 'shared' in network_cfg else False)
+        obj = json.loads(config)
+        return Network(name=obj['name'] if 'name' in obj else '',
+                       id=obj['id'] if 'id' in obj else '',
+                       tenant_id=obj['tenant_id'] if 'tenant_id' in obj else '',
+                       admin_state_up=obj['admin_state_up'] if 'admin_state_up' in obj else False,
+                       status=obj['status'] if 'status' in obj else '',
+                       subnets=obj['subnets'] if 'subnets' in obj else {},
+                       shared=obj['shared'] if 'shared' in obj else False)
 
     @staticmethod
     def to_json(me):
-        """
-        :type me: Network
-        """
         obj_map = {'name': me.name,
                    'id': me.id,
                    'tenant_id': me.tenant_id,

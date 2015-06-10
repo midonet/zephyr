@@ -15,22 +15,24 @@ __author__ = 'tomoe'
 
 
 import subprocess
-from VTM.VirtualTopologyConfig import VirtualTopologyConfig
+
+from common.TCPSender import TCPSender
+from common.TCPDump import *
+
+from VirtualTopologyConfig import VirtualTopologyConfig
+from Port import Port
 from PTM.VMHost import VMHost
-from common.CLI import LinuxCLI
 
 class Guest(object):
     """
     A class to wrap a VM from the Physical Topology Manager
     """
 
-    def __init__(self, vtc, vm_host):
+    def __init__(self, vm_host):
         self.vm_host = vm_host
         """ :type: VMHost"""
-        self.vtc = vtc
-        """ :type: VirtualTopologyConfig"""
-        self.open_ports_by_interface = {}
-        """ :type: dict[str, dict[str, Port]]"""
+        self.open_ports_by_id = {}
+        """ :type: dict[str, Port]"""
 
     def plugin_vm(self, iface, port):
         """ Links an interface on this VM to a virtual network port
@@ -39,113 +41,51 @@ class Guest(object):
         :type port: Port
         """
 
-        try:
-            self.vm_host.plugin_iface(iface, port.port_id)
-            self.open_ports_by_interface[iface] = port
-
-        except subprocess.CalledProcessError as e:
-            print 'command output: ',   e.output
-            raise
+        self.vm_host.plugin_iface(iface, port.id)
+        self.open_ports_by_id[port.id] = port
 
     def unplug_vm(self, port):
         """ Unlinks a port on this VM from the virtual network
-        :param port: Port ID to unlink
+        :type port: Port to unlink
         """
-
-        try:
-            self.vm_host.unplug_iface(port)
-            self.open_ports_by_interface = {k: v for k, v in self.open_ports_by_interface if v != port}
-
-        except subprocess.CalledProcessError as e:
-            print 'command output: ',   e.output
-            raise
-
-    def send_arp_request(self, ip):
-        return self.vm_host.send_arp_request('eth0', ip)
-
-    def send_arp_reply(self, src_mac, target_mac, src_ip, target_ip):
-        return self.vm_host.send_arp_reply('eth0', src_mac, target_mac, src_ip, target_ip)
+        self.vm_host.unplug_iface(port.id)
+        self.open_ports_by_id.pop(port.id)
 
     def clear_arp(self):
         return self.vm_host.flush_arp()
 
-    def execute(self, cmdline, timeout=None):
-        """Executes cmdline inside VM
+    def send_arp_request(self, on_iface, ip):
+        return self.vm_host.send_packet(on_iface,
+                                        type='arp',
+                                        options={'command': 'request'},
+                                        target_ip=ip,
+                                        count=1)
 
-        Args:
-            cmdline: command line string that gets executed in this VM
-            timeout: timeout in second
+    def send_arp_reply(self, on_iface, src_mac, target_mac, src_ip, target_ip):
+        return self.vm_host.send_packet(iface=on_iface,
+                                        type='arp',
+                                        target_ip=target_ip,
+                                        options={'command': 'reply',
+                                                 'smac': src_mac,
+                                                 'tmac': target_mac,
+                                                 'sip': src_ip,
+                                                 'tip': target_ip},
+                                        count=1)
 
-        Returns:
-            output as a bytestring
+    def send_packet(self, on_iface, target_ip, type, options, count):
+        return self.vm_host.send_packet(iface=on_iface,
+                                        type=type,
+                                        target_ip=target_ip,
+                                        options=options,
+                                        count=count)
 
-        Raises:
-            subprocess.CalledProcessError: when the command exists with non-zero
-                                           value, including timeout.
-            OSError: when the executable is not found or some other error
-                     invoking
-        """
-        try:
-            result = self.vm_host.cli.cmd(cmdline, timeout=timeout, return_output=True)
-        except subprocess.CalledProcessError as e:
-            print 'command output: ',   e.output
-            raise
+    def send_ping(self, on_iface, target_ip, count=3):
+        return self.vm_host.ping(iface=on_iface, target_ip=target_ip, count=count)
 
+    def execute(self, *args, **kwargs):
+        result = self.vm_host.cli.cmd(*args, **kwargs)
         return result
 
-    def expect(self, pcap_filter_string, timeout):
-        """
-        Expects packet with pcap_filter_string with tcpdump.
-        See man pcap-filter for more details as to what you can match.
-
-
-        Args:
-            pcap_filter_string: capture filter to pass to tcpdump
-                                See man pcap-filter
-            timeout: in second
-
-        Returns:
-            True: when packet arrives
-            False: when packet doesn't arrive within timeout
-        """
-
-        count = 1
-        cmdline = 'timeout %s tcpdump -n -l -i eth0 -c %s %s 2>&1' % (
-            timeout,
-            count, pcap_filter_string)
-
-        try:
-            output = self.execute(cmdline)
-            retval = True
-            for l in output.split('\n'):
-                LOG.debug('output=%r', l)
-        except subprocess.CalledProcessError as e:
-            print 'OUTPUT: ', e.output
-            LOG.debug('expect failed=%s', e)
-            retval = False
-        LOG.debug('Returning %r', retval)
-        return retval
-
-    def assert_pings_to(self, other, count=3):
-        """
-        Asserts that the sender VM can ping to the other VM
-
-        :param other: ping target VM instance
-        """
-
-
-        sender = self._port['port'].get('fixed_ips')
-        receiver = other._port['port'].get('fixed_ips')
-        if sender and receiver:
-            receiver_ip = receiver[0]['ip_address']
-            try:
-                self.execute('ping -c %s %s' % (count, receiver_ip))
-            except:
-                raise AssertionError(
-                    'ping from %s to %s failed'% (self, other))
-
-    def  __repr__(self):
-        return 'VM(%s)(port_id=%s)' % (self._name, self._port['port']['id'])
 
 
 

@@ -19,8 +19,8 @@ from common.Exceptions import *
 
 CREATENSCMD = lambda name: LinuxCLI().cmd('ip netns add ' + name)
 REMOVENSCMD = lambda name: LinuxCLI().cmd('ip netns del ' + name)
-CONTROL_CMD_NAME = './ptm-ctl.py'
-DEBUG=1
+DEBUG = 1
+
 
 class LinuxCLI(object):
     def __init__(self, priv=True, debug=(DEBUG >= 2), print_cmd=(DEBUG >= 1)):
@@ -42,7 +42,9 @@ class LinuxCLI(object):
         if (self.env_map is not None):
             self.env_map.pop(name)
 
-    def cmd(self, cmd_line, return_output=False, timeout=None, blocking=True):
+    # TODO: Unify the output of cmd function and make new functions for different types of outputs
+    # TODO: Unify the multi and normal cmd functions
+    def cmd(self, cmd_line, return_status=False, timeout=None, blocking=True, shell=True, *args):
         """
         Execute a command on the system.  The exact command will be transformed based
          on the timeout parameter and whether or not the command is being run against
@@ -66,10 +68,7 @@ class LinuxCLI(object):
         if self.debug is True:
             return cmd
 
-        if return_output is False:
-            return subprocess.call(cmd, shell=True, env=self.env_map)
-
-        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE,
+        p = subprocess.Popen(cmd, *args, shell=shell, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE, env=self.env_map)
 
         if blocking is False:
@@ -78,6 +77,11 @@ class LinuxCLI(object):
         out = ''
         for line in p.stdout:
             out += line
+
+        if return_status is True:
+            p.poll()
+            return p.returncode
+
         return out
 
     def create_cmd(self, cmd_line):
@@ -86,17 +90,17 @@ class LinuxCLI(object):
     def create_cmd_priv(self, cmd_line):
         return 'sudo ' + cmd_line
 
-    def oscmd(self, cmd_line):
-        return self.cmd(cmd_line)
+    def oscmd(self, *args, **kwargs):
+        return LinuxCLI().cmd(*args, **kwargs)
 
     def grep_file(self, gfile, grep):
-        if self.cmd('grep -q ' + grep + ' ' + gfile) == 0:
+        if self.cmd('grep -q "' + grep + '" ' + gfile, return_status=True) == 0:
             return True
         else:
             return False
 
     def grep_cmd(self, cmd_line, grep):
-        if self.cmd(cmd_line + '| grep -q ' + grep) == 0:
+        if self.cmd(cmd_line + '| grep -q "' + grep + '"', return_status=True) == 0:
             return True
         else:
             return False
@@ -114,6 +118,31 @@ class LinuxCLI(object):
         sed_str = ''.join(['-e "' + str(i) + '" ' for i in args])
         return self.cmd('sed ' + sed_str + ' -i ' + rfile)
 
+    def replace_text_in_file(self, rfile, search_str, replace_str, line_global_replace=False):
+        """
+        Replace text line-by-line in given file, on each line replaces all or only first
+        occurrence on each line, depending on the global replace flag.
+        :type rfile: str
+        :type search_str: str
+        :type replace_str: str
+        :type line_global_replace: bool
+        """
+        global_flag = 'g' if line_global_replace is True else ''
+        # Escape control characters
+        new_search_str = search_str
+        new_replace_str = replace_str
+        search_chars = "\\/\"`[]*+.^!$"
+        for c in search_chars:
+            if c in new_search_str:
+                new_search_str = new_search_str.replace(c, "\\" + c)
+        replace_chars = "\\/\"`"
+        for c in replace_chars:
+            if c in new_replace_str:
+                new_replace_str = new_replace_str.replace(c, "\\" + c)
+
+        sed_str = "sed -e 's/" + new_search_str + "/" + new_replace_str + "/" + global_flag + "' -i " + rfile
+        return self.cmd(sed_str)
+
     def copy_dir(self, old_dir, new_dir):
         return self.cmd('cp -RL --preserve=all ' + old_dir + ' ' + new_dir)
 
@@ -126,15 +155,18 @@ class LinuxCLI(object):
         return file_ptr.read()
 
     def write_to_file(self, wfile, data, append=False):
-        mode = 'w'
-        self.rm("./.tmp.file")
+        old_data = ''
         if append is True:
-            LinuxCLI().copy_file(wfile, "./.tmp.file")
-            mode = 'a'
-        file_ptr = open("./.tmp.file", mode)
-        file_ptr.write(data)
+            with open(wfile, 'r') as f:
+                old_data = f.read()
+
+        self.rm("./.tmp.file")
+        file_ptr = open("./.tmp.file", 'w')
+        file_ptr.write(old_data + data)
         file_ptr.close()
-        return self.copy_file('./.tmp.file', wfile)
+        ret = self.copy_file('./.tmp.file', wfile)
+        self.rm("./.tmp.file")
+        return ret
 
     def rm(self, old_file):
         return self.cmd('rm -rf ' + old_file)
@@ -167,12 +199,6 @@ class LinuxCLI(object):
 
     def start_screen_unshare(self, host, window_name, cmd_line):
         return self.start_screen(host, window_name, 'unshare -m ' + cmd_line)
-
-    def cmd_unshare(self, cmd_line):
-        return self.cmd('unshare --mount -- /bin/bash -x -c "' + cmd_line + '"')
-
-    def cmd_unshare_control(self, cmd_line):
-        return self.cmd_unshare('PYTHONPATH=.. python -u ' + CONTROL_CMD_NAME + ' ' + cmd_line)
 
 
 class NetNSCLI(LinuxCLI):

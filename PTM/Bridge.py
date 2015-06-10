@@ -14,46 +14,63 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from Interface import Interface
-from PhysicalTopologyConfig import BridgeDef
-from PhysicalTopologyConfig import IPDef
+from VirtualInterface import VirtualInterface
+from common.IP import IP
 
 
 class Bridge(Interface):
-    def __init__(self, name, near_host, options=list(), ip_list=list(), mac='default'):
+    def __init__(self, name, host, mac=None, ip_addr=None, options=None):
         """
+        A Linux bridge with linked interfaces.
         :type name: str
-        :type near_host: Host
-        :type options: list[str]
-        :type ip_list: list[IPDef]
+        :type host: Host Host to configure bridge upon
         :type mac: str
+        :type ip_addr: list [IP]
+        :type options: list[str]
         """
-        super(Bridge, self).__init__(name=name,
-                                     near_host=near_host,
-                                     linked_bridge=None,
-                                     ip_list=ip_list,
-                                     mac=mac)
+        super(Bridge, self).__init__(name=name, host=host, mac=mac, ip_addr=ip_addr, linked_bridge=None)
+        self.options = options if options is not None else []
+        self.linked_interfaces = {}
+        """ :type: dict [str, Interface]"""
 
-        self.options = options
-
-    def add(self):
+    def create(self):
         self.cli.cmd('brctl addbr ' + self.get_name())
-        for ip in self.ip_list:
-            self.cli.cmd('ip addr add ' + str(ip) + ' dev ' + self.get_name())
-
-    def delete(self):
-        self.cli.cmd('brctl delbr ' + self.get_name())
-
-    def up(self):
-        self.cli.cmd('ip link set dev ' + self.get_name() + ' up')
+        # Link all configured interfaces to this bridge
+        # Set any configured options
         for i in self.options:
+            # Spanning Tree Protocol
             if i == 'stp':
                 self.cli.cmd('brctl stp ' + self.get_name() + ' on')
 
-    def down(self):
-        self.cli.cmd('ip link set dev ' + self.get_name() + ' down')
+    def remove(self):
+        if len(self.ip_list) > 0:
+            for i in self.linked_interfaces.itervalues():
+                # If this bridge has an IP, and the interface is a veth device, remove any routes
+                # on the peer's host (far-end) pointing to this bridge
+                if i.state is Interface.UP and isinstance(i, VirtualInterface):
+                    """ :type i: VirtualInterface"""
+                    i.peer_interface.host.del_route(IP('0.0.0.0', '0'))
+        # Remove the bridge (note, bridge interface must be DOWN for removal to work)
+        self.cli.cmd('brctl delbr ' + self.get_name())
 
-    def add_link_interface(self, iface):
-        self.cli.cmd('brctl addif ' + self.get_name() + ' ' + iface)
+    def link_interface(self, iface):
+        """
+        Link an interface to this bridge.
+        :param iface: Interface Interface to link
+        :return:
+        """
+        self.cli.cmd('brctl addif ' + self.get_name() + ' ' + iface.name)
+        self.linked_interfaces[iface.name] = iface
 
-    def del_link_interface(self, iface):
-        self.cli.cmd('brctl delif ' + self.get_name() + ' ' + iface)
+    def unlink_interface(self, iface):
+        """
+        Unlink an interface to this bridge.
+        :param iface: Interface Interface to unlink
+        :return:
+        """
+        self.cli.cmd('brctl delif ' + self.get_name() + ' ' + iface.name)
+        self.linked_interfaces.pop(iface.name)
+
+    def print_config(self, indent=0):
+        print ('    ' * indent) + self.name + \
+              (' with ip(s): ' + ', '.join(str(ip) for ip in self.ip_list) if len(self.ip_list) > 0 else '')

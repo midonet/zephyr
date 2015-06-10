@@ -13,8 +13,7 @@ class TCPDumpTest(unittest.TestCase):
     def test_sniff_all_host_packet(self):
         tcpd = TCPDump()
 
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"',
-                             return_output=True)
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
         iface = out.split()[0].rstrip()
         data_queue = tcpd.start_capture(timeout=10, interface=iface, count=1)
 
@@ -31,8 +30,7 @@ class TCPDumpTest(unittest.TestCase):
         tcpd = TCPDump()
         tcps = TCPSender()
 
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"',
-                             return_output=True)
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
         iface = out.split()[0].rstrip()
 
         data_queue = tcpd.start_capture(timeout=10, interface='any', count=1,
@@ -58,8 +56,7 @@ class TCPDumpTest(unittest.TestCase):
         tcpd = TCPDump()
         tcps = TCPSender()
 
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"',
-                             return_output=True)
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
         iface = out.split()[0].rstrip()
 
         data_queue = tcpd.start_capture(timeout=10, interface=iface, count=1,

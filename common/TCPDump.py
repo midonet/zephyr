@@ -91,7 +91,7 @@ class TCPDump(object):
         cmd_str = 'tcpdump -n -xx -l ' + count_str + ' ' + iface_str + ' ' + \
                   max_size_str + ' ' + type_str + pcap_filter.to_str()
         cli.print_cmd = True
-        p = cli.cmd(cmd_line=cmd_str, return_output=True, timeout=timeout, blocking=False)
+        p = cli.cmd(cmd_line=cmd_str, timeout=timeout, blocking=False)
 
         flags_se = fcntl(p.stderr, F_GETFL) # get current p.stderr flags
         fcntl(p.stderr, F_SETFL, flags_se | os.O_NONBLOCK)

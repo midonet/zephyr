@@ -55,24 +55,23 @@ class TCPSender(object):
     def send_packet(cli=LinuxCLI(), tcp_ready=None, interface='any', packet_type=None,
                     source_port=None, dest_port=None,
                     source_ip=None, dest_ip=None,  source_mac=None,
-                    dest_mac=None, packet_cmd=None, packet_options=None, count=None,
+                    dest_mac=None, packet_options=None, count=None,
                     delay=None, byte_data=None, timeout=None):
         """
-        :param cli: LinuxCLI
-        :param interface: str
-        :param packet_type: str
-        :param source_port: int
-        :param dest_port: int
-        :param source_ip: str
-        :param dest_ip: str
-        :param source_mac: str
-        :param dest_mac: str
-        :param packet_cmd: str
-        :param packet_options: dict[str, str]
-        :param count: int
-        :param delay: int
-        :param byte_data: str
-        :param timeout: int
+        :type cli: LinuxCLI
+        :type interface: str
+        :type packet_type: str
+        :type source_port: int
+        :type dest_port: int
+        :type source_ip: str
+        :type dest_ip: str
+        :type source_mac: str
+        :type dest_mac: str
+        :type packet_options: dict[str, str]
+        :type count: int
+        :type delay: int
+        :type byte_data: str
+        :type timeout: int
         :return: str
         """
 
@@ -89,8 +88,9 @@ class TCPSender(object):
                            {'iface': interface,
                             'arglist': arg_str,
                             'bytes': byte_data}
-            out = cli.cmd(full_cmd_str, return_output=True, timeout=timeout)
-            tcp_ready.set()
+            out = cli.cmd(full_cmd_str, timeout=timeout)
+            if tcp_ready is not None:
+                tcp_ready.set()
             return out
 
         # Packet-builder mode, supports various opts (supported opts depend on packet type)
@@ -103,16 +103,19 @@ class TCPSender(object):
                              for k, v in packet_options.iteritems()) if packet_options is not None else ''
 
         if packet_type is 'arp' or packet_type is 'icmp':
-            if packet_cmd is None:
+            if 'command' not in packet_options:
                 raise ArgMismatchException('arp and icmp packets need a command or type')
-            cmd_str = packet_cmd + (', ' + opt_list if opt_list != '' else '')
+            cmd_opt = packet_options.pop('command')
+            opt_list = ', '.join('%s=%s' % (k, v)
+                                 for k, v in packet_options.iteritems()) if packet_options is not None else ''
+            cmd_str = cmd_opt + (', ' + opt_list if opt_list != '' else '')
         elif packet_type is 'tcp' or packet_type is 'udp':
             source_port_str = 'sp=%s' % source_port if source_port is not None else ''
             dest_port_str = 'dp=%s' % dest_port if dest_port is not None else ''
             cmd_str = ','.join((source_port_str, dest_port_str))
-
         else:
-            cmd_str = opt_list
+            cmd_str = ', '.join('%s=%s' % (k, v)
+                                 for k, v in packet_options.iteritems()) if packet_options is not None else ''
 
         full_cmd_str = 'mz %(iface)s %(arglist)s %(extra_args)s %(pkttype)s "%(cmd)s"' % \
                        {'iface': interface,
@@ -121,6 +124,7 @@ class TCPSender(object):
                         'pkttype': pkt_type_str,
                         'cmd': cmd_str}
 
-        out = cli.cmd(full_cmd_str, return_output=True, timeout=timeout)
-        tcp_ready.set()
+        out = cli.cmd(full_cmd_str, timeout=timeout)
+        if tcp_ready is not None:
+            tcp_ready.set()
         return out

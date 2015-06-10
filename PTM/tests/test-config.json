@@ -1,162 +1,278 @@
 {
-    "bridges": [
+  "root_server_host": "local",
+  "hosts": [
+    {
+      "name": "root",
+      "bridges": [
         {
-            "name": "br0", 
-            "ip_list": [
-                {
-                    "ip": "10.0.0.240", 
-                    "subnet": "24"
-                }
-            ]
-        }, 
+          "name": "br0",
+          "ip_addresses": [
+            {
+              "ip": "10.0.0.240",
+              "subnet": "24"
+            }
+          ]
+        },
         {
-            "name": "brv0", 
-            "options": "stp"
+          "name": "brv0",
+          "options": "stp"
         }
-    ], 
-    "computes": [
+
+      ],
+      "interfaces": [
         {
-            "interface_list": [
-                {
-                    "bridge_link": {
-                        "name": "br0"
-                    }, 
-                    "name": "eth0", 
-                    "ip_list": [
-                        {
-                            "ip": "10.0.0.8", 
-                            "subnet": "24"
-                        }
-                    ]
-                }
-            ], 
-            "name": "cmp1"
-        }, 
+          "name": "zoo1eth0",
+          "linked_bridge": "br0"
+        },
         {
-            "interface_list": [
-                {
-                    "bridge_link": {
-                        "name": "br0"
-                    }, 
-                    "name": "eth0", 
-                    "ip_list": [
-                        {
-                            "ip": "10.0.0.9", 
-                            "subnet": "24"
-                        }
-                    ]
-                }
-            ], 
-            "name": "cmp2"
+          "name": "cass1eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "cmp1eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "th1eth0",
+          "linked_bridge": "brv0"
+        },
+        {
+          "name": "th1eth1",
+          "linked_bridge": "brv0"
+        },
+        {
+          "name": "th2eth0",
+          "linked_bridge": "brv0"
         }
-    ],
-    "hosts": [
+      ]
+    },
+    {
+      "name": "zoo1",
+      "interfaces": [
         {
-            "interface_list": [
-                {
-                    "bridge_link": {
-                        "name": "brv0"
-                    }, 
-                    "name": "eth0"
-                },
-                {
-                    "bridge_link": {
-                       "name": "brv0"
-                    },
-                    "name": "eth1"
-                }
-            ], 
-            "name": "v1.1"
+          "name": "eth0",
+          "ip_addresses": [
+            {
+              "ip": "10.0.0.2",
+              "subnet": "24"
+            }
+          ]
         }
-    ],
-    "vlans": [
+      ]
+    },
+    {
+      "name": "cass1",
+      "interfaces": [
         {
-            "host_list": [
-                {
-                    "interface_list": [
-                        {
-                            "name": "eth0",
-                            "ip_list": [
-                                {
-                                    "ip": "172.16.0.224",
-                                    "subnet": "24"
-                                }
-                            ]
-                        },
-                        {
-                            "name": "eth1",
-                            "ip_list": [
-                                {
-                                    "ip": "172.16.0.223",
-                                    "subnet": "24"
-                                }
-                            ]
-                        }
-                    ],
-                    "name": "v1.1"
-                }
-            ],
-            "vlan_id": "1"
+          "name": "eth0",
+          "ip_addresses": [
+            {
+              "ip": "10.0.0.5",
+              "subnet": "24"
+            }
+          ]
         }
-    ],
-    "hosted_vms": [],
-    "routers": [
+      ]
+    },
+    {
+      "name": "cmp1",
+      "interfaces": [
         {
-            "peer_interface_list": [
-                {
-                    "interface_name": "eth0",
-                    "target_host": "cmp1",
-                    "target_interface": {
-                        "name": "eth1",
-                        "ip_list": [
-                            {
-                                "ip": "10.0.1.240", 
-                                "subnet": "16"
-                            }
-                        ]
-                    }
-                }
-            ],
-            "name": "quagga"
-        }
-    ], 
-    "cassandras": [
+          "name": "eth0",
+          "ip_addresses": [
+            {
+              "ip": "10.0.0.8",
+              "subnet": "24"
+            }
+          ]
+        },
         {
-            "interface_list": [
-                {
-                    "bridge_link": {
-                        "name": "br0"
-                    }, 
-                    "name": "eth0", 
-                    "ip_list": [
-                        {
-                            "ip": "10.0.0.5", 
-                            "subnet": "24"
-                        }
-                    ]
-                }
-            ], 
-            "name": "cass1", 
-            "options": "56713727820156410577229101238628035242"
+          "name": "eth1",
+          "ip_addresses": [
+            {
+              "ip": "10.0.1.2",
+              "subnet": "8"
+            }
+          ]
         }
-    ],
-    "zookeepers": [
+      ]
+    },
+    {
+      "name": "external1",
+      "interfaces": [
         {
-            "interface_list": [
-                {
-                    "bridge_link": {
-                        "name": "br0"
-                    }, 
-                    "name": "eth0", 
-                    "ip_list": [
-                        {
-                            "ip": "10.0.0.2", 
-                            "subnet": "24"
-                        }
-                    ]
-                }
-            ], 
-            "name": "zoo1"
+          "name": "eth0",
+          "ip_addresses": [
+            {
+              "ip": "10.50.50.2",
+              "subnet": "8"
+            }
+          ],
+          "mac_address": "00:00:00:aa:bb:cc"
         }
-   ]
+      ]
+    },
+    {
+      "name": "edge1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [
+            {
+              "ip": "10.0.1.1",
+              "subnet": "8"
+            }
+          ]
+        },
+        {
+          "name": "eth1",
+          "ip_addresses": [
+            {
+              "ip": "10.50.50.1",
+              "subnet": "8"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "test-host1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "vlans": [
+            {
+              "id": "1",
+              "ip_addresses": [
+                {
+                  "ip": "172.16.0.224",
+                  "subnet": "24"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "eth1",
+          "vlans": [
+            {
+              "id": "2",
+              "ip_addresses": [
+                {
+                  "ip": "172.16.0.223",
+                  "subnet": "24"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "test-host2",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "vlans": [
+            {
+              "id": "1",
+              "ip_addresses": [
+                {
+                  "ip": "172.16.0.223",
+                  "subnet": "24"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "wiring": [
+    {
+      "near": { "host": "root", "interface": "zoo1eth0"},
+      "far":  { "host": "zoo1", "interface": "eth0"}
+    },
+    {
+      "near": { "host": "root", "interface": "cass1eth0"},
+      "far":  { "host": "cass1", "interface": "eth0"}
+    },
+    {
+      "near": { "host": "root", "interface": "cmp1eth0"},
+      "far":  { "host": "cmp1", "interface": "eth0"}
+    },
+    {
+      "near": { "host": "edge1", "interface": "eth0"},
+      "far":  { "host": "cmp1", "interface": "eth1"}
+    },
+    {
+      "near": { "host": "edge1", "interface": "eth1"},
+      "far":  { "host": "external1", "interface": "eth0"}
+    },
+    {
+      "near": { "host": "root", "interface": "th1eth0"},
+      "far":  { "host": "test-host1", "interface": "eth0"}
+    },
+    {
+      "near": { "host": "root", "interface": "th1eth1"},
+      "far":  { "host": "test-host1", "interface": "eth1"}
+    },
+    {
+      "near": { "host": "root", "interface": "th2eth0"},
+      "far":  { "host": "test-host2", "interface": "eth0"}
+    }
+  ],
+  "implementation": [
+    {
+      "host": "root",
+      "impl": "RootHost"
+    },
+    {
+      "host": "zoo1",
+      "impl": "ZookeeperHost",
+      "id": "1",
+      "zookeeper_ips": ["10.0.0.2", "10.0.0.3", "10.0.0.4"]
+    },
+    {
+      "host": "cass1",
+      "impl": "CassandraHost",
+      "id": "1",
+      "init_token": "56713727820156410577229101238628035242",
+      "cassandra_ips": ["10.0.0.5", "10.0.0.6", "10.0.0.7"]
+    },
+    {
+      "host": "cmp1",
+      "impl": "ComputeHost",
+      "id": "1",
+      "zookeeper_ips": ["10.0.0.2", "10.0.0.3", "10.0.0.4"],
+      "cassandra_ips": ["10.0.0.5", "10.0.0.6", "10.0.0.7"]
+    },
+    {
+      "host": "external1",
+      "impl": "NetNSHost"
+    },
+    {
+      "host": "edge1",
+      "impl": "RouterHost",
+      "id": "1"
+    },
+    {
+      "host": "test-host1",
+      "impl": "NetNSHost"
+    },
+    {
+      "host": "test-host2",
+      "impl": "NetNSHost"
+    }
+  ],
+  "host_start_order": [
+    "root",
+    "external1",
+    "test-host1", "test-host2",
+    "edge1",
+    "zoo1",
+    "cass1",
+    "cmp1"
+  ]
 }
+

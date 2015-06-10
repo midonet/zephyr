@@ -13,22 +13,37 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from Host import Host
+from NetNSHost import NetNSHost
+from Interface import Interface
 
+from common.Exceptions import *
 
-class VMHost(Host):
-    def __init__(self, name, cli, host_create_func, host_remove_func, root_host):
-        super(VMHost, self).__init__(name, cli, host_create_func, host_remove_func, root_host)
+class VMHost(NetNSHost):
+    def __init__(self, name, hyper_visor):
+        super(VMHost, self).__init__(name)
+        self.hyper_visor = hyper_visor
+        """ :type: ComputeHost Hypervisor"""
 
-    def start_process(self):
+    def wait_for_process_start(self):
         pass
 
-    def stop_process(self):
+    def wait_for_process_stop(self):
         pass
+
+    def create_interface(self, iface, mac=None, ip_list=None, linked_bridge=None, vlans=None):
+        new_if = Interface(iface, self, mac, ip_list, linked_bridge, vlans)
+        self.interfaces[iface] = new_if
+        self.hyper_visor.create_interface_for_vm(self, new_if)
+        new_if.up()
+        new_if.config_addr()
+        new_if.start_vlans()
 
     def plugin_iface(self, iface, port_id):
-        self.root_host.connect_iface_to_port(self.name, iface, port_id)
+        if iface not in self.interfaces:
+            raise ObjectNotFoundException('Cannot plug in interface: ' + iface + ' on VM ' +
+                                          self.name + ' not found')
+        self.hyper_visor.connect_iface_to_port(self, self.interfaces[iface], port_id)
 
     def unplug_iface(self, port_id):
-        self.root_host.disconnect_port(port_id)
+        self.hyper_visor.disconnect_port(port_id)
 

@@ -13,23 +13,72 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from Host import Host
+from NetNSHost import NetNSHost
 from os import path
+from ConfigurationHandler import FileConfigurationHandler
 
 
-class RouterHost(Host):
-    global_id = 1
+class RouterHost(NetNSHost):
 
-    def __init__(self, name, cli, host_create_func, host_remove_func, root_host):
-        super(RouterHost, self).__init__(name, cli, host_create_func, host_remove_func, root_host)
-        self.num_id = str(RouterHost.global_id)
-        RouterHost.global_id += 1
+    def __init__(self, name):
+        super(RouterHost, self).__init__(name)
+        self.num_id = '1'
+        self.configurator = RouterFileConfiguration()
 
-    def prepare_files(self):
-        etc_dir = '/etc/quagga.' + self.num_id
-        var_lib_dir = '/var/lib/quagga.' + self.num_id
-        var_log_dir = '/var/log/quagga.' + self.num_id
-        var_run_dir = '/run/quagga.' + self.num_id
+    def do_extra_config_from_ptc_def(self, cfg, impl_cfg):
+        """
+        Configure this host type from a PTC HostDef config and the
+        implementation-specific configuration
+        :type cfg: HostDef
+        :type impl_cfg: ImplementationDef
+        :return:
+        """
+        if 'id' in impl_cfg.kwargs:
+            self.num_id = impl_cfg.kwargs['id']
+
+    def prepare_config(self):
+        self.configurator.prepare_files(self.num_id)
+
+    def print_config(self, indent=0):
+        super(RouterHost, self).print_config(indent)
+        print ('    ' * (indent + 1)) + 'Configured Interfaces:'
+        for j in self.interfaces.itervalues():
+            j.print_config(indent + 2)
+
+    def do_extra_create_host_cfg_map_for_process_control(self):
+        return {'num_id': self.num_id}
+
+    def do_extra_config_host_for_process_control(self, cfg_map):
+        self.num_id = cfg_map['num_id']
+
+    def wait_for_process_start(self):
+        pass
+
+    def prepare_environment(self):
+        self.configurator.mount_config(self.num_id)
+
+    def cleanup_environment(self):
+        self.configurator.unmount_config()
+
+    def control_start(self):
+        self.cli.cmd('/etc/init.d/quagga start')
+        if self.cli.exists('/etc/rc.d/init.d/bgpd'):
+            self.cli.cmd('/etc/rc.d/init.d/bgpd start')
+
+    def control_stop(self):
+        self.cli.cmd('/etc/init.d/quagga stop')
+        if self.cli.exists('/etc/rc.d/init.d/bgpd'):
+            self.cli.cmd('/etc/rc.d/init.d/bgpd stop')
+
+class RouterFileConfiguration(FileConfigurationHandler):
+    def __init__(self):
+        super(RouterFileConfiguration, self).__init__()
+
+    def prepare_files(self, num_id):
+        etc_dir = '/etc/quagga.' + num_id
+        var_lib_dir = '/var/lib/quagga.' + num_id
+        var_log_dir = '/var/log/quagga.' + num_id
+        var_run_dir = '/run/quagga.' + num_id
         this_dir = path.dirname(path.abspath(__file__))
 
         self.cli.rm(etc_dir)
@@ -50,45 +99,22 @@ class RouterHost(Host):
             self.cli.mkdir(var_run_dir)
             self.cli.chown(var_run_dir, 'quagga', 'quagga')
 
-        if self.num_id is '1':
+        if num_id == '1':
             self.cli.copy_dir(this_dir + '/scripts/quagga.1', etc_dir)
         else:
-            mmconf_file = etc_dir + '/midolman.conf'
+            #TODO: Make RouterHost configure quagga correctly for multiple routers
+            """mmconf_file = mmetc_dir + '/midolman.conf'
             self.cli.copy_dir(this_dir + '/scripts/quagga.2+', etc_dir)
             self.cli.regex_file(mmconf_file, 's/^\[midolman\]/\[midolman\]\\nbgp_keepalive=1/')
             self.cli.regex_file(mmconf_file, 's/^\[midolman\]/\[midolman\]\\nbgp_holdtime=3/')
-            self.cli.regex_file(mmconf_file, 's/^\[midolman\]/\[midolman\]\\nbgp_connect_retry=1/')
+            self.cli.regex_file(mmconf_file, 's/^\[midolman\]/\[midolman\]\\nbgp_connect_retry=1/')"""
 
-    def print_config(self, indent=0):
-        super(RouterHost, self).print_config(indent)
-        print ('    ' * (indent + 1)) + 'Configured Interfaces:'
-        for j in self.hwinterfaces.itervalues():
-            j.print_config(indent + 2)
+    def mount_config(self, num_id):
+        self.cli.mount('/run/quagga.' + num_id, '/run/quagga')
+        self.cli.mount('/var/log/quagga.' + num_id, '/var/log/quagga')
+        self.cli.mount('/etc/quagga.' + num_id, '/etc/quagga')
 
-    def start_process(self):
-        self.cli.cmd_unshare_control('control router ' + self.num_id + ' start')
-
-    def stop_process(self):
-        self.cli.cmd_unshare_control('control router ' + self.num_id + ' stop')
-
-    def mount_shares(self):
-        self.cli.mount('/run/quagga.' + self.num_id, '/run/quagga')
-        self.cli.mount('/var/log/quagga.' + self.num_id, '/var/log/quagga')
-        self.cli.mount('/etc/quagga.' + self.num_id, '/etc/quagga')
-
-    def unmount_shares(self):
+    def unmount_config(self):
         self.cli.unmount('/run/quagga')
         self.cli.unmount('/var/log/quagga')
         self.cli.unmount('/etc/quagga')
-
-    def control_start(self, *args):
-        self.cli.cmd('/etc/init.d/quagga stop >/dev/null 2>&1 || true')
-        self.cli.rm_files('/var/log/quagga')
-        self.cli.cmd('/etc/init.d/quagga start')
-        if self.cli.exists('/etc/rc.d/init.d/bgpd'):
-            self.cli.cmd('/etc/rc.d/init.d/bgpd start')
-
-    def control_stop(self, *args):
-        self.cli.cmd('/etc/init.d/quagga stop')
-        if self.cli.exists('/etc/rc.d/init.d/bgpd'):
-            self.cli.cmd('/etc/rc.d/init.d/bgpd stop')

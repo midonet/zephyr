@@ -14,7 +14,7 @@ class TCPSenderTest(unittest.TestCase):
         cli = LinuxCLI(debug=True, print_cmd=True)
         out = TCPSender.send_packet(cli, interface='eth0', packet_type='arp',
                               source_ip='1.1.1.1', dest_ip='2.2.2.2',
-                              packet_cmd='request', packet_options={'sip': '1.1.1.1'})
+                              packet_options={'command': 'request', 'sip': '1.1.1.1'})
         self.assertTrue('mz eth0' in out)
         self.assertTrue('-t arp "request, sip=1.1.1.1"' in out)
         self.assertTrue('-A 1.1.1.1' in out)
@@ -61,7 +61,7 @@ class TCPSenderTest(unittest.TestCase):
         cli = LinuxCLI(debug=True, print_cmd=True)
         out = TCPSender.send_packet(cli, interface='eth0', packet_type='arp',
                                     source_ip='1.1.1.1', dest_ip='2.2.2.2',
-                                    packet_cmd='request', packet_options={'sip': '1.1.1.1'})
+                                    packet_options={'command': 'request', 'sip': '1.1.1.1'})
         self.assertTrue('mz eth0' in out)
         self.assertTrue('-t arp "request, sip=1.1.1.1"' in out)
         self.assertTrue('-A 1.1.1.1' in out)
@@ -88,7 +88,7 @@ class TCPSenderTest(unittest.TestCase):
         cli = LinuxCLI(debug=True, print_cmd=True)
         out = TCPSender.send_packet(cli, interface='eth0', packet_type='arp',
                                     source_ip='1.1.1.1', dest_ip='2.2.2.2',
-                              packet_cmd='request', packet_options={'sip': '1.1.1.1'})
+                                    packet_options={'command': 'request', 'sip': '1.1.1.1'})
         self.assertTrue('mz eth0' in out)
         self.assertTrue('-t arp "request, sip=1.1.1.1"' in out)
         self.assertTrue('-A 1.1.1.1' in out)
