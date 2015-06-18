@@ -24,8 +24,8 @@ class ZookeeperTest(unittest.TestCase):
         zoo1_icfg= ImplementationDef('zoo1', 'PTM.ZookeeperHost', id='1', zookeeper_ips=['10.0.0.2'])
         root_icfg = ImplementationDef('zoo1', 'PTM.RootHost')
 
-        root = RootHost('root')
-        zoo1 = ZookeeperHost(zoo1_cfg.name)
+        root = RootHost('root', )
+        zoo1 = ZookeeperHost(zoo1_cfg.name, )
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)

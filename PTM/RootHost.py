@@ -17,11 +17,12 @@ from common.CLI import LinuxCLI
 from Host import Host
 
 class RootHost(Host):
-    def __init__(self, name):
+    def __init__(self, name, ptm):
         """
         Implement a basic Host which just accesses the local Linux OS without using
         IP Net namespaces
+        :param ptm:
         :param name:
         :return:
         """
-        super(RootHost, self).__init__(name, LinuxCLI(), lambda n: None, lambda n: None)
+        super(RootHost, self).__init__(name, ptm, LinuxCLI(), lambda n: None, lambda n: None)

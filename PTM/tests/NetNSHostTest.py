@@ -28,7 +28,7 @@ class NetNSHostTest(unittest.TestCase):
         icfg = ImplementationDef('test', 'NetNSHost')
 
         # Get the impl details and use that to instance a basic object
-        h = NetNSHost(hcfg.name)
+        h = NetNSHost(hcfg.name, )
 
         # Now configure the host with the definition and impl configs
         h.config_from_ptc_def(hcfg, icfg)
@@ -40,7 +40,7 @@ class NetNSHostTest(unittest.TestCase):
                        interfaces={'testi': InterfaceDef('testi', ['192.168.1.2'], linked_bridge='br0')})
         icfg = ImplementationDef('test', 'NetNSHost')
 
-        h = NetNSHost(hcfg.name)
+        h = NetNSHost(hcfg.name, )
 
         # Now configure the host with the definition and impl configs
         h.config_from_ptc_def(hcfg, icfg)
@@ -79,8 +79,8 @@ class NetNSHostTest(unittest.TestCase):
         i2cfg = ImplementationDef('test', 'NetNSHost')
 
         # Host should act the same regardless of using NS or base OS
-        h1 = RootHost(h1cfg.name)
-        h2 = NetNSHost(h2cfg.name)
+        h1 = RootHost(h1cfg.name, )
+        h2 = NetNSHost(h2cfg.name, )
 
         # Now configure the host with the definition and impl configs
         h1.config_from_ptc_def(h1cfg, i1cfg)

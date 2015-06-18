@@ -230,6 +230,8 @@ class PCAPPacketTest(unittest.TestCase):
         self.assertEqual(40880, pmap['tcp'].window_size)
         self.assertEqual(None, pmap['tcp'].next_parse_recommendation)
 
+        print packet.to_str()
+
     def test_full_packet_parsing_set_full_stack(self):
         full_eii_packet_data = \
             [0x00, 0x04, 0x00, 0x01, 0x00, 0x06, 0x08, 0x00, 0x27, 0xc6, 0x25, 0x01, 0x00, 0x00, 0x08, 0x00,

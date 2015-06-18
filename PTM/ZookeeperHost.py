@@ -23,8 +23,8 @@ from PhysicalTopologyConfig import *
 from ConfigurationHandler import FileConfigurationHandler
 
 class ZookeeperHost(NetNSHost):
-    def __init__(self, name):
-        super(ZookeeperHost, self).__init__(name)
+    def __init__(self, name, ptm):
+        super(ZookeeperHost, self).__init__(name, ptm)
         self.zookeeper_ips = []
         self.num_id = '1'
         self.ip = IP('', '')

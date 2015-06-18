@@ -14,6 +14,7 @@ __author__ = 'micucci'
 # limitations under the License.
 
 import time
+import uuid
 
 from common.Exceptions import *
 from common.IP import IP
@@ -27,12 +28,15 @@ from VirtualInterface import VirtualInterface
 
 
 class ComputeHost(NetNSHost):
-
-    def __init__(self, name):
-        super(ComputeHost, self).__init__(name)
+    """
+    Implements the HypervisorHost contract to create VMs
+    """
+    def __init__(self, name, ptm):
+        super(ComputeHost, self).__init__(name, ptm)
         self.vms = {}
         """ :type: dict [str, dict [str, Interface]]"""
         self.num_id = '1'
+        self.unique_id = uuid.uuid4()
         self.zookeeper_ips = []
         self.cassandra_ips = []
         self.configurator = ComputeFileConfiguration()
@@ -59,21 +63,22 @@ class ComputeHost(NetNSHost):
     def print_config(self, indent=0):
         super(ComputeHost, self).print_config(indent)
         print ('    ' * (indent + 1)) + 'Num-id: ' + self.num_id
-        print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(ip for ip in self.zookeeper_ips)
-        print ('    ' * (indent + 1)) + 'Cassandra-IPs: ' + ', '.join(ip for ip in self.cassandra_ips)
+        print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(str(ip) for ip in self.zookeeper_ips)
+        print ('    ' * (indent + 1)) + 'Cassandra-IPs: ' + ', '.join(str(ip) for ip in self.cassandra_ips)
         if len(self.vms) > 0:
             print ('    ' * (indent + 1)) + 'Hosted vms: '
             for vm in self.vms:
                 vm.print_config(indent + 2)
 
     def prepare_config(self):
-        self.configurator.prepare_files(self.num_id, self.zookeeper_ips, self.cassandra_ips)
+        self.configurator.prepare_files(self.num_id, self.unique_id, self.zookeeper_ips, self.cassandra_ips)
 
     def do_extra_create_host_cfg_map_for_process_control(self):
-        return {'num_id': self.num_id}
+        return {'num_id': self.num_id, 'uuid': str(self.unique_id)}
 
     def do_extra_config_host_for_process_control(self, cfg_map):
         self.num_id = cfg_map['num_id']
+        self.unique_id = uuid.UUID('urn:uuid:' + cfg_map['uuid'])
 
     def wait_for_process_start(self):
         retries = 0
@@ -93,6 +98,56 @@ class ComputeHost(NetNSHost):
 
     def cleanup_environment(self):
         self.configurator.unmount_config(self.num_id)
+
+    def is_hypervisor(self):
+        return True
+
+    def create_vm(self, name):
+        """
+        Create a VM and return it
+        :type name: str
+        :return: VMHost
+        """
+        new_host = VMHost(name, self.ptm, self)
+        new_host.create()
+        new_host.boot()
+        new_host.net_up()
+        new_host.net_finalize()
+        self.vms[name] = new_host
+        return new_host
+    
+    def get_vm(self, name):
+        if name not in self.vms:
+            raise HostNotFoundException(name)
+        return self.vms[name]
+
+    def get_vm_count(self):
+        return len(self.vms)
+
+    def create_interface_for_vm(self, vm_host, iface):
+        """
+        Add an interface to the given VM with the given parameters
+        :type vm_host: VMHost
+        :type iface: Interface
+        """
+        near_if_name = vm_host.name + iface.name
+        self.link_interface(Interface(near_if_name, self), vm_host, iface)
+        near_if = self.interfaces[near_if_name]
+        """ :type: VirtualInterface"""
+        near_if.create()
+        near_if.up()
+        near_if.config_addr()
+
+    def connect_iface_to_port(self, vm_host, iface, port_id):
+        near_if_name = vm_host.name + iface.name
+        proc = self.ptm.unshare_control('bind_port', self, [near_if_name, port_id])
+        stdout, stderr = proc.communicate()
+        print "--\n" + stdout + "--\n" + stderr + "=="
+
+    def disconnect_port(self, port_id):
+        proc = self.ptm.unshare_control('unbind_port', self, [port_id])
+        stdout, stderr = proc.communicate()
+        print "--\n" + stdout + "--\n" + stderr + "=="
 
     def control_start(self):
         if self.num_id == '1':
@@ -126,54 +181,19 @@ class ComputeHost(NetNSHost):
                 self.cli.cmd('kill ' + str(pid))
                 self.cli.rm(pid_file)
 
-    def create_vm(self, name):
-        """
-        Create a VM and return it
-        :type name: str
-        :return: VMHost
-        """
-        new_host = VMHost(name, self)
-        new_host.create()
-        new_host.boot()
-        new_host.net_up()
-        new_host.net_finalize()
-        self.vms[name] = new_host
-        return new_host
-    
-    def get_vm(self, name):
-        if name not in self.vms:
-            raise HostNotFoundException(name)
-        return self.vms[name]
+    def control_bind_port(self, near_if_name, port_id):
+        print 'binding port ' + port_id + ' to ' + near_if_name
+        return self.cli.cmd('mm-ctl --bind-port ' + port_id + ' ' + near_if_name)
 
-    def create_interface_for_vm(self, vm_host, iface):
-        """
-        Add an interface to the given VM with the given parameters
-        :type vm_host: VMHost
-        :type iface: Interface
-        """
-        near_if_name = vm_host.name + iface.name
-        self.link_interface(Interface(near_if_name, self), vm_host, iface)
-        near_if = self.interfaces[near_if_name]
-        """ :type: VirtualInterface"""
-        near_if.create()
-        near_if.up()
-        near_if.config_addr()
-
-    def connect_iface_to_port(self, vm_host, iface, port_id):
-        near_if_name = vm_host.name + iface.name
-        return self.cli.cmd('mm-ctl --config /etc/midolman.' + str(self.num_id) +
-                            ' --bind-port ' + port_id + ' ' + near_if_name)
-
-    def disconnect_port(self, port_id):
-        return self.cli.cmd('mm-ctl --config /etc/midolman.' + str(self.num_id) +
-                            ' --unbind-port ' + port_id)
+    def control_unbind_port(self, port_id):
+        return self.cli.cmd('mm-ctl --unbind-port ' + port_id)
 
 
 class ComputeFileConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(ComputeFileConfiguration, self).__init__()
 
-    def prepare_files(self, num_id, zookeeper_ips, cassandra_ips):
+    def prepare_files(self, num_id, unique_id, zookeeper_ips, cassandra_ips):
 
         etc_dir = '/etc/midolman.' + num_id
         var_lib_dir = '/var/lib/midolman.' + num_id
@@ -185,7 +205,7 @@ class ComputeFileConfiguration(FileConfigurationHandler):
 
         # generates host uuid
         host_uuid = ('# generated for MMM MM $n\n'
-                     'host_uuid=00000000-0000-0000-0000-00000000000') + num_id
+                     'host_uuid=') + str(unique_id)
         self.cli.write_to_file(etc_dir + '/host_uuid.properties', host_uuid, False)
         mmconf = etc_dir + '/midolman.conf'
 
@@ -204,8 +224,9 @@ class ComputeFileConfiguration(FileConfigurationHandler):
                             z_ip_str + '/')
 
         self.cli.regex_file(mmconf,
-                            '/^\[cassandra\]/,/^$/ s/^servers =.*$/servers = ' +
-                            c_ip_str + '/;s/^replication_factor =.*$/replication_factor = 3/')
+                            '/^\[cassandra\]/,/^$/ '
+                            's/^servers =.*$/servers = ' + c_ip_str + '/;'
+                            's/^replication_factor =.*$/replication_factor = ' + str(len(cassandra_ips)) + '/')
 
         self.cli.regex_file(mmconf,
                             ('/^\[midolman\]/,/^\[/ s%^[# ]*bgpd_binary = /usr/lib/quagga.*$%bg'

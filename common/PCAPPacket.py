@@ -127,6 +127,17 @@ class PCAPPacket(object):
         self.extra_data = {}
         """ :type: dict[str, list[str]] """
 
+    def __iter__(self):
+        return iter(self.layer_data)
+
+    def to_str(self):
+        ret_str = 'PACKET time[' + str(self.timestamp) + ']\n'
+        for n, l in self.layer_data.iteritems():
+            ret_str += 'layer [' + n + ']\n'
+            ret_str += '    ' + l.to_str() + '\n'
+        ret_str += 'END PACKET time[' + str(self.timestamp) + ']\n'
+        return ret_str
+
     def get_data(self):
         return self.layer_data
 
@@ -211,6 +222,8 @@ class PCAPEncapsulatedLayer(object):
     def __init__(self):
         self.next_parse_recommendation = None
 
+    def to_str(self):
+        return ''
 
     def parse_layer(self, packet_data):
         """
@@ -239,6 +252,10 @@ class PCAPEthernet(PCAPEncapsulatedLayer):
         """ :type: str """
         self.type = 0
         """ :type: int """
+
+    def to_str(self):
+        return 's_mac[' + self.source_mac + '] ' + 'd_mac[' + self.dest_mac + '] ' + \
+               'type[0x' + '{0:04x}'.format(self.type) + ']'
 
     def parse_layer(self, packet_data):
         """
@@ -288,6 +305,10 @@ class PCAPSLL(PCAPEncapsulatedLayer):
         self.type = 0
         """ :type: int """
 
+    def to_str(self):
+        return 's_mac[' + self.source_mac + '] ' + 'd_mac[' + self.dest_mac + '] ' + \
+               'type[0x' + '{0:04x}'.format(self.type) + ']'
+
     def parse_layer(self, packet_data):
         """
         :type packet_data: list[int]
@@ -330,8 +351,8 @@ class PCAPIP4(PCAPEncapsulatedLayer):
 
     def __init__(self):
         super(PCAPIP4, self).__init__()
-        self.version = ''
-        """ :type: str """
+        self.version = 4
+        """ :type: int """
         self.header_length = 0
         """ :type: int """
         self.protocol = 0
@@ -340,6 +361,11 @@ class PCAPIP4(PCAPEncapsulatedLayer):
         """ :type: str """
         self.dest_ip = ''
         """ :type: str """
+
+    def to_str(self):
+        return 'ver[' + str(self.version) + '] ' + 'h_len[' + str(self.header_length) + '] ' + \
+               'proto[' + str(self.protocol) + '] ' + 's_ip[' + self.source_ip + '] ' + \
+               'd_ip[' + self.dest_ip + ']'
 
     def parse_layer(self, packet_data):
         """
@@ -441,6 +467,12 @@ class PCAPARP(PCAPEncapsulatedLayer):
         self.target_ip_addr = ''
         """ :type: str """
 
+    def to_str(self):
+        return 'hw_type[' + str(self.hw_type) + '] ' + 'p_type[' + str(self.proto_type) + '] ' + \
+               'op[' + str(self.operation) + '] ' + 's_mac[' + self.sender_hw_addr_ether + '] ' + \
+               'd_mac[' + self.sender_hw_addr_ether + '] ' + 's_ip[' + self.sender_ip_addr + '] ' + \
+               'd_ip[' + self.target_ip_addr + ']'
+
     def parse_layer(self, packet_data):
         """
         :type packet_data: list[int]
@@ -535,6 +567,12 @@ class PCAPTCP(PCAPEncapsulatedLayer):
         self.window_size = 0
         """ :type: int """
 
+    def to_str(self):
+        return 's_port[' + str(self.source_port) + '] ' + 'd_port[' + str(self.dest_port) + '] ' + \
+               'seq[' + str(self.seq) + '] ' + 'ack[' + str(self.ack) + '] ' + \
+               'd_off[' + str(self.data_offset) + '] ' + 'flags[0x' + '{0:02x}'.format(self.flags) + '] ' + \
+               'w_size[' + str(self.window_size) + ']'
+
     def parse_layer(self, packet_data):
         """
         :type packet_data: list[int]
@@ -602,6 +640,10 @@ class PCAPUDP(PCAPEncapsulatedLayer):
         self.length = 0
         """ :type: int """
 
+    def to_str(self):
+        return 's_port[' + str(self.source_port) + '] ' + 'd_port[' + str(self.dest_port) + '] ' + \
+               'len[' + str(self.length) + ']'
+
     def parse_layer(self, packet_data):
         """
         :type packet_data: list[int]
@@ -647,6 +689,10 @@ class PCAPICMP(PCAPEncapsulatedLayer):
         """ :type: int """
         self.header_data = []
         """ :type: list[int] """
+
+    def to_str(self):
+        return 'type[' + str(self.type) + '] ' + 'code[' + str(self.code) + '] ' + \
+               'h_data[' + str(self.header_data) + ']'
 
     def parse_layer(self, packet_data):
         """

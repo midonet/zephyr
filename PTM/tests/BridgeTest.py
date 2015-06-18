@@ -10,7 +10,7 @@ from PTM.Bridge import Bridge
 
 class BridgeTest(unittest.TestCase):
     def test_create(self):
-        h = Host('test', LinuxCLI(), lambda name: None, lambda name: None)
+        h = Host('test',, LinuxCLI(), lambda name: None, lambda name: None
         i = Interface('testi', h, None, ['192.168.0.2'])
 
         i.create()

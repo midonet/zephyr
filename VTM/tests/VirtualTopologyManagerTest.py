@@ -2,11 +2,10 @@ __author__ = 'micucci'
 
 import unittest
 from VTM.VirtualTopologyManager import VirtualTopologyManager
-from VTM.NeutronStubClientInterface import NeutronStubClientInterface
 
-class MockClient(NeutronStubClientInterface):
+class MockClient(object):
     def __init__(self, *args, **kwargs):
-        super(MockClient, self).__init__(*args, **kwargs)
+        super(MockClient, self).__init__()
         self.subnet = {}
         self.options = {}
         if kwargs is not None:
@@ -40,30 +39,36 @@ class MockClient(NeutronStubClientInterface):
 
 class VirtualTopologyManagerUnitTest(unittest.TestCase):
     def test_creation(self):
-        api = VirtualTopologyManager(MockClient, endpoint_url='test', auth_strategy='test2', option1='test3')
+        api = VirtualTopologyManager(physical_topology_manager=None,
+                                     client_api_impl=MockClient(endpoint_url='test',
+                                                                auth_strategy='test2',
+                                                                option1='test3'))
 
         self.assertEqual(api.get_client().get_option('endpoint_url'), 'test')
         self.assertEqual(api.get_client().get_option('auth_strategy'), 'test2')
         self.assertEqual(api.get_client().get_option('option1'), 'test3')
 
     def test_subnet(self):
-        api = VirtualTopologyManager(MockClient)
-        subnet =  {'subnet': {
-            'name': 'test-l2',
-            'enable_dhcp': True,
-            'network_id': 'b6c86193-024c-4aeb-bd9c-ffc747bb8a74',
-            'tenant_id': 'mdts2-ft2015-03-10 06:03:17',
-            'dns_nameservers': [],
-            'ipv6_ra_mode': None,
-            'allocation_pools': [{
-                                     'start': '1.1.1.2',
-                                     'end': '1.1.1.254'}],
-            'gateway_ip': '1.1.1.1',
-            'ipv6_address_mode': None,
-            'ip_version': 4,
-            'host_routes': [],
-            'cidr': '1.1.1.0/24',
-            'id': '6c838ffc-6a40-49ba-b363-6380b0a7dae6'}}
+        api = VirtualTopologyManager(physical_topology_manager=None,
+                                     client_api_impl=MockClient())
+        subnet = {
+            'subnet': {
+                'name': 'test-l2',
+                'enable_dhcp': True,
+                'network_id': 'b6c86193-024c-4aeb-bd9c-ffc747bb8a74',
+                'tenant_id': 'mdts2-ft2015-03-10 06:03:17',
+                'dns_nameservers': [],
+                'ipv6_ra_mode': None,
+                'allocation_pools': [
+                    {
+                        'start': '1.1.1.2',
+                        'end': '1.1.1.254'}],
+                'gateway_ip': '1.1.1.1',
+                'ipv6_address_mode': None,
+                'ip_version': 4,
+                'host_routes': [],
+                'cidr': '1.1.1.0/24',
+                'id': '6c838ffc-6a40-49ba-b363-6380b0a7dae6'}}
 
         api.get_client().set_subnet(subnet)
         self.assertEqual(api.get_client().show_subnet(), subnet)

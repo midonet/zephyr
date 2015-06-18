@@ -53,6 +53,11 @@ class SubprocessFailedException(TestException):
         super(SubprocessFailedException, self).__init__(info)
 
 
+class SubprocessTimeoutException(TestException):
+    def __init__(self, info):
+        super(SubprocessTimeoutException, self).__init__(info)
+
+
 class ExitCleanException(TestException):
     def __init__(self):
         super(ExitCleanException, self).__init__('')

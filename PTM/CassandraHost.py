@@ -24,12 +24,8 @@ from ConfigurationHandler import FileConfigurationHandler
 
 class CassandraHost(NetNSHost):
 
-    def __init__(self, name):
-        """
-        :type name: str
-        :type cli: LinuxCLI
-        """
-        super(CassandraHost, self).__init__(name)
+    def __init__(self, name, ptm):
+        super(CassandraHost, self).__init__(name, ptm)
         self.cassandra_ips = []
         self.num_id = '1'
         self.init_token = ''

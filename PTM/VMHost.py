@@ -19,8 +19,8 @@ from Interface import Interface
 from common.Exceptions import *
 
 class VMHost(NetNSHost):
-    def __init__(self, name, hyper_visor):
-        super(VMHost, self).__init__(name)
+    def __init__(self, name, ptm, hyper_visor):
+        super(VMHost, self).__init__(name, ptm)
         self.hyper_visor = hyper_visor
         """ :type: ComputeHost Hypervisor"""
 

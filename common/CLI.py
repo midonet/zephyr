@@ -78,6 +78,10 @@ class LinuxCLI(object):
         for line in p.stdout:
             out += line
 
+        # 'timeout' returns 124 on timeout
+        if p.returncode == 124 and timeout is not None:
+            raise SubprocessTimeoutException('Process timed out: ' + cmd)
+
         if return_status is True:
             p.poll()
             return p.returncode

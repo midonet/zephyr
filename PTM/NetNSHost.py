@@ -17,10 +17,12 @@ from Host import Host
 from common.CLI import NetNSCLI, CREATENSCMD, REMOVENSCMD
 
 class NetNSHost(Host):
-    def __init__(self, name):
+    def __init__(self, name, ptm):
         """
+
+        :param ptm:
         :type name: str
         :type cli: LinuxCLI
         """
-        super(NetNSHost, self).__init__(name, NetNSCLI(name), CREATENSCMD, REMOVENSCMD)
+        super(NetNSHost, self).__init__(name, ptm, NetNSCLI(name), CREATENSCMD, REMOVENSCMD)
 

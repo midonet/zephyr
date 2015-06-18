@@ -24,8 +24,8 @@ class RouterHostTest(unittest.TestCase):
         edge1_icfg= ImplementationDef('edge1', 'PTM.RouterHost', id='1')
         root_icfg = ImplementationDef('edge1', 'PTM.RootHost')
 
-        root = RootHost('root')
-        edge1 = RouterHost(edge1_cfg.name)
+        root = RootHost('root', )
+        edge1 = RouterHost(edge1_cfg.name, )
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)

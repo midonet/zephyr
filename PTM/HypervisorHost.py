@@ -13,13 +13,17 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 
+class HypervisorHost(object):
+    """
+    A contract API to follow if an object is claiming to be a viable hypervisor
+    in the Physical Topology system.
+    """
+    def create_vm(self, name):
+        pass
 
-class MyTestCase(unittest.TestCase):
-    def test_something(self):
-        self.assertEqual(True, False)
+    def get_vm(self, name):
+        pass
 
-
-if __name__ == '__main__':
-    unittest.main()
+    def get_vm_count(self):
+        pass

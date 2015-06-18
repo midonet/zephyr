@@ -16,6 +16,7 @@ __author__ = 'micucci'
 from RootHost import RootHost
 from PhysicalTopologyConfig import PhysicalTopologyConfig
 from Host import Host
+from HypervisorHost import HypervisorHost
 
 from common.Exceptions import *
 from common.CLI import *
@@ -30,19 +31,26 @@ import datetime
 HOST_CONTROL_CMD_NAME = 'ptm-host-ctl.py'
 CONTROL_CMD_NAME = 'ptm-ctl.py'
 
+
 class PhysicalTopologyManager(object):
+    """
+    Manage physical topology for test.
+    :type log_root_dir: str
+    :type log_manager: LogManager
+    :type logger: logging.logger
+    :type console: logging.logger
+    :type root_dir: str
+    :type hosts_by_name: dict [str, Host]
+    :type host_by_start_order: list [Host]
+    :type hypervisors: dict[str, HypervisorHost]
+    """
     def __init__(self, root_dir='.', log_root_dir='/var/log/zephyr/ptm'):
         super(PhysicalTopologyManager, self).__init__()
         self.log_root_dir = log_root_dir
-        """ :type: str"""
-        self.root_servers = {}
-        """ :type: dict [str, RootHost]"""
         self.log_manager = LogManager()
-        """ :type: LogManager"""
         self.hosts_by_name = {}
-        """ :type: dict [str, Host]"""
         self.host_by_start_order = []
-        """ :type: list [Host] """
+        self.hypervisors = {}
 
         if not LinuxCLI().exists(self.log_root_dir):
             LinuxCLI(priv=False).mkdir(self.log_root_dir)
@@ -98,11 +106,13 @@ class PhysicalTopologyManager(object):
             module = importlib.import_module(mod_name)
             impl_class = getattr(module, class_name)
 
-            h = impl_class(host_cfg.name)
+            h = impl_class(host_cfg.name, self)
             """ :type h: Host"""
-
             h.set_log_manager(self.log_manager)
             self.hosts_by_name[h.name] = h
+
+            if h.is_hypervisor():
+                self.hypervisors[h.name] = h
 
             # Now configure the host with the definition and impl configs
             h.config_from_ptc_def(host_cfg, impl_cfg)
@@ -226,13 +236,13 @@ class PhysicalTopologyManager(object):
         for h in reversed(self.host_by_start_order):
             h.remove()
 
-    def unshare_control(self, command, host):
+    def unshare_control(self, command, host, arg_list=list()):
         cfg_str = json.dumps(host.create_host_cfg_map_for_process_control()).replace('"', '\\"')
-        cmd = 'unshare --mount -- /bin/bash -x -c -- "PYTHONPATH=' + self.root_dir + ' python ' + self.root_dir + '/' + HOST_CONTROL_CMD_NAME + ' ' + command + " '" + cfg_str + "'" + '"'
+        cmd = 'unshare --mount -- /bin/bash -x -c -- "PYTHONPATH=' + self.root_dir + ' python ' + self.root_dir + '/' + HOST_CONTROL_CMD_NAME + ' ' + command + " '" + cfg_str + "' " + ' '.join(arg_list) + '"'
         return LinuxCLI().cmd(cmd, blocking=False)
 
     @staticmethod
-    def ptm_host_control(host_cmd, host_json):
+    def ptm_host_control(host_cmd, host_json, arg_list):
         print 'Running command: ' + host_cmd
         print 'Loading JSON: ' + host_json
 
@@ -247,7 +257,7 @@ class PhysicalTopologyManager(object):
         module = importlib.import_module(mod_name)
         impl_class = getattr(module, class_name)
 
-        h = impl_class(host_name)
+        h = impl_class(host_name, None)
         """ :type: Host"""
         h.config_host_for_process_control(cfg_map)
         h.prepare_environment()
@@ -257,6 +267,12 @@ class PhysicalTopologyManager(object):
         elif host_cmd == 'stop':
             h.control_stop()
         else:
-            raise ArgMismatchException('Command should be one of {start, stop}')
+            fn_name = 'control_' + host_cmd
+            fn = getattr(h, fn_name)
+            if fn is not None:
+                fn(*arg_list)
+            else:
+                raise ArgMismatchException('Command implementation function not found on host class: ' +
+                                           class_name + '.' + fn_name)
 
         h.cleanup_environment()

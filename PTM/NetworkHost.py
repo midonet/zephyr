@@ -21,8 +21,8 @@ from common.Exceptions import *
 from common.IP import IP
 
 class NetworkHost(RootHost):
-    def __init__(self, name):
-        super(NetworkHost, self).__init__(name)
+    def __init__(self, name, ptm):
+        super(NetworkHost, self).__init__(name, ptm)
         self.zookeeper_ips = []
         self.url = "http://localhost:8080/midonet-api"
         self.configurator = NetworkFileConfiguration()
@@ -47,7 +47,7 @@ class NetworkHost(RootHost):
 
     def print_config(self, indent=0):
         super(NetworkHost, self).print_config(indent)
-        print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + str(self.zookeeper_ips)
+        print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(str(ip) for ip in self.zookeeper_ips)
 
     def wait_for_process_start(self):
         # Checking MN-API status

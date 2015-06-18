@@ -43,11 +43,11 @@ class NetworkHostTest(unittest.TestCase):
         net_icfg = ImplementationDef('cmp1', 'PTM.NetworkHost',
                                      zookeeper_ips=['10.0.0.2'])
 
-        root = RootHost('root')
-        zoo1 = ZookeeperHost(zoo1_cfg.name)
-        cass1 = CassandraHost(cass1_cfg.name)
-        cmp1 = ComputeHost(cmp1_cfg.name)
-        net = NetworkHost(net_cfg.name)
+        root = RootHost('root', )
+        zoo1 = ZookeeperHost(zoo1_cfg.name, )
+        cass1 = CassandraHost(cass1_cfg.name, )
+        cmp1 = ComputeHost(cmp1_cfg.name, )
+        net = NetworkHost(net_cfg.name, )
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)

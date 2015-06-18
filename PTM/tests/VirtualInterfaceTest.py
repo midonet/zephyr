@@ -13,7 +13,7 @@ from PTM.Interface import Interface
 
 class VirtualInterfaceTest(unittest.TestCase):
     def test_create_no_peer(self):
-        h = Host('test', LinuxCLI(), lambda n: None, lambda n: None)
+        h = Host('test',, LinuxCLI(), lambda n: None, lambda n: None
         i = VirtualInterface(name='testi', host=h, ip_addr=['192.168.0.2'])
 
         i.create()  # should skip setting peer on host
@@ -36,8 +36,8 @@ class VirtualInterfaceTest(unittest.TestCase):
         self.assertFalse(LinuxCLI().grep_cmd('ip l', 'testi'))
 
     def test_create_with_host(self):
-        h = Host('test', LinuxCLI(), lambda n: None, lambda n: None)
-        h2 = Host('test2', NetNSCLI('test2'), CREATENSCMD, REMOVENSCMD)
+        h = Host('test',, LinuxCLI(), lambda n: None, lambda n: None
+        h2 = Host('test2',, NetNSCLI('test2'), CREATENSCMD, REMOVENSCMD
 
         h2.create()
 

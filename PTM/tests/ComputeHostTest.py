@@ -24,8 +24,8 @@ class ComputeHostTest(unittest.TestCase):
         cmp1_icfg= ImplementationDef('cmp1', 'PTM.ComputeHost', id='1')
         root_icfg = ImplementationDef('cmp1', 'PTM.RootHost')
 
-        root = RootHost('root')
-        cmp1 = ComputeHost(cmp1_cfg.name)
+        root = RootHost('root', )
+        cmp1 = ComputeHost(cmp1_cfg.name, )
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)
@@ -90,10 +90,10 @@ class ComputeHostTest(unittest.TestCase):
                                      cassandra_ips=['10.0.0.5'])
         root_icfg = ImplementationDef('root', 'PTM.RootHost')
 
-        root = RootHost('root')
-        zoo1 = ZookeeperHost(zoo1_cfg.name)
-        cass1 = CassandraHost(cass1_cfg.name)
-        cmp1 = ComputeHost(cmp1_cfg.name)
+        root = RootHost('root', )
+        zoo1 = ZookeeperHost(zoo1_cfg.name, )
+        cass1 = CassandraHost(cass1_cfg.name, )
+        cmp1 = ComputeHost(cmp1_cfg.name, )
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)

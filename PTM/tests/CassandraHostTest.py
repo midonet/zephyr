@@ -25,8 +25,8 @@ class CassandraHostTest(unittest.TestCase):
                                       init_token="")
         root_icfg = ImplementationDef('cass1', 'PTM.RootHost')
 
-        root = RootHost('root')
-        cass1 = CassandraHost(cass1_cfg.name)
+        root = RootHost('root', )
+        cass1 = CassandraHost(cass1_cfg.name, )
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)

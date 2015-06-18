@@ -5,61 +5,101 @@ from common.TCPDump import *
 from common.PCAPPacket import *
 from common.PCAPRules import *
 from common.TCPSender import TCPSender
+from common.CLI import LinuxCLI
 
 import multiprocessing
 
+def packet_callback(packet, file_name):
+    """
+    :type packet: PCAPPacket
+    :return:
+    """
+    with open(file_name, "a" if LinuxCLI().exists(file_name) else "w") as f:
+        f.write(packet.to_str())
+
+
+def send_packet():
+    time.sleep(5)
+    tcps = TCPSender()
+    out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+    lo_iface = out.split()[0].rstrip()
+    tcps.start_send(interface=lo_iface, packet_type='tcp', count=3, source_ip='127.0.0.1',
+                    dest_ip='127.0.0.1', dest_port=6055, source_port=6015)
+
+
 class TCPDumpTest(unittest.TestCase):
+    def setUp(self):
+        time.sleep(2)
 
-    def test_sniff_all_host_packet(self):
+    def test_read_packet(self):
+        tcpd = TCPDump()
+
+        p = multiprocessing.Process(target=send_packet)
+        p.start()
+        ret = tcpd._read_packet(interface='any', count=3,
+                                save_dump_file=True, save_dump_filename='tcp.out')
+        p.join()
+        p1 = ret.get(block=False)
+        p2 = ret.get(block=False)
+        p3 = ret.get(block=False)
+
+        """ :type: PCAPPacket"""
+        self.assertTrue(p3 is not None)
+
+    def test_read_packet_buffered(self):
         tcpd = TCPDump()
 
         out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
-        iface = out.split()[0].rstrip()
-        data_queue = tcpd.start_capture(timeout=10, interface=iface, count=1)
+        lo_iface = out.split()[0].rstrip()
 
-        ret = data_queue.get()
-        tcpd.stop_capture()
+        p = multiprocessing.Process(target=send_packet)
+        p.start()
+        ret = tcpd._read_packet(interface=lo_iface, count=3,
+                                pcap_filter=PCAP_And(
+                                    [
+                                        PCAP_Host('localhost', proto='ip', source=True, dest=True),
+                                        PCAP_Port(6015, proto='tcp', source=True),
+                                        PCAP_Port(6055, proto='tcp', dest=True)
+                                    ]
+                                ),
+                                save_dump_file=True, save_dump_filename='tcp.out')
+        p.join()
+        p1 = ret.get(block=False)
+        p2 = ret.get(block=False)
+        p3 = ret.get(block=False)
 
-        packet = ret[0].get_data()
+        """ :type: PCAPPacket"""
+        self.assertTrue(p3 is not None)
+        self.assertTrue('ethernet' in p3)
 
-        self.assertTrue('ethernet'in packet)
+    def test_sniff_host_packet(self):
+        tcpd = TCPDump()
+        tcps = TCPSender()
+        try:
 
-        print ret
+            out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+            lo_iface = out.split()[0].rstrip()
+            tcpd.start_capture(interface=lo_iface, count=1)
+            tcps.start_send(interface=lo_iface, packet_type='tcp', count=1, source_ip='127.0.0.1',
+                            dest_ip='127.0.0.1', dest_port=6055, source_port=6015)
 
-    def test_sniff_simple_host_packet(self):
+            ret = tcpd.wait_for_packets(count=1, timeout=3)
+
+            self.assertEquals(1, len(ret))
+
+            self.assertTrue('ethernet' in ret[0])
+
+        finally:
+            tcpd.stop_capture()
+
+    def test_sniff_specific_host_packet(self):
         tcpd = TCPDump()
         tcps = TCPSender()
 
         out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
         iface = out.split()[0].rstrip()
 
-        data_queue = tcpd.start_capture(timeout=10, interface='any', count=1,
-                           pcap_filter=PCAP_And(
-                               [
-                                   PCAP_Host('localhost', proto='ip', dest=True),
-                                   PCAP_Port(80, proto='tcp', dest=True)
-                               ]
-                           ))
-
-        tcps.start_send(interface=iface, packet_type='tcp', count=1, dest_ip='127.0.0.1', dest_port=80)
-
-        ret = data_queue.get()
-        tcpd.stop_capture()
-
-        self.assertTrue(len(ret) != 0)
-
-        packet = ret[0].get_data()
-
-        print ret
-
-    def test_sniff_complex_host_packet(self):
-        tcpd = TCPDump()
-        tcps = TCPSender()
-
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
-        iface = out.split()[0].rstrip()
-
-        data_queue = tcpd.start_capture(timeout=10, interface=iface, count=1,
+        tcpd.start_capture(timeout=10, interface=iface, count=1,
                            pcap_filter=PCAP_Or(
                                [
                                    PCAP_And(
@@ -77,20 +117,112 @@ class TCPDumpTest(unittest.TestCase):
                                            PCAP_LessThanEqual('len', 1500)
                                        ]
                                    ),
-                               ]
+                                   ]
                            ))
+
 
         tcps.start_send(interface=iface, packet_type='tcp', count=1, source_ip='127.0.0.1',
                         dest_ip='127.0.0.1', dest_port=6055, source_port=6015)
 
-        ret = data_queue.get()
+        ret = tcpd.wait_for_packets(count=1, timeout=3)
         tcpd.stop_capture()
 
-        packet = ret[0].get_data()
+        self.assertEquals(1, len(ret))
 
-        print ret
+    def test_timeout_blocking(self):
+        tcpd = TCPDump()
+        tcps = TCPSender()
 
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+        lo_iface = out.split()[0].rstrip()
 
+        try:
+            tcpd.start_capture(interface=lo_iface, count=1,
+                               pcap_filter=PCAP_And(
+                                   [
+                                       PCAP_Host('localhost', proto='ip', source=True, dest=True),
+                                       PCAP_Port(6015, proto='tcp', source=True),
+                                       PCAP_Port(6055, proto='tcp', dest=True)
+                                   ]
+                               ), blocking=True, timeout=3)
+        except SubprocessTimeoutException:
+            pass
+        else:
+            self.assertTrue(False, "Blocking tcpdump call should have timed out since no packets were sent")
+        finally:
+            tcpd.stop_capture()
+
+    def test_callback(self):
+        tcpd = TCPDump()
+        tcps = TCPSender()
+
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+        lo_iface = out.split()[0].rstrip()
+
+        LinuxCLI().rm('tmp.file')
+
+        tcpd.start_capture(interface=lo_iface, count=3,
+                           pcap_filter=PCAP_And(
+                               [
+                                   PCAP_Host('localhost', proto='ip', source=True, dest=True),
+                                   PCAP_Port(6015, proto='tcp', source=True),
+                                   PCAP_Port(6055, proto='tcp', dest=True)
+                               ]
+                           ),
+                           callback=packet_callback, callback_args=('tmp.file',),
+                           save_dump_file=True, save_dump_filename='tcp.callback.out')
+
+        tcps.start_send(interface=lo_iface, packet_type='tcp', count=3, source_ip='127.0.0.1',
+                        dest_ip='127.0.0.1', dest_port=6055, source_port=6015)
+
+        ret = tcpd.wait_for_packets(count=3)
+        tcpd.stop_capture()
+        time.sleep(2)
+
+        self.assertEquals(3, len(ret))
+
+        file_str = LinuxCLI().read_from_file('tmp.file')
+        print "===================="
+        print file_str
+        print "===================="
+
+        LinuxCLI().rm('tmp.file')
+
+        self.assertEquals(3, file_str.count('END PACKET time['))
+
+    def test_early_stop(self):
+        tcpd = TCPDump()
+        tcps = TCPSender()
+
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+        lo_iface = out.split()[0].rstrip()
+
+        tcpd.start_capture(interface=lo_iface, count=0,
+                           pcap_filter=PCAP_And(
+                               [
+                                   PCAP_Host('localhost', proto='ip', source=True, dest=True),
+                                   PCAP_Port(6015, proto='tcp', source=True),
+                                   PCAP_Port(6055, proto='tcp', dest=True)
+                               ]
+                           ))
+
+        tcps.start_send(interface=lo_iface, packet_type='tcp', count=5, source_ip='127.0.0.1',
+                        dest_ip='127.0.0.1', dest_port=6055, source_port=6015)
+
+        ret = tcpd.wait_for_packets(count=3, timeout=3)
+        self.assertEqual(3, len(ret))
+        ret = tcpd.wait_for_packets(count=1, timeout=3)
+        self.assertEqual(1, len(ret))
+
+        proc = tcpd.stop_capture()
+
+        ret = tcpd.wait_for_packets(count=1, timeout=3)
+        self.assertEqual(1, len(ret))
+
+        self.assertTrue(not proc.is_alive())
+
+    def tearDown(self):
+        time.sleep(2)
 try:
     suite = unittest.TestLoader().loadTestsFromTestCase(TCPDumpTest)
     unittest.TextTestRunner(verbosity=2).run(suite)

@@ -15,6 +15,8 @@ __author__ = 'micucci'
 
 from common.Exceptions import *
 from common.TCPSender import TCPSender
+from common.PCAPRules import PCAP_Rule
+from common.PCAPPacket import PCAPPacket
 from common.TCPDump import TCPDump
 from common.LogManager import LogManager
 from common.IP import IP
@@ -27,7 +29,9 @@ from Bridge import Bridge
 from PhysicalTopologyConfig import *
 
 import logging
+import Queue
 import json
+import time
 
 # TODO: Extrapolate the host access from the host operations
 # So we can have IPNetNSHost and "VMSSHHost", etc. and also have
@@ -42,7 +46,7 @@ import json
 # run on any kind of host.  This will help resolve the above issue
 # as well.
 class Host(PTMObject):
-    def __init__(self, name, cli=LinuxCLI(), host_create_func=None, host_remove_func=None):
+    def __init__(self, name, ptm, cli=LinuxCLI(), host_create_func=None, host_remove_func=None):
         super(Host, self).__init__(name, cli)
         self.bridges = {}
         """ :type: dict[str, Bridge]"""
@@ -58,6 +62,10 @@ class Host(PTMObject):
         """ :type: logging.Logger"""
         self.console = logging.getLogger()
         """ :type: logging.Logger"""
+        self.packet_captures = {}
+        """ :type: dict[str, TCPDump]"""
+        self.ptm = ptm
+        """ :type: PhysicalTopologyManager.py"""
 
     def do_extra_config_from_ptc_def(self, cfg, impl_cfg):
         """
@@ -260,20 +268,119 @@ class Host(PTMObject):
     def cleanup_environment(self):
         pass
 
-    # Specialized host-testing methods
-    def send_packet(self, iface, type, target_ip, options=None, count=1):
-        tcps = TCPSender()
-        return tcps.send_packet(self.cli, interface=iface,
-                                    dest_ip=target_ip,
-                                    packet_type=type,
-                                    packet_options=options)
+    def is_hypervisor(self):
+        return False
 
-    def ping(self, iface, target_ip, count=3):
-        return self.cli.cmd('ping -n -I ' + iface + ' -c ' + str(count) + ' ' + target_ip, return_status=True) == 0
+    # Specialized host-testing methods
+    def send_custom_packet(self, iface, **kwargs):
+        tcps = TCPSender()
+        return tcps.send_packet(self.cli, interface=iface, **kwargs)
+
+    def send_arp_packet(self, iface, dest_ip, source_ip=None, command='request',
+                        source_mac=None, dest_mac=None, packet_options=None, count=1):
+        tcps = TCPSender()
+        opt_map = {'command': command}
+        if source_mac is not None:
+            opt_map = {'smac': source_mac}
+        if dest_mac is not None:
+            opt_map = {'tmac': dest_mac}
+        if source_ip is not None:
+            opt_map = {'sip': source_ip}
+        if dest_ip is not None:
+            opt_map = {'tip': dest_ip}
+        opt_map += packet_options
+        return tcps.send_packet(self.cli, interface=iface, dest_ip=dest_ip, packet_type='arp',
+                                packet_options=opt_map, count=count)
+
+    def send_tcp_packet(self, iface, dest_ip, source_port, dest_port, packet_options=None, count=1):
+        tcps = TCPSender()
+        return tcps.send_packet(self.cli, interface=iface, dest_ip=dest_ip, packet_type='tcp',
+                                source_port=source_port, dest_port=dest_port,
+                                packet_options=packet_options, count=count)
+
+    def ping(self, target_ip, iface=None, count=1):
+        """
+        Ping a target IP.  Can specify the interface to use and/or the number of pings to send.
+        Returns true if all pings succeeded, false otherwise.
+        :param target_ip: str: target IP in CIDR format
+        :param iface: str: Interface to act as source
+        :param count: int: Number of pings to send
+        :return: bool
+        """
+        iface_str = ('-I ' + iface) if iface is not None else ''
+        return self.cli.cmd('ping -n ' + iface_str + ' -c ' + str(count) + ' ' + target_ip, return_status=True) == 0
+
+    def start_capture(self, interface,
+                      count=0, type='', filter=None,
+                      callback=None, callback_args=None,
+                      save_dump_file=False, save_dump_filename=None):
+        """
+        Starts the capture of packets on the host's interface with pcap_filter tools (e.g. tcpdump).
+        This will start a process in the background listening for packets on the given interface.
+        The actual packets can be retrieved via the 'capture_packets' method.  Capturing can be
+        halted with the 'stop_capture' method.  Only one capture can be running per interface at
+        any one time.  Use the PCAP_Rule objects to assemble a filter via standard pcap_filter rules.
+        A callback function is available to be called when each packet is parsed.  It must take at least
+        a single PCAPPacket parameter, and any number of optional arguments (passed through the callback_args
+        parameter).  The packet capture will be dumped to a temporary file, which can be saved off to a
+        permanent location, if desired.
+        :param interface: str: Interface to capture on ('any' is also acceptable)
+        :param count: int: Number of packets to capture, or '0' to capture until explicitly stopped (default)
+        :param type: str: Type of packet to filter
+        :param filter: PCAP_Rule: Ruleset for packet filtering
+        :param callback: callable: Optional callback function
+        :param callback_args: list[T]: Arguments to optional callback function
+        :param save_dump_file: bool: Optionally save the temporary packet capture file
+        :param save_dump_filename: str: Filename to save temporary packet capture file
+        :return:
+        """
+        tcpd = self.packet_captures[interface] if interface in self.packet_captures else TCPDump()
+
+        tcpd.start_capture(cli=self.cli, interface=interface, count=count,
+                           packet_type=type, pcap_filter=filter,
+                           callback=callback, callback_args=callback_args,
+                           save_dump_file=save_dump_file, save_dump_filename=save_dump_filename,
+                           blocking=False)
+
+        self.packet_captures[interface] = tcpd
+
+    def capture_packets(self, interface, count=1, timeout=None):
+        """
+        Wait for and return a list of [count] received packets on the given interface.
+        The optional timeout can be specified to bound the time waiting for the packets
+        (an exception will be raised if the timeout is hit).
+        :param interface: str: Interface on which to wait for packets
+        :param count: int: Number of packets to wait for
+        :param timeout: int: Upper bound on length of time to wait before exception is raised
+        :return: list [PCAPPacket]
+        """
+        if interface not in self.packet_captures:
+            raise ObjectNotFoundException('No packet capture is running or was run on host/interface' +
+                                          self.name + '/' + interface)
+        tcpd = self.packet_captures[interface]
+        return tcpd.wait_for_packets(count, timeout)
+
+    def stop_capture(self, interface):
+        """
+        Stop the capture of packets on the given interface.  Any remaining packets can be accessed
+        through the 'capture_packets' method.
+        :param interface: str: Interface to stop capture on
+        :return:
+        """
+        if interface not in self.packet_captures:
+            raise ObjectNotFoundException('No packet capture is running or was run on host/interface' +
+                                          self.name + '/' + interface)
+        tcpd = self.packet_captures[interface]
+        tcpd.stop_capture()
 
     def flush_arp(self):
         self.cli.cmd('ip neighbour flush all')
 
-    def wait_for_packet(self, iface, type, target_ip, options, count=1, timeout=0):
-        tcpd = TCPDump()
-        return None #tcpd.read_packet(iface, target)
+
+class HypervisorHost(Host):
+    def __init__(self, name, ptm, cli=LinuxCLI(), host_create_func=None, host_remove_func=None):
+        super(Host, self).__init__(name, cli)
+
+    def create_vm(self, name):
+        pass
+

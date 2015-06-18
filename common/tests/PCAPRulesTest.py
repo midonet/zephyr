@@ -112,17 +112,17 @@ class PCAPRulesTest(unittest.TestCase):
         self.assertEqual('len <= 500', lte_rule.to_str())
 
     def test_unary_boolean_rules(self):
-        not_single_rule = PCAP_Not(PCAP_Explicit('foo'))
+        not_single_rule = PCAP_Not(PCAP_Simple('foo'))
         self.assertEqual('not \( foo \)', not_single_rule.to_str())
 
     def test_binary_boolean_rules(self):
-        and_single_rule = PCAP_And([PCAP_Explicit('foo')])
-        and_double_rule = PCAP_And([PCAP_Explicit('foo'), PCAP_Explicit('bar')])
-        and_triple_rule = PCAP_And([PCAP_Explicit('foo'), PCAP_Explicit('bar'), PCAP_Explicit('baz')])
+        and_single_rule = PCAP_And([PCAP_Simple('foo')])
+        and_double_rule = PCAP_And([PCAP_Simple('foo'), PCAP_Simple('bar')])
+        and_triple_rule = PCAP_And([PCAP_Simple('foo'), PCAP_Simple('bar'), PCAP_Simple('baz')])
         and_null_rule = PCAP_And([])
-        or_single_rule = PCAP_Or([PCAP_Explicit('foo')])
-        or_double_rule = PCAP_Or([PCAP_Explicit('foo'), PCAP_Explicit('bar')])
-        or_triple_rule = PCAP_Or([PCAP_Explicit('foo'), PCAP_Explicit('bar'), PCAP_Explicit('baz')])
+        or_single_rule = PCAP_Or([PCAP_Simple('foo')])
+        or_double_rule = PCAP_Or([PCAP_Simple('foo'), PCAP_Simple('bar')])
+        or_triple_rule = PCAP_Or([PCAP_Simple('foo'), PCAP_Simple('bar'), PCAP_Simple('baz')])
         or_null_rule = PCAP_Or([])
 
         self.assertEqual('\( foo \)', and_single_rule.to_str())

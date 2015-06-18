@@ -34,13 +34,14 @@ try:
 
     host_cmd = sys.argv[1]
     host_json = sys.argv[2]
+    arg_list = sys.argv[3:] if len(sys.argv) > 3 else []
 
     root_dir = LinuxCLI().cmd('pwd').strip()
 
     print "Setting root dir to: " + root_dir
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_root_dir='./tmp/logs')
 
-    ptm.ptm_host_control(host_cmd, host_json)
+    ptm.ptm_host_control(host_cmd, host_json, arg_list)
     print "finished"
 
 except ExitCleanException:

@@ -98,7 +98,7 @@ class TCPSender(object):
         src_ip_str = '-A %s' % source_ip if source_ip is not None else ''
         dest_ip_str = '-B %s' % dest_ip if dest_ip is not None else ''
         delay_str = '-d %d' % delay if delay is not None else ''
-        pkt_bldr_arg_str = ' '.join((src_ip_str, dest_ip_str, src_mac_str, dest_mac_str, count_str, delay_str))
+        pkt_bldr_arg_str = ' '.join((src_ip_str, dest_ip_str, src_mac_str, dest_mac_str, delay_str))
         opt_list = ', '.join('%s=%s' % (k, v)
                              for k, v in packet_options.iteritems()) if packet_options is not None else ''
 

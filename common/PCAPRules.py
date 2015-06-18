@@ -23,19 +23,19 @@ class PCAP_Rule(object):
         raise ArgMismatchException('All Rules should override the "to_str" method!')
 
 
-class PCAP_Explicit(PCAP_Rule):
+class PCAP_Simple(PCAP_Rule):
     def __init__(self, val):
         """
         :param val: str
         """
-        super(PCAP_Explicit, self).__init__()
+        super(PCAP_Simple, self).__init__()
         self.explicit_val = val
 
     def to_str(self):
         return self.explicit_val
 
 
-class PCAP_Null(PCAP_Explicit):
+class PCAP_Null(PCAP_Simple):
     def __init__(self):
         super(PCAP_Null, self).__init__(val='')
 
@@ -239,6 +239,14 @@ class PCAP_PrimitiveProtoRule(PCAP_Rule):
 
     def to_str(self):
         return self.base_proto + ' proto ' + self.filter_proto
+
+
+class PCAP_SimpleProto(PCAP_PrimitiveProtoRule):
+    def __init__(self, proto):
+        """
+        :param proto: str One of 'tcp', 'icmp', or 'udp'
+        """
+        super(PCAP_SimpleProto, self).__init__('', '\\\\' + proto)
 
 
 class PCAP_IPProto(PCAP_PrimitiveProtoRule):

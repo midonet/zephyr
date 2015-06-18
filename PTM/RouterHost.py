@@ -20,8 +20,8 @@ from ConfigurationHandler import FileConfigurationHandler
 
 class RouterHost(NetNSHost):
 
-    def __init__(self, name):
-        super(RouterHost, self).__init__(name)
+    def __init__(self, name, ptm):
+        super(RouterHost, self).__init__(name, ptm)
         self.num_id = '1'
         self.configurator = RouterFileConfiguration()
 
