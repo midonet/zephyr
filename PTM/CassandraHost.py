@@ -54,7 +54,7 @@ class CassandraHost(NetNSHost):
             self.num_id = impl_cfg.kwargs['id']
 
     def prepare_config(self):
-        self.configurator.prepare_files(self.num_id, self.cassandra_ips, self.init_token, self.ip)
+        self.configurator.configure(self.num_id, self.cassandra_ips, self.init_token, self.ip)
 
     def print_config(self, indent=0):
         super(CassandraHost, self).print_config(indent)
@@ -68,6 +68,7 @@ class CassandraHost(NetNSHost):
 
     def do_extra_config_host_for_process_control(self, cfg_map):
         self.num_id = cfg_map['num_id']
+        self.ip = IP.from_map(cfg_map['ip'])
 
     def wait_for_process_start(self):
         # Wait a couple seconds for the process to start before polling nodetool
@@ -102,7 +103,7 @@ class CassandraFileConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(CassandraFileConfiguration, self).__init__()
 
-    def prepare_files(self, num_id, cassandra_ips, init_token, self_ip):
+    def configure(self, num_id, cassandra_ips, init_token, self_ip):
         seed_str = ''.join([ip.ip + ',' for ip in cassandra_ips])[:-1]
 
         etc_dir = '/etc/cassandra.' + num_id

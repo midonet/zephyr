@@ -1,0 +1,53 @@
+zookeeper {
+  zookeeper_hosts : "127.0.0.1:2181"
+  session_timeout : 30s
+  midolman_root_key : "/midonet/v1"
+  session_gracetime : 30s
+}
+cassandra {
+  cluster : "midonet"
+}
+agent {
+  bridge {
+    mac_port_mapping_expire_millis : 15000
+  }
+  arptable {
+    arp_retry_interval_seconds : 10
+    arp_timeout_seconds : 60
+    arp_stale_seconds : 1800
+    arp_expiration_seconds : 3600
+  }
+  router {
+    max_bgp_peer_routes : 200
+  }
+  midolman {
+    disconnected_ttl_seconds : 30
+    control_interface : "eth0"
+    cache_type : "cassandra"
+    check_flow_expiration_interval : 10s
+    top_level_actor_supervisor : "crash"
+    simulation_threads : 2
+    output_channels : 2
+    input_channel_threading : "one_to_many"
+    enable_dashboard=false
+    jetty_xml="/etc/midolman/jetty/etc/jetty.xml"
+  }
+  host {
+    wait_time_between_scans : 5000
+  }
+  datapath {
+    max_flow_count : 350000
+    max_wildcard_flow_count : 300000
+    send_buffer_pool_max_size : 16384
+    send_buffer_pool_initial_size : 4096
+    send_buffer_pool_buf_size_kb : 4
+    msgs_per_batch : 200
+    global_incoming_burst_capacity : 128
+    tunnel_incoming_burst_capacity : 64
+    vm_incoming_burst_capacity : 16
+    vtep_incoming_burst_capacity : 64
+  }
+  haproxy_health_monitor {
+    health_monitor_enable : true
+  }
+}

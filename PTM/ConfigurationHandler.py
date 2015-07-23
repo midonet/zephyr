@@ -21,17 +21,23 @@ class ConfigurationHandler(object):
     def __init__(self):
         super(ConfigurationHandler, self).__init__()
 
+    def configure(self, **kwargs):
+        pass
 
 class FileConfigurationHandler(ConfigurationHandler):
     def __init__(self):
         super(FileConfigurationHandler, self).__init__()
         self.cli = LinuxCLI()
 
-    def prepare_files(self, **kwargs):
-        pass
-
     def mount_config(self, **kwargs):
         pass
 
     def unmount_config(self, **kwargs):
         pass
+
+
+class ProgramConfigurationHandler(ConfigurationHandler):
+    def __init__(self):
+        super(ProgramConfigurationHandler, self).__init__()
+        self.cli = LinuxCLI()
+

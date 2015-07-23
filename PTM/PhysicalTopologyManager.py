@@ -202,12 +202,13 @@ class PhysicalTopologyManager(object):
             start_process = self.unshare_control('start', h)
             stdout, stderr = start_process.communicate()
             start_process.poll()
-            if start_process.returncode != 0:
-                print("Host control process output: ")
-                print stdout
-                print("Host control process error output: ")
-                print stderr
-                raise SubprocessFailedException('Host control start failed with: ' + str(start_process.returncode))
+            #if start_process.returncode != 0:
+            print("Host control process output: ")
+            print stdout
+            print("Host control process error output: ")
+            print stderr
+            #
+            # raise SubprocessFailedException('Host control start failed with: ' + str(start_process.returncode))
             h.wait_for_process_start()
 
     def shutdown(self):

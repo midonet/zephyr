@@ -43,7 +43,7 @@ class NetworkHost(RootHost):
             self.ip = impl_cfg.kwargs['url']
 
     def prepare_config(self):
-        self.configurator.prepare_files(self.zookeeper_ips)
+        self.configurator.configure(self.zookeeper_ips)
 
     def print_config(self, indent=0):
         super(NetworkHost, self).print_config(indent)
@@ -51,15 +51,13 @@ class NetworkHost(RootHost):
 
     def wait_for_process_start(self):
         # Checking MN-API status
-        retries = 0
-        max_retries = 10
         connected = False
+        deadline = time.time() + 10
         while not connected:
             if self.cli.cmd('midonet-cli --midonet-url="' + self.url + '" -A -e "host list"', return_status=True) == 0:
                 connected = True
             else:
-                retries += 1
-                if retries > max_retries:
+                if time.time() > deadline:
                     raise SubprocessFailedException('Network host timed out while starting')
                 time.sleep(1)
 
@@ -75,7 +73,7 @@ class NetworkFileConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(NetworkFileConfiguration, self).__init__()
 
-    def prepare_files(self, zookeeper_ips):
+    def configure(self, zookeeper_ips):
 
         if len(zookeeper_ips) is not 0:
             ip_str = ','.join([ip.ip + ':2181' for ip in zookeeper_ips])

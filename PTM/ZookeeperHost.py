@@ -54,10 +54,10 @@ class ZookeeperHost(NetNSHost):
 
     def do_extra_config_host_for_process_control(self, cfg_map):
         self.num_id = cfg_map['num_id']
-        self.ip = IP(cfg_map['ip']['ip'], cfg_map['ip']['subnet'])
+        self.ip = IP.from_map(cfg_map['ip'])
 
     def prepare_config(self):
-        self.configurator.prepare_files(self.num_id, self.zookeeper_ips)
+        self.configurator.configure(self.num_id, self.zookeeper_ips)
 
     def print_config(self, indent=0):
         super(ZookeeperHost, self).print_config(indent)
@@ -130,7 +130,7 @@ class ZookeeperFileConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(ZookeeperFileConfiguration, self).__init__()
 
-    def prepare_files(self, num_id, zookeeper_ips):
+    def configure(self, num_id, zookeeper_ips):
         if num_id == '1':
             etc_dir = '/etc/zookeeper.test'
             self.cli.rm(etc_dir)

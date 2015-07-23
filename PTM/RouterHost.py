@@ -37,7 +37,7 @@ class RouterHost(NetNSHost):
             self.num_id = impl_cfg.kwargs['id']
 
     def prepare_config(self):
-        self.configurator.prepare_files(self.num_id)
+        self.configurator.configure(self.num_id)
 
     def print_config(self, indent=0):
         super(RouterHost, self).print_config(indent)
@@ -74,7 +74,7 @@ class RouterFileConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(RouterFileConfiguration, self).__init__()
 
-    def prepare_files(self, num_id):
+    def configure(self, num_id):
         etc_dir = '/etc/quagga.' + num_id
         var_lib_dir = '/var/lib/quagga.' + num_id
         var_log_dir = '/var/log/quagga.' + num_id

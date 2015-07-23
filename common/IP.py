@@ -13,6 +13,9 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from common.Exceptions import *
+
+
 class IP(object):
     def __init__(self, ip='0.0.0.0', subnet='24'):
         """
@@ -32,4 +35,12 @@ class IP(object):
     def to_map(self):
         return {'ip': self.ip, 'subnet': self.subnet}
 
+    @staticmethod
+    def from_map(map):
+        if not 'ip' in map:
+            raise ArgMismatchException('Expected "ip" member in IP map')
+        if not 'subnet' in map:
+            raise ArgMismatchException('Expected "subnet" member in IP map')
+
+        return IP(map['ip'], map['subnet'])
 

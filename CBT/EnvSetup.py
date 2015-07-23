@@ -33,24 +33,26 @@ class EnvSetup:
         cli.add_environment_variable('PATH', cli_safe.cmd('echo $PATH').strip('\n'))
         cli.add_environment_variable('USER', cli_safe.cmd('echo $USER').strip('\n'))
         cli.add_environment_variable('WORKSPACE', cli_safe.cmd('pwd').strip('\n'))
-        cli.add_environment_variable('MIDONET_ENABLE_Q_SVC_ONLY', 'True')
+        #cli.add_environment_variable('MIDONET_ENABLE_Q_SVC_ONLY', 'True')
         cli.add_environment_variable('LOG_COLOR', 'False')
-        cli.add_environment_variable('LOGDIR',cli_safe.cmd('echo `pwd`/logs'))
-        cli.add_environment_variable('SCREEN_LOGDIR',cli_safe.cmd('echo `pwd`/logs'))
-        cli.add_environment_variable('LOGFILE',cli_safe.cmd('echo `pwd`/logs/stack.sh.log'))
-        cli.add_environment_variable('MIDONET_ENABLE_Q_SVC_ONLY', 'True')
-        cli.add_environment_variable('NEUTRON_REPO', 'http://github.com/tomoe/neutron')
-        cli.add_environment_variable('NEUTRON_REPO', 'http://github.com/tomoe/neutron')
-        cli.add_environment_variable('NEUTRON_BRANCH', 'midonet1')
+        cli.add_environment_variable('LOGDIR', cli_safe.cmd('echo `pwd`/logs').strip('\n'))
+        cli.add_environment_variable('SCREEN_LOGDIR', cli_safe.cmd('echo `pwd`/logs').strip('\n'))
+        cli.add_environment_variable('LOGFILE', cli_safe.cmd('echo `pwd`/logs/stack.sh.log').strip('\n'))
+        #cli.add_environment_variable('NEUTRON_REPO', 'http://github.com/tomoe/neutron')
+        #cli.add_environment_variable('NEUTRON_BRANCH', 'midonet1')
 
-
+        plugin_url = 'https://github.com/openstack/networking-midonet release/kilo'
+        #plugin_url = 'http://openstack./tomoe/networking-midonet.git midonet1'
         cf_str = '#!/usr/bin/env bash\n' \
                  '[[local|localrc]]\n' \
                  '\n' \
-                 'enable_plugin networking-midonet http://github.com/tomoe/networking-midonet.git midonet1'
+                 'ENABLED_SERVICES=rabbit,mysql,key\n' \
+                 'ENABLED_SERVICES+=,q-svc,neutron\n' \
+                 'ENABLED_SERVICES+=,q-lbaas\n' \
+                 'enable_plugin networking-midonet ' + plugin_url + '\n'
         LinuxCLI().write_to_file('devstack/local.conf', cf_str, False)
 
-        if cli.cmd('cd devstack ; ./stack.sh') is not 0:
+        if cli.cmd('cd devstack ; ./stack.sh', return_status=True) is not 0:
             raise SubprocessFailedException('devstack/stack.sh')
 
         LinuxCLI().regex_file('/etc/midolman/midolman.conf', 's/\(enabled = \)true/\1false/')

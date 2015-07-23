@@ -45,7 +45,7 @@ class MNAPITest(unittest.TestCase):
         cls.ptm.configure('test-basic-config.json')
         cls.ptm.startup()
 
-    def stest_midonet_api_ping_two_hosts_same_hv(self):
+    def test_midonet_api_ping_two_hosts_same_hv(self):
         vtm = VirtualTopologyManager(client_api_impl=create_midonet_client(),
                                      physical_topology_manager=self.ptm)
 
@@ -123,9 +123,6 @@ class MNAPITest(unittest.TestCase):
             self.assertTrue(vm2.ping(on_iface='eth0', target_ip='10.1.1.2'))
 
         finally:
-            #import pdb
-            #pdb.set_trace()
-
             vm1.terminate()
             vm2.terminate()
             port1.delete()

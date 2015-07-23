@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import sys
+import getopt
 
 from common.Exceptions import *
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager, CONTROL_CMD_NAME
@@ -21,47 +22,67 @@ from common.CLI import LinuxCLI
 from CBT.EnvSetup import EnvSetup
 import traceback
 
-def usage(exceptClass):
-    print 'Usage: ' + CONTROL_CMD_NAME + ' {startup|shutdown|config} [options]'
-    print 'Usage: ' + CONTROL_CMD_NAME + ' neutron {install} [options]'
-    if exceptClass is not None:
-        raise exceptClass()
+def usage(exceptObj):
+    print 'Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print} [--config-file <JSON file>]'
+    print 'Usage: ' + CONTROL_CMD_NAME + ' --neutron {install} [options]'
+    if exceptObj is not None:
+        raise exceptObj
 
 try:
 
-    if len(sys.argv) < 2:
-        usage(ExitCleanException)
-    else:
-        cmd = sys.argv[1]
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hpc:',
+                                        ['help', 'startup', 'shutdown', 'print', 'neutron=', 'config-file='])
 
-        config_file = 'config.json'
-
-        root_dir = LinuxCLI().cmd('pwd').strip()
-
-        print "Setting root dir to: " + root_dir
-        ptm = PhysicalTopologyManager(root_dir=root_dir, log_root_dir='./tmp/logs')
-
-        ptm.configure(config_file)
-
-        if cmd == 'neutron':
-            if len(sys.argv) < 3:
-                usage(ExitCleanException)
-            if sys.argv[2] == 'install':
-                EnvSetup.install_neutron_client()
-        elif cmd == 'startup':
-            ptm.startup()
-        elif cmd == 'shutdown':
-            ptm.shutdown()
-        elif cmd == 'config':
-            ptm.print_config()
+    # Defaults
+    command = ''
+    ptm_config_file = 'config.json'
+    neutron_command = ''
+    for arg, value in arg_map:
+        if arg in ('-h', '--help'):
+            usage(None)
+            sys.exit(0)
+        elif arg in ('--startup'):
+            command = 'startup'
+        elif arg in ('--shutdown'):
+            command = 'shutdown'
+        elif arg in ('--neutron'):
+            command = 'neutron'
+            neutron_command = value
+        elif arg in ('-c', '--config-file'):
+            ptm_config_file = value
+        elif arg in ('-p', '--print'):
+            command = 'print'
         else:
-            raise ArgMismatchException(' '.join(sys.argv[1:]))
+            usage(ArgMismatchException('Invalid argument' + arg))
+
+    if command == '':
+        usage(ArgMismatchException('Must specify at least one command option'))
+
+    root_dir = LinuxCLI().cmd('pwd').strip()
+
+    print "Setting root dir to: " + root_dir
+    ptm = PhysicalTopologyManager(root_dir=root_dir, log_root_dir='./tmp/logs')
+
+    ptm.configure(ptm_config_file)
+
+    if command == 'neutron':
+        if neutron_command == 'install':
+            EnvSetup.install_neutron_client()
+        else:
+            raise ArgMismatchException('Neutron command not recognized: ' + neutron_command)
+    elif command == 'startup':
+        ptm.startup()
+    elif command == 'shutdown':
+        ptm.shutdown()
+    elif command == 'print':
+        ptm.print_config()
+    else:
+        usage(ArgMismatchException('Command option not recognized: ' + command))
    
 except ExitCleanException:
     exit(1)
 except ArgMismatchException as a:
     print 'Argument mismatch: ' + str(a)
-    usage(None)
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except ObjectNotFoundException as e:

@@ -32,6 +32,8 @@ class LinuxCLI(object):
         """ :type: bool"""
         self.print_cmd = print_cmd
         """ :type: bool"""
+        self.last_process = None
+        """ :type: subprocess.Popen"""
 
     def add_environment_variable(self, name, val):
         if (self.env_map is None):
@@ -67,10 +69,12 @@ class LinuxCLI(object):
 
         if self.debug is True:
             return cmd
+        if self.env_map is not None:
+            print "ENV:" + ','.join([k + '=' + self.env_map[k] for k in self.env_map.iterkeys()])
 
         p = subprocess.Popen(cmd, *args, shell=shell, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE, env=self.env_map)
-
+                                             stderr=subprocess.PIPE, env=self.env_map)
+        self.last_process = p
         if blocking is False:
             return p
 
@@ -92,7 +96,7 @@ class LinuxCLI(object):
         return cmd_line
 
     def create_cmd_priv(self, cmd_line):
-        return 'sudo ' + cmd_line
+        return 'sudo -E ' + cmd_line
 
     def oscmd(self, *args, **kwargs):
         return LinuxCLI().cmd(*args, **kwargs)
@@ -203,6 +207,9 @@ class LinuxCLI(object):
 
     def start_screen_unshare(self, host, window_name, cmd_line):
         return self.start_screen(host, window_name, 'unshare -m ' + cmd_line)
+
+    def os_name(self):
+        return self.cmd('cat /etc/*-release | grep ^NAME= | cut -d "=" -f 2').strip('"').lower()
 
 
 class NetNSCLI(LinuxCLI):

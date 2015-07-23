@@ -15,17 +15,21 @@ __author__ = 'micucci'
 
 import time
 import uuid
+from os import path
 
 from common.Exceptions import *
 from common.IP import IP
+from common.CLI import LinuxCLI
 
-from ConfigurationHandler import FileConfigurationHandler
+from ConfigurationHandler import FileConfigurationHandler, ProgramConfigurationHandler
 from NetNSHost import NetNSHost
 from VMHost import VMHost
 from PhysicalTopologyConfig import InterfaceDef
 from Interface import Interface
 from VirtualInterface import VirtualInterface
 
+USE_MN_CONF = True
+USE_NEW_STACK = False
 
 class ComputeHost(NetNSHost):
     """
@@ -39,7 +43,10 @@ class ComputeHost(NetNSHost):
         self.unique_id = uuid.uuid4()
         self.zookeeper_ips = []
         self.cassandra_ips = []
-        self.configurator = ComputeFileConfiguration()
+        if USE_MN_CONF is True:
+            self.configurator = ComputeMNConfConfiguration()
+        else:
+            self.configurator = ComputeFileConfiguration()
 
     def do_extra_config_from_ptc_def(self, cfg, impl_cfg):
         """
@@ -71,14 +78,16 @@ class ComputeHost(NetNSHost):
                 vm.print_config(indent + 2)
 
     def prepare_config(self):
-        self.configurator.prepare_files(self.num_id, self.unique_id, self.zookeeper_ips, self.cassandra_ips)
+        self.configurator.configure(self.num_id, self.unique_id, self.zookeeper_ips, self.cassandra_ips)
 
     def do_extra_create_host_cfg_map_for_process_control(self):
-        return {'num_id': self.num_id, 'uuid': str(self.unique_id)}
+        return {'num_id': self.num_id, 'uuid': str(self.unique_id),
+                'zookeeper_ips': ','.join(str(ip) for ip in self.zookeeper_ips)}
 
     def do_extra_config_host_for_process_control(self, cfg_map):
         self.num_id = cfg_map['num_id']
         self.unique_id = uuid.UUID('urn:uuid:' + cfg_map['uuid'])
+        self.zookeeper_ips = [IP.make_ip(s) for s in cfg_map['zookeeper_ips'].split(',')]
 
     def wait_for_process_start(self):
         retries = 0
@@ -151,6 +160,24 @@ class ComputeHost(NetNSHost):
 
     def control_start(self):
         if self.num_id == '1':
+            this_dir = path.dirname(path.abspath(__file__))
+
+            zkcli = LinuxCLI()
+            #zkcli.add_environment_variable('MIDO_ZOOKEEPER_HOSTS', z_ip_str)
+            #zkcli.add_environment_variable('MIDO_ZOOKEEPER_ROOT_KEY', midonet_key)
+
+            ret = zkcli.cmd('mn-conf set -t default < ' + this_dir + '/scripts/midolman.mn-conf', return_status=True)
+            if ret != 0:
+                print '\n'.join(zkcli.last_process.stdout.readlines())
+                print '\n'.join(zkcli.last_process.stderr.readlines())
+                raise SubprocessFailedException('Failed to run mn-conf: ' + str(ret))
+
+            ret = zkcli.cmd('mn-conf set -t default < .mnconf.data', return_status=True)
+            if ret != 0:
+                print '\n'.join(zkcli.last_process.stdout.readlines())
+                print '\n'.join(zkcli.last_process.stderr.readlines())
+                raise SubprocessFailedException('Failed to run mn-conf: ' + str(ret))
+
             pid_file = '/run/midolman/dnsmasq.pid'
 
             self.cli.cmd('dnsmasq --no-host --no-resolv -S 8.8.8.8')
@@ -159,6 +186,7 @@ class ComputeHost(NetNSHost):
             self.cli.rm(pid_file)
             self.cli.write_to_file(pid_file, dnsm_real_pid)
 
+        self.cli.cmd('hostname ' + self.name)
         self.cli.cmd("sysctl -w net.ipv6.conf.default.disable_ipv6=1")
         process = self.cli.cmd('/usr/share/midolman/midolman-start', blocking=False)
         if process.pid == -1:
@@ -181,6 +209,8 @@ class ComputeHost(NetNSHost):
                 self.cli.cmd('kill ' + str(pid))
                 self.cli.rm(pid_file)
 
+            self.cli.rm('.mnconf.data')
+
     def control_bind_port(self, near_if_name, port_id):
         print 'binding port ' + port_id + ' to ' + near_if_name
         return self.cli.cmd('mm-ctl --bind-port ' + port_id + ' ' + near_if_name)
@@ -189,11 +219,93 @@ class ComputeHost(NetNSHost):
         return self.cli.cmd('mm-ctl --unbind-port ' + port_id)
 
 
-class ComputeFileConfiguration(FileConfigurationHandler):
-    def __init__(self):
-        super(ComputeFileConfiguration, self).__init__()
+class ComputeMNConfConfiguration(ProgramConfigurationHandler):
 
-    def prepare_files(self, num_id, unique_id, zookeeper_ips, cassandra_ips):
+    def configure(self, num_id, unique_id, zookeeper_ips, cassandra_ips):
+        # generates host uuid
+        etc_dir = '/etc/midolman.' + num_id
+        var_lib_dir = '/var/lib/midolman.' + num_id
+        var_log_dir = '/var/log/midolman.' + num_id
+        var_run_dir = '/run/midolman.' + num_id
+
+        if len(zookeeper_ips) is not 0:
+            z_ip_str = ','.join([ip.ip + ':2181' for ip in zookeeper_ips])
+        else:
+            z_ip_str = ''
+
+        midonet_key = '/midonet/v1' if USE_NEW_STACK is False else '/midonet/v2'
+
+        self.cli.rm(etc_dir)
+        self.cli.copy_dir('/etc/midolman', etc_dir)
+
+        self.cli.rm(var_lib_dir)
+        self.cli.mkdir(var_lib_dir)
+
+        self.cli.rm(var_log_dir)
+        self.cli.mkdir(var_log_dir)
+
+        self.cli.mkdir('/run/midolman')
+        self.cli.rm(var_run_dir)
+        self.cli.mkdir(var_run_dir)
+
+        mmenv = etc_dir + '/midolman-env.sh'
+        mmconf = etc_dir + '/midolman.conf'
+
+        self.cli.write_to_file(mmconf,
+                               '[zookeeper]\n'
+                               'zookeeper_hosts = ' + z_ip_str + '\n'
+                               'root_key = ' + midonet_key + '\n')
+
+        # Allow connecting via debugger - MM 1 listens on 1411, MM 2 on 1412, MM 3 on 1413
+        self.cli.regex_file(mmenv, '/runjdwp/s/^..//g')
+        self.cli.regex_file(mmenv, '/runjdwp/s/1414/141' + num_id + '/g')
+
+        # Setting memory to the ones before
+        # https://github.com/midokura/midonet/commit/65ace0e84265cd777b2855d15fce60148abd9330
+        self.cli.regex_file(mmenv, 's/MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE="300M"/')
+        self.cli.regex_file(mmenv, 's/HEAP_NEWSIZE=.*/HEAP_NEWSIZE="200M"/')
+
+        if not self.cli.exists('.mnconf.data'):
+            if len(cassandra_ips) is not 0:
+                c_ip_str = ','.join([ip.ip for ip in cassandra_ips])
+            else:
+                c_ip_str = ''
+
+            bgpd_program = "/usr/lib/quagga" if self.cli.os_name() == 'ubuntu' else "/usr/sbin"
+            mn_conf_str = ('zookeeper {\n'
+                           '  zookeeper_hosts : "' + z_ip_str + '"\n'
+                           '}\n'
+                           'cassandra {\n'
+                           '  servers : "' + c_ip_str + '"\n'
+                           '  replication_factor : ' + str(len(cassandra_ips)) + '\n'
+                           '  send_buffer_pool_buf_size_kb : 10\n'
+                           '  haproxy_health_monitor : true\n'
+                           '}\n'
+                           'agent {\n'
+                           '  midolman {\n'
+                           '    bgpd_binary : "' + bgpd_program + '"\n'
+                           '  }\n'
+                           '  loggers {\n'
+                           '    root=DEBUG\n'
+                           '  }\n'
+                           '}\n')
+
+            self.cli.write_to_file('.mnconf.data', mn_conf_str)
+
+    def mount_config(self, num_id):
+        self.cli.mount('/run/midolman.' + num_id, '/run/midolman')
+        self.cli.mount('/var/lib/midolman.' + num_id, '/var/lib/midolman')
+        self.cli.mount('/var/log/midolman.' + num_id, '/var/log/midolman')
+        self.cli.mount('/etc/midolman.' + num_id, '/etc/midolman')
+
+    def unmount_config(self, num_id):
+        self.cli.unmount('/run/midolman.' + num_id)
+        self.cli.unmount('/var/lib/midolman')
+        self.cli.unmount('/var/log/midolman')
+        self.cli.unmount('/etc/midolman')
+
+class ComputeFileConfiguration(FileConfigurationHandler):
+    def configure(self, num_id, unique_id, zookeeper_ips, cassandra_ips):
 
         etc_dir = '/etc/midolman.' + num_id
         var_lib_dir = '/var/lib/midolman.' + num_id
@@ -203,10 +315,6 @@ class ComputeFileConfiguration(FileConfigurationHandler):
         self.cli.rm(etc_dir)
         self.cli.copy_dir('/etc/midolman', etc_dir)
 
-        # generates host uuid
-        host_uuid = ('# generated for MMM MM $n\n'
-                     'host_uuid=') + str(unique_id)
-        self.cli.write_to_file(etc_dir + '/host_uuid.properties', host_uuid, False)
         mmconf = etc_dir + '/midolman.conf'
 
         if len(zookeeper_ips) is not 0:
@@ -258,7 +366,7 @@ class ComputeFileConfiguration(FileConfigurationHandler):
 
         mmenv = etc_dir + '/midolman-env.sh'
 
-        # Allow connecting via debugger - MM 1 listens on 1411, MM 2 on 1412, MM 3 on 1413
+        # Allow connecting via debugger - MM 1 listens on 1411, MM 2 on 1412, MM 3 on 1413, ...
         self.cli.regex_file(mmenv, '/runjdwp/s/^..//g')
         self.cli.regex_file(mmenv, '/runjdwp/s/1414/141' + num_id + '/g')
 

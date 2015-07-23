@@ -279,6 +279,7 @@ class TCPDump(object):
 
                 while True:
                     # Read the lines and either append data, start a new packet, or finish
+                    # Read the lines and either append data, start a new packet, or finish
                     line = f.readline()
 
                     if line == '':
