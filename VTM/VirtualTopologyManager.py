@@ -18,6 +18,7 @@ import neutronclient.neutron.client
 
 from common.Exceptions import *
 from common.IP import IP
+from common.LogManager import LogManager
 
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from PTM.ComputeHost import ComputeHost
@@ -35,11 +36,14 @@ class VirtualTopologyManager(object):
 
     def __init__(self,
                  physical_topology_manager,
-                 client_api_impl=create_neutron_client()):
+                 client_api_impl=create_neutron_client(),
+                 log_manager=None):
 
         self.client_api_impl = client_api_impl
         self.physical_topology_manager = physical_topology_manager
         """ :type: PhysicalTopologyManager"""
+        self.log_manager = log_manager
+        """ :type: LogManager"""
 
     def get_client(self):
         return self.client_api_impl

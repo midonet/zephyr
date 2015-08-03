@@ -14,6 +14,7 @@
 
 import os
 import subprocess
+import logging
 
 from common.Exceptions import *
 
@@ -23,17 +24,19 @@ DEBUG = 1
 
 
 class LinuxCLI(object):
-    def __init__(self, priv=True, debug=(DEBUG >= 2), print_cmd=(DEBUG >= 1)):
+    def __init__(self, priv=True, debug=(DEBUG >= 2), log_cmd=(DEBUG >= 1), logger=None):
         self.env_map = None
         """ :type: dict[str, str]"""
         self.priv = priv
         """ :type: bool"""
         self.debug = debug
         """ :type: bool"""
-        self.print_cmd = print_cmd
+        self.log_cmd = log_cmd
         """ :type: bool"""
         self.last_process = None
         """ :type: subprocess.Popen"""
+        self.logger = logger
+        """ :type: logging.Logger"""
 
     def add_environment_variable(self, name, val):
         if (self.env_map is None):
@@ -64,13 +67,19 @@ class LinuxCLI(object):
         else:
             cmd = self.create_cmd(new_cmd_line)
 
-        if self.print_cmd is True:
-            print '>>> ' + cmd
+        if self.log_cmd is True:
+            if self.logger is None:
+                print '>>> ' + cmd
+            else:
+                self.logger.debug('>>>' + cmd)
 
         if self.debug is True:
             return cmd
         if self.env_map is not None:
-            print "ENV:" + ','.join([k + '=' + self.env_map[k] for k in self.env_map.iterkeys()])
+            if self.logger is None:
+                print "ENV:" + ','.join([k + '=' + self.env_map[k] for k in self.env_map.iterkeys()])
+            else:
+                self.logger.debug("ENV:" + ','.join([k + '=' + self.env_map[k] for k in self.env_map.iterkeys()]))
 
         p = subprocess.Popen(cmd, *args, shell=shell, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, env=self.env_map)

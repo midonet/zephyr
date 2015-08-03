@@ -20,6 +20,7 @@ import importlib
 
 from common.Exceptions import *
 from common.CLI import LinuxCLI
+from common.LogManager import LogManager
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager, HOST_CONTROL_CMD_NAME
 from PTM.Host import Host
 
@@ -38,8 +39,10 @@ try:
 
     root_dir = LinuxCLI().cmd('pwd').strip()
 
+    log_manager = LogManager()
+
     print "Setting root dir to: " + root_dir
-    ptm = PhysicalTopologyManager(root_dir=root_dir, log_root_dir='./tmp/logs')
+    ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
 
     ptm.ptm_host_control(host_cmd, host_json, arg_list)
     print "finished"

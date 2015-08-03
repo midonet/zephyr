@@ -84,12 +84,13 @@ class LogManager(object):
             name = 'root' + str(len(self.loggers))
 
         if name in self.loggers:
-            raise ObjectAlreadyAddedException('Logger already defined: ' + name)
+            new_log = self.get_logger(name)
+        else:
+            new_log = logging.getLogger(name)
 
         handler_obj.setLevel(level if level is not None else self.default_log_level)
         handler_obj.setFormatter(self.get_format(format_name))
 
-        new_log = logging.getLogger(name)
         new_log.setLevel(level if level is not None else self.default_log_level)
         new_log.addHandler(handler_obj)
 

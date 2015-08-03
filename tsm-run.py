@@ -19,6 +19,7 @@ import traceback
 
 from common.Exceptions import *
 from common.CLI import LinuxCLI
+from common.LogManager import LogManager
 
 from CBT.EnvSetup import EnvSetup
 
@@ -105,9 +106,11 @@ try:
     else:
         raise ArgMismatchException('Invalid client API implementation:' + client_impl_type)
 
-    ptm = PhysicalTopologyManager(root_dir=root_dir, log_root_dir='./tmp/logs')
-    vtm = VirtualTopologyManager(physical_topology_manager=ptm, client_api_impl=client_impl)
-    tsm = TestSystemManager(ptm, vtm)
+    log_manager = LogManager()
+
+    ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
+    vtm = VirtualTopologyManager(physical_topology_manager=ptm, client_api_impl=client_impl, log_manager=log_manager)
+    tsm = TestSystemManager(ptm, vtm, log_manager=log_manager)
 
     scenario_filters = [TestScenario.get_class(s) for s in scenario_filter_list]
     test_cases = map(TestCase.get_class, tests)
@@ -134,10 +137,17 @@ try:
             print err
 
         for tc, err in results[s].errors:
-            print "------------------------------"
-            print "Test Case ERROR: [" + tc._get_name() + "]"
-            print "Error Message:"
-            print err
+            if isinstance(tc, TestCase):
+                print "------------------------------"
+                print "Test Case ERROR: [" + tc._get_name() + "]"
+                print "Error Message:"
+                print err
+            else:
+                print "------------------------------"
+                print "Test Framework ERROR"
+                print "Error Message:"
+                print err
+
 
 
 except ExitCleanException:

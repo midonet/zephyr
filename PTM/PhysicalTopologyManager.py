@@ -44,13 +44,14 @@ class PhysicalTopologyManager(object):
     :type host_by_start_order: list [Host]
     :type hypervisors: dict[str, HypervisorHost]
     """
-    def __init__(self, root_dir='.', log_root_dir='/var/log/zephyr/ptm'):
+    def __init__(self, root_dir='.', log_manager=None, log_root_dir="/tmp/log/zephyr_ptm"):
         super(PhysicalTopologyManager, self).__init__()
-        self.log_root_dir = log_root_dir
-        self.log_manager = LogManager()
+        self.log_manager = log_manager
+        """ :type: LogManager"""
         self.hosts_by_name = {}
         self.host_by_start_order = []
         self.hypervisors = {}
+        self.log_root_dir = log_root_dir
 
         if not LinuxCLI().exists(self.log_root_dir):
             LinuxCLI(priv=False).mkdir(self.log_root_dir)
@@ -59,12 +60,13 @@ class PhysicalTopologyManager(object):
         if LinuxCLI().exists(self.log_root_dir + '/ptm-output.txt'):
             LinuxCLI().copy_file(self.log_root_dir + '/ptm-output.txt',
                                  self.log_root_dir +'/ptm-output.txt.' + date_str)
+            LinuxCLI().cmd('gzip -9 ' + self.log_root_dir +'/ptm-output.txt.' + date_str)
             LinuxCLI().rm(self.log_root_dir + '/ptm-output.txt')
 
-        self.logger = self.log_manager.add_tee_logger(self.log_root_dir + '/ptm-output.txt', name='ptm-debug',
-                                                      file_overwrite=True, file_log_level=logging.DEBUG)
+        self.LOG = self.log_manager.add_tee_logger(self.log_root_dir + '/ptm-output.txt', name='ptm-debug',
+                                                   file_overwrite=True, file_log_level=logging.DEBUG)
 
-        self.console = self.log_manager.add_stdout_logger(name='ptm-console', log_level=logging.INFO)
+        self.CONSOLE = self.log_manager.add_stdout_logger(name='ptm-console', log_level=logging.INFO)
 
         self.root_dir = root_dir
 

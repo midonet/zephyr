@@ -13,9 +13,69 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from midonetclient.api import MidonetApi
+from midonetclient.tunnel_zone import TunnelZone
+from midonetclient.bridge import Bridge
+
+from common.Exceptions import *
 
 
 def create_midonet_client(base_uri='http://localhost:8080/midonet-api/',
                           username=None, password=None, project_id=None):
    return MidonetApi(base_uri, username, password, project_id)
+
+
+def setup_main_tunnel_zone(api, host_ip_map, logger=logging.getLogger()):
+    """
+    Setup main tunnel zone for Midonet API.  The host-IP map should be a
+    map of host key to an IP string.
+    :type api: MidonetAPI
+    :type host_ip_map: dict [str, str]
+    :type logger: logging.Logger
+    :return:
+    """
+    if not isinstance(api, MidonetApi):
+        raise ArgMismatchException('Need midonet client for this test')
+
+    tzs = api.get_tunnel_zones()
+    """:type: list[TunnelZone]"""
+
+    # If main tunnel zone already found, don't re-add
+    for tz in tzs:
+       if tz.get_name() == "main":
+           return
+
+    logger.info('Setting up VTM main tunnel zone')
+    tz = api.add_gre_tunnel_zone().name('main').create()
+
+    # Add all hosts/interface tuples to the tunnel zone
+    for h in api.get_hosts(query={}):
+        logger.info("MN API Host name: " + h.get_name() + ", id: " + h.get_id())
+
+        if h.get_name() not in host_ip_map:
+            raise ArgMismatchException('MN Host: ' + h.get_name() + ' has no configured IPs listed!')
+
+        tzh = tz.add_tunnel_zone_host()
+        tzh.ip_address(host_ip_map[h.get_name()])
+        tzh.host_id(h.get_id())
+        tzh.create()
+
+    return tz
+
+
+def setup_main_bridge(api, logger=logging.getLogger()):
+
+    if not isinstance(api, MidonetApi):
+        raise ArgMismatchException('Need midonet client for this test')
+
+    brs = api.get_bridges(None)
+    """:type: list[Bridge]"""
+
+    for br in brs:
+        if br.get_name() == "bridge_0":
+            return br
+
+    return api.add_bridge().name('bridge_0').tenant_id('test1').create()
+

@@ -15,6 +15,7 @@ __author__ = 'micucci'
 
 import unittest
 import importlib
+import logging
 
 from common.Exceptions import *
 from TestScenario import TestScenario
@@ -23,6 +24,16 @@ from VTM.VirtualTopologyManager import VirtualTopologyManager
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
 class TestCase(unittest.TestCase):
+
+    current_scenario = None
+    """ :type: TestScenario"""
+    vtm = None
+    """ :type: VirtualTopologyManager"""
+    ptm = None
+    """ :type: PhysicalTopologyManager"""
+    setup_logger = None
+    """ :type: logging.Logger"""
+
     @staticmethod
     def supported_scenarios():
         """
@@ -30,28 +41,6 @@ class TestCase(unittest.TestCase):
         :return: set[class]
         """
         return set()
-
-    @classmethod
-    def _get_name(cls):
-        return cls.__name__
-
-    def __init__(self, methodName='runTest'):
-        super(TestCase, self).__init__(methodName)
-        self.ptm = None
-        """ :type: PhysicalTopologyManager"""
-        self.vtm = None
-        """ :type: VirtualTopologyManager"""
-        self.current_scenario = None
-        """ :type: class"""
-
-    def _prepare(self, current_scenario):
-        self.current_scenario = current_scenario
-        """ :type: TestScenario"""
-        self.ptm = self.current_scenario.ptm
-        self.vtm = self.current_scenario.vtm
-
-    def runTest(self):
-        pass
 
     @staticmethod
     def get_class(fqn):
@@ -68,3 +57,29 @@ class TestCase(unittest.TestCase):
         if not issubclass(impl_class, TestCase):
             raise ArgMismatchException('Class: ' + fqn + ' is not a subclass of TSM.TestCase')
         return impl_class
+
+    @classmethod
+    def _get_name(cls):
+        return cls.__name__
+
+    @classmethod
+    def _prepare_class(cls, current_scenario, tsm_logger=logging.getLogger()):
+        cls.current_scenario = current_scenario
+        cls.ptm = cls.current_scenario.ptm
+        cls.vtm = cls.current_scenario.vtm
+        cls.setup_logger = tsm_logger
+
+    def __init__(self, methodName='runTest'):
+        super(TestCase, self).__init__(methodName)
+
+        self.LOG = None
+        """ :type: logging.Logger"""
+        self.CONSOLE = None
+        """ :type: logging.Logger"""
+
+    def set_logger(self, log, console=None):
+        self.LOG = log
+        self.CONSOLE = console
+
+    def runTest(self):
+        pass

@@ -16,8 +16,10 @@ __author__ = 'micucci'
 import importlib
 import inspect
 import unittest
+import logging
 
 from common.Exceptions import *
+from common.LogManager import LogManager
 
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
@@ -29,7 +31,7 @@ from TSM.TestResult import TestResult
 
 
 class TestSystemManager(object):
-    def __init__(self, ptm, vtm, debug=False):
+    def __init__(self, ptm, vtm, log_manager=None, debug=False):
         self.ptm = ptm
         """ :type: PhysicalTopologyManager"""
         self.vtm = vtm
@@ -40,6 +42,8 @@ class TestSystemManager(object):
         """ :type: dict[TestScenario, TestResult]"""
         self.debug = debug
         """ :type: bool"""
+        self.log_manager = log_manager
+        """ :type: LogManager"""
 
     def load_tests(self, test_case_list):
         """
@@ -84,16 +88,30 @@ class TestSystemManager(object):
                 scenario_result = self.result_map[scenario]
 
                 scenario_obj = scenario(self.ptm, self.vtm)
+                """ :type suite: TestScenario"""
 
                 suite = test_loader.loadTestsFromTestCase(test_class)
-                for tc in suite._tests:
-                    tc._prepare(scenario_obj)
+                """ :type suite: logging.TestSuite"""
+
+                log_file_name = test_class._get_name() + "-" + scenario_obj.__class__.__name__ + ".log"
+                tsm_log = self.log_manager.add_file_logger(name=scenario_obj.__class__.__name__,
+                                                            file_name=log_file_name,
+                                                            log_level=logging.DEBUG)
+
+                tsm_log.info('TSM: Preparing test class: ' + test_class._get_name())
+                test_class._prepare_class(scenario_obj, tsm_log)
+
+                for tc in suite:
+                    test_log = self.log_manager.add_file_logger(name=tc.id().split('.')[-1],
+                                                                file_name=log_file_name,
+                                                                log_level=logging.DEBUG)
+                    test_log.debug('TSM: Setting logger on test: ' + tc.id())
+                    tc.set_logger(test_log)
 
                 # Run the test by setting up the scenario, then executing the case, and
                 # finally cleaning up the scenario
-                """ :type: TestScenario"""
-                scenario_obj.setup()
                 try:
+                    scenario_obj.setup()
                     suite.run(scenario_result, debug=self.debug)
                 finally:
                     scenario_obj.teardown()

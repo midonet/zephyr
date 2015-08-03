@@ -14,103 +14,80 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from midonetclient.api import MidonetApi
+from midonetclient.bridge import Bridge
+from midonetclient.tunnel_zone import TunnelZone
 
 from common.Exceptions import *
 
 from VTM.Guest import Guest
+from VTM.MNAPI import setup_main_tunnel_zone, setup_main_bridge
 
 from TSM.TestCase import TestCase
 
 from tests.scenarios.TwoComputeScenario import TwoComputeScenario
-from tests.scenarios.ThreeComputeEdgeScenario import ThreeComputeEdgeScenario
 
 
 class TestBasicPing(TestCase):
+    api = None
+    """ :type: MidonetApi """
+    main_bridge = None
+    """ :type: Bridge"""
 
     @staticmethod
     def supported_scenarios():
-        return {TwoComputeScenario} #, ThreeComputeEdgeScenario}
+        return {TwoComputeScenario}
 
     @classmethod
     def setUpClass(cls):
-        """
-        :type cls: TestCase
-        """
+        cls.api = cls.vtm.get_client()
+        if not isinstance(cls.api, MidonetApi):
+            raise ArgMismatchException('Need midonet client for this test')
 
-        api = cls.vtm.get_client()
-        tz = api.get_tunnel_zone('main')
-        if tz is not None:
-            tz = api.add_gre_tunnel_zone().name('main').create()
-
-        for h in api.get_hosts(query={}):
-            print "MN API Host name: " + h.get_name() + ", id: " + h.get_id()
-
-            hv = self.ptm.hypervisors[h.get_name()]
-            tzh = tz.add_tunnel_zone_host()
-
-            tzh.ip_address(hv.interfaces['eth0'].ip_list[0].ip)
-            tzh.host_id(h.get_id())
-            tzh.create()
-
-        br = api.add_bridge().name('bridge_0').tenant_id('test1').create()
-        """ :type: Bridge"""
-        port1 = br.add_port().create()
-        """ :type: Port"""
-        port2 = br.add_port().create()
-        """ :type: Port"""
-
+        setup_main_tunnel_zone(cls.api,
+                               {h.name: h.interfaces['eth0'].ip_list[0].ip
+                                for h in cls.ptm.hypervisors.itervalues()},
+                               cls.setup_logger)
+        cls.main_bridge = setup_main_bridge(cls.api, cls.setup_logger)
 
     def test_ping_two_vms_same_hv(self):
-        api = self.vtm.get_client()
-        if not isinstance(api, MidonetApi):
-            raise ArgMismatchException('Need midonet client for this test')
-        """ :type api: MidonetApi"""
 
-        vm1 = self.current_scenario.vtm.create_vm('10.0.1.3', 'cmp1', 'vm1')
+        port1 = TestBasicPing.main_bridge.add_port().create()
+        """ :type: Port"""
+        port2 = TestBasicPing.main_bridge.add_port().create()
+        """ :type: Port"""
+
+        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', 'cmp1', 'vm1')
         """ :type: Guest"""
-        vm2 = self.current_scenario.vtm.create_vm('10.0.1.4', 'cmp1', 'vm2')
+        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', 'cmp1', 'vm2')
         """ :type: Guest"""
 
         try:
-            vm1.plugin_vm('eth0', port1)
-            vm2.plugin_vm('eth0', port2)
+            vm1.plugin_vm('eth0', port1.get_id())
+            vm2.plugin_vm('eth0', port2.get_id())
+
+            vm1.ping(on_iface='eth0', target_ip='10.0.1.4')
+
         finally:
             vm1.terminate()
             vm2.terminate()
 
     def test_ping_two_vms_diff_hv(self):
-        api = self.vtm.get_client()
-        if not isinstance(api, MidonetApi):
-            raise ArgMismatchException('Need midonet client for this test')
-        """ :type api: MidonetApi"""
 
-        tz = api.get_tunnel_zone('main')
-        if tz is not None:
-            tz = api.add_gre_tunnel_zone().name('main').create()
-        """ :type tz: TunnelZone"""
-
-        hv1 = self.ptm.hypervisors['cmp1']
-        hv2 = self.ptm.hypervisors['cmp2']
-
-
-        tz.add_tunnel_zone_host().ip_address(hv1.interfaces['eth0'].ip_list[0].ip).host_id(str(hv1.unique_id)).create()
-        tz.add_tunnel_zone_host().ip_address(hv2.interfaces['eth0'].ip_list[0].ip).host_id(str(hv2.unique_id)).create()
-
-        br = api.add_bridge().name('bridge_0').tenant_id('test1').create()
-        """ :type: Bridge"""
-        port1 = br.add_port().create()
+        port1 = TestBasicPing.main_bridge.add_port().create()
         """ :type: Port"""
-        port2 = br.add_port().create()
+        port2 = TestBasicPing.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = self.current_scenario.vtm.create_vm('10.0.1.3', 'cmp1', 'vm1')
+        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', 'cmp1', 'vm1')
         """ :type: Guest"""
-        vm2 = self.current_scenario.vtm.create_vm('10.0.1.4', 'cmp2', 'vm2')
+        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', 'cmp2', 'vm2')
         """ :type: Guest"""
 
         try:
-            vm1.plugin_vm('eth0', port1)
-            vm2.plugin_vm('eth0', port2)
+            vm1.plugin_vm('eth0', port1.get_id())
+            vm2.plugin_vm('eth0', port2.get_id())
+
+            vm1.ping(on_iface='eth0', target_ip='10.0.1.4')
         finally:
             vm1.terminate()
             vm2.terminate()

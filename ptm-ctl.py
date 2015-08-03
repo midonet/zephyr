@@ -21,6 +21,7 @@ from PTM.PhysicalTopologyManager import PhysicalTopologyManager, CONTROL_CMD_NAM
 from common.CLI import LinuxCLI
 from CBT.EnvSetup import EnvSetup
 import traceback
+from common.LogManager import LogManager
 
 def usage(exceptObj):
     print 'Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print} [--config-file <JSON file>]'
@@ -60,8 +61,10 @@ try:
 
     root_dir = LinuxCLI().cmd('pwd').strip()
 
+    log_manager = LogManager()
+
     print "Setting root dir to: " + root_dir
-    ptm = PhysicalTopologyManager(root_dir=root_dir, log_root_dir='./tmp/logs')
+    ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
 
     ptm.configure(ptm_config_file)
 

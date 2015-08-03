@@ -212,7 +212,7 @@ class TCPDump(object):
                       (pcap_filter.to_str() if pcap_filter is not None else '') + \
                       ' >> ' + tmp_dump_filename
 
-            cli.print_cmd = True
+            cli.log_cmd = True
 
             # FLAG STATE: ready[clear], stop[clear], finished[clear]
 
