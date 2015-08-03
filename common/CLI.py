@@ -15,6 +15,7 @@
 import os
 import subprocess
 import logging
+import datetime
 
 from common.Exceptions import *
 
@@ -186,6 +187,12 @@ class LinuxCLI(object):
         return ret
 
     def rm(self, old_file):
+        forbidden_rms = ['/', '.', '/usr', '/usr/local', '/bin', '/root', '/etc', '/usr/bin', '/usr/local/bin',
+                         '/var', '/var/lib', '/home', '/lib', '/usr/lib', '/usr/local/lib', '/boot']
+
+        if old_file in forbidden_rms:
+            raise ArgMismatchException('Not allowed to remove ' + old_file +
+                                       ' as it is listed as a vital system directory')
         return self.cmd('rm -rf ' + old_file)
     
     def rm_files(self, root_dir, match_pattern=''):
@@ -220,6 +227,38 @@ class LinuxCLI(object):
     def os_name(self):
         return self.cmd('cat /etc/*-release | grep ^NAME= | cut -d "=" -f 2').strip('"').lower()
 
+    def rollover_file_by_date(self, filename, dest_dir=None,
+                              date_pattern='%Y%m%d%H%M%S', zip_file=True):
+        """
+        If the filename exists, roll it over to a new file based on the parameters.  Return
+        the name of the new file.
+        :type filename: str
+        :type dest_dir: str
+        :type date_pattern: str
+        :type zip_file: bool
+        :return: str
+        """
+        if self.exists(filename):
+            suff_str = '.' + datetime.datetime.now().strftime(date_pattern)
+
+            if dest_dir is not None:
+                dest_filename = dest_dir + '/' + os.path.basename(filename) + suff_str
+                if not self.exists(dest_dir):
+                    self.mkdir(dest_dir)
+            else:
+                dest_filename = filename + suff_str
+
+            self.copy_file(filename, dest_filename)
+            self.rm(filename)
+
+            if zip_file:
+                self.cmd('gzip -9 ' + dest_filename)
+                dest_filename += '.gz'
+
+            return dest_filename
+
+        return filename
+
 
 class NetNSCLI(LinuxCLI):
     def __init__(self, name, priv=True, debug=DEBUG, print_cmd=DEBUG):
@@ -231,3 +270,4 @@ class NetNSCLI(LinuxCLI):
 
     def create_cmd_priv(self, cmd_line):
         return super(NetNSCLI, self).create_cmd_priv('ip netns exec ' + self.name + ' ' + cmd_line)
+
