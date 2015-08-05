@@ -119,7 +119,7 @@ class LogManager(object):
         :param format_name: str Preset format name to use (add via "add_format" function)
         :return: logging.Logger Created logger
         """
-        mode = 'a' if file_overwrite is False else 'r'
+        mode = 'a' if file_overwrite is False else 'w'
         return self._log_check_and_create(name, log_level,
                                           logging.FileHandler(file_name, mode), format_name)
 
@@ -141,8 +141,8 @@ class LogManager(object):
         :param file2_format_name: str Preset format name to use for second file logger
         :return: logging.Logger Created logger
         """
-        file1_mode = 'a' if file1_overwrite is False else 'r'
-        file2_mode = 'a' if file2_overwrite is False else 'r'
+        file1_mode = 'a' if file1_overwrite is False else 'w'
+        file2_mode = 'a' if file2_overwrite is False else 'w'
         new_log = self._log_check_and_create(name, file1_log_level,
                                              logging.FileHandler(file1_name, file1_mode), file1_format_name)
 

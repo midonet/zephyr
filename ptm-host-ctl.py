@@ -41,11 +41,12 @@ try:
 
     log_manager = LogManager()
 
-    print "Setting root dir to: " + root_dir
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
+    ptm.configure_logging(start_new_log=False, log_name='ptm-host-ctl')
+    ptm.LOG.debug("Setting root dir to: " + root_dir)
 
     ptm.ptm_host_control(host_cmd, host_json, arg_list)
-    print "finished"
+    ptm.LOG.debug("ptm-host-ctl finished")
 
 except ExitCleanException:
     exit(1)

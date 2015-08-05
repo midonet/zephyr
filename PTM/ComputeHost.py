@@ -151,12 +151,12 @@ class ComputeHost(NetNSHost):
         near_if_name = vm_host.name + iface.name
         proc = self.ptm.unshare_control('bind_port', self, [near_if_name, port_id])
         stdout, stderr = proc.communicate()
-        print "--\n" + stdout + "--\n" + stderr + "=="
+        self.LOG.debug("--\n" + stdout + "--\n" + stderr + "==")
 
     def disconnect_port(self, port_id):
         proc = self.ptm.unshare_control('unbind_port', self, [port_id])
         stdout, stderr = proc.communicate()
-        print "--\n" + stdout + "--\n" + stderr + "=="
+        self.LOG.debug("--\n" + stdout + "--\n" + stderr + "==")
 
     def control_start(self):
         if self.num_id == '1':
@@ -168,21 +168,21 @@ class ComputeHost(NetNSHost):
 
             ret = zkcli.cmd('mn-conf set -t default < ' + this_dir + '/scripts/midolman.mn-conf', return_status=True)
             if ret != 0:
-                print '\n'.join(zkcli.last_process.stdout.readlines())
-                print '\n'.join(zkcli.last_process.stderr.readlines())
+                self.LOG.fatal('\n'.join(zkcli.last_process.stdout.readlines()))
+                self.LOG.fatal('\n'.join(zkcli.last_process.stderr.readlines()))
                 raise SubprocessFailedException('Failed to run mn-conf: ' + str(ret))
 
             ret = zkcli.cmd('mn-conf set -t default < .mnconf.data', return_status=True)
             if ret != 0:
-                print '\n'.join(zkcli.last_process.stdout.readlines())
-                print '\n'.join(zkcli.last_process.stderr.readlines())
+                self.LOG.fatal('\n'.join(zkcli.last_process.stdout.readlines()))
+                self.LOG.fatal('\n'.join(zkcli.last_process.stderr.readlines()))
                 raise SubprocessFailedException('Failed to run mn-conf: ' + str(ret))
 
             pid_file = '/run/midolman/dnsmasq.pid'
 
             self.cli.cmd('dnsmasq --no-host --no-resolv -S 8.8.8.8')
             dnsm_real_pid = self.cli.cmd("ps -aef | sed -e 's/  */ /g' | grep dnsmasq | cut -d ' ' -f 2")
-            print 'dnsmasq PID=' + dnsm_real_pid
+            self.LOG.debug('dnsmasq PID=' + dnsm_real_pid)
             self.cli.rm(pid_file)
             self.cli.write_to_file(pid_file, dnsm_real_pid)
 
@@ -212,7 +212,7 @@ class ComputeHost(NetNSHost):
             self.cli.rm('.mnconf.data')
 
     def control_bind_port(self, near_if_name, port_id):
-        print 'binding port ' + port_id + ' to ' + near_if_name
+        self.LOG.debug('binding port ' + port_id + ' to ' + near_if_name)
         return self.cli.cmd('mm-ctl --bind-port ' + port_id + ' ' + near_if_name)
 
     def control_unbind_port(self, port_id):

@@ -56,11 +56,7 @@ class Host(PTMObject):
         """ :type: lambda"""
         self.remove_func = host_remove_func
         """ :type: lambda"""
-        self.log_manager = None
-        """ :type: LogManager"""
-        self.logger = logging.getLogger()
-        """ :type: logging.Logger"""
-        self.console = logging.getLogger()
+        self.LOG = None
         """ :type: logging.Logger"""
         self.packet_captures = {}
         """ :type: dict[str, TCPDump]"""
@@ -163,15 +159,13 @@ class Host(PTMObject):
 
         self.interfaces[new_if.name] = new_if
 
-    def set_log_manager(self, log_manager):
+    def set_logger(self, logger):
         """
-        Sets the log manager and makes a root logger for this host
-        :type log_manager: LogManager
+        Sets the logger to use for this host
+        :type logger: logging.Logger
         :return:
         """
-        self.log_manager = log_manager
-        self.logger = log_manager.get_logger('ptm-debug')
-        self.console = log_manager.get_logger('ptm-console')
+        self.LOG = logger
 
     def create(self):
         if self.create_func is not None:

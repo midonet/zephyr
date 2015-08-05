@@ -30,7 +30,7 @@ import datetime
 
 HOST_CONTROL_CMD_NAME = 'ptm-host-ctl.py'
 CONTROL_CMD_NAME = 'ptm-ctl.py'
-
+PTM_LOG_FILE_NAME = 'ptm-output.txt'
 
 class PhysicalTopologyManager(object):
     """
@@ -52,23 +52,23 @@ class PhysicalTopologyManager(object):
         self.host_by_start_order = []
         self.hypervisors = {}
         self.log_root_dir = log_root_dir
+        self.root_dir = root_dir
 
+    def configure_logging(self, log_name='ptm', log_file_name=PTM_LOG_FILE_NAME, start_new_log=False):
         if not LinuxCLI().exists(self.log_root_dir):
             LinuxCLI(priv=False).mkdir(self.log_root_dir)
 
-        date_str = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        if LinuxCLI().exists(self.log_root_dir + '/ptm-output.txt'):
-            LinuxCLI().copy_file(self.log_root_dir + '/ptm-output.txt',
-                                 self.log_root_dir +'/ptm-output.txt.' + date_str)
-            LinuxCLI().cmd('gzip -9 ' + self.log_root_dir +'/ptm-output.txt.' + date_str)
-            LinuxCLI().rm(self.log_root_dir + '/ptm-output.txt')
+        if start_new_log:
+            LinuxCLI().rollover_file_by_date(filename=self.log_root_dir + '/' + log_file_name,
+                                         dest_dir=self.log_root_dir + '/log_bak')
 
-        self.LOG = self.log_manager.add_tee_logger(self.log_root_dir + '/ptm-output.txt', name='ptm-debug',
-                                                   file_overwrite=True, file_log_level=logging.DEBUG)
+        self.LOG = self.log_manager.add_file_logger(file_name=(self.log_root_dir + '/' + log_file_name),
+                                                    name=(log_name + '-debug'),
+                                                    file_overwrite=start_new_log,
+                                                    log_level=logging.DEBUG)
 
-        self.CONSOLE = self.log_manager.add_stdout_logger(name='ptm-console', log_level=logging.INFO)
+        self.CONSOLE = self.log_manager.add_stdout_logger(name=log_name + '-console', log_level=logging.INFO)
 
-        self.root_dir = root_dir
 
     def configure(self, file_name='config.json', file_type='json'):
         """
@@ -76,6 +76,7 @@ class PhysicalTopologyManager(object):
         :type file_name: str
         :return:
         """
+        self.configure_logging(start_new_log=True)
 
         #TODO: Enable multiple config files to define roots across several Linux hosts
         config_obj = None
@@ -108,9 +109,13 @@ class PhysicalTopologyManager(object):
             module = importlib.import_module(mod_name)
             impl_class = getattr(module, class_name)
 
+            self.LOG.info('Adding host: ' + host_cfg.name + ' with impl: ' + class_name)
             h = impl_class(host_cfg.name, self)
             """ :type h: Host"""
-            h.set_log_manager(self.log_manager)
+            host_logger = self.log_manager.add_file_logger(self.log_root_dir + '/' + PTM_LOG_FILE_NAME,
+                                                           name=h.name,
+                                                           log_level=logging.DEBUG)
+            h.set_logger(host_logger)
             self.hosts_by_name[h.name] = h
 
             if h.is_hypervisor():
@@ -174,7 +179,7 @@ class PhysicalTopologyManager(object):
                 raise ObjectNotFoundException('Cannot set start order: host ' + name + ' not found')
             self.host_by_start_order.append(self.hosts_by_name[name])
 
-    def print_config(self, indent=0):
+    def print_config(self, indent=0, logger=None):
         print 'Hosts (in start-order):'
         for h in self.host_by_start_order:
             h.print_config(indent + 1)
@@ -205,10 +210,10 @@ class PhysicalTopologyManager(object):
             stdout, stderr = start_process.communicate()
             start_process.poll()
             #if start_process.returncode != 0:
-            print("Host control process output: ")
-            print stdout
-            print("Host control process error output: ")
-            print stderr
+            self.LOG.debug("Host control process output: ")
+            self.LOG.debug(stdout)
+            self.LOG.debug("Host control process error output: ")
+            self.LOG.debug(stderr)
             #
             # raise SubprocessFailedException('Host control start failed with: ' + str(start_process.returncode))
             h.wait_for_process_start()
@@ -224,10 +229,10 @@ class PhysicalTopologyManager(object):
             stdout, stderr = stop_process.communicate()
             stop_process.poll()
             if stop_process.returncode != 0:
-                print("Host control process output: ")
-                print stdout
-                print("Host control process error output: ")
-                print stderr
+                self.LOG.debug("Host control process output: ")
+                self.LOG.debug(stdout)
+                self.LOG.debug("Host control process error output: ")
+                self.LOG.debug(stderr)
             h.wait_for_process_stop()
 
         for h in reversed(self.host_by_start_order):
@@ -240,14 +245,17 @@ class PhysicalTopologyManager(object):
             h.remove()
 
     def unshare_control(self, command, host, arg_list=list()):
-        cfg_str = json.dumps(host.create_host_cfg_map_for_process_control()).replace('"', '\\"')
-        cmd = 'unshare --mount -- /bin/bash -x -c -- "PYTHONPATH=' + self.root_dir + ' python ' + self.root_dir + '/' + HOST_CONTROL_CMD_NAME + ' ' + command + " '" + cfg_str + "' " + ' '.join(arg_list) + '"'
+        host_cfg_str = json.dumps(host.create_host_cfg_map_for_process_control()).replace('"', '\\"')
+        cmd = 'unshare --mount -- /bin/bash -x -c -- "PYTHONPATH=' + self.root_dir + ' python ' + \
+              self.root_dir + '/' + HOST_CONTROL_CMD_NAME + ' ' + command + " '" + \
+              host_cfg_str + "' " + ' '.join(arg_list) + '"'
+
         return LinuxCLI().cmd(cmd, blocking=False)
 
-    @staticmethod
-    def ptm_host_control(host_cmd, host_json, arg_list):
-        print 'Running command: ' + host_cmd
-        print 'Loading JSON: ' + host_json
+    def ptm_host_control(self, host_cmd, host_json, arg_list):
+
+        self.LOG.debug('Running command: ' + host_cmd)
+        self.LOG.debug('Loading JSON: ' + host_json)
 
         cfg_map = json.loads(host_json)
 
@@ -262,6 +270,7 @@ class PhysicalTopologyManager(object):
 
         h = impl_class(host_name, None)
         """ :type: Host"""
+        h.set_logger(self.LOG)
         h.config_host_for_process_control(cfg_map)
         h.prepare_environment()
 

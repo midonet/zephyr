@@ -57,7 +57,7 @@ class ZookeeperHost(NetNSHost):
         self.ip = IP.from_map(cfg_map['ip'])
 
     def prepare_config(self):
-        self.configurator.configure(self.num_id, self.zookeeper_ips)
+        self.configurator.configure(self.num_id, self.zookeeper_ips, self.LOG)
 
     def print_config(self, indent=0):
         super(ZookeeperHost, self).print_config(indent)
@@ -73,7 +73,7 @@ class ZookeeperHost(NetNSHost):
         connected = False
         while not connected:
             ping_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            print 'Trying to contact ZK server @' + self.ip.ip
+            self.LOG.info('Trying to contact ZK server @' + self.ip.ip)
             try:
                 ping_socket.settimeout(1)
                 ping_socket.connect((self.ip.ip, 2181))
@@ -130,7 +130,7 @@ class ZookeeperFileConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(ZookeeperFileConfiguration, self).__init__()
 
-    def configure(self, num_id, zookeeper_ips):
+    def configure(self, num_id, zookeeper_ips, LOG):
         if num_id == '1':
             etc_dir = '/etc/zookeeper.test'
             self.cli.rm(etc_dir)
@@ -140,7 +140,7 @@ class ZookeeperFileConfiguration(FileConfigurationHandler):
             for j in range(0, len(zookeeper_ips)):
                 write_string += 'server.' + str(j + 1) + '=' + zookeeper_ips[j].ip + ':2888:3888\n'
 
-            print 'write_str=' + write_string
+            LOG.debug('write_str=' + write_string)
             self.cli.write_to_file(etc_dir + '/conf/zoo.cfg', write_string, append=True)
 
         var_lib_dir = '/var/lib/zookeeper.' + num_id

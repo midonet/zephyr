@@ -21,7 +21,7 @@ from common.Exceptions import *
 
 CREATENSCMD = lambda name: LinuxCLI().cmd('ip netns add ' + name)
 REMOVENSCMD = lambda name: LinuxCLI().cmd('ip netns del ' + name)
-DEBUG = 1
+DEBUG = 0
 
 
 class LinuxCLI(object):
