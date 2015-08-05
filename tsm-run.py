@@ -148,6 +148,7 @@ try:
                 print "Error Message:"
                 print err
 
+    tsm.make_results_file()
 
 
 except ExitCleanException:

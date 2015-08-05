@@ -117,3 +117,6 @@ class TestSystemManager(object):
                     scenario_obj.teardown()
 
         return self.result_map
+
+    def make_results_file(self):
+        pass
