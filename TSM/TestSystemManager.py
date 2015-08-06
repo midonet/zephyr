@@ -29,6 +29,7 @@ from TSM.TestScenario import TestScenario
 from TSM.TestCase import TestCase
 from TSM.TestResult import TestResult
 
+TSM_LOG_FILE_NAME = 'tsm-output.log'
 
 class TestSystemManager(object):
     def __init__(self, ptm, vtm, log_manager=None, debug=False):
@@ -44,6 +45,18 @@ class TestSystemManager(object):
         """ :type: bool"""
         self.log_manager = log_manager
         """ :type: LogManager"""
+        self.LOG = logging.getLogger()
+        """ :type: logging.Logger"""
+        self.CONSOLE = logging.getLogger()
+        """ :type: logging.Logger"""
+
+    def configure_logging(self, log_name='tsm-root', log_file_name=TSM_LOG_FILE_NAME):
+
+        self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
+                                                    name=(log_name + '-debug'),
+                                                    log_level=logging.DEBUG)
+
+        self.CONSOLE = self.log_manager.add_stdout_logger(name=log_name + '-console', log_level=logging.INFO)
 
     def load_tests(self, test_case_list):
         """

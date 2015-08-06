@@ -15,7 +15,7 @@
 import os
 import subprocess
 import logging
-import datetime
+import pwd
 
 from common.Exceptions import *
 
@@ -38,6 +38,13 @@ class LinuxCLI(object):
         """ :type: subprocess.Popen"""
         self.logger = logger
         """ :type: logging.Logger"""
+
+        if self.logger is None:
+            handler = logging.StreamHandler()
+            handler.setLevel(logging.DEBUG)
+            self.logger = logging.getLogger(name='cli')
+            self.logger.setLevel(logging.DEBUG)
+            self.logger.addHandler(handler)
 
     def add_environment_variable(self, name, val):
         if (self.env_map is None):
@@ -69,18 +76,13 @@ class LinuxCLI(object):
             cmd = self.create_cmd(new_cmd_line)
 
         if self.log_cmd is True:
-            if self.logger is None:
-                print '>>> ' + cmd
-            else:
-                self.logger.debug('>>>' + cmd)
+            self.logger.debug('>>>' + cmd)
 
         if self.debug is True:
             return cmd
+
         if self.env_map is not None:
-            if self.logger is None:
-                print "ENV:" + ','.join([k + '=' + self.env_map[k] for k in self.env_map.iterkeys()])
-            else:
-                self.logger.debug("ENV:" + ','.join([k + '=' + self.env_map[k] for k in self.env_map.iterkeys()]))
+            self.logger.debug("ENV:" + ','.join([k + '=' + self.env_map[k] for k in self.env_map.iterkeys()]))
 
         p = subprocess.Popen(cmd, *args, shell=shell, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, env=self.env_map)
@@ -165,7 +167,14 @@ class LinuxCLI(object):
         return self.cmd('cp -RL --preserve=all ' + old_dir + ' ' + new_dir)
 
     def copy_file(self, old_file, new_file):
+        dir = os.path.dirname(new_file)
+        if dir != '' and dir != '.' and not self.exists(dir):
+            self.mkdir(dir)
         return self.cmd('cp ' + old_file + ' ' + new_file)
+
+    def move(self, old_file, new_file):
+        self.copy_dir(old_file, new_file)
+        self.rm(old_file)
 
     @staticmethod
     def read_from_file(file_name):
@@ -227,42 +236,15 @@ class LinuxCLI(object):
     def os_name(self):
         return self.cmd('cat /etc/*-release | grep ^NAME= | cut -d "=" -f 2').strip('"').lower()
 
-    def rollover_file_by_date(self, filename, dest_dir=None,
-                              date_pattern='%Y%m%d%H%M%S', zip_file=True):
-        """
-        If the filename exists, roll it over to a new file based on the parameters.  Return
-        the name of the new file.
-        :type filename: str
-        :type dest_dir: str
-        :type date_pattern: str
-        :type zip_file: bool
-        :return: str
-        """
-        if self.exists(filename):
-            suff_str = '.' + datetime.datetime.now().strftime(date_pattern)
+    def pwd(self):
+        return self.cmd('pwd').strip()
 
-            if dest_dir is not None:
-                dest_filename = dest_dir + '/' + os.path.basename(filename) + suff_str
-                if not self.exists(dest_dir):
-                    self.mkdir(dest_dir)
-            else:
-                dest_filename = filename + suff_str
-
-            self.copy_file(filename, dest_filename)
-            self.rm(filename)
-
-            if zip_file:
-                self.cmd('gzip -9 ' + dest_filename)
-                dest_filename += '.gz'
-
-            return dest_filename
-
-        return filename
-
+    def whoami(self):
+        return pwd.getpwuid(os.getuid())[0]
 
 class NetNSCLI(LinuxCLI):
-    def __init__(self, name, priv=True, debug=DEBUG, print_cmd=DEBUG):
-        super(NetNSCLI, self).__init__(priv, debug)
+    def __init__(self, name, priv=True, debug=(DEBUG >= 2), log_cmd=(DEBUG >= 2), logger=None):
+        super(NetNSCLI, self).__init__(priv, debug=debug, log_cmd=log_cmd, logger=logger)
         self.name = name
 
     def create_cmd(self, cmd_line):

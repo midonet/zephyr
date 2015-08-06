@@ -36,6 +36,7 @@ from TSM.TestCase import TestCase
 def usage(exceptObj):
     print 'Usage: tsm-run.py -t <tests> [-s <scenarios>] [-p <file>]'
     print '                             [-c <neutron|midonet> --client-args="<arg=value,...>"]'
+    print '                             [extra_options]'
     print ''
     print '   Options:'
     print '     -t, --tests <tests>          List of fully-qualified names of tests to run, separated by '
@@ -47,13 +48,16 @@ def usage(exceptObj):
     print "                                  'neutron' (default) or 'midonet'."
     print '     --client-args <args>         List of arguments to give the selected client.  These should be'
     print '                                  key=value pairs, separated by commas, with no spaces.'
+    print '   Extra Options:'
+    print '     -l, --log-dir <dir>          Log file directory (default: /tmp/logs/zephyr)'
 
     if exceptObj is not None:
         raise exceptObj
 
 try:
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:',
-                                        ['help', 'tests=', 'scenarios=', 'client=', 'client-args=', 'ptm='])
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:l:',
+                                        ['help', 'tests=', 'scenarios=', 'client=', 'client-args=', 'ptm=',
+                                         'log-dir='])
 
     # Defaults
     client_impl_type = 'neutron'
@@ -61,6 +65,7 @@ try:
     tests = ''
     scenario_filter_list = ''
     ptm_config_file = ''
+    log_dir = '/tmp/logs/zephyr'
 
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
@@ -76,6 +81,9 @@ try:
             scenario_filter_list = value.split(',')
         elif arg in ('-c', '--client'):
             client_impl_type = value
+            pass
+        elif arg in ('-l', '--log-dir'):
+            log_dir = value
             pass
         elif arg == '--client-args':
             for kv in value.split(','):
@@ -106,11 +114,16 @@ try:
     else:
         raise ArgMismatchException('Invalid client API implementation:' + client_impl_type)
 
-    log_manager = LogManager()
+    log_manager = LogManager(root_dir=log_dir)
+    log_manager.rollover_logs_fresh('*.log')
 
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
+    ptm.configure_logging()
+
     vtm = VirtualTopologyManager(physical_topology_manager=ptm, client_api_impl=client_impl, log_manager=log_manager)
+
     tsm = TestSystemManager(ptm, vtm, log_manager=log_manager)
+    tsm.configure_logging()
 
     scenario_filters = [TestScenario.get_class(s) for s in scenario_filter_list]
     test_cases = map(TestCase.get_class, tests)

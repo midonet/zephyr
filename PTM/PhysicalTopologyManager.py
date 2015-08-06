@@ -21,6 +21,7 @@ from HypervisorHost import HypervisorHost
 from common.Exceptions import *
 from common.CLI import *
 from common.LogManager import LogManager
+from common.FileLocation import *
 
 import logging
 import json
@@ -30,12 +31,11 @@ import datetime
 
 HOST_CONTROL_CMD_NAME = 'ptm-host-ctl.py'
 CONTROL_CMD_NAME = 'ptm-ctl.py'
-PTM_LOG_FILE_NAME = 'ptm-output.txt'
+PTM_LOG_FILE_NAME = 'ptm-output.log'
 
 class PhysicalTopologyManager(object):
     """
     Manage physical topology for test.
-    :type log_root_dir: str
     :type log_manager: LogManager
     :type logger: logging.logger
     :type console: logging.logger
@@ -44,31 +44,22 @@ class PhysicalTopologyManager(object):
     :type host_by_start_order: list [Host]
     :type hypervisors: dict[str, HypervisorHost]
     """
-    def __init__(self, root_dir='.', log_manager=None, log_root_dir="/tmp/log/zephyr_ptm"):
+    def __init__(self, root_dir='.', log_manager=None):
         super(PhysicalTopologyManager, self).__init__()
         self.log_manager = log_manager
         """ :type: LogManager"""
         self.hosts_by_name = {}
         self.host_by_start_order = []
         self.hypervisors = {}
-        self.log_root_dir = log_root_dir
         self.root_dir = root_dir
 
-    def configure_logging(self, log_name='ptm', log_file_name=PTM_LOG_FILE_NAME, start_new_log=False):
-        if not LinuxCLI().exists(self.log_root_dir):
-            LinuxCLI(priv=False).mkdir(self.log_root_dir)
+    def configure_logging(self, log_name='ptm-root', log_file_name=PTM_LOG_FILE_NAME):
 
-        if start_new_log:
-            LinuxCLI().rollover_file_by_date(filename=self.log_root_dir + '/' + log_file_name,
-                                         dest_dir=self.log_root_dir + '/log_bak')
-
-        self.LOG = self.log_manager.add_file_logger(file_name=(self.log_root_dir + '/' + log_file_name),
+        self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
                                                     name=(log_name + '-debug'),
-                                                    file_overwrite=start_new_log,
                                                     log_level=logging.DEBUG)
 
         self.CONSOLE = self.log_manager.add_stdout_logger(name=log_name + '-console', log_level=logging.INFO)
-
 
     def configure(self, file_name='config.json', file_type='json'):
         """
@@ -76,8 +67,8 @@ class PhysicalTopologyManager(object):
         :type file_name: str
         :return:
         """
-        self.configure_logging(start_new_log=True)
-
+        self.LOG.debug('**PTM configuration started**')
+        self.LOG.debug('Configuring PTM with file: ' + file_name)
         #TODO: Enable multiple config files to define roots across several Linux hosts
         config_obj = None
         with open(file_name, 'r') as f:
@@ -86,12 +77,14 @@ class PhysicalTopologyManager(object):
             else:
                 raise InvallidConfigurationException('Could not open file of type: ' + file_type)
 
+        self.LOG.debug('Read JSON, configure object=' + str(config_obj))
         ptc = PhysicalTopologyConfig.make_physical_topology(config_obj)
 
         # We need a root server to act as the "local host" with access to the base Linux OS
         if 'root' not in ptc.hosts or 'root' not in ptc.implementation:
             raise ObjectNotFoundException('Physical Topology must have one host and implementation for "root"')
 
+        self.LOG.debug('Configuring PTM host setup')
         # Configure each host in the configuration with its name and bridge/interface
         # definitions
         for host_cfg in ptc.hosts.itervalues():
@@ -106,13 +99,13 @@ class PhysicalTopologyManager(object):
             mod_name = impl_cfg.impl
             class_name = impl_cfg.impl.split('.')[-1]
 
+            self.LOG.debug('Configuring host: ' + host_cfg.name + ' with impl: ' + mod_name + "/" + class_name)
             module = importlib.import_module(mod_name)
             impl_class = getattr(module, class_name)
 
-            self.LOG.info('Adding host: ' + host_cfg.name + ' with impl: ' + class_name)
             h = impl_class(host_cfg.name, self)
             """ :type h: Host"""
-            host_logger = self.log_manager.add_file_logger(self.log_root_dir + '/' + PTM_LOG_FILE_NAME,
+            host_logger = self.log_manager.add_file_logger(PTM_LOG_FILE_NAME,
                                                            name=h.name,
                                                            log_level=logging.DEBUG)
             h.set_logger(host_logger)
@@ -120,7 +113,9 @@ class PhysicalTopologyManager(object):
 
             if h.is_hypervisor():
                 self.hypervisors[h.name] = h
+                self.LOG.debug('Adding host to hypervisor list:' + h.name)
 
+            self.LOG.debug('Configuring individual host:' + h.name)
             # Now configure the host with the definition and impl configs
             h.config_from_ptc_def(host_cfg, impl_cfg)
 
@@ -151,6 +146,7 @@ class PhysicalTopologyManager(object):
 
         for host in self.hosts_by_name.itervalues():
 
+            self.LOG.debug('Connecting host based on wiring scheme:' + host.name)
             # If host has a map entry for wiring, configure the wiring map for that host
             # If not, then skip any wiring configuration.
             if host.name in ptc.wiring:
@@ -172,12 +168,17 @@ class PhysicalTopologyManager(object):
 
                     far_iface = far_host.interfaces[wire.interface]
 
+                    self.LOG.debug('Link found:' + host.name + '/' + near_iface.name + ' -> ' +
+                                   far_host.name + '/' + far_iface.name)
+
                     host.link_interface(near_iface, far_host, far_iface)
 
         for name in ptc.host_start_order:
+            self.LOG.debug('Adding host to start list: ' + name)
             if name not in self.hosts_by_name:
                 raise ObjectNotFoundException('Cannot set start order: host ' + name + ' not found')
             self.host_by_start_order.append(self.hosts_by_name[name])
+        self.LOG.debug('**PTM configuration finished**')
 
     def print_config(self, indent=0, logger=None):
         print 'Hosts (in start-order):'
@@ -190,22 +191,33 @@ class PhysicalTopologyManager(object):
         and starting all hosts
         :return:
         """
+        self.LOG.debug('**PTM starting up**')
+
+        self.LOG.debug('PTM starting hosts')
         for h in self.host_by_start_order:
+            self.LOG.debug('PTM creating host: ' + h.name)
             h.create()
 
         for h in self.host_by_start_order:
+            self.LOG.debug('PTM booting host: ' + h.name)
             h.boot()
 
+        self.LOG.debug('PTM starting host network')
         for h in self.host_by_start_order:
+            self.LOG.debug('PTM starting networks on host: ' + h.name)
             h.net_up()
 
         for h in self.host_by_start_order:
+            self.LOG.debug('PTM finalizing networks on host: ' + h.name)
             h.net_finalize()
 
+        self.LOG.debug('PTM starting host applications')
         for h in self.host_by_start_order:
+            self.LOG.debug('PTM preparing config files on host: ' + h.name)
             h.prepare_config()
 
         for h in self.host_by_start_order:
+            self.LOG.debug('PTM starting apps on host: ' + h.name)
             start_process = self.unshare_control('start', h)
             stdout, stderr = start_process.communicate()
             start_process.poll()
@@ -218,13 +230,17 @@ class PhysicalTopologyManager(object):
             # raise SubprocessFailedException('Host control start failed with: ' + str(start_process.returncode))
             h.wait_for_process_start()
 
+        self.LOG.debug('**PTM startup finished**')
+
     def shutdown(self):
         """
         Shutdown the configured Midonet cluster by stopping, shutting down, and removing all
         hosts
         :return:
         """
+        self.LOG.debug('**PTM shutting down**')
         for h in reversed(self.host_by_start_order):
+            self.LOG.debug('PTM stopping apps on host: ' + h.name)
             stop_process = self.unshare_control('stop', h)
             stdout, stderr = stop_process.communicate()
             stop_process.poll()
@@ -235,14 +251,20 @@ class PhysicalTopologyManager(object):
                 self.LOG.debug(stderr)
             h.wait_for_process_stop()
 
+        self.LOG.debug('PTM stopping networks')
         for h in reversed(self.host_by_start_order):
+            self.LOG.debug('PTM bringing down network on host: ' + h.name)
             h.net_down()
 
+        self.LOG.debug('PTM stopping hosts')
         for h in reversed(self.host_by_start_order):
+            self.LOG.debug('PTM stopping host: ' + h.name)
             h.shutdown()
 
         for h in reversed(self.host_by_start_order):
+            self.LOG.debug('PTM deleting host: ' + h.name)
             h.remove()
+        self.LOG.debug('**PTM shutdown finished**')
 
     def unshare_control(self, command, host, arg_list=list()):
         host_cfg_str = json.dumps(host.create_host_cfg_map_for_process_control()).replace('"', '\\"')

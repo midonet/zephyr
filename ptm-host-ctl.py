@@ -33,16 +33,20 @@ try:
     if len(sys.argv) < 3:
         usage(ExitCleanException)
 
+    #TODO: Clean the paramater parsing up
+    # The parameters should all passed in a single, easily parsable JSON
+    # Add in the logging dir and any other configurable params from the main process
     host_cmd = sys.argv[1]
     host_json = sys.argv[2]
     arg_list = sys.argv[3:] if len(sys.argv) > 3 else []
 
     root_dir = LinuxCLI().cmd('pwd').strip()
 
-    log_manager = LogManager()
+    log_manager = LogManager(root_dir="/tmp/log/zephyr_ptm")
 
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
-    ptm.configure_logging(start_new_log=False, log_name='ptm-host-ctl')
+    ptm.configure_logging()
+
     ptm.LOG.debug("Setting root dir to: " + root_dir)
 
     ptm.ptm_host_control(host_cmd, host_json, arg_list)

@@ -41,53 +41,6 @@ class CLITest(unittest.TestCase):
         self.assertEquals(LinuxCLI().read_from_file('tmp-test'),
                           'local-testlocal-test\nlocal-test\n\nhere locally is a local-test but local')
 
-    def test_rollover(self):
-        LinuxCLI().write_to_file('start', 'test')
-        new_file = LinuxCLI().rollover_file_by_date('start')
-        try:
-            self.assertFalse(LinuxCLI().exists('start'))
-            self.assertTrue(LinuxCLI().exists(new_file))
-            self.assertNotEquals('start', new_file)
-            self.assertTrue(new_file.endswith('.gz'))
-        finally:
-            LinuxCLI().rm(new_file)
-
-        LinuxCLI().write_to_file('start', 'test')
-        new_file = LinuxCLI().rollover_file_by_date('start', dest_dir='./logbak')
-        try:
-            self.assertFalse(LinuxCLI().exists('start'))
-            self.assertTrue(LinuxCLI().exists(new_file))
-            self.assertEquals(os.path.dirname(new_file), './logbak')
-            self.assertNotEquals('start', new_file)
-        finally:
-            LinuxCLI().rm(new_file)
-            LinuxCLI().rm('./logbak')
-
-        LinuxCLI().write_to_file('start', 'test')
-        new_file = LinuxCLI().rollover_file_by_date('start', date_pattern='%Y')
-        try:
-            current_year = str(datetime.datetime.now().year)
-            self.assertFalse(LinuxCLI().exists('start'))
-            self.assertTrue(LinuxCLI().exists(new_file))
-            self.assertEquals(new_file, 'start.' + current_year + '.gz')
-            self.assertNotEquals('start', new_file)
-        finally:
-            LinuxCLI().rm(new_file)
-
-        LinuxCLI().write_to_file('start', 'test')
-        new_file = LinuxCLI().rollover_file_by_date('start', date_pattern='%Y', zip_file=False)
-        try:
-            current_year = str(datetime.datetime.now().year)
-            self.assertTrue(LinuxCLI().exists(new_file))
-            self.assertTrue(new_file.endswith(current_year))
-            self.assertNotEquals('start', new_file)
-        finally:
-            LinuxCLI().rm(new_file)
-
-
-
-
-
     def tearDown(self):
         LinuxCLI().rm('tmp-test')
 try:

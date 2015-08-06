@@ -31,13 +31,15 @@ def usage(exceptObj):
 
 try:
 
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hpc:',
-                                        ['help', 'startup', 'shutdown', 'print', 'neutron=', 'config-file='])
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hpc:l:',
+                                        ['help', 'startup', 'shutdown', 'print', 'neutron=', 'config-file=',
+                                         'log-dir='])
 
     # Defaults
     command = ''
     ptm_config_file = 'config.json'
     neutron_command = ''
+    log_dir = '/tmp/logs/zephyr'
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
             usage(None)
@@ -51,6 +53,8 @@ try:
             neutron_command = value
         elif arg in ('-c', '--config-file'):
             ptm_config_file = value
+        elif arg in ('-l', '--log-dir'):
+            log_dir = value
         elif arg in ('-p', '--print'):
             command = 'print'
         else:
@@ -61,15 +65,17 @@ try:
 
     root_dir = LinuxCLI().cmd('pwd').strip()
 
-    log_manager = LogManager()
+    log_manager = LogManager(root_dir=log_dir)
+    if command == 'startup':
+        log_manager.rollover_logs_fresh(file_filter='ptm*.log')
 
-    print "Setting root dir to: " + root_dir
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
-
+    ptm.configure_logging()
     ptm.configure(ptm_config_file)
 
     if command == 'neutron':
         if neutron_command == 'install':
+            ptm.LOG.debug('Installing neutron client')
             EnvSetup.install_neutron_client()
         else:
             raise ArgMismatchException('Neutron command not recognized: ' + neutron_command)

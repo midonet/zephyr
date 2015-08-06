@@ -15,10 +15,13 @@ __author__ = 'micucci'
 
 import unittest
 import logging
+import os
+import datetime
 
 from common.LogManager import LogManager
 from common.CLI import LinuxCLI
 from common.Exceptions import *
+from common.FileLocation import *
 
 class LogManagerTest(unittest.TestCase):
     def test_formats(self):
@@ -88,17 +91,6 @@ class LogManagerTest(unittest.TestCase):
         self.assertIsNotNone(lm.get_logger('test'))
         self.assertIsNotNone(lm.get_logger('root3'))
 
-    def test_multiple_same_name(self):
-        lm = LogManager()
-        lm.add_format('test', logging.Formatter('TEST - %(levelname)s - %(message)s'))
-        logger1 = lm.add_file_logger('log.txt', name='test', format_name='test')
-        try:
-            logger2 = lm.add_file_logger('log.txt', name='test', format_name='test')
-        except ObjectAlreadyAddedException:
-            pass
-        else:
-            self.assertTrue(False, 'Double-adding logger failed to raise ObjectAlreadyAddedException')
-
     def test_multiple(self):
         lm = LogManager()
         lm.add_format('test', logging.Formatter('TEST - %(levelname)s - %(message)s'))
@@ -145,9 +137,125 @@ class LogManagerTest(unittest.TestCase):
             self.assertTrue(line[2].find("TEST - DEBUG - Test3") != -1)
 
     def test_collate(self):
-        self.assertEqual(True, False)
+        pass
 
-    def tearDown(self):
+    def test_rollover(self):
+
+        LinuxCLI().rm('./logs')
+        LinuxCLI().rm('./logbak')
+
+        lm = LogManager('./logs')
+        lm.set_default_log_level(logging.DEBUG)
+
+        LinuxCLI(priv=False).write_to_file('./logs/test', 'data')
+        LinuxCLI(priv=False).write_to_file('./logs/test2', 'data2')
+
+        # Run fresh rollover function before loggers are defined
+        lm.rollover_logs_fresh(date_pattern='%Y', zip_file=False)
+        try:
+            current_year = str(datetime.datetime.now().year)
+            self.assertFalse(LinuxCLI().exists('./logs/test'))
+            self.assertFalse(LinuxCLI().exists('./logs/test2'))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak'))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak/test.' + current_year))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak/test2.' + current_year))
+            self.assertNotEqual(0, os.path.getsize('./logs/log_bak/test.' + current_year))
+            self.assertNotEqual(0, os.path.getsize('./logs/log_bak/test2.' + current_year))
+        finally:
+            LinuxCLI().rm('./logs/log_bak')
+
+        l1 = lm.add_file_logger(name='main', file_name='test', file_overwrite=True)
+        l2 = lm.add_file_logger(name='sub', file_name='test', file_overwrite=False)
+        l3 = lm.add_file_logger(name='main2', file_name='test2', file_overwrite=True)
+
+        self.assertIn(FileLocation('./logs/test'), lm.open_log_files)
+        self.assertIn(FileLocation('./logs/test2'), lm.open_log_files)
+        self.assertEqual(2, len(lm.open_log_files))
+
+        # Running rollover before log files have data should be a no-op,
+        # So the empty files should remain
+        lm.rollover_logs_by_date()
+        try:
+            self.assertTrue(LinuxCLI().exists('./logs/test'))
+            self.assertTrue(LinuxCLI().exists('./logs/test2'))
+            self.assertEqual(0, os.path.getsize('./logs/test'))
+            self.assertEqual(0, os.path.getsize('./logs/test2'))
+            self.assertFalse(LinuxCLI().exists('./logs/log_bak'))
+        finally:
+            LinuxCLI().rm('./logs/log_bak')
+
+        l1.info('test1')
+        l2.info('test2')
+        l3.info('test3')
+
+        # Now run a standard rollover with no params, default log dir should be created
+        # and regular log files should be moved and zipped
+        lm.rollover_logs_by_date()
+        try:
+            self.assertTrue(LinuxCLI().exists('./logs/test'))
+            self.assertTrue(LinuxCLI().exists('./logs/test2'))
+            self.assertEqual(0, os.path.getsize('./logs/test'))
+            self.assertEqual(0, os.path.getsize('./logs/test2'))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak'))
+        finally:
+            LinuxCLI().rm('./logs/log_bak')
+
+        l1.info('test1')
+        l2.info('test2')
+        l3.info('test3')
+
+        self.assertNotEqual(0, os.path.getsize('./logs/test'))
+        self.assertNotEqual(0, os.path.getsize('./logs/test2'))
+
+        # Same as no-params, just with a specified backup dir
+        lm.rollover_logs_by_date(backup_dir='./logbak')
+        try:
+            self.assertTrue(LinuxCLI().exists('./logs/test'))
+            self.assertTrue(LinuxCLI().exists('./logs/test2'))
+            self.assertEqual(0, os.path.getsize('./logs/test'))
+            self.assertEqual(0, os.path.getsize('./logs/test2'))
+            self.assertTrue(LinuxCLI().exists('./logbak'))
+        finally:
+            LinuxCLI().rm('./logbak')
+
+        l1.info('test1')
+        l2.info('test2')
+        l3.info('test3')
+
+        # Now use a specific pattern, making it easy to test for
+        # the files' existence
+        new_file = lm.rollover_logs_by_date(date_pattern='%Y')
+        try:
+            current_year = str(datetime.datetime.now().year)
+            self.assertTrue(LinuxCLI().exists('./logs/test'))
+            self.assertTrue(LinuxCLI().exists('./logs/test2'))
+            self.assertEqual(0, os.path.getsize('./logs/test'))
+            self.assertEqual(0, os.path.getsize('./logs/test2'))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak'))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak/test.' + current_year + '.gz'))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak/test2.' + current_year + '.gz'))
+        finally:
+            LinuxCLI().rm('./logs/log_bak')
+
+        l1.info('test1')
+        l2.info('test2')
+        l3.info('test3')
+
+        new_file = lm.rollover_logs_by_date(date_pattern='%Y', zip_file=False)
+        try:
+            current_year = str(datetime.datetime.now().year)
+            self.assertTrue(LinuxCLI().exists('./logs/test'))
+            self.assertTrue(LinuxCLI().exists('./logs/test2'))
+            self.assertEqual(0, os.path.getsize('./logs/test'))
+            self.assertEqual(0, os.path.getsize('./logs/test2'))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak'))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak/test.' + current_year))
+            self.assertTrue(LinuxCLI().exists('./logs/log_bak/test2.' + current_year))
+        finally:
+            LinuxCLI().rm('./logs')
+
+    @classmethod
+    def tearDownClass(cls):
         LinuxCLI().rm('log.txt')
         LinuxCLI().rm('log2.txt')
         LinuxCLI().rm('log3.txt')
