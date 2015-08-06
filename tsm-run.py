@@ -115,7 +115,7 @@ try:
         raise ArgMismatchException('Invalid client API implementation:' + client_impl_type)
 
     log_manager = LogManager(root_dir=log_dir)
-    log_manager.rollover_logs_fresh('*.log')
+    log_manager.rollover_logs_fresh(file_filter='*.log')
 
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
     ptm.configure_logging()

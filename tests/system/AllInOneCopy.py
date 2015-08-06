@@ -13,7 +13,13 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from TSM.TestScenario import TestScenario
 
-class TestLogManager(object):
-    def __init__(self):
-        pass
+
+class AllInOneScenario(TestScenario):
+    def setup(self):
+        self.ptm.configure(self.ptm.root_dir + '/tests/scenarios/json/allinone.json')
+        self.ptm.startup()
+
+    def teardown(self):
+        self.ptm.shutdown()
