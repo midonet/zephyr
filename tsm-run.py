@@ -49,15 +49,16 @@ def usage(exceptObj):
     print '     --client-args <args>         List of arguments to give the selected client.  These should be'
     print '                                  key=value pairs, separated by commas, with no spaces.'
     print '   Extra Options:'
-    print '     -l, --log-dir <dir>          Log file directory (default: /tmp/logs/zephyr)'
+    print '     -l, --log-dir <dir>          Log file directory (default: /tmp/zephyr/results)'
+    print '     -r, --results-dir <dir>      Results file directory (default: /tmp/zephyr/logs)'
 
     if exceptObj is not None:
         raise exceptObj
 
 try:
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:l:',
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:l:r:',
                                         ['help', 'tests=', 'scenarios=', 'client=', 'client-args=', 'ptm=',
-                                         'log-dir='])
+                                         'log-dir=', 'results-dir='])
 
     # Defaults
     client_impl_type = 'neutron'
@@ -65,7 +66,8 @@ try:
     tests = ''
     scenario_filter_list = ''
     ptm_config_file = ''
-    log_dir = '/tmp/logs/zephyr'
+    log_dir = '/tmp/zephyr/logs'
+    results_dir = '/tmp/zephyr/results'
 
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
@@ -84,6 +86,9 @@ try:
             pass
         elif arg in ('-l', '--log-dir'):
             log_dir = value
+            pass
+        elif arg in ('-r', '--results-dir'):
+            results_dir = value
             pass
         elif arg == '--client-args':
             for kv in value.split(','):
@@ -161,7 +166,7 @@ try:
                 print "Error Message:"
                 print err
 
-    tsm.make_results_file()
+    tsm.make_results_file(results_dir=results_dir)
 
 
 except ExitCleanException:

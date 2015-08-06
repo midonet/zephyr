@@ -20,6 +20,7 @@ import logging
 
 from common.Exceptions import *
 from common.LogManager import LogManager
+from common.CLI import LinuxCLI
 
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
@@ -131,5 +132,7 @@ class TestSystemManager(object):
 
         return self.result_map
 
-    def make_results_file(self):
-        pass
+    def make_results_file(self, results_dir='./results'):
+        for scen, res in self.result_map.iteritems():
+            LinuxCLI(priv=False).write_to_file(wfile=results_dir + '/' + scen.__name__ + '-results.xml',
+                                               data=res.to_junit_xml())

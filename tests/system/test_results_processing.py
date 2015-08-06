@@ -13,21 +13,17 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from midonetclient.api import MidonetApi
-from midonetclient.bridge import Bridge
-from midonetclient.tunnel_zone import TunnelZone
-
 from common.Exceptions import *
-
-from VTM.Guest import Guest
-from VTM.MNAPI import setup_main_tunnel_zone, setup_main_bridge
 
 from TSM.TestCase import TestCase
 
-from tests.scenarios.TwoComputeScenario import TwoComputeScenario
+from tests.scenarios.AllInOne import AllInOneScenario
+from AllInOneCopy import AllInOneCopyScenario
+
+import unittest
 
 
-class TestBasicPing(TestCase):
+class TestResultsProcessing(TestCase):
     api = None
     """ :type: MidonetApi """
     main_bridge = None
@@ -35,61 +31,25 @@ class TestBasicPing(TestCase):
 
     @staticmethod
     def supported_scenarios():
-        return {TwoComputeScenario}
+        return {AllInOneScenario, AllInOneCopyScenario}
 
-    @classmethod
-    def setUpClass(cls):
-        cls.api = cls.vtm.get_client()
-        if not isinstance(cls.api, MidonetApi):
-            raise ArgMismatchException('Need midonet client for this test')
+    def test_passed_test(self):
+        pass
 
-        setup_main_tunnel_zone(cls.api,
-                               {h.name: h.interfaces['eth0'].ip_list[0].ip
-                                for h in cls.ptm.hypervisors.itervalues()},
-                               cls.setup_logger)
-        cls.main_bridge = setup_main_bridge(cls.api, cls.setup_logger)
+    def test_failed_test(self):
+        self.assertTrue(False)
 
-    def test_ping_two_vms_same_hv(self):
+    def test_error_test(self):
+        raise TestException('test')
 
-        port1 = TestBasicPing.main_bridge.add_port().create()
-        """ :type: Port"""
-        port2 = TestBasicPing.main_bridge.add_port().create()
-        """ :type: Port"""
+    @unittest.skip('testing skip')
+    def test_skipped_test(self):
+        pass
 
-        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', 'cmp1', 'vm1')
-        """ :type: Guest"""
-        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', 'cmp1', 'vm2')
-        """ :type: Guest"""
+    @unittest.expectedFailure
+    def test_expected_failure_test(self):
+        self.assertTrue(False)
 
-        try:
-            vm1.plugin_vm('eth0', port1.get_id())
-            vm2.plugin_vm('eth0', port2.get_id())
-
-            vm1.ping(on_iface='eth0', target_ip='10.0.1.4')
-
-        finally:
-            vm1.terminate()
-            vm2.terminate()
-
-    def test_ping_two_vms_diff_hv(self):
-
-        port1 = TestBasicPing.main_bridge.add_port().create()
-        """ :type: Port"""
-        port2 = TestBasicPing.main_bridge.add_port().create()
-        """ :type: Port"""
-
-        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', 'cmp1', 'vm1')
-        """ :type: Guest"""
-        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', 'cmp2', 'vm2')
-        """ :type: Guest"""
-
-        try:
-            vm1.plugin_vm('eth0', port1.get_id())
-            vm2.plugin_vm('eth0', port2.get_id())
-
-            vm1.ping(on_iface='eth0', target_ip='10.0.1.4')
-        finally:
-            vm1.terminate()
-            vm2.terminate()
-
-
+    @unittest.expectedFailure
+    def test_unexpected_pass_test(self):
+        pass

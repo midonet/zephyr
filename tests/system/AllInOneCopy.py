@@ -16,7 +16,7 @@ __author__ = 'micucci'
 from TSM.TestScenario import TestScenario
 
 
-class AllInOneScenario(TestScenario):
+class AllInOneCopyScenario(TestScenario):
     def setup(self):
         self.ptm.configure(self.ptm.root_dir + '/tests/scenarios/json/allinone.json')
         self.ptm.startup()
