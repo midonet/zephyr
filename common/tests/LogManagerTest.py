@@ -17,6 +17,7 @@ import unittest
 import logging
 import os
 import datetime
+import time
 
 from common.LogManager import LogManager
 from common.CLI import LinuxCLI
@@ -136,9 +137,6 @@ class LogManagerTest(unittest.TestCase):
             self.assertTrue(line[1].find("TEST - WARNING - Test2") != -1)
             self.assertTrue(line[2].find("TEST - DEBUG - Test3") != -1)
 
-    def test_collate(self):
-        pass
-
     def test_rollover(self):
 
         LinuxCLI().rm('./logs')
@@ -253,6 +251,197 @@ class LogManagerTest(unittest.TestCase):
             self.assertTrue(LinuxCLI().exists('./logs/log_bak/test2.' + current_year))
         finally:
             LinuxCLI().rm('./logs')
+
+    def test_collate(self):
+        LinuxCLI().rm('./logs-all')
+        LinuxCLI().rm('./logs')
+        LinuxCLI().rm('./logs2')
+        LinuxCLI().rm('./logs3')
+        LinuxCLI().rm('./logs4')
+
+        LinuxCLI(priv=False).mkdir('./logs2')
+        LinuxCLI(priv=False).mkdir('./logs3')
+        LinuxCLI(priv=False).mkdir('./logs4')
+
+        try:
+            LinuxCLI(priv=False).write_to_file('./logs2/test2', 'data')
+            LinuxCLI(priv=False).write_to_file('./logs3/test3', 'data2')
+            LinuxCLI(priv=False).write_to_file('./logs4/test3', 'data3')
+
+            lm = LogManager('./logs')
+
+            lm.set_default_log_level(logging.DEBUG)
+            LOG1 = lm.add_file_logger('test-log')
+            LOG2 = lm.add_file_logger('test-log2')
+            lm.add_external_log_file(FileLocation('./logs2/test2'), '')
+            lm.add_external_log_file(FileLocation('./logs3/test3'), '0')
+            lm.add_external_log_file(FileLocation('./logs4/test3'), '1')
+
+            LOG1.info('test')
+            LOG2.info('test2')
+
+            lm.collate_logs('./logs-all')
+
+            self.assertTrue(LinuxCLI().exists('./logs-all/test-log'))
+            self.assertTrue(LinuxCLI().exists('./logs-all/test-log2'))
+            self.assertTrue(LinuxCLI().exists('./logs-all/test2'))
+            self.assertTrue(LinuxCLI().exists('./logs-all/test3.0'))
+            self.assertTrue(LinuxCLI().exists('./logs-all/test3.1'))
+        finally:
+            LinuxCLI().rm('./logs-all')
+            LinuxCLI().rm('./logs')
+            LinuxCLI().rm('./logs2')
+            LinuxCLI().rm('./logs3')
+            LinuxCLI().rm('./logs4')
+
+    def test_slicing_single(self):
+        LinuxCLI().rm('./logs')
+        LinuxCLI().rm('./sliced-logs')
+
+        try:
+            lm = LogManager('./logs')
+            lm.set_default_log_level(logging.DEBUG)
+            LOG = lm.add_file_logger('test-log')
+
+            now1 = datetime.datetime.now()
+            for i in range(0, 5):
+                LOG.info('test-log-line: ' + str(i))
+                time.sleep(2)
+            LOG.info('test-log-line: ' + str(5))
+            now2 = datetime.datetime.now()
+
+            lm.slice_log_files_by_time('./sliced-logs',
+                                       start_time=now1 + datetime.timedelta(seconds=3),
+                                       stop_time=now2 - datetime.timedelta(seconds=3),
+                                       collated_only=False)
+
+            self.assertAlmostEquals(2, LinuxCLI().wc('./sliced-logs/test-log.slice')['lines'], delta=1)
+
+        finally:
+            LinuxCLI().rm('./logs')
+            LinuxCLI().rm('./sliced-logs')
+
+    def test_slicing_single_leeway(self):
+        LinuxCLI().rm('./logs')
+        LinuxCLI().rm('./sliced-logs')
+
+        try:
+            lm = LogManager('./logs')
+            lm.set_default_log_level(logging.DEBUG)
+            LOG = lm.add_file_logger('test-log')
+
+            now1 = datetime.datetime.now() + datetime.timedelta(seconds=6)
+            for i in range(0, 5):
+                LOG.info('test-log-line: ' + str(i))
+                time.sleep(2)
+            LOG.info('test-log-line: ' + str(5))
+            now2 = datetime.datetime.now() - datetime.timedelta(seconds=6)
+
+            lm.slice_log_files_by_time('./sliced-logs',
+                                       start_time=now1,
+                                       stop_time=now2,
+                                       leeway=3,
+                                       collated_only=False)
+
+            self.assertAlmostEquals(2, LinuxCLI().wc('./sliced-logs/test-log.slice')['lines'], delta=1)
+
+        finally:
+            LinuxCLI().rm('./logs')
+            LinuxCLI().rm('./sliced-logs')
+
+    def test_slicing_multi(self):
+        LinuxCLI().rm('./logs')
+        LinuxCLI().rm('./sliced-logs')
+
+        try:
+            lm = LogManager('./logs')
+            lm.set_default_log_level(logging.DEBUG)
+            LOG = lm.add_file_logger('test-log')
+            LOG2 = lm.add_file_logger('test-log2')
+
+            now1 = datetime.datetime.now() + datetime.timedelta(seconds=6)
+            for i in range(0, 5):
+                LOG.info('test-log-line: ' + str(i))
+                LOG2.info('test-log2-line: ' + str(i))
+                time.sleep(2)
+            LOG.info('test-log-line: ' + str(5))
+            LOG2.info('test-log2-line: ' + str(5))
+            now2 = datetime.datetime.now() - datetime.timedelta(seconds=6)
+
+            lm.slice_log_files_by_time('./sliced-logs',
+                                       start_time=now1,
+                                       stop_time=now2,
+                                       leeway=3,
+                                       collated_only=False)
+
+            self.assertAlmostEquals(2, LinuxCLI().wc('./sliced-logs/test-log.slice')['lines'], delta=1)
+            self.assertAlmostEquals(2, LinuxCLI().wc('./sliced-logs/test-log2.slice')['lines'], delta=1)
+
+        finally:
+            LinuxCLI().rm('./logs')
+            LinuxCLI().rm('./sliced-logs')
+            pass
+
+    def test_collate_and_slicing_multi(self):
+
+        LinuxCLI().rm('./logs-all')
+        LinuxCLI().rm('./logs')
+        LinuxCLI().rm('./logs2')
+        LinuxCLI().rm('./logs3')
+        LinuxCLI().rm('./logs4')
+        LinuxCLI().rm('./sliced-logs')
+
+        LinuxCLI(priv=False).mkdir('./logs2')
+        LinuxCLI(priv=False).mkdir('./logs3')
+        LinuxCLI(priv=False).mkdir('./logs4')
+
+        try:
+            now = datetime.datetime.now()
+            LinuxCLI(priv=False).write_to_file('./logs2/test2', now.strftime('%Y-%m-%d %H:%M:%S,%f') + ' start\n')
+            LinuxCLI(priv=False).write_to_file('./logs3/test3', now.strftime('%Y-%m-%d %H:%M:%S,%f') + ' start\n')
+            LinuxCLI(priv=False).write_to_file('./logs4/test3', now.strftime('%Y-%m-%d %H:%M:%S,%f') + ' start\n')
+
+            lm = LogManager('./logs')
+
+            lm.set_default_log_level(logging.DEBUG)
+            LOG1 = lm.add_file_logger('test-log')
+            LOG2 = lm.add_file_logger('test-log2')
+            lm.add_external_log_file(FileLocation('./logs2/test2'), '')
+            lm.add_external_log_file(FileLocation('./logs3/test3'), '0')
+            lm.add_external_log_file(FileLocation('./logs4/test3'), '1')
+
+            now1 = datetime.datetime.now() + datetime.timedelta(seconds=6)
+            for i in range(0, 5):
+                LOG1.info('test-log-line: ' + str(i))
+                LOG2.info('test-log2-line: ' + str(i))
+                LinuxCLI(priv=False).write_to_file('./logs4/test3',
+                                                   datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f') +
+                                                        ' test-log4\n',
+                                                   append=True)
+                time.sleep(2)
+            LOG1.info('test-log-line: ' + str(5))
+            LOG2.info('test-log2-line: ' + str(5))
+            now2 = datetime.datetime.now() - datetime.timedelta(seconds=6)
+
+            lm.collate_logs('./logs-all')
+
+            lm.slice_log_files_by_time('./sliced-logs',
+                                       start_time=now1,
+                                       stop_time=now2,
+                                       leeway=3,
+                                       collated_only=True)
+
+            self.assertAlmostEquals(2, LinuxCLI().wc('./sliced-logs/test3.1.slice')['lines'], delta=1)
+            self.assertAlmostEquals(2, LinuxCLI().wc('./sliced-logs/test-log.slice')['lines'], delta=1)
+            self.assertAlmostEquals(2, LinuxCLI().wc('./sliced-logs/test-log2.slice')['lines'], delta=1)
+
+        finally:
+            LinuxCLI().rm('./logs')
+            LinuxCLI().rm('./sliced-logs')
+            LinuxCLI().rm('./logs-all')
+            LinuxCLI().rm('./logs2')
+            LinuxCLI().rm('./logs3')
+            LinuxCLI().rm('./logs4')
 
     @classmethod
     def tearDownClass(cls):

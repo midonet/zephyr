@@ -16,13 +16,13 @@ import os
 import subprocess
 import logging
 import pwd
+import glob
 
 from common.Exceptions import *
 
 CREATENSCMD = lambda name: LinuxCLI().cmd('ip netns add ' + name)
 REMOVENSCMD = lambda name: LinuxCLI().cmd('ip netns del ' + name)
 DEBUG = 0
-
 
 class LinuxCLI(object):
     def __init__(self, priv=True, debug=(DEBUG >= 2), log_cmd=(DEBUG >= 1), logger=None):
@@ -180,6 +180,19 @@ class LinuxCLI(object):
     def read_from_file(file_name):
         file_ptr = open(file_name, 'r')
         return file_ptr.read()
+
+    @staticmethod
+    def ls(file_filter='./*'):
+        file_list = [f
+                     for f in glob.glob(file_filter)
+                     if os.path.isfile(f)]
+        return file_list
+
+    def wc(self, file):
+        if not self.exists(file):
+            raise ObjectNotFoundException('File not found: ' + file)
+        line = map(int, self.cmd("wc " + file).split()[0:3])
+        return dict(zip(['lines', 'words', 'chars'], line))
 
     def write_to_file(self, wfile, data, append=False):
         old_data = ''

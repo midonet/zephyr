@@ -20,7 +20,6 @@ import logging
 import logging.handlers
 import datetime
 import os
-import glob
 
 class LogManager(object):
 
@@ -31,16 +30,20 @@ class LogManager(object):
         """ :type: int"""
         self.formats = {}
         """ :type: dict [str, logging.Formatter]"""
+        self.date_formats = {}
+        """ :type: dict [str, (str, int)]"""
         self.root_dir = root_dir
         """ :type: str"""
         self.open_log_files = {}
-        """ :type: dict [FileLocation, list[(logging.Logger, logging.Handler)]]"""
+        """ :type: dict [FileLocation, list[(logging.Logger, logging.Handler, str, int)]]"""
         self.external_log_files = set()
-        """ :type: set [FileLocation]"""
-
+        """ :type: set [(FileLocation, str, int, str)]"""
+        self.collated_log_files = set()
+        """ :type: set [(FileLocation, str, int)]"""
         # Set up a default, standard format
         self.add_format('standard',
-                        logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+                        logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'),
+                        '%Y-%m-%d %H:%M:%S,%f', 0)
 
         if not LinuxCLI().exists(self.root_dir):
             LinuxCLI(priv=False).mkdir(self.root_dir)
@@ -63,7 +66,7 @@ class LogManager(object):
             raise ObjectNotFoundException('Log format not defined: ' + format)
         return self.formats[format]
 
-    def add_format(self, format_name, format_obj):
+    def add_format(self, format_name, format_obj, date_format, date_position):
         """
         Add a format to the stored formats
         :param format_name: str Name to use for format (must be unique)
@@ -73,6 +76,7 @@ class LogManager(object):
         if format_name in self.formats:
             raise ObjectAlreadyAddedException('Log format already defined: ' + format_name)
         self.formats[format_name] = format_obj
+        self.date_formats[format_name] = (date_format, date_position)
 
     def get_logger(self, name='root'):
         """
@@ -91,7 +95,7 @@ class LogManager(object):
         :param level: int Log level to set for log and handler
         :param handler_obj: logging.Handler Handler object to use for this logger
         :param format_name: Name of the stored format to use for this logger
-        :return: logging.Logger The created logger object
+        :return: (logging.Logger The created logger object
         """
 
         if name is None:
@@ -107,6 +111,9 @@ class LogManager(object):
 
         new_log.setLevel(level if level is not None else self.default_log_level)
         new_log.addHandler(handler_obj)
+
+        new_log.debug("Starting log [" + name + "] with handler type [" +
+                     handler_obj.__class__.__name__ + "]")
 
         self.loggers[name] = new_log
 
@@ -140,7 +147,9 @@ class LogManager(object):
                                              log_level,
                                              handler,
                                              format_name)
-        self.add_log_file(FileLocation(self.root_dir + "/" + file_name), new_log, handler)
+        date_format, date_position = self.date_formats[format_name]
+        self.add_log_file(FileLocation(self.root_dir + "/" + file_name), new_log, handler,
+                          date_format, date_position)
 
         return new_log
 
@@ -175,14 +184,19 @@ class LogManager(object):
 
         new_log.addHandler(file2_handler)
 
-        self.add_log_file(FileLocation(self.root_dir + "/" + file1_name), new_log, file1_handler)
-        self.add_log_file(FileLocation(self.root_dir + "/" + file2_name), new_log, file2_handler)
+        date_format1, date_position1 = self.date_formats[file1_format_name]
+        date_format2, date_position2 = self.date_formats[file2_format_name]
+
+        self.add_log_file(FileLocation(self.root_dir + "/" + file1_name), new_log, file1_handler,
+                          date_format1, date_position1)
+        self.add_log_file(FileLocation(self.root_dir + "/" + file2_name), new_log, file2_handler,
+                          date_format2, date_position2)
 
         return new_log
 
     def add_tee_logger(self, file_name, name=None, file_overwrite=False,
-                        file_log_level=None, stdout_log_level=None,
-                        file_format_name='standard', stdout_format_name='standard'):
+                       file_log_level=None, stdout_log_level=None,
+                       file_format_name='standard', stdout_format_name='standard'):
         """
         Add a Python logger which creates a logger which will send to std and log to a
         file, then stores and returns it
@@ -206,25 +220,90 @@ class LogManager(object):
         stdout_handler.setFormatter(self.get_format(stdout_format_name))
 
         new_log.addHandler(stdout_handler)
-        self.add_log_file(FileLocation(self.root_dir + "/" + file_name), new_log, handler)
+        date_format, date_position = self.date_formats[file_format_name]
+        self.add_log_file(FileLocation(self.root_dir + "/" + file_name), new_log, handler,
+                          date_format, date_position)
 
         return new_log
 
-    def add_external_log_file(self, location):
-        self.external_log_files.add(location)
+    def add_external_log_file(self, location, num_id, date_format='%Y-%m-%d %H:%M:%S,%f', date_position=0):
+        self.external_log_files.add((location, num_id, date_format, date_position))
 
-    def add_log_file(self, location, logger, file_handler):
+    def add_log_file(self, location, logger, file_handler, date_format='%Y-%m-%d %H:%M:%S,%f', date_position=0):
         if location not in self.open_log_files:
             self.open_log_files[location] = []
-        self.open_log_files[location].append((logger, file_handler))
+        self.open_log_files[location].append((logger, file_handler, date_format, date_position))
 
-    def collate_logs(self):
+    def collate_logs(self, dest_path):
         """
-        Gather all the log files into one place and tarball them up
+        Gather all the log files into one place
         :return:
         """
-        for l in self.loggers.itervalues():
-            pass
+        for loc, logger_infos in self.open_log_files.iteritems():
+            (l, fh, date_format, date_pos) = logger_infos[0]
+            loc.get_file(near_path=dest_path)
+            self.collated_log_files.add((FileLocation(dest_path + '/' + loc.filename), date_format, date_pos))
+
+        for loc, num_id, date_format, date_pos in self.external_log_files:
+            new_file_name = loc.filename if num_id == '' else loc.filename + '.' + str(num_id)
+            loc.get_file(near_path=dest_path, near_filename=new_file_name)
+            self.collated_log_files.add((FileLocation(dest_path + '/' + new_file_name), date_format, date_pos))
+
+    def slice_log_files_by_time(self, new_dir, start_time=None, stop_time=None, leeway=0, collated_only=True,
+                                ext = '.slice'):
+        """
+        Slice a log file using timestamps and copy the slice to a new file.  The default
+        is to start at the beginning and slice all the way to the end.  The leeway parameter
+        will move the slice to n seconds before start and n seconds after the end time.  The collated_only
+        parameter (defaults to True) will limit the slicing to pre-collated log files only, so calling
+        the 'collate_logs' function is a pre-requisite in this case (False will slice all known logs files).
+        Use 'ext' to set the extension on the slice files (defaults to .slice)
+        :type log_files: list [str]
+        :type new_dir: str
+        :type start_time: datetime.datetime
+        :type stop_time: datetime.datetime
+        :type leeway: int
+        :type collated_only: bool
+        :type ext: str
+        :return:
+        """
+
+        concrete_start_time = start_time - datetime.timedelta(seconds=leeway)
+        concrete_stop_time = stop_time + datetime.timedelta(seconds=leeway)
+
+        log_file_set = set()
+        if collated_only:
+            log_file_set = self.collated_log_files
+        else:
+            for f, logger_infos in self.open_log_files.iteritems():
+                (l, fh, df, dp) = logger_infos[0]
+                log_file_set.add((f, df, dp))
+            for f, nid, df, dp in self.external_log_files:
+                log_file_set.add((f, df, dp))
+
+        for f, df, dp in log_file_set:
+            lines_to_write = []
+            with open(f.full_path(), 'r') as cf:
+                for line in cf.readlines():
+                    dateline = ' '.join(line.split(' ')[dp:dp+2])
+                    try:
+                        current_time = datetime.datetime.strptime(dateline, df)
+                        if current_time < concrete_start_time:
+                            continue
+                        elif current_time > concrete_stop_time:
+                            break
+                        else:
+                            lines_to_write.append(line)
+                    except ValueError:
+                        continue
+
+            if len(lines_to_write) != 0:
+                filename = new_dir + '/' + f.filename + ext
+                LinuxCLI(priv=False).write_to_file(filename,
+                                                   'SLICE OF LOG [' + f.full_path() + '] FROM [' +
+                                                   str(concrete_start_time) + '] TO [' +
+                                                   str(concrete_stop_time) + ']\n')
+                LinuxCLI(priv=False).write_to_file(filename, ''.join(lines_to_write), append=True)
 
     def _rollover_file(self, file_path, backup_dir=None,
                        date_pattern='%Y%m%d%H%M%S', zip_file=True):
@@ -254,13 +333,9 @@ class LogManager(object):
         :type filter: str
         :return:
         """
-        print "checking dir: " + self.root_dir + '/' + file_filter
-        file_list = [f
-                     for f in glob.glob(self.root_dir + '/' + file_filter)
-                     if os.path.isfile(f)]
+        file_list = LinuxCLI().ls(self.root_dir + '/' + file_filter)
 
         for f in file_list:
-            print "checking: " + f
             if os.path.getsize(f) > 0:
                 self._rollover_file(file_path=f, backup_dir=backup_dir,
                                     date_pattern=date_pattern, zip_file=zip_file)
@@ -277,7 +352,6 @@ class LogManager(object):
         """
         for file_loc, logger_list in self.open_log_files.iteritems():
             cli = LinuxCLI(priv=False)
-            print "checking: " + file_loc.full_path()
             if cli.exists(file_loc.full_path()) and os.path.getsize(file_loc.full_path()) > 0:
 
                 # Close previous, now-stale file handlers
@@ -290,10 +364,10 @@ class LogManager(object):
                 # Pop off old logger/handler pairs and re-populate with new handler objects
                 # which point to the original file location
                 for i in range(0, len(logger_list)):
-                    l, h = logger_list.pop()
+                    l, h, df, dp = logger_list.pop()
                     new_handler = logging.FileHandler(filename=file_loc.full_path(), mode='w')
                     l.addHandler(new_handler)
-                    logger_list.append((l, new_handler))
+                    logger_list.append((l, new_handler, df, dp))
 
 
 

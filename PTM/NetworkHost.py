@@ -19,6 +19,7 @@ from RootHost import RootHost
 from ConfigurationHandler import FileConfigurationHandler
 from common.Exceptions import *
 from common.IP import IP
+from common.FileLocation import *
 
 class NetworkHost(RootHost):
     def __init__(self, name, ptm):
@@ -44,6 +45,11 @@ class NetworkHost(RootHost):
 
     def prepare_config(self):
         self.configurator.configure(self.zookeeper_ips)
+        log_dir = '/var/log/tomcat7'
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/catalina.out'), '',
+                                                   '%b %d, %Y %I:%M:%S %p')
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/midonet-api.log'), '',
+                                                   '%Y.%m.%d %H:%M:%S.%f')
 
     def print_config(self, indent=0):
         super(NetworkHost, self).print_config(indent)

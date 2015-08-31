@@ -17,6 +17,7 @@ import importlib
 import inspect
 import unittest
 import logging
+import datetime
 
 from common.Exceptions import *
 from common.LogManager import LogManager
@@ -126,13 +127,31 @@ class TestSystemManager(object):
                 # finally cleaning up the scenario
                 try:
                     scenario_obj.setup()
+                    scenario_result.start_time = datetime.datetime.utcnow()
                     suite.run(scenario_result, debug=self.debug)
+                    scenario_result.stop_time = datetime.datetime.utcnow()
+                    scenario_result.run_time = (scenario_result.stop_time - scenario_result.start_time)
+
                 finally:
                     scenario_obj.teardown()
 
         return self.result_map
 
-    def make_results_file(self, results_dir='./results'):
+    def create_results(self, results_dir='./results', leeway=5):
+        cli = LinuxCLI(priv=False)
+        cli.rm(results_dir)
         for scen, res in self.result_map.iteritems():
-            LinuxCLI(priv=False).write_to_file(wfile=results_dir + '/' + scen.__name__ + '-results.xml',
-                                               data=res.to_junit_xml())
+            log_out_dir = results_dir + '/' + scen.__name__
+            cli.write_to_file(wfile=log_out_dir + '/results.xml',
+                              data=res.to_junit_xml())
+            self.log_manager.collate_logs(log_out_dir + '/full-logs')
+
+            for tc in res.all_tests():
+                tcname = tc.id().split('.')[-1]
+                cli.mkdir(log_out_dir + '/' + tcname)
+                self.log_manager.slice_log_files_by_time(log_out_dir + '/' + tcname,
+                                                         start_time=tc.start_time,
+                                                         stop_time=tc.stop_time,
+                                                         leeway=leeway,
+                                                         collated_only=True)
+

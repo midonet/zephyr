@@ -16,6 +16,7 @@ __author__ = 'micucci'
 import unittest
 import importlib
 import logging
+import datetime
 
 from common.Exceptions import *
 from TestScenario import TestScenario
@@ -76,6 +77,20 @@ class TestCase(unittest.TestCase):
         """ :type: logging.Logger"""
         self.CONSOLE = None
         """ :type: logging.Logger"""
+        self.start_time = None
+        """ :type: datetime.datetime"""
+        self.stop_time = None
+        """ :type: datetime.datetime"""
+        self.run_time = None
+        """ :type: datetime.datetime"""
+
+    def run(self, result=None):
+        self.start_time = datetime.datetime.utcnow()
+        self.LOG.info('Running test case: ' + self._get_name() + ' - ' + self._testMethodName)
+        super(TestCase, self).run(result)
+        self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
+        self.stop_time = datetime.datetime.utcnow()
+        self.run_time = (self.stop_time - self.start_time)
 
     def set_logger(self, log, console=None):
         self.LOG = log

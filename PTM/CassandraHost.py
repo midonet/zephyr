@@ -17,10 +17,12 @@ import time
 
 from NetNSHost import NetNSHost
 from common.Exceptions import *
+from common.FileLocation import *
 from PhysicalTopologyConfig import *
 from common.CLI import *
 from common.IP import IP
 from ConfigurationHandler import FileConfigurationHandler
+
 
 class CassandraHost(NetNSHost):
 
@@ -55,6 +57,9 @@ class CassandraHost(NetNSHost):
 
     def prepare_config(self):
         self.configurator.configure(self.num_id, self.cassandra_ips, self.init_token, self.ip)
+        log_dir = '/var/log/cassandra.' + self.num_id
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/system.log'), self.num_id,
+                                                   '%Y-%m-%d %H:%M:%S,%f', 2)
 
     def print_config(self, indent=0):
         super(CassandraHost, self).print_config(indent)

@@ -21,8 +21,8 @@ class FileAccessor(object):
         super(FileAccessor, self).__init__()
 
     def _get_file(self, far_path, far_filename, near_path, near_filename):
-        LinuxCLI(log_cmd=True, priv=False).copy_file(far_path + '/' + far_filename,
-                                                     near_path + '/' + near_filename)
+        LinuxCLI(priv=False).copy_file(far_path + '/' + far_filename,
+                                       near_path + '/' + near_filename)
 
 
 class SSHFileAccessor(FileAccessor):
@@ -56,16 +56,18 @@ class FileLocation(object):
     def __hash__(self):
         return hash(self.full_path())
 
-    def __init__(self, filename):
+    def __init__(self, filename, default_accessor=FileAccessor()):
         super(FileLocation, self).__init__()
         self.path = os.path.dirname(filename)
         if self.path == '':
             self.path = '.'
         self.filename = os.path.basename(filename)
+        self.default_accessor = default_accessor
 
-    def get_file(self, accessor=FileAccessor(), near_path='.', near_filename=None):
-        near_fn = self.filename if near_filename is None else near_filename
-        accessor._get_file(self.path, self.filename, near_path, near_fn)
+    def get_file(self, accessor=None, near_path='.', near_filename=None):
+        near_fn = near_filename if near_filename is not None else self.filename
+        curr_acc = accessor if accessor is not None else self.default_accessor
+        curr_acc._get_file(self.path, self.filename, near_path, near_fn)
 
     def full_path(self):
         return self.path + '/' + self.filename

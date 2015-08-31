@@ -18,9 +18,11 @@ import socket
 
 from common.Exceptions import *
 from common.IP import IP
+from common.FileLocation import *
 from NetNSHost import NetNSHost
 from PhysicalTopologyConfig import *
 from ConfigurationHandler import FileConfigurationHandler
+
 
 class ZookeeperHost(NetNSHost):
     def __init__(self, name, ptm):
@@ -58,6 +60,9 @@ class ZookeeperHost(NetNSHost):
 
     def prepare_config(self):
         self.configurator.configure(self.num_id, self.zookeeper_ips, self.LOG)
+        log_dir = '/var/log/zookeeper.' + self.num_id
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/zookeeper.log'), self.num_id,
+                                                   '%Y-%m-%d %H:%M:%S,%f')
 
     def print_config(self, indent=0):
         super(ZookeeperHost, self).print_config(indent)

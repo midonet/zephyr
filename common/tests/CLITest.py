@@ -41,6 +41,18 @@ class CLITest(unittest.TestCase):
         self.assertEquals(LinuxCLI().read_from_file('tmp-test'),
                           'local-testlocal-test\nlocal-test\n\nhere locally is a local-test but local')
 
+    def test_wc(self):
+        cli = LinuxCLI()
+        cli.rm('tmp')
+        try:
+            cli.write_to_file('tmp', 'foo\nbar\nbaz\nbamf zap\n')
+            ret = cli.wc('tmp')
+            self.assertEqual(4, ret['lines'])
+            self.assertEqual(5, ret['words'])
+            self.assertEqual(21, ret['chars'])
+        finally:
+            cli.rm('tmp')
+
     def tearDown(self):
         LinuxCLI().rm('tmp-test')
 try:

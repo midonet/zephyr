@@ -14,42 +14,75 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from common.Exceptions import *
+from common.FileLocation import *
 
 from TSM.TestCase import TestCase
 
 from tests.scenarios.AllInOne import AllInOneScenario
+from tests.scenarios.TwoComputeScenario import TwoComputeScenario
 from AllInOneCopy import AllInOneCopyScenario
 
 import unittest
-
+import time
+import logging
 
 class TestResultsProcessing(TestCase):
     api = None
     """ :type: MidonetApi """
     main_bridge = None
     """ :type: Bridge"""
+    testlog = None
+    """ :type: logging.Logger"""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.testlog = cls.ptm.log_manager.add_file_logger(file_name='test-' +
+                                                                    cls.current_scenario.__class__.__name__ + '.log',
+                                                          name='tester',
+                                                          file_overwrite=True, log_level=logging.DEBUG)
 
     @staticmethod
     def supported_scenarios():
         return {AllInOneScenario, AllInOneCopyScenario}
 
     def test_passed_test(self):
+        self.testlog.debug('test_passed_test')
         pass
 
     def test_failed_test(self):
         self.assertTrue(False)
 
     def test_error_test(self):
+        self.LOG.debug('test_error_test')
         raise TestException('test')
 
     @unittest.skip('testing skip')
     def test_skipped_test(self):
+        self.LOG.debug('test_skipped_test')
         pass
 
     @unittest.expectedFailure
     def test_expected_failure_test(self):
+        self.LOG.debug('test_expected_failure_test')
         self.assertTrue(False)
 
     @unittest.expectedFailure
     def test_unexpected_pass_test(self):
+        self.testlog.debug('test_unexpected_pass_test')
         pass
+
+    def test_log_splitting(self):
+        self.testlog.debug('test_log_splitting')
+
+        for i in range(0, 10):
+            self.ptm.log_manager.get_logger(name='tester').info('test_log_splitting')
+            self.LOG.info('test_log_splitting_in_main ' + str(i))
+            time.sleep(1)
+
+    def test_log_splitting2(self):
+        self.testlog.debug('test_log_splitting2')
+
+        for i in range(0, 10):
+            self.testlog.info('test_log_splitting2 ' + str(i))
+            self.LOG.info('test_log_splitting2_in_main ' + str(i))
+            time.sleep(1)

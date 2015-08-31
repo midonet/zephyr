@@ -16,6 +16,7 @@
 import sys
 import getopt
 import traceback
+import datetime
 
 from common.Exceptions import *
 from common.CLI import LinuxCLI
@@ -50,7 +51,8 @@ def usage(exceptObj):
     print '                                  key=value pairs, separated by commas, with no spaces.'
     print '   Extra Options:'
     print '     -l, --log-dir <dir>          Log file directory (default: /tmp/zephyr/results)'
-    print '     -r, --results-dir <dir>      Results file directory (default: /tmp/zephyr/logs)'
+    print '     -r, --results-dir <dir>      Results file directory (default: /tmp/zephyr/logs) Timestamp'
+    print '                                  will be appended to prevent overwriting results.'
 
     if exceptObj is not None:
         raise exceptObj
@@ -166,8 +168,8 @@ try:
                 print "Error Message:"
                 print err
 
-    tsm.make_results_file(results_dir=results_dir)
-
+    rdir = results_dir + '.' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
+    tsm.create_results(results_dir=rdir, leeway=3)
 
 except ExitCleanException:
     exit(1)

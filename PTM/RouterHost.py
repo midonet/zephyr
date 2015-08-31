@@ -13,6 +13,7 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from common.FileLocation import *
 from NetNSHost import NetNSHost
 from os import path
 from ConfigurationHandler import FileConfigurationHandler
@@ -38,6 +39,11 @@ class RouterHost(NetNSHost):
 
     def prepare_config(self):
         self.configurator.configure(self.num_id)
+        log_dir = '/var/log/quagga.' + self.num_id
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/bgpd.log'), self.num_id,
+                                                   '%Y/%m/%d %H:%M:%S')
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/zebra.log'), self.num_id,
+                                                   '%Y/%m/%d %H:%M:%S')
 
     def print_config(self, indent=0):
         super(RouterHost, self).print_config(indent)

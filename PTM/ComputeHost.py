@@ -20,6 +20,7 @@ from os import path
 from common.Exceptions import *
 from common.IP import IP
 from common.CLI import LinuxCLI
+from common.FileLocation import *
 
 from ConfigurationHandler import FileConfigurationHandler, ProgramConfigurationHandler
 from NetNSHost import NetNSHost
@@ -30,6 +31,7 @@ from VirtualInterface import VirtualInterface
 
 USE_MN_CONF = True
 USE_NEW_STACK = False
+
 
 class ComputeHost(NetNSHost):
     """
@@ -79,6 +81,13 @@ class ComputeHost(NetNSHost):
 
     def prepare_config(self):
         self.configurator.configure(self.num_id, self.unique_id, self.zookeeper_ips, self.cassandra_ips)
+        log_dir = '/var/log/midolman.' + self.num_id
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/midolman.log'), self.num_id,
+                                                   '%Y.%m.%d %H:%M:%S.%f')
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/midolman.event.log'), self.num_id,
+                                                   '%Y.%m.%d %H:%M:%S.%f')
+        self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/mm-trace.log'), self.num_id,
+                                                   '%Y.%m.%d %H:%M:%S.%f')
 
     def do_extra_create_host_cfg_map_for_process_control(self):
         return {'num_id': self.num_id, 'uuid': str(self.unique_id),
