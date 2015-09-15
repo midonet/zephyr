@@ -3,6 +3,7 @@ __author__ = 'micucci'
 import unittest
 import json
 import time
+import os
 
 from common.CLI import LinuxCLI
 from PTM.ComputeHost import ComputeHost
@@ -12,11 +13,14 @@ from PTM.NetworkHost import NetworkHost
 from PTM.RootHost import RootHost
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager, HOST_CONTROL_CMD_NAME
 from PTM.PhysicalTopologyConfig import *
+from common.LogManager import LogManager
 
+import CBT.VersionConfig as version_config
 
 class NetworkHostTest(unittest.TestCase):
     def test_startup(self):
-        ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./tmp/logs')
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
 
         root_cfg = HostDef('root',
                            bridges={'br0': BridgeDef('br0', ip_addresses=[IP('10.0.0.240')])},
@@ -35,7 +39,7 @@ class NetworkHostTest(unittest.TestCase):
                                      zookeeper_ips=['10.0.0.2'])
         cass1_icfg= ImplementationDef('cass1', 'PTM.CassandraHost', id='1',
                                       cassandra_ips=['10.0.0.5'],
-                                      init_token="")
+                                      init_token="56713727820156410577229101238628035242")
         cmp1_icfg= ImplementationDef('cmp1', 'PTM.ComputeHost', id='1',
                                      zookeeper_ips=['10.0.0.2'],
                                      cassandra_ips=['10.0.0.5'])
@@ -43,11 +47,18 @@ class NetworkHostTest(unittest.TestCase):
         net_icfg = ImplementationDef('cmp1', 'PTM.NetworkHost',
                                      zookeeper_ips=['10.0.0.2'])
 
-        root = RootHost('root', )
-        zoo1 = ZookeeperHost(zoo1_cfg.name, )
-        cass1 = CassandraHost(cass1_cfg.name, )
-        cmp1 = ComputeHost(cmp1_cfg.name, )
-        net = NetworkHost(net_cfg.name, )
+        root = RootHost('root', ptm)
+        zoo1 = ZookeeperHost(zoo1_cfg.name, ptm)
+        cass1 = CassandraHost(cass1_cfg.name, ptm)
+        cmp1 = ComputeHost(cmp1_cfg.name, ptm)
+        net = NetworkHost(net_cfg.name, ptm)
+
+        log = lm.add_file_logger('test.log', 'test')
+        root.set_logger(log)
+        zoo1.set_logger(log)
+        cass1.set_logger(log)
+        cmp1.set_logger(log)
+        net.set_logger(log)
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)
@@ -103,8 +114,8 @@ class NetworkHostTest(unittest.TestCase):
             except SubprocessFailedException:
                 raw_input("Press Enter to continue...")
 
-        self.assertTrue(LinuxCLI().cmd('midonet-cli --midonet-url="http://localhost:8080/midonet-api/" -A -e "host list"',
-                                       return_status=True) == 0)
+        self.assertTrue(LinuxCLI().cmd('midonet-cli --midonet-url="' + version_config.param_midonet_api_url +
+                                       '" -A -e "host list"', return_status=True) == 0)
 
 
         for h in reversed(ptm.host_by_start_order):
@@ -158,6 +169,5 @@ class NetworkHostTest(unittest.TestCase):
             pid = LinuxCLI().read_from_file('/var/run/midolman.1/dnsmasq.pid')
             LinuxCLI().cmd('kill ' + str(pid))
 
-if __name__ == '__main__':
-
-    unittest.main()
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(NetworkHostTest)

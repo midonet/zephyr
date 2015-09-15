@@ -11,7 +11,6 @@ class CLITest(unittest.TestCase):
         self.assertEquals(LinuxCLI().read_from_file('tmp-test'), 'test1\n')
         LinuxCLI().write_to_file('tmp-test', 'test2\n', append=True)
         self.assertEquals(LinuxCLI().read_from_file('tmp-test'), 'test1\ntest2\n')
-        LinuxCLI().cmd('chmod 444 tmp-test')
         LinuxCLI(priv=True).write_to_file('tmp-test', 'test3\n', append=True)
         self.assertEquals(LinuxCLI().read_from_file('tmp-test'), 'test1\ntest2\ntest3\n')
         LinuxCLI().rm('tmp-test')
@@ -55,9 +54,6 @@ class CLITest(unittest.TestCase):
 
     def tearDown(self):
         LinuxCLI().rm('tmp-test')
-try:
-    suite = unittest.TestLoader().loadTestsFromTestCase(CLITest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-except Exception as e:
-    print 'Exception: ' + e.message + ', ' + str(e.args)
 
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(CLITest)

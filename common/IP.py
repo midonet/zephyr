@@ -27,6 +27,11 @@ class IP(object):
 
     @staticmethod
     def make_ip(ip_str):
+        """
+        Create an IP object from a string
+        :param ip_str: str IP in dotted address CIDR notation (with optional '/' + subnet mask)
+        :return: IP
+        """
         return IP(*ip_str.split('/'))
 
     def __str__(self):

@@ -230,8 +230,6 @@ class PCAPPacketTest(unittest.TestCase):
         self.assertEqual(40880, pmap['tcp'].window_size)
         self.assertEqual(None, pmap['tcp'].next_parse_recommendation)
 
-        print packet.to_str()
-
     def test_full_packet_parsing_set_full_stack(self):
         full_eii_packet_data = \
             [0x00, 0x04, 0x00, 0x01, 0x00, 0x06, 0x08, 0x00, 0x27, 0xc6, 0x25, 0x01, 0x00, 0x00, 0x08, 0x00,
@@ -419,9 +417,5 @@ class PCAPPacketTest(unittest.TestCase):
         self.assertEqual(PCAPIP4, pmap['ethernet'].next_parse_recommendation)
 
 
-try:
-    suite = unittest.TestLoader().loadTestsFromTestCase(PCAPPacketTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-except Exception as e:
-    print 'Exception: ' + e.message + ', ' + str(e.args)
-
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(PCAPPacketTest)

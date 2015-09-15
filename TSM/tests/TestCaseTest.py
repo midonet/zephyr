@@ -32,12 +32,13 @@ class SampleTestCase(TestCase):
         return {SampleScenario}
 
     def test_basic(self):
-        self.assertIs(self.current_scenario, SampleScenario)
+        self.assertIs(self.current_scenario.__class__, SampleScenario)
         pass
 
     def test_a_failure(self):
         self.assertFalse(True)
         pass
+
 
 class TestCaseTest(unittest.TestCase):
     def test_test_case_scenarios(self):
@@ -47,23 +48,21 @@ class TestCaseTest(unittest.TestCase):
 
     def test_test_case_run(self):
         tc = SampleTestCase('test_basic')
-        tc._prepare(SampleScenario)
+        tc._prepare_class(SampleScenario(None, None))
         tr = unittest.TestResult()
         tc.run(tr)
         self.assertEquals(0, len(tr.errors))
-        self.assertEquals(0, len(tr.failures))
+        self.assertEquals(1, len(tr.failures))
 
         tc = SampleTestCase('test_a_failure')
-        tc._prepare(SampleScenario)
+        tc._prepare_class(SampleScenario(None, None))
         tr = unittest.TestResult()
         tc.run(tr)
         self.assertEquals(0, len(tr.errors))
         self.assertEquals(1, len(tr.failures))
 
 
-try:
-    suite = unittest.TestLoader().loadTestsFromTestCase(TestCaseTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-except Exception as e:
-    print 'Exception: ' + e.message + ', ' + str(e.args)
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(TestCaseTest)
+
 

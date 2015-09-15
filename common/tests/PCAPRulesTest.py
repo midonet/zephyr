@@ -113,7 +113,7 @@ class PCAPRulesTest(unittest.TestCase):
 
     def test_unary_boolean_rules(self):
         not_single_rule = PCAP_Not(PCAP_Simple('foo'))
-        self.assertEqual('not \( foo \)', not_single_rule.to_str())
+        self.assertEqual('not ( foo )', not_single_rule.to_str())
 
     def test_binary_boolean_rules(self):
         and_single_rule = PCAP_And([PCAP_Simple('foo')])
@@ -125,13 +125,13 @@ class PCAPRulesTest(unittest.TestCase):
         or_triple_rule = PCAP_Or([PCAP_Simple('foo'), PCAP_Simple('bar'), PCAP_Simple('baz')])
         or_null_rule = PCAP_Or([])
 
-        self.assertEqual('\( foo \)', and_single_rule.to_str())
-        self.assertEqual('\( foo \) and \( bar \)', and_double_rule.to_str())
-        self.assertEqual('\( foo \) and \( bar \) and \( baz \)', and_triple_rule.to_str())
+        self.assertEqual('( foo )', and_single_rule.to_str())
+        self.assertEqual('( foo ) and ( bar )', and_double_rule.to_str())
+        self.assertEqual('( foo ) and ( bar ) and ( baz )', and_triple_rule.to_str())
         self.assertEqual('', and_null_rule.to_str())
-        self.assertEqual('\( foo \)', or_single_rule.to_str())
-        self.assertEqual('\( foo \) or \( bar \)', or_double_rule.to_str())
-        self.assertEqual('\( foo \) or \( bar \) or \( baz \)', or_triple_rule.to_str())
+        self.assertEqual('( foo )', or_single_rule.to_str())
+        self.assertEqual('( foo ) or ( bar )', or_double_rule.to_str())
+        self.assertEqual('( foo ) or ( bar ) or ( baz )', or_triple_rule.to_str())
         self.assertEqual('', or_null_rule.to_str())
 
     def test_complex_rules(self):
@@ -158,31 +158,27 @@ class PCAPRulesTest(unittest.TestCase):
         ])
 
         expected_str = \
-            '\( ' \
-            '\( not \( ether multicast \) \) and ' \
-            '\( ' \
-            '\( ether src host bar \) or ' \
-            '\( net 192.168.0.0 mask 255.255.255.0 \) ' \
-            '\) and ' \
-            '\( len > 80 \) ' \
-            '\) and ' \
-            '\( dst port 80 \) and ' \
-            '\( ' \
-            '\( src portrange 30000-50000 \) or ' \
-            '\( ip proto tcp \) or ' \
-            '\( not \( ether broadcast \) \) ' \
-            '\) and ' \
-            '\( ' \
-            '\( ether[0] & 1 != 0 \) and ' \
-            '\( ip[0] & 0xf != 5 \) and ' \
-            '\( len <= 1500 \) ' \
-            '\)'
+            '( ' \
+            '( not ( ether multicast ) ) and ' \
+            '( ' \
+            '( ether src host bar ) or ' \
+            '( net 192.168.0.0 mask 255.255.255.0 ) ' \
+            ') and ' \
+            '( len > 80 ) ' \
+            ') and ' \
+            '( dst port 80 ) and ' \
+            '( ' \
+            '( src portrange 30000-50000 ) or ' \
+            '( ip proto tcp ) or ' \
+            '( not ( ether broadcast ) ) ' \
+            ') and ' \
+            '( ' \
+            '( ether[0] & 1 != 0 ) and ' \
+            '( ip[0] & 0xf != 5 ) and ' \
+            '( len <= 1500 ) ' \
+            ')'
 
         self.assertEqual(expected_str, complex_rule.to_str())
 
-try:
-    suite = unittest.TestLoader().loadTestsFromTestCase(PCAPRulesTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-except Exception as e:
-    print 'Exception: ' + e.message + ', ' + str(e.args)
-
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(PCAPRulesTest)

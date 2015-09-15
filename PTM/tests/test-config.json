@@ -225,44 +225,44 @@
   "implementation": [
     {
       "host": "root",
-      "impl": "RootHost"
+      "impl": "PTM.RootHost"
     },
     {
       "host": "zoo1",
-      "impl": "ZookeeperHost",
+      "impl": "PTM.ZookeeperHost",
       "id": "1",
-      "zookeeper_ips": ["10.0.0.2", "10.0.0.3", "10.0.0.4"]
+      "zookeeper_ips": ["10.0.0.2"]
     },
     {
       "host": "cass1",
-      "impl": "CassandraHost",
+      "impl": "PTM.CassandraHost",
       "id": "1",
       "init_token": "56713727820156410577229101238628035242",
-      "cassandra_ips": ["10.0.0.5", "10.0.0.6", "10.0.0.7"]
+      "cassandra_ips": ["10.0.0.5"]
     },
     {
       "host": "cmp1",
-      "impl": "ComputeHost",
+      "impl": "PTM.ComputeHost",
       "id": "1",
-      "zookeeper_ips": ["10.0.0.2", "10.0.0.3", "10.0.0.4"],
-      "cassandra_ips": ["10.0.0.5", "10.0.0.6", "10.0.0.7"]
+      "zookeeper_ips": ["10.0.0.2"],
+      "cassandra_ips": ["10.0.0.5"]
     },
     {
       "host": "external1",
-      "impl": "NetNSHost"
+      "impl": "PTM.NetNSHost"
     },
     {
       "host": "edge1",
-      "impl": "RouterHost",
+      "impl": "PTM.RouterHost",
       "id": "1"
     },
     {
       "host": "test-host1",
-      "impl": "NetNSHost"
+      "impl": "PTM.NetNSHost"
     },
     {
       "host": "test-host2",
-      "impl": "NetNSHost"
+      "impl": "PTM.NetNSHost"
     }
   ],
   "host_start_order": [

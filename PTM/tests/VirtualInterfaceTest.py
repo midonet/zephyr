@@ -13,31 +13,33 @@ from PTM.Interface import Interface
 
 class VirtualInterfaceTest(unittest.TestCase):
     def test_create_no_peer(self):
-        h = Host('test',, LinuxCLI(), lambda n: None, lambda n: None
+        cli = LinuxCLI(log_cmd=True)
+        h = Host('test', None, cli, lambda n: None, lambda n: None)
         i = VirtualInterface(name='testi', host=h, ip_addr=['192.168.0.2'])
 
         i.create()  # should skip setting peer on host
 
-        self.assertTrue(LinuxCLI().grep_cmd('ip l', 'testi'))
-        self.assertTrue(LinuxCLI().grep_cmd('ip l', i.peer_name))
+        time.sleep(1)
+        self.assertTrue(cli.grep_cmd('ip l', 'testi'))
+        self.assertTrue(cli.grep_cmd('ip l', i.peer_name))
 
         i.up()  # should still work for near end device
         time.sleep(1)
 
-        self.assertTrue(LinuxCLI().grep_cmd('ip l | grep testi', 'state UP'))
+        self.assertTrue(cli.grep_cmd('ip l | grep testi', 'UP'))
 
         i.down()
         time.sleep(1)
 
-        self.assertFalse(LinuxCLI().grep_cmd('ip l | grep testi', 'state UP'))
+        self.assertFalse(cli.grep_cmd('ip l | grep testi', 'state UP'))
 
         i.remove()
 
-        self.assertFalse(LinuxCLI().grep_cmd('ip l', 'testi'))
+        self.assertFalse(cli.grep_cmd('ip l', 'testi'))
 
     def test_create_with_host(self):
-        h = Host('test',, LinuxCLI(), lambda n: None, lambda n: None
-        h2 = Host('test2',, NetNSCLI('test2'), CREATENSCMD, REMOVENSCMD
+        h = Host('test', None, LinuxCLI(), lambda n: None, lambda n: None)
+        h2 = Host('test2', None, NetNSCLI('test2'), CREATENSCMD, REMOVENSCMD)
 
         h2.create()
 
@@ -71,5 +73,5 @@ class VirtualInterfaceTest(unittest.TestCase):
         LinuxCLI().cmd('ip l del testi')
         LinuxCLI().cmd('ip netns del test2')
 
-if __name__ == '__main__':
-    unittest.main()
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(VirtualInterfaceTest)

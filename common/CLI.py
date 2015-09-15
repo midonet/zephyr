@@ -39,13 +39,6 @@ class LinuxCLI(object):
         self.logger = logger
         """ :type: logging.Logger"""
 
-        if self.logger is None:
-            handler = logging.StreamHandler()
-            handler.setLevel(logging.DEBUG)
-            self.logger = logging.getLogger(name='cli')
-            self.logger.setLevel(logging.DEBUG)
-            self.logger.addHandler(handler)
-
     def add_environment_variable(self, name, val):
         if (self.env_map is None):
             self.env_map = {}
@@ -76,13 +69,14 @@ class LinuxCLI(object):
             cmd = self.create_cmd(new_cmd_line)
 
         if self.log_cmd is True:
-            self.logger.debug('>>>' + cmd)
+            if self.logger is not None:
+                self.logger.debug('>>>' + cmd)
+            else:
+                print('>>>' + cmd)
 
         if self.debug is True:
             return cmd
 
-        if self.env_map is not None:
-            self.logger.debug("ENV:" + ','.join([k + '=' + self.env_map[k] for k in self.env_map.iterkeys()]))
 
         p = subprocess.Popen(cmd, *args, shell=shell, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, env=self.env_map)
@@ -90,17 +84,18 @@ class LinuxCLI(object):
         if blocking is False:
             return p
 
-        out = ''
-        for line in p.stdout:
-            out += line
+        stdout, stderr = p.communicate()
 
         # 'timeout' returns 124 on timeout
         if p.returncode == 124 and timeout is not None:
             raise SubprocessTimeoutException('Process timed out: ' + cmd)
 
         if return_status is True:
-            p.poll()
             return p.returncode
+
+        out = ''
+        for line in stdout:
+            out += line
 
         return out
 

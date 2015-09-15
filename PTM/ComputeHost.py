@@ -17,6 +17,8 @@ import time
 import uuid
 from os import path
 
+import CBT.VersionConfig as version_config
+
 from common.Exceptions import *
 from common.IP import IP
 from common.CLI import LinuxCLI
@@ -28,9 +30,6 @@ from VMHost import VMHost
 from PhysicalTopologyConfig import InterfaceDef
 from Interface import Interface
 from VirtualInterface import VirtualInterface
-
-USE_MN_CONF = True
-USE_NEW_STACK = False
 
 
 class ComputeHost(NetNSHost):
@@ -45,7 +44,7 @@ class ComputeHost(NetNSHost):
         self.unique_id = uuid.uuid4()
         self.zookeeper_ips = []
         self.cassandra_ips = []
-        if USE_MN_CONF is True:
+        if version_config.option_config_mnconf is True:
             self.configurator = ComputeMNConfConfiguration()
         else:
             self.configurator = ComputeFileConfiguration()
@@ -81,6 +80,7 @@ class ComputeHost(NetNSHost):
 
     def prepare_config(self):
         self.configurator.configure(self.num_id, self.unique_id, self.zookeeper_ips, self.cassandra_ips)
+        self.cli.rm('/etc/midonet_host_id.properties')
         log_dir = '/var/log/midolman.' + self.num_id
         self.ptm.log_manager.add_external_log_file(FileLocation(log_dir + '/midolman.log'), self.num_id,
                                                    '%Y.%m.%d %H:%M:%S.%f')
@@ -103,7 +103,7 @@ class ComputeHost(NetNSHost):
         max_retries = 30
         connected = False
         while not connected:
-            if self.cli.grep_cmd('mm-dpctl --list-dps', 'midonet') is True:
+            if self.cli.grep_cmd(version_config.cmd_list_datapath, 'midonet') is True:
                 connected = True
             else:
                 retries += 1
@@ -171,20 +171,16 @@ class ComputeHost(NetNSHost):
         if self.num_id == '1':
             this_dir = path.dirname(path.abspath(__file__))
 
-            zkcli = LinuxCLI()
-            #zkcli.add_environment_variable('MIDO_ZOOKEEPER_HOSTS', z_ip_str)
-            #zkcli.add_environment_variable('MIDO_ZOOKEEPER_ROOT_KEY', midonet_key)
-
-            ret = zkcli.cmd('mn-conf set -t default < ' + this_dir + '/scripts/midolman.mn-conf', return_status=True)
+            ret = self.cli.cmd('mn-conf set -t default < ' + this_dir + '/scripts/midolman.mn-conf', return_status=True)
             if ret != 0:
-                self.LOG.fatal('\n'.join(zkcli.last_process.stdout.readlines()))
-                self.LOG.fatal('\n'.join(zkcli.last_process.stderr.readlines()))
-                raise SubprocessFailedException('Failed to run mn-conf: ' + str(ret))
+                self.LOG.fatal('\n'.join(self.cli.last_process.stdout.readlines()))
+                self.LOG.fatal('\n'.join(self.cli.last_process.stderr.readlines()))
+                raise SubprocessFailedException('Failed to run mn-conf with defaults: ' + str(ret))
 
-            ret = zkcli.cmd('mn-conf set -t default < .mnconf.data', return_status=True)
+            ret = self.cli.cmd('mn-conf set -t default < .mnconf.data', return_status=True)
             if ret != 0:
-                self.LOG.fatal('\n'.join(zkcli.last_process.stdout.readlines()))
-                self.LOG.fatal('\n'.join(zkcli.last_process.stderr.readlines()))
+                self.LOG.fatal('\n'.join(self.cli.last_process.stdout.readlines()))
+                self.LOG.fatal('\n'.join(self.cli.last_process.stderr.readlines()))
                 raise SubprocessFailedException('Failed to run mn-conf: ' + str(ret))
 
             pid_file = '/run/midolman/dnsmasq.pid'
@@ -231,7 +227,6 @@ class ComputeHost(NetNSHost):
 class ComputeMNConfConfiguration(ProgramConfigurationHandler):
 
     def configure(self, num_id, unique_id, zookeeper_ips, cassandra_ips):
-        # generates host uuid
         etc_dir = '/etc/midolman.' + num_id
         var_lib_dir = '/var/lib/midolman.' + num_id
         var_log_dir = '/var/log/midolman.' + num_id
@@ -242,7 +237,7 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
         else:
             z_ip_str = ''
 
-        midonet_key = '/midonet/v1' if USE_NEW_STACK is False else '/midonet/v2'
+        midonet_key = '/midonet/v1' if version_config.option_use_v2_stack is False else '/midonet/v2'
 
         self.cli.rm(etc_dir)
         self.cli.copy_dir('/etc/midolman', etc_dir)
@@ -273,6 +268,10 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
         # https://github.com/midokura/midonet/commit/65ace0e84265cd777b2855d15fce60148abd9330
         self.cli.regex_file(mmenv, 's/MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE="300M"/')
         self.cli.regex_file(mmenv, 's/HEAP_NEWSIZE=.*/HEAP_NEWSIZE="200M"/')
+
+        self.cli.rm('/etc/midonet_host_id.properties')
+        uuid_str = 'host_uuid=' + str(unique_id) + '\n'
+        self.cli.write_to_file(etc_dir + '/host_uuid.properties', uuid_str)
 
         if not self.cli.exists('.mnconf.data'):
             if len(cassandra_ips) is not 0:
@@ -383,6 +382,10 @@ class ComputeFileConfiguration(FileConfigurationHandler):
         # https://github.com/midokura/midonet/commit/65ace0e84265cd777b2855d15fce60148abd9330
         self.cli.regex_file(mmenv, 's/MAX_HEAP_SIZE=.*/MAX_HEAP_SIZE="300M"/')
         self.cli.regex_file(mmenv, 's/HEAP_NEWSIZE=.*/HEAP_NEWSIZE="200M"/')
+
+        self.cli.rm('/etc/midonet_host_id.properties')
+        uuid_str = 'host_uuid=' + str(unique_id) + '\n'
+        self.cli.write_to_file(etc_dir + '/host_uuid.properties', uuid_str)
 
     def mount_config(self, num_id):
         self.cli.mount('/run/midolman.' + num_id, '/run/midolman')

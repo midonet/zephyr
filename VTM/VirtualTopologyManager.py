@@ -42,7 +42,7 @@ class VirtualTopologyManager(object):
         self.client_api_impl = client_api_impl
         self.physical_topology_manager = physical_topology_manager
         """ :type: PhysicalTopologyManager"""
-        self.log_manager = log_manager
+        self.log_manager = log_manager if log_manager is not None else LogManager(root_dir='logs')
         """ :type: LogManager"""
 
     def get_client(self):

@@ -47,7 +47,7 @@ class TestBasicPing(TestCase):
                                {h.name: h.interfaces['eth0'].ip_list[0].ip
                                 for h in cls.ptm.hypervisors.itervalues()},
                                cls.setup_logger)
-        cls.main_bridge = setup_main_bridge(cls.api, cls.setup_logger)
+        cls.main_bridge = setup_main_bridge(cls.api)
 
     def test_ping_two_vms_same_hv(self):
 

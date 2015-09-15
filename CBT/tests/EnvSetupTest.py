@@ -8,5 +8,7 @@ class MyTestCase(unittest.TestCase):
         EnvSetup.install_neutron_client()
 
 
-if __name__ == '__main__':
-    unittest.main()
+
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(FileLocationTest)
+t.main(testRunner=xmlrunner.XMLTestRunner(output='test-reports'))

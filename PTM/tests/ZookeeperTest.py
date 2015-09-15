@@ -3,17 +3,20 @@ __author__ = 'micucci'
 import unittest
 import json
 import time
+import os
 
 from common.CLI import LinuxCLI
 from PTM.ZookeeperHost import ZookeeperHost
 from PTM.RootHost import RootHost
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager, HOST_CONTROL_CMD_NAME
 from PTM.PhysicalTopologyConfig import *
+from common.LogManager import LogManager
 
 
 class ZookeeperTest(unittest.TestCase):
     def test_startup(self):
-        ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./tmp/logs')
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
 
         root_cfg = HostDef('root',
                            bridges={'br0': BridgeDef('br0', ip_addresses=[IP('10.0.0.240')])},
@@ -24,8 +27,12 @@ class ZookeeperTest(unittest.TestCase):
         zoo1_icfg= ImplementationDef('zoo1', 'PTM.ZookeeperHost', id='1', zookeeper_ips=['10.0.0.2'])
         root_icfg = ImplementationDef('zoo1', 'PTM.RootHost')
 
-        root = RootHost('root', )
-        zoo1 = ZookeeperHost(zoo1_cfg.name, )
+        root = RootHost('root', ptm)
+        zoo1 = ZookeeperHost(zoo1_cfg.name, ptm)
+
+        log = lm.add_file_logger('test.log', 'test')
+        root.set_logger(log)
+        zoo1.set_logger(log)
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)
@@ -95,5 +102,5 @@ class ZookeeperTest(unittest.TestCase):
         LinuxCLI().cmd('ip l set br0 down')
         LinuxCLI().cmd('brctl delbr br0')
 
-if __name__ == '__main__':
-    unittest.main()
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(ZookeeperTest)

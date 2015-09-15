@@ -56,7 +56,7 @@ class Host(PTMObject):
         """ :type: lambda"""
         self.remove_func = host_remove_func
         """ :type: lambda"""
-        self.LOG = None
+        self.LOG = logging.getLogger('ptm-null-root')
         """ :type: logging.Logger"""
         self.packet_captures = {}
         """ :type: dict[str, TCPDump]"""

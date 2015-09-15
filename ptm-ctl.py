@@ -31,19 +31,23 @@ def usage(exceptObj):
 
 try:
 
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hpc:l:',
-                                        ['help', 'startup', 'shutdown', 'print', 'neutron=', 'config-file=',
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdpc:l:',
+                                        ['help', 'debug', 'startup', 'shutdown', 'print', 'neutron=', 'config-file=',
                                          'log-dir='])
 
     # Defaults
     command = ''
     ptm_config_file = 'config.json'
     neutron_command = ''
-    log_dir = '/tmp/logs/zephyr'
+    log_dir = '/tmp/zephyr/logs'
+    debug = False
+
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
             usage(None)
             sys.exit(0)
+        elif arg in ('-d', '--debug'):
+            debug = True
         elif arg in ('--startup'):
             command = 'startup'
         elif arg in ('--shutdown'):
@@ -70,7 +74,7 @@ try:
         log_manager.rollover_logs_fresh(file_filter='ptm*.log')
 
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
-    ptm.configure_logging()
+    ptm.configure_logging(debug=debug)
     ptm.configure(ptm_config_file)
 
     if command == 'neutron':

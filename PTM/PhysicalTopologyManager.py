@@ -52,14 +52,31 @@ class PhysicalTopologyManager(object):
         self.host_by_start_order = []
         self.hypervisors = {}
         self.root_dir = root_dir
+        self.LOG = logging.getLogger('ptm-null-root')
+        self.LOG.addHandler(logging.NullHandler())
 
-    def configure_logging(self, log_name='ptm-root', log_file_name=PTM_LOG_FILE_NAME):
+        self.CONSOLE = logging.getLogger('ptm-null-console')
+        self.CONSOLE.addHandler(logging.NullHandler())
 
-        self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
-                                                    name=(log_name + '-debug'),
-                                                    log_level=logging.DEBUG)
+    def configure_logging(self, log_name='ptm-root', log_file_name=PTM_LOG_FILE_NAME, debug=False):
+
+        level = logging.DEBUG if debug is True else logging.INFO
+
+        if debug is True:
+            self.LOG = self.log_manager.add_tee_logger(file_name=log_file_name,
+                                                       name=log_name,
+                                                       file_log_level=level,
+                                                       stdout_log_level=level)
+        else:
+            self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
+                                                        name=log_name,
+                                                        log_level=level)
 
         self.CONSOLE = self.log_manager.add_stdout_logger(name=log_name + '-console', log_level=logging.INFO)
+
+        # Update all loggers for all configured hosts
+        for host in self.hosts_by_name.itervalues():
+            host.set_logger(self.LOG)
 
     def configure(self, file_name='config.json', file_type='json'):
         """
@@ -268,8 +285,8 @@ class PhysicalTopologyManager(object):
 
     def unshare_control(self, command, host, arg_list=list()):
         host_cfg_str = json.dumps(host.create_host_cfg_map_for_process_control()).replace('"', '\\"')
-        cmd = 'unshare --mount -- /bin/bash -x -c -- "PYTHONPATH=' + self.root_dir + ' python ' + \
-              self.root_dir + '/' + HOST_CONTROL_CMD_NAME + ' ' + command + " '" + \
+        cmd = 'unshare --mount --uts -- /bin/bash -x -c -- "PYTHONPATH=' + self.root_dir + ' python ' + \
+              self.root_dir + '/' + HOST_CONTROL_CMD_NAME + ' -c ' + command + " -j '" + \
               host_cfg_str + "' " + ' '.join(arg_list) + '"'
 
         return LinuxCLI().cmd(cmd, blocking=False)

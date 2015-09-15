@@ -3,17 +3,19 @@ __author__ = 'micucci'
 import unittest
 import json
 import time
+import os
 
 from common.CLI import LinuxCLI
 from PTM.RouterHost import RouterHost
 from PTM.RootHost import RootHost
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager, HOST_CONTROL_CMD_NAME
 from PTM.PhysicalTopologyConfig import *
-
+from common.LogManager import LogManager
 
 class RouterHostTest(unittest.TestCase):
     def test_startup(self):
-        ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./tmp/logs')
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
 
         root_cfg = HostDef('root',
                            bridges={'br0': BridgeDef('br0', ip_addresses=[IP('10.0.0.240')])},
@@ -24,8 +26,12 @@ class RouterHostTest(unittest.TestCase):
         edge1_icfg= ImplementationDef('edge1', 'PTM.RouterHost', id='1')
         root_icfg = ImplementationDef('edge1', 'PTM.RootHost')
 
-        root = RootHost('root', )
-        edge1 = RouterHost(edge1_cfg.name, )
+        root = RootHost('root', ptm)
+        edge1 = RouterHost(edge1_cfg.name, ptm)
+
+        log = lm.add_file_logger('test.log', 'test')
+        root.set_logger(log)
+        edge1.set_logger(log)
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)
@@ -105,5 +111,6 @@ class RouterHostTest(unittest.TestCase):
         if LinuxCLI().exists('/var/run/quagga.1/watchquagga.pid'):
             pid = LinuxCLI().read_from_file('/var/run/quagga.1/watchquagga.pid')
             LinuxCLI().cmd('kill ' + str(pid))
-if __name__ == '__main__':
-    unittest.main()
+
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(RouterHostTest)

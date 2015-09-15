@@ -181,11 +181,8 @@ class TCPDumpTest(unittest.TestCase):
 
         self.assertEquals(3, len(ret))
 
+        self.assertTrue(LinuxCLI().exists('tmp.file'))
         file_str = LinuxCLI().read_from_file('tmp.file')
-        print "===================="
-        print file_str
-        print "===================="
-
         LinuxCLI().rm('tmp.file')
 
         self.assertEquals(3, file_str.count('END PACKET time['))
@@ -223,9 +220,8 @@ class TCPDumpTest(unittest.TestCase):
 
     def tearDown(self):
         time.sleep(2)
-try:
-    suite = unittest.TestLoader().loadTestsFromTestCase(TCPDumpTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-except Exception as e:
-    print 'Exception: ' + e.message + ', ' + str(e.args)
+        LinuxCLI().rm('tcp.callback.out')
+        LinuxCLI().rm('tcp.out')
 
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(TCPDumpTest)

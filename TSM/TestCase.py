@@ -26,7 +26,7 @@ from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
 class TestCase(unittest.TestCase):
 
-    current_scenario = None
+    class_scenario = None
     """ :type: TestScenario"""
     vtm = None
     """ :type: VirtualTopologyManager"""
@@ -65,17 +65,17 @@ class TestCase(unittest.TestCase):
 
     @classmethod
     def _prepare_class(cls, current_scenario, tsm_logger=logging.getLogger()):
-        cls.current_scenario = current_scenario
-        cls.ptm = cls.current_scenario.ptm
-        cls.vtm = cls.current_scenario.vtm
+        cls.class_scenario = current_scenario
+        cls.ptm = current_scenario.ptm
+        cls.vtm = current_scenario.vtm
         cls.setup_logger = tsm_logger
 
     def __init__(self, methodName='runTest'):
         super(TestCase, self).__init__(methodName)
 
-        self.LOG = None
+        self.LOG = logging.getLogger('test-case-null-logger')
         """ :type: logging.Logger"""
-        self.CONSOLE = None
+        self.CONSOLE = logging.getLogger('test-case-null-logger')
         """ :type: logging.Logger"""
         self.start_time = None
         """ :type: datetime.datetime"""
@@ -83,6 +83,9 @@ class TestCase(unittest.TestCase):
         """ :type: datetime.datetime"""
         self.run_time = None
         """ :type: datetime.datetime"""
+        self.current_scenario = self.class_scenario
+        """ :type: TestScenario"""
+        self.LOG.addHandler(logging.NullHandler())
 
     def run(self, result=None):
         self.start_time = datetime.datetime.utcnow()

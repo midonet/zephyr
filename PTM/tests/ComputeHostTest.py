@@ -3,6 +3,9 @@ __author__ = 'micucci'
 import unittest
 import json
 import time
+import datetime
+import os
+import logging
 
 from common.CLI import LinuxCLI
 from PTM.ComputeHost import ComputeHost
@@ -12,9 +15,13 @@ from PTM.RootHost import RootHost
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager, HOST_CONTROL_CMD_NAME
 from PTM.PhysicalTopologyConfig import *
 from PTM.Interface import Interface
+from common.LogManager import LogManager
+
 
 class ComputeHostTest(unittest.TestCase):
     def test_create_vm(self):
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
         root_cfg = HostDef('root',
                            bridges={'br0': BridgeDef('br0', ip_addresses=[IP('10.0.0.240')])},
                            interfaces={'cmp1eth0': InterfaceDef('cmp1eth0', linked_bridge='br0')})
@@ -24,8 +31,12 @@ class ComputeHostTest(unittest.TestCase):
         cmp1_icfg= ImplementationDef('cmp1', 'PTM.ComputeHost', id='1')
         root_icfg = ImplementationDef('cmp1', 'PTM.RootHost')
 
-        root = RootHost('root', )
-        cmp1 = ComputeHost(cmp1_cfg.name, )
+        root = RootHost('root', ptm)
+        cmp1 = ComputeHost(cmp1_cfg.name, ptm)
+
+        log = lm.add_file_logger('test.log', 'test')
+        root.set_logger(log)
+        cmp1.set_logger(log)
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)
@@ -66,8 +77,9 @@ class ComputeHostTest(unittest.TestCase):
         cmp1.remove()
 
     def test_startup(self):
-        ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./tmp/logs')
-
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
+        ptm.configure_logging(debug=True)
         root_cfg = HostDef('root',
                            bridges={'br0': BridgeDef('br0', ip_addresses=[IP('10.0.0.240')])},
                            interfaces={'zoo1eth0': InterfaceDef('zoo1eth0', linked_bridge='br0'),
@@ -90,10 +102,19 @@ class ComputeHostTest(unittest.TestCase):
                                      cassandra_ips=['10.0.0.5'])
         root_icfg = ImplementationDef('root', 'PTM.RootHost')
 
-        root = RootHost('root', )
-        zoo1 = ZookeeperHost(zoo1_cfg.name, )
-        cass1 = CassandraHost(cass1_cfg.name, )
-        cmp1 = ComputeHost(cmp1_cfg.name, )
+        root = RootHost('root', ptm)
+        zoo1 = ZookeeperHost(zoo1_cfg.name, ptm)
+        cass1 = CassandraHost(cass1_cfg.name, ptm)
+        cmp1 = ComputeHost(cmp1_cfg.name, ptm)
+
+        root.set_logger(lm.add_tee_logger('test.log', name='test-root', file_log_level=logging.DEBUG,
+                                          stdout_log_level=logging.DEBUG))
+        zoo1.set_logger(lm.add_tee_logger('test.log', name='test-zoo1', file_log_level=logging.DEBUG,
+                                          stdout_log_level=logging.DEBUG))
+        cass1.set_logger(lm.add_tee_logger('test.log', name='test-cass1', file_log_level=logging.DEBUG,
+                                           stdout_log_level=logging.DEBUG))
+        cmp1.set_logger(lm.add_tee_logger('test.log', name='test-cmp1', file_log_level=logging.DEBUG,
+                                          stdout_log_level=logging.DEBUG))
 
         # Now configure the host with the definition and impl configs
         root.config_from_ptc_def(root_cfg, root_icfg)
@@ -143,7 +164,7 @@ class ComputeHostTest(unittest.TestCase):
             h.wait_for_process_start()
 
         pid = LinuxCLI().read_from_file('/run/midolman.1/pid').rstrip()
-        self.assertTrue(LinuxCLI().grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', pid))
+        self.assertTrue(LinuxCLI(log_cmd=True).grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', pid))
 
         for h in ptm.host_by_start_order:
             stop_process = ptm.unshare_control('stop', h)
@@ -158,8 +179,10 @@ class ComputeHostTest(unittest.TestCase):
 
             h.wait_for_process_stop()
 
-        time.sleep(1)
-        self.assertFalse(LinuxCLI().grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', pid))
+        deadline = datetime.datetime.now() + datetime.timedelta(seconds=5)
+        while LinuxCLI(log_cmd=False).grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', pid):
+            if datetime.datetime.now() > deadline:
+                self.fail("MM process " + pid + " did not stop within timeout")
 
         for h in ptm.host_by_start_order:
             h.net_down()
@@ -194,9 +217,5 @@ class ComputeHostTest(unittest.TestCase):
             pid = LinuxCLI().read_from_file('/var/run/midolman.1/dnsmasq.pid')
             LinuxCLI().cmd('kill ' + str(pid))
 
-if __name__ == '__main__':
-    try:
-        suite = unittest.TestLoader().loadTestsFromTestCase(ComputeHostTest)
-        unittest.TextTestRunner(verbosity=2).run(suite)
-    except Exception as e:
-        print 'Exception: ' + e.message + ', ' + str(e.args)
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(ComputeHostTest)

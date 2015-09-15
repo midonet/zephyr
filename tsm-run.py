@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # Copyright 2015 Midokura SARL
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
+# distributed under the License is distributed on an 'AS IS' BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
@@ -17,6 +17,7 @@ import sys
 import getopt
 import traceback
 import datetime
+import logging
 
 from common.Exceptions import *
 from common.CLI import LinuxCLI
@@ -46,7 +47,7 @@ def usage(exceptObj):
     print '                                  allowing the given tests to execute under the listed scenarios.'
     print '                                  By default, each test will run all of its supported scenarios.'
     print '     -c, --client <client>        OpenStack Network client to use.  Currently can be either '
-    print "                                  'neutron' (default) or 'midonet'."
+    print '                                  "neutron" (default) or "midonet".'
     print '     --client-args <args>         List of arguments to give the selected client.  These should be'
     print '                                  key=value pairs, separated by commas, with no spaces.'
     print '   Extra Options:'
@@ -60,7 +61,7 @@ def usage(exceptObj):
 try:
     arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:l:r:',
                                         ['help', 'tests=', 'scenarios=', 'client=', 'client-args=', 'ptm=',
-                                         'log-dir=', 'results-dir='])
+                                         'log-dir=', 'debug', 'results-dir='])
 
     # Defaults
     client_impl_type = 'neutron'
@@ -68,6 +69,7 @@ try:
     tests = ''
     scenario_filter_list = ''
     ptm_config_file = ''
+    debug = False
     log_dir = '/tmp/zephyr/logs'
     results_dir = '/tmp/zephyr/results'
 
@@ -89,6 +91,8 @@ try:
         elif arg in ('-l', '--log-dir'):
             log_dir = value
             pass
+        elif arg in ('-d', '--debug'):
+            debug = True
         elif arg in ('-r', '--results-dir'):
             results_dir = value
             pass
@@ -111,7 +115,7 @@ try:
         usage(ArgMismatchException('Must specify at least one test with the -t or --tests option'))
 
     root_dir = LinuxCLI().cmd('pwd').strip()
-    print "Setting root dir to: " + root_dir
+    print 'Setting root dir to: ' + root_dir
 
     client_impl = None
     if client_impl_type == 'neutron':
@@ -121,51 +125,59 @@ try:
     else:
         raise ArgMismatchException('Invalid client API implementation:' + client_impl_type)
 
+    print 'Setting up log manager'
     log_manager = LogManager(root_dir=log_dir)
+    console_log = log_manager.add_stdout_logger(name='tsm-run-console',
+                                                log_level=logging.DEBUG if debug is True else logging.INFO)
     log_manager.rollover_logs_fresh(file_filter='*.log')
 
+    console_log.debug('Setting up PTM')
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
-    ptm.configure_logging()
+    ptm.configure_logging(debug=debug)
 
+    console_log.debug('Setting up VTM')
     vtm = VirtualTopologyManager(physical_topology_manager=ptm, client_api_impl=client_impl, log_manager=log_manager)
 
+    console_log.debug('Setting up TSM')
     tsm = TestSystemManager(ptm, vtm, log_manager=log_manager)
-    tsm.configure_logging()
+    tsm.configure_logging(debug=debug)
 
-    scenario_filters = [TestScenario.get_class(s) for s in scenario_filter_list]
+    scenario_filters = [TestScenario.get_class(s) for s in scenario_filter_list] \
+        if len(scenario_filter_list) != 0 else None
     test_cases = map(TestCase.get_class, tests)
 
-    print test_cases
-    print tests
+    console_log.debug('Test Case Classes = ' + str(test_cases))
 
     # Run test cases, possibly filtered on scenarios
     tsm.load_tests(test_cases)
 
+    console_log.debug('Running all tests with scenario filter: ' + str(scenario_filters))
+
     results = tsm.run_all_tests(scenario_filters)
 
-    for s in results.iterkeys():
-        print "========================================"
-        print "Scenario [" + s.__name__ + "]"
-        print "Passed [{0}/{1}]".format(len(results[s].successes), results[s].testsRun)
-        print "Failed [{0}/{1}]".format(len(results[s].failures), results[s].testsRun)
-        print "Error [{0}/{1}]".format(len(results[s].errors), results[s].testsRun)
-        print ""
+    for s, tr in results.iteritems():
+        print '========================================'
+        print 'Scenario [' + s.__name__ + ']'
+        print 'Passed [{0}/{1}]'.format(len(results[s].successes), results[s].testsRun)
+        print 'Failed [{0}/{1}]'.format(len(results[s].failures), results[s].testsRun)
+        print 'Error [{0}/{1}]'.format(len(results[s].errors), results[s].testsRun)
+        print ''
         for tc, err in results[s].failures:
-            print "------------------------------"
-            print "Test Case FAILED: [" + tc._get_name() + "]"
-            print "Failure Message:"
+            print '------------------------------'
+            print 'Test Case FAILED: [' + tc._get_name() + ']'
+            print 'Failure Message:'
             print err
 
         for tc, err in results[s].errors:
             if isinstance(tc, TestCase):
-                print "------------------------------"
-                print "Test Case ERROR: [" + tc._get_name() + "]"
-                print "Error Message:"
+                print '------------------------------'
+                print 'Test Case ERROR: [' + tc._get_name() + ']'
+                print 'Error Message:'
                 print err
             else:
-                print "------------------------------"
-                print "Test Framework ERROR"
-                print "Error Message:"
+                print '------------------------------'
+                print 'Test Framework ERROR'
+                print 'Error Message:'
                 print err
 
     rdir = results_dir + '.' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')

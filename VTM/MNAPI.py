@@ -20,14 +20,14 @@ from midonetclient.tunnel_zone import TunnelZone
 from midonetclient.bridge import Bridge
 
 from common.Exceptions import *
+import CBT.VersionConfig as version_config
 
-
-def create_midonet_client(base_uri='http://localhost:8080/midonet-api/',
+def create_midonet_client(base_uri=version_config.param_midonet_api_url,
                           username=None, password=None, project_id=None):
    return MidonetApi(base_uri, username, password, project_id)
 
 
-def setup_main_tunnel_zone(api, host_ip_map, logger=logging.getLogger()):
+def setup_main_tunnel_zone(api, host_ip_map, logger=None):
     """
     Setup main tunnel zone for Midonet API.  The host-IP map should be a
     map of host key to an IP string.
@@ -38,6 +38,10 @@ def setup_main_tunnel_zone(api, host_ip_map, logger=logging.getLogger()):
     """
     if not isinstance(api, MidonetApi):
         raise ArgMismatchException('Need midonet client for this test')
+
+    if logger is None:
+        logger = logging.getLogger()
+        logger.addHandler(logging.NullHandler())
 
     tzs = api.get_tunnel_zones()
     """:type: list[TunnelZone]"""
@@ -65,7 +69,7 @@ def setup_main_tunnel_zone(api, host_ip_map, logger=logging.getLogger()):
     return tz
 
 
-def setup_main_bridge(api, logger=logging.getLogger()):
+def setup_main_bridge(api):
 
     if not isinstance(api, MidonetApi):
         raise ArgMismatchException('Need midonet client for this test')

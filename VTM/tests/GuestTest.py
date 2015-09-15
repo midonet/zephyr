@@ -31,14 +31,17 @@ from VTM.tests.VirtualTopologyManagerTest import MockClient
 
 import logging
 import datetime
+import os
+from common.LogManager import LogManager
 
 
 class GuestTest(unittest.TestCase):
-    ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./tmp/logs')
+    lm=LogManager('test-logs')
+    ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
 
     @classmethod
     def setUpClass(cls):
-        cls.ptm.configure('test-basic-config.json')
+        cls.ptm.configure(os.path.dirname(os.path.abspath(__file__)) + '/test-basic-config.json')
         cls.ptm.startup()
 
     def test_host_plugin_vm(self):
@@ -58,7 +61,7 @@ class GuestTest(unittest.TestCase):
             virtual_host = Guest(vm)
             virtual_host.plugin_vm('eth0', port)
 
-            self.assertEquals(virtual_host.open_ports_by_id[port], port)
+            self.assertTrue(port in virtual_host.open_ports_by_id)
 
             virtual_host.unplug_vm(port)
 
@@ -113,8 +116,5 @@ class GuestTest(unittest.TestCase):
         cls.ptm.shutdown()
         LinuxCLI().cmd('ip netns del vm1')
 
-try:
-    suite = unittest.TestLoader().loadTestsFromTestCase(GuestTest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-except Exception as e:
-    print 'Exception: ' + e.message + ', ' + str(e.args)
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(GuestTest)

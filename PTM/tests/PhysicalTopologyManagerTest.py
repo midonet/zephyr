@@ -14,16 +14,21 @@ __author__ = 'micucci'
 # limitations under the License.
 
 import unittest
+import os
 
-from PhysicalTopologyManager import PhysicalTopologyManager
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from common.LogManager import LogManager
 from common.CLI import LinuxCLI
 
 class PhysicalTopologyManagerTest(unittest.TestCase):
 
     def test_configure(self):
-        ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./test-logs')
+        path = os.path.abspath(__file__)
+        dir_path = os.path.dirname(path)
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=dir_path + '/../..', log_manager=lm)
 
-        ptm.configure('./test-config.json')
+        ptm.configure(dir_path + '/test-config.json')
 
         self.assertTrue('zoo1' in ptm.hosts_by_name)
         self.assertTrue('cass1' in ptm.hosts_by_name)
@@ -47,16 +52,24 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         self.assertTrue('zoo1eth0' in root_host.interfaces)
 
     def test_print_config(self):
-        ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./test-logs')
 
-        ptm.configure('./test-config.json')
+        path = os.path.abspath(__file__)
+        dir_path = os.path.dirname(path)
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=dir_path + '/../..', log_manager=lm)
+
+        ptm.configure(dir_path + '/test-config.json')
 
         ptm.print_config()
 
     def test_boot(self):
-        ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./test-logs')
 
-        ptm.configure('./test-config.json')
+        path = os.path.abspath(__file__)
+        dir_path = os.path.dirname(path)
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=dir_path + '/../..', log_manager=lm)
+
+        ptm.configure(dir_path + '/test-config.json')
 
         for h in ptm.host_by_start_order:
             h.create()
@@ -86,9 +99,13 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
 
     def test_startup(self):
-        ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./test-logs')
 
-        ptm.configure('./test-config.json')
+        path = os.path.abspath(__file__)
+        dir_path = os.path.dirname(path)
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=dir_path + '/../..', log_manager=lm)
+
+        ptm.configure(dir_path + '/test-config.json')
         ptm.startup()
 
         self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
@@ -124,5 +141,5 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         LinuxCLI().cmd('brctl delbr brv0')
 
 
-if __name__ == '__main__':
-    unittest.main()
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(PhysicalTopologyManagerTest)

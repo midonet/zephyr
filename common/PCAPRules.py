@@ -52,8 +52,8 @@ class PCAP_BinaryBoolean(PCAP_Rule):
 
     def to_str(self):
         if len(self.rule_set) < 2:
-            return ''.join([r'\( ' + i.to_str() + r' \)' for i in self.rule_set])
-        return (' ' + self.operation + ' ').join([r'\( ' + i.to_str() + r' \)' for i in self.rule_set])
+            return ''.join(['( ' + i.to_str() + ' )' for i in self.rule_set])
+        return (' ' + self.operation + ' ').join(['( ' + i.to_str() + ' )' for i in self.rule_set])
 
 
 class PCAP_And(PCAP_BinaryBoolean):
@@ -81,7 +81,7 @@ class PCAP_Not(PCAP_Rule):
         self.rule = rule
 
     def to_str(self):
-        return 'not \( ' + self.rule.to_str() + r' \)'
+        return 'not ( ' + self.rule.to_str() + r' )'
 
 
 class PCAP_Comparison(PCAP_Rule):
@@ -106,7 +106,7 @@ class PCAP_GreaterThanEqual(PCAP_Comparison):
         :param lhs: str
         :param rhs: str
         """
-        super(PCAP_GreaterThanEqual, self).__init__('\>=', lhs, rhs)
+        super(PCAP_GreaterThanEqual, self).__init__('>=', lhs, rhs)
 
 
 class PCAP_GreaterThan(PCAP_Comparison):
@@ -115,7 +115,7 @@ class PCAP_GreaterThan(PCAP_Comparison):
         :param lhs: str
         :param rhs: str
         """
-        super(PCAP_GreaterThan, self).__init__('\>', lhs, rhs)
+        super(PCAP_GreaterThan, self).__init__('>', lhs, rhs)
 
 
 class PCAP_Equal(PCAP_Comparison):
@@ -142,7 +142,7 @@ class PCAP_LessThan(PCAP_Comparison):
         :param lhs: str
         :param rhs: str
         """
-        super(PCAP_LessThan, self).__init__('\<', lhs, rhs)
+        super(PCAP_LessThan, self).__init__('<', lhs, rhs)
 
 
 class PCAP_LessThanEqual(PCAP_Comparison):
@@ -151,7 +151,7 @@ class PCAP_LessThanEqual(PCAP_Comparison):
         :param lhs: str
         :param rhs: str
         """
-        super(PCAP_LessThanEqual, self).__init__('\<=', lhs, rhs)
+        super(PCAP_LessThanEqual, self).__init__('<=', lhs, rhs)
 
 
 class PCAP_PrimitiveTypeRule(PCAP_Rule):
@@ -246,7 +246,7 @@ class PCAP_SimpleProto(PCAP_PrimitiveProtoRule):
         """
         :param proto: str One of 'tcp', 'icmp', or 'udp'
         """
-        super(PCAP_SimpleProto, self).__init__('', '\\\\' + proto)
+        super(PCAP_SimpleProto, self).__init__('', '\\' + proto)
 
 
 class PCAP_IPProto(PCAP_PrimitiveProtoRule):

@@ -17,6 +17,7 @@ import sys
 import traceback
 import json
 import importlib
+import getopt
 
 from common.Exceptions import *
 from common.CLI import LinuxCLI
@@ -25,30 +26,54 @@ from PTM.PhysicalTopologyManager import PhysicalTopologyManager, HOST_CONTROL_CM
 from PTM.Host import Host
 
 def usage(exceptClass):
-    print 'Usage: ' + HOST_CONTROL_CMD_NAME + ' <command> <host_json>'
+    print 'Usage: ' + HOST_CONTROL_CMD_NAME + ' [-h] [-d] [-l <log_dir>] -c <command> -j <host_json>'
     if exceptClass is not None:
-        raise exceptClass()
+        raise exceptClass
 
 try:
-    if len(sys.argv) < 3:
-        usage(ExitCleanException)
 
-    #TODO: Clean the paramater parsing up
-    # The parameters should all passed in a single, easily parsable JSON
-    # Add in the logging dir and any other configurable params from the main process
-    host_cmd = sys.argv[1]
-    host_json = sys.argv[2]
-    arg_list = sys.argv[3:] if len(sys.argv) > 3 else []
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdc:j:l:',
+                                        ['help', 'debug', 'command=', 'host-json=', 'log-dir='])
+
+    # Defaults
+    host_cmd = ''
+    host_json = ''
+    log_dir = '/tmp/zephyr/logs'
+    debug = False
+
+    for arg, value in arg_map:
+        if arg in ('-h', '--help'):
+            usage(None)
+            sys.exit(0)
+        elif arg in ('-d', '--debug'):
+            debug = True
+        elif arg in ('-c', '--command'):
+            host_cmd = value
+        elif arg in ('-j', '--host-json'):
+            host_json = value
+        elif arg in ('-l', '--log-dir'):
+            log_dir = value
+        else:
+            usage(ArgMismatchException('Invalid argument' + arg))
+
+    if host_cmd == '':
+        usage(ArgMismatchException('Must specify command to host'))
+
+    if host_json == '':
+        usage(ArgMismatchException('Must specify JSON representing host'))
+
+    arg_list = extra_args
 
     root_dir = LinuxCLI().cmd('pwd').strip()
 
-    log_manager = LogManager(root_dir="/tmp/log/zephyr_ptm")
+    log_manager = LogManager(root_dir=log_dir)
 
     ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
-    ptm.configure_logging()
+    ptm.configure_logging(debug=debug)
 
     ptm.LOG.debug("Setting root dir to: " + root_dir)
 
+    ptm.LOG.debug("ptm-host-ctl starting cmd: " + host_cmd + " for host: " + host_json)
     ptm.ptm_host_control(host_cmd, host_json, arg_list)
     ptm.LOG.debug("ptm-host-ctl finished")
 

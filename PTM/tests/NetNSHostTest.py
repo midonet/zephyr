@@ -1,12 +1,16 @@
 __author__ = 'micucci'
 
 import unittest
+import os
 
 from PTM.NetNSHost import *
 from PTM.RootHost import RootHost
 from PTM.PhysicalTopologyConfig import *
 from common.CLI import *
 from PTM.Interface import Interface
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from common.LogManager import LogManager
+
 
 class DummyInterface(Interface):
     def __init__(self, name, host, linked_bridge):
@@ -22,25 +26,35 @@ class DummyInterface(Interface):
 class NetNSHostTest(unittest.TestCase):
     def test_configure(self):
 
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
+
         hcfg = HostDef('test',
                        bridges={'br0': BridgeDef('br0')},
                        interfaces={'testi': InterfaceDef('testi', ['192.168.1.2'], linked_bridge='br0')})
         icfg = ImplementationDef('test', 'NetNSHost')
 
         # Get the impl details and use that to instance a basic object
-        h = NetNSHost(hcfg.name, )
+        h = NetNSHost(hcfg.name, ptm)
+        log = lm.add_file_logger('test.log', 'test')
+        h.set_logger(log)
 
         # Now configure the host with the definition and impl configs
         h.config_from_ptc_def(hcfg, icfg)
 
     def test_boot_shutdown(self):
 
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
+
         hcfg = HostDef('test',
                        bridges={'br0': BridgeDef('br0')},
                        interfaces={'testi': InterfaceDef('testi', ['192.168.1.2'], linked_bridge='br0')})
         icfg = ImplementationDef('test', 'NetNSHost')
 
-        h = NetNSHost(hcfg.name, )
+        h = NetNSHost(hcfg.name, ptm)
+        log = lm.add_file_logger('test.log', 'test')
+        h.set_logger(log)
 
         # Now configure the host with the definition and impl configs
         h.config_from_ptc_def(hcfg, icfg)
@@ -70,6 +84,9 @@ class NetNSHostTest(unittest.TestCase):
         self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test'))
 
     def test_veth_connection_between_two_hosts(self):
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
+
         h1cfg = HostDef('test1',
                        interfaces={'testi': InterfaceDef('testi', ['192.168.1.1'])})
         i1cfg = ImplementationDef('test', 'RootHost')
@@ -79,8 +96,11 @@ class NetNSHostTest(unittest.TestCase):
         i2cfg = ImplementationDef('test', 'NetNSHost')
 
         # Host should act the same regardless of using NS or base OS
-        h1 = RootHost(h1cfg.name, )
-        h2 = NetNSHost(h2cfg.name, )
+        h1 = RootHost(h1cfg.name, ptm)
+        h2 = NetNSHost(h2cfg.name, ptm)
+        log = lm.add_file_logger('test.log', 'test')
+        h1.set_logger(log)
+        h2.set_logger(log)
 
         # Now configure the host with the definition and impl configs
         h1.config_from_ptc_def(h1cfg, i1cfg)
@@ -122,10 +142,10 @@ class NetNSHostTest(unittest.TestCase):
         #self.assertEqual(True, False)
 
     def tearDown(self):
-        LinuxCLI(print_cmd=False).cmd('ip netns del test')
-        LinuxCLI(print_cmd=False).cmd('ip netns del test2')
-        LinuxCLI(print_cmd=False).cmd('ip l set br0 down')
-        LinuxCLI(print_cmd=False).cmd('brctl delbr br0')
+        LinuxCLI().cmd('ip netns del test')
+        LinuxCLI().cmd('ip netns del test2')
+        LinuxCLI().cmd('ip l set br0 down')
+        LinuxCLI().cmd('brctl delbr br0')
 
-if __name__ == '__main__':
-    unittest.main()
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(NetNSHostTest)

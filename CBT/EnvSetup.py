@@ -57,3 +57,8 @@ class EnvSetup:
 
         LinuxCLI().regex_file('/etc/midolman/midolman.conf', 's/\(enabled = \)true/\1false/')
 
+    def install_midonet_packages(self):
+        pass
+
+    def install_midonet_openstack_plugin(self):
+        pass

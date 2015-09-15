@@ -17,9 +17,11 @@ import uuid
 import unittest
 import logging
 import datetime
+import os
 
 from common.IP import IP
 from common.CLI import LinuxCLI
+from common.LogManager import LogManager
 
 from PTM.VMHost import VMHost
 from PTM.ComputeHost import ComputeHost
@@ -27,8 +29,7 @@ from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
 from VTM.Guest import Guest
 from VTM.VirtualTopologyManager import VirtualTopologyManager
-from VTM.tests.VirtualTopologyManagerTest import MockClient
-from VTM.MNAPI import create_midonet_client
+from VTM.MNAPI import create_midonet_client, setup_main_bridge, setup_main_tunnel_zone
 
 from midonetclient.api import MidonetApi
 from midonetclient.bridge import Bridge
@@ -36,38 +37,40 @@ from midonetclient.port import Port
 from midonetclient.tunnel_zone import TunnelZone
 from midonetclient.tunnel_zone_host import TunnelZoneHost
 
-
 class MNAPITest(unittest.TestCase):
-    ptm = PhysicalTopologyManager(root_dir='../..', log_root_dir='./tmp/logs')
+    lm=LogManager('test-logs')
+    ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
 
     @classmethod
     def setUpClass(cls):
-        cls.ptm.configure('test-basic-config.json')
+        cls.ptm.configure(os.path.dirname(os.path.abspath(__file__)) + '/test-basic-config.json')
+        cls.ptm.configure_logging(debug=True)
+        logging.getLogger("midonetclient.api_lib").addHandler(logging.StreamHandler())
         cls.ptm.startup()
 
     def test_midonet_api_ping_two_hosts_same_hv(self):
         vtm = VirtualTopologyManager(client_api_impl=create_midonet_client(),
                                      physical_topology_manager=self.ptm)
 
+
         # Set up virtual topology
         api = vtm.get_client()
         """ :type: MidonetApi"""
-        tz = api.add_gre_tunnel_zone().name('main').create()
-        """ :type: TunnelZone"""
 
-        hv1 = self.ptm.hypervisors['cmp1']
-        """ :type: ComputeHost"""
-        hv2 = self.ptm.hypervisors['cmp2']
-        """ :type: ComputeHost"""
+        logger = self.ptm.log_manager.add_tee_logger('MNAPITest', 'mnapi-test-logger',
+                                                     file_log_level=logging.DEBUG,
+                                                     stdout_log_level=logging.DEBUG)
 
-        tz.add_tunnel_zone_host().ip_address(hv1.interfaces['eth0'].ip_list[0].ip).host_id(str(hv1.unique_id)).create()
-        tz.add_tunnel_zone_host().ip_address(hv2.interfaces['eth0'].ip_list[0].ip).host_id(str(hv2.unique_id)).create()
-
-        br = api.add_bridge().name('bridge_0').tenant_id('test1').create()
+        tz = setup_main_tunnel_zone(api,
+                                    {h.name: h.interfaces['eth0'].ip_list[0].ip
+                                     for h in self.ptm.hypervisors.itervalues()},
+                                    logger)
+        main_bridge = setup_main_bridge(api)
         """ :type: Bridge"""
-        port1 = br.add_port().create()
+
+        port1 = main_bridge.add_port().create()
         """ :type: Port"""
-        port2 = br.add_port().create()
+        port2 = main_bridge.add_port().create()
         """ :type: Port"""
 
         vm1 = vtm.create_vm(ip='10.1.1.2', preferred_hv_host='cmp2')
@@ -85,7 +88,7 @@ class MNAPITest(unittest.TestCase):
             vm2.terminate()
             port1.delete()
             port2.delete()
-            br.delete()
+            main_bridge.delete()
 
     def test_midonet_api_ping_two_hosts_diff_hv(self):
         vtm = VirtualTopologyManager(client_api_impl=create_midonet_client(),
@@ -94,22 +97,19 @@ class MNAPITest(unittest.TestCase):
         # Set up virtual topology
         api = vtm.get_client()
         """ :type: MidonetApi"""
-        tz = api.add_gre_tunnel_zone().name('main').create()
-        """ :type: TunnelZone"""
-
-        hv1 = self.ptm.hypervisors['cmp1']
-        """ :type: ComputeHost"""
-        hv2 = self.ptm.hypervisors['cmp2']
-        """ :type: ComputeHost"""
-
-        tz.add_tunnel_zone_host().ip_address(hv1.interfaces['eth0'].ip_list[0].ip).host_id(str(hv1.unique_id)).create()
-        tz.add_tunnel_zone_host().ip_address(hv2.interfaces['eth0'].ip_list[0].ip).host_id(str(hv2.unique_id)).create()
-
-        br = api.add_bridge().name('bridge_0').tenant_id('test1').create()
+        logger = self.ptm.log_manager.add_tee_logger('MNAPITest', 'mnapi-test-logger',
+                                                     file_log_level=logging.DEBUG,
+                                                     stdout_log_level=logging.DEBUG)
+        tz = setup_main_tunnel_zone(api,
+                                    {h.name: h.interfaces['eth0'].ip_list[0].ip
+                                     for h in self.ptm.hypervisors.itervalues()},
+                                    logger)
+        main_bridge = setup_main_bridge(api)
         """ :type: Bridge"""
-        port1 = br.add_port().create()
+
+        port1 = main_bridge.add_port().create()
         """ :type: Port"""
-        port2 = br.add_port().create()
+        port2 = main_bridge.add_port().create()
         """ :type: Port"""
 
         vm1 = vtm.create_vm(ip='10.1.1.2', preferred_hv_host='cmp1')
@@ -127,15 +127,12 @@ class MNAPITest(unittest.TestCase):
             vm2.terminate()
             port1.delete()
             port2.delete()
-            br.delete()
+            main_bridge.delete()
 
     @classmethod
     def tearDownClass(cls):
         cls.ptm.shutdown()
         LinuxCLI().cmd('ip netns del vm1')
 
-try:
-    suite = unittest.TestLoader().loadTestsFromTestCase(MNAPITest)
-    unittest.TextTestRunner(verbosity=2).run(suite)
-except Exception as e:
-    print 'Exception: ' + e.message + ', ' + str(e.args)
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(MNAPITest)

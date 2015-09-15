@@ -74,6 +74,5 @@ class VirtualTopologyManagerUnitTest(unittest.TestCase):
         self.assertEqual(api.get_client().show_subnet(), subnet)
 
 
-
-if __name__ == '__main__':
-    unittest.main()
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(VirtualTopologyManagerUnitTest)

@@ -4,26 +4,25 @@ import unittest
 import json
 from common.IP import IP
 from PTM.PhysicalTopologyConfig import *
+import os
+
 
 class PhysicalTopologyConfigTest(unittest.TestCase):
     def test_read_ip(self):
         cfg = {'ip': '1.1.1.1', 'subnet': '8'}
-        ip = IP.make_ip(cfg)
+        ip = IP(**cfg)
         self.assertEquals(ip.ip, '1.1.1.1')
         self.assertEquals(ip.subnet, '8')
 
         cfg2 = {'ip': '2.1.1.1'}
-        ip2 = IP.make_ip(cfg2)
+        ip2 = IP(**cfg2)
         self.assertEquals(ip2.ip, '2.1.1.1')
         self.assertEquals(ip2.subnet, '24')
 
         cfg3 = {'subnet': '24'}
-        try:
-            ip3 = IP.make_ip(cfg3)
-        except ObjectNotFoundException:
-            pass
-        else:
-            self.assertTrue(False, 'Omitting required field should throw')
+        ip3 = IP(**cfg3)
+        self.assertEquals(ip3.ip, '0.0.0.0')
+        self.assertEquals(ip3.subnet, '24')
 
     def test_read_bridge(self):
         cfg = {'name': 'br0', 'ip_addresses': [{'ip': '1.1.1.1'}], 'options': 'stp'}
@@ -154,7 +153,10 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
             self.assertTrue(False, 'Omitting required field should throw')
 
     def test_read_ptc(self):
-        with open('test-config.json', 'r') as f:
+        path = os.path.abspath(__file__)
+        dir_path = os.path.dirname(path)
+
+        with open(dir_path + '/test-config.json', 'r') as f:
             cfg = json.load(f)
             ptc = PhysicalTopologyConfig.make_physical_topology(cfg)
 
@@ -165,23 +167,23 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
         self.assertTrue('cass1' in ptc.hosts)
         self.assertTrue('cmp1' in ptc.hosts)
         self.assertTrue('root' in ptc.implementation)
-        self.assertTrue(ptc.implementation['root'].impl == 'RootHost')
+        self.assertTrue(ptc.implementation['root'].impl == 'PTM.RootHost')
         self.assertTrue('zoo1' in ptc.implementation)
-        self.assertTrue(ptc.implementation['zoo1'].impl == 'ZookeeperHost')
+        self.assertTrue(ptc.implementation['zoo1'].impl == 'PTM.ZookeeperHost')
         self.assertTrue(len(ptc.wiring) > 0)
         self.assertEquals(ptc.wiring['root']['zoo1eth0'].host, 'zoo1')
         self.assertEquals(ptc.wiring['root']['zoo1eth0'].interface, 'eth0')
         self.assertEquals(ptc.wiring['edge1']['eth0'].host, 'cmp1')
         self.assertEquals(ptc.wiring['edge1']['eth0'].interface, 'eth1')
 
-        self.assertTrue('root' in ptc.host_start_order[0])
-        self.assertTrue('external1' in ptc.host_start_order[1])
-        self.assertTrue('test-host1' in ptc.host_start_order[2])
-        self.assertTrue('test-host2' in ptc.host_start_order[3])
-        self.assertTrue('zoo1' in ptc.host_start_order[4])
-        self.assertTrue('cass1' in ptc.host_start_order[5])
-        self.assertTrue('cmp1' in ptc.host_start_order[6])
-        self.assertTrue('edge1' in ptc.host_start_order[7])
-        
-if __name__ == '__main__':
-    unittest.main()
+        self.assertTrue('root' in ptc.host_start_order)
+        self.assertTrue('external1' in ptc.host_start_order)
+        self.assertTrue('test-host1' in ptc.host_start_order)
+        self.assertTrue('test-host2' in ptc.host_start_order)
+        self.assertTrue('zoo1' in ptc.host_start_order)
+        self.assertTrue('cass1' in ptc.host_start_order)
+        self.assertTrue('cmp1' in ptc.host_start_order)
+        self.assertTrue('edge1' in ptc.host_start_order)
+
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(PhysicalTopologyConfigTest)

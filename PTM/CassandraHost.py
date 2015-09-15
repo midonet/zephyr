@@ -98,11 +98,11 @@ class CassandraHost(NetNSHost):
         self.configurator.unmount_config()
 
     def control_start(self):
-        self.cli.rm_files('/var/log/cassandra')
         self.cli.cmd('/bin/bash -c "MAX_HEAP_SIZE=128M HEAP_NEWSIZE=64M /etc/init.d/cassandra start"')
 
     def control_stop(self):
         self.cli.cmd("/etc/init.d/cassandra stop")
+
 
 class CassandraFileConfiguration(FileConfigurationHandler):
     def __init__(self):

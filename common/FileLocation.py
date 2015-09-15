@@ -44,7 +44,7 @@ class SSHFileAccessor(FileAccessor):
 
         near_f = near_path + '/' + near_filename
 
-        LinuxCLI(log_cmd=True, priv=False).cmd('scp ' +
+        LinuxCLI(log_cmd=True, priv=False).cmd('scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ' +
                                                self.remote_username + '@' + self.remote_server + ':' + far_f + ' ' +
                                                near_f)
 

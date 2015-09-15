@@ -46,7 +46,9 @@ class LogManager(object):
                         '%Y-%m-%d %H:%M:%S,%f', 0)
 
         if not LinuxCLI().exists(self.root_dir):
+            print "Creating dir: " + self.root_dir
             LinuxCLI(priv=False).mkdir(self.root_dir)
+            LinuxCLI(priv=False).chown(self.root_dir, LinuxCLI(priv=False).whoami(), LinuxCLI(priv=False).whoami())
 
     def set_default_log_level(self, level):
         """
@@ -66,11 +68,13 @@ class LogManager(object):
             raise ObjectNotFoundException('Log format not defined: ' + format)
         return self.formats[format]
 
-    def add_format(self, format_name, format_obj, date_format, date_position):
+    def add_format(self, format_name, format_obj, date_format='%Y-%m-%d %H:%M:%S,%f', date_position=0):
         """
         Add a format to the stored formats
         :param format_name: str Name to use for format (must be unique)
         :param format_obj: logging.Formatter Formatter object from Python's logging module
+        :param date_format: str Format for date string (defaults to ISO standard format)
+        :param date_position: int The array index of the date on each line (defaults to index 0 (=first position))
         :return:
         """
         if format_name in self.formats:
@@ -112,8 +116,8 @@ class LogManager(object):
         new_log.setLevel(level if level is not None else self.default_log_level)
         new_log.addHandler(handler_obj)
 
-        new_log.debug("Starting log [" + name + "] with handler type [" +
-                     handler_obj.__class__.__name__ + "]")
+        #new_log.debug("Starting log [" + name + "] with handler type [" +
+        #             handler_obj.__class__.__name__ + "]")
 
         self.loggers[name] = new_log
 
@@ -142,6 +146,7 @@ class LogManager(object):
         :return: logging.Logger Created logger
         """
         mode = 'a' if file_overwrite is False else 'w'
+
         handler = logging.FileHandler(self.root_dir + "/" + file_name, mode)
         new_log = self._log_check_and_create(name,
                                              log_level,
@@ -355,7 +360,7 @@ class LogManager(object):
             if cli.exists(file_loc.full_path()) and os.path.getsize(file_loc.full_path()) > 0:
 
                 # Close previous, now-stale file handlers
-                for l, h in logger_list:
+                for l, h, df, dp in logger_list:
                     h.close()
                     l.removeHandler(h)
 

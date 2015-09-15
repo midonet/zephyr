@@ -1,6 +1,7 @@
 __author__ = 'micucci'
 
 import unittest
+import os
 
 from common.IP import IP
 from common.CLI import *
@@ -12,10 +13,17 @@ from PTM.RootHost import RootHost
 from PTM.VMHost import VMHost
 from PTM.PhysicalTopologyConfig import *
 from PTM.Interface import Interface
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from common.LogManager import LogManager
+
+import os
 
 class VMHostTest(unittest.TestCase):
 
     def setUp(self):
+        lm = LogManager('./test-logs')
+        ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
+
         self.hypervisor = None
         self.root_host = None
 
@@ -27,8 +35,12 @@ class VMHostTest(unittest.TestCase):
                         interfaces={'eth0': InterfaceDef('eth0', ['192.168.1.3'])})
         hypervisor_implcfg = ImplementationDef('test', 'ComputeHost')
 
-        self.root_host = RootHost(root_hostcfg.name, )
-        self.hypervisor = ComputeHost(hypervisorcfg.name, )
+        self.root_host = RootHost(root_hostcfg.name, ptm)
+        self.hypervisor = ComputeHost(hypervisorcfg.name, ptm)
+
+        log = lm.add_file_logger('test.log', 'test')
+        self.root_host.set_logger(log)
+        self.hypervisor.set_logger(log)
 
         # Now configure the host with the definition and impl configs
         self.root_host.config_from_ptc_def(root_hostcfg, root_host_implcfg)
@@ -103,6 +115,8 @@ class VMHostTest(unittest.TestCase):
         self.hypervisor.remove()
         self.root_host.remove()
         LinuxCLI().cmd('ip netns del test_vm')
+        LinuxCLI().rm('tcp.vmhost.out')
 
-if __name__ == '__main__':
-    unittest.main()
+
+from CBT.UnitTestRunner import run_unit_test
+run_unit_test(VMHostTest)

@@ -209,10 +209,10 @@ class TCPDump(object):
             cmd_str = 'tcpdump -n -xx -l ' + \
                       count_str + ' ' + iface_str + ' ' + \
                       max_size_str + ' ' + type_str + \
-                      (pcap_filter.to_str() if pcap_filter is not None else '') + \
+                      "'" + (pcap_filter.to_str() if pcap_filter is not None else '') + "'" + \
                       ' >> ' + tmp_dump_filename
 
-            cli.log_cmd = True
+            #cli.log_cmd = True
 
             # FLAG STATE: ready[clear], stop[clear], finished[clear]
 
