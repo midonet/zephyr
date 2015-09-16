@@ -16,69 +16,20 @@ __author__ = 'micucci'
 from common.CLI import LinuxCLI
 from common.Exceptions import *
 
+import json
 import platform
-
-major_version_config_map = {
-    '1': {
-        # MEM-only
-        'installed_packages': ['midolman', 'midonet-api', 'python-midonetclient'],
-        'cmd_list_datapath': 'mm-dpctl --list-dps',
-        'option_use_v2_stack': False,
-        'option_api_uses_cluster': False,
-        '7': {
-            'option_config_mnconf': False
-        },
-        '8': {
-            'option_config_mnconf': False
-        },
-        '9': {
-            'option_config_mnconf': True
-        }
-    },
-
-    '2015': {
-        # OSS-only
-        'installed_packages': ['midolman', 'midonet-api', 'python-midonetclient'],
-        'cmd_list_datapath': 'mm-dpctl --list-dps',
-        'option_use_v2_stack': False,
-        'option_api_uses_cluster': False,
-        '1': {
-                'option_config_mnconf': False
-        },
-        '2': {
-                'option_config_mnconf': False
-        },
-        '3': {
-                'option_config_mnconf': True
-        },
-        '6': {
-            'option_config_mnconf': True
-        }
-    },
-    '5': {
-        #MEM and OSS
-        'installed_packages': ['midolman', 'python-midonetclient', 'midonet-cluster'],
-        'cmd_list_datapath': 'mm-dpctl datapath --list',
-        'option_use_v2_stack': True,
-        'option_api_uses_cluster': True,
-        '0': {
-            'option_config_mnconf': True
-        }
-    },
-}
 
 LINUX_CENTOS = 1
 LINUX_UBUNTU = 2
 
 supported_linux_dist_map = { "Ubuntu": LINUX_UBUNTU, "centos": LINUX_CENTOS }
 
+
 def get_linux_dist():
     dist, version, dist_id = platform.linux_distribution()
     if dist not in supported_linux_dist_map:
         raise ArgMismatchException('Unsupported Linux distribution: ' + dist)
     return supported_linux_dist_map[dist]
-
-linux_dist = get_linux_dist()
 
 
 class Version(object):
@@ -102,22 +53,6 @@ class Version(object):
                 other.tag == self.tag)
 
 
-def get_midolman_version():
-    cli = LinuxCLI()
-
-    if linux_dist == LINUX_UBUNTU:
-        full_ver = cli.cmd('dpkg -l | grep -w midolman').split()[2].split('~')
-        ver = full_ver[0]
-        tag_ver = '' if len(full_ver) == 1 else full_ver[1]
-    elif linux_dist == LINUX_CENTOS:
-        ver = cli.cmd('yum info midolman | grep Version').split()[2]
-        tag_ver = cli.cmd('yum info midolman | grep Release').split()[2]
-    else:
-        raise ArgMismatchException('Must run on Ubuntu or CentOS')
-
-    return parse_midolman_version(ver, tag_ver)
-
-
 def parse_midolman_version(mnv, tag_ver):
     major_minor_patch = mnv.split(':')[-1].split('.')[0:3]
 
@@ -132,16 +67,48 @@ def parse_midolman_version(mnv, tag_ver):
 
     return Version(*map(lambda ver: ver.lstrip('0') if ver != '0' else '0', major_minor_patch[0:3]), tag=tag)
 
-#Midonet version
-mn_version = get_midolman_version()
 
-#Commands (as strings)
-cmd_list_datapath = major_version_config_map[mn_version.major]['cmd_list_datapath']
+def get_installed_midolman_version():
+    cli = LinuxCLI()
 
-#Options and switches
-option_config_mnconf = major_version_config_map[mn_version.major][mn_version.minor]['option_config_mnconf']
-option_use_v2_stack = major_version_config_map[mn_version.major]['option_use_v2_stack']
-option_api_uses_cluster = major_version_config_map[mn_version.major]['option_api_uses_cluster']
+    if get_linux_dist() == LINUX_UBUNTU:
+        full_ver_str = cli.cmd('dpkg -l | grep -w midolman')
+        if full_ver_str == "":
+            raise ArgMismatchException('Midolman package not found.  Zephyr cannot run without Midolman.')
 
-#Global parameters
-param_midonet_api_url = "http://localhost:" + ("8181" if option_api_uses_cluster else "8080") + "/midonet-api"
+        full_ver = full_ver_str.split()[2].split('~')
+        ver = full_ver[0]
+        tag_ver = '' if len(full_ver) == 1 else full_ver[1]
+    elif get_linux_dist() == LINUX_CENTOS:
+        ver = cli.cmd('yum info midolman | grep Version').split()[2]
+        tag_ver = cli.cmd('yum info midolman | grep Release').split()[2]
+    else:
+        raise ArgMismatchException('Must run on Ubuntu or CentOS')
+
+    return parse_midolman_version(ver, tag_ver)
+
+
+def get_config_map(config_json="config/version_configuration.json"):
+    with open(config_json, "r") as f:
+        major_version_config_map = json.load(f)
+    return major_version_config_map
+
+
+def get_configured_parameter(param, config_json="config/version_configuration.json"):
+    mn_version = get_installed_midolman_version()
+
+    major_version_config_map = get_config_map(config_json)
+    if param == 'mn_version':
+        return mn_version
+
+    major_version_params = major_version_config_map[mn_version.major]
+    minor_version_params = major_version_params[mn_version.minor]
+
+    # Minor version config takes precedence and can override major version config
+    if (param in minor_version_params):
+        return minor_version_params[param]
+
+    if (param in major_version_params):
+        return major_version_params[param]
+
+    raise ObjectNotFoundException("Param not found in either major or minor version config: " + param)

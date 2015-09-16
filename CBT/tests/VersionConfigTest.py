@@ -17,10 +17,12 @@ import unittest
 import re
 import CBT.VersionConfig as version_config
 
+CFG_FILE='../../config/version_configuration.json'
+
 
 class VersionConfigTest(unittest.TestCase):
     def test_version_map(self):
-        self.assertFalse(version_config.major_version_config_map['1']['option_use_v2_stack'])
+        self.assertFalse(version_config.get_config_map(config_json=CFG_FILE)['1']['option_use_v2_stack'])
 
     def test_functions(self):
         linux_dist = version_config.get_linux_dist()
@@ -51,11 +53,11 @@ class VersionConfigTest(unittest.TestCase):
             self.assertEqual(expected, mn_version)
 
     def test_vars(self):
-        print version_config.mn_version
-        print version_config.cmd_list_datapath
-        print version_config.option_config_mnconf
-        print version_config.option_use_v2_stack
-        print version_config.linux_dist
+        print version_config.get_configured_parameter('mn_version', config_json=CFG_FILE)
+        print version_config.get_configured_parameter('cmd_list_datapath', config_json=CFG_FILE)
+        print version_config.get_configured_parameter('option_config_mnconf', config_json=CFG_FILE)
+        print version_config.get_configured_parameter('option_use_v2_stack', config_json=CFG_FILE)
+        print version_config.get_linux_dist()
 
 from CBT.UnitTestRunner import run_unit_test
 run_unit_test(VersionConfigTest)

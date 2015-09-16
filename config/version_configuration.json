@@ -1,0 +1,50 @@
+{
+  "1": {
+    "installed_packages": ["midolman", "midonet-api", "python-midonetclient"],
+    "cmd_list_datapath": "mm-dpctl --list-dps",
+    "option_use_v2_stack": false,
+    "option_api_uses_cluster": false,
+    "param_midonet_api_url": "http://localhost:8080/midonet-api",
+    "param_midonet_conf_key": "midonet/v1",
+    "7": {
+      "option_config_mnconf": false
+    },
+    "8": {
+      "option_config_mnconf": false
+    },
+    "9": {
+      "option_config_mnconf": true
+    }
+  },
+  "2015": {
+    "installed_packages": ["midolman", "midonet-api", "python-midonetclient"],
+    "cmd_list_datapath": "mm-dpctl --list-dps",
+    "option_use_v2_stack": false,
+    "option_api_uses_cluster": false,
+    "param_midonet_api_url": "http://localhost:8080/midonet-api",
+    "param_midonet_conf_key": "midonet/v1",
+    "1": {
+      "option_config_mnconf": false
+    },
+    "2": {
+      "option_config_mnconf": false
+    },
+    "3": {
+      "option_config_mnconf": true
+    },
+    "6": {
+      "option_config_mnconf": true
+    }
+  },
+  "5": {
+    "installed_packages": ["midolman", "python-midonetclient", "midonet-cluster"],
+    "cmd_list_datapath": "mm-dpctl datapath --list",
+    "option_use_v2_stack": true,
+    "option_api_uses_cluster": true,
+    "param_midonet_api_url": "http://localhost:8181/midonet-api",
+    "param_midonet_conf_key": "midonet/v2",
+    "0": {
+      "option_config_mnconf": true
+    }
+  }
+}

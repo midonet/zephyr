@@ -39,7 +39,7 @@ try:
 
     # Defaults
     command = ''
-    ptm_config_file = 'config.json'
+    ptm_config_file = 'config/ptm-config.json'
     neutron_command = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False
