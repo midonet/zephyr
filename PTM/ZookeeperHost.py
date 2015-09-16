@@ -74,7 +74,7 @@ class ZookeeperHost(NetNSHost):
     def wait_for_process_start(self):
         # Checking Zookeeper status
         retries = 0
-        max_retries = 10
+        max_retries = 45
         connected = False
         while not connected:
             ping_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

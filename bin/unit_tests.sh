@@ -9,7 +9,7 @@ ZEPHYR_ROOT=`dirname $SCRIPT_ROOT`
 # out JUnit-style XML results files for Jenkins
 sudo pip -q install xmlrunner
 
-ZEPHYR_TEST_JUNIT_OUTDIR=$ZEPHYR_ROOT/test-results
+export ZEPHYR_TEST_JUNIT_OUTDIR=$ZEPHYR_ROOT/test-results
 
 # Run all tests in each package's tests directory
 TEST_PACKAGES="common PTM VTM TSM"

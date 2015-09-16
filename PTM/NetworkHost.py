@@ -77,7 +77,7 @@ class NetworkHost(RootHost):
     def wait_for_process_start(self):
         # Checking MN-API status
         connected = False
-        deadline = time.time() + 10
+        deadline = time.time() + 80
         while not connected:
             if self.cli.cmd('midonet-cli --midonet-url="' + self.url + '" -A -e "host list"', return_status=True) == 0:
                 connected = True

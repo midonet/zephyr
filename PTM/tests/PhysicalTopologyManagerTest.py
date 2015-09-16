@@ -31,7 +31,7 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         ptm.configure(dir_path + '/test-config.json')
 
         self.assertTrue('zoo1' in ptm.hosts_by_name)
-        self.assertTrue('cass1' in ptm.hosts_by_name)
+        #self.assertTrue('cass1' in ptm.hosts_by_name)
         self.assertTrue('edge1' in ptm.hosts_by_name)
 
         self.assertEqual(ptm.host_by_start_order[0].name, 'root')
@@ -40,8 +40,9 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         self.assertEqual(ptm.host_by_start_order[3].name, 'test-host2')
         self.assertEqual(ptm.host_by_start_order[4].name, 'edge1')
         self.assertEqual(ptm.host_by_start_order[5].name, 'zoo1')
-        self.assertEqual(ptm.host_by_start_order[6].name, 'cass1')
-        self.assertEqual(ptm.host_by_start_order[7].name, 'cmp1')
+        #self.assertEqual(ptm.host_by_start_order[6].name, 'cass1')
+        #self.assertEqual(ptm.host_by_start_order[7].name, 'cmp1')
+        self.assertEqual(ptm.host_by_start_order[6].name, 'cmp1')
 
         zk_host = ptm.hosts_by_name['zoo1']
 
@@ -122,7 +123,7 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
 
     def tearDown(self):
-        LinuxCLI().cmd('ip netns del cass1')
+        #LinuxCLI().cmd('ip netns del cass1')
         LinuxCLI().cmd('ip netns del cmp1')
         LinuxCLI().cmd('ip netns del zoo1')
         LinuxCLI().cmd('ip netns del edge1')
@@ -133,7 +134,7 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         LinuxCLI().cmd('ip l set dev brv0 down')
         LinuxCLI().cmd('ip l del zoo1eth0')
         LinuxCLI().cmd('ip l del cmp1eth0')
-        LinuxCLI().cmd('ip l del cass1eth0')
+        #LinuxCLI().cmd('ip l del cass1eth0')
         LinuxCLI().cmd('ip l del th1eth0')
         LinuxCLI().cmd('ip l del th1eth1')
         LinuxCLI().cmd('ip l del th2eth0')

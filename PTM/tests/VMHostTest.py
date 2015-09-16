@@ -32,7 +32,7 @@ class VMHostTest(unittest.TestCase):
         root_host_implcfg = ImplementationDef('test', 'RootHost')
 
         hypervisorcfg = HostDef('hv',
-                        interfaces={'eth0': InterfaceDef('eth0', ['192.168.1.3'])})
+                        interfaces={'eth0': InterfaceDef('eth0', [IP('192.168.1.3')])})
         hypervisor_implcfg = ImplementationDef('test', 'ComputeHost')
 
         self.root_host = RootHost(root_hostcfg.name, ptm)

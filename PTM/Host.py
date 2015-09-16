@@ -103,7 +103,7 @@ class Host(PTMObject):
             # Set up an interface here, but it will be replaced by a virtual interface if
             # this host/interface is defined as a near-pair in a wiring config
             self.interfaces[iface.name] = Interface(iface.name, self, iface.mac_address,
-                                                            iface.ip_addresses, link_br, iface.vlans)
+                                                    iface.ip_addresses, link_br, iface.vlans)
 
         self.do_extra_config_from_ptc_def(cfg, impl_cfg)
 
@@ -166,6 +166,9 @@ class Host(PTMObject):
         :return:
         """
         self.LOG = logger
+
+    def set_log_level(self, level):
+        self.LOG.setLevel(level)
 
     def create(self):
         if self.create_func is not None:

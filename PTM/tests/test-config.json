@@ -25,10 +25,6 @@
           "linked_bridge": "br0"
         },
         {
-          "name": "cass1eth0",
-          "linked_bridge": "br0"
-        },
-        {
           "name": "cmp1eth0",
           "linked_bridge": "br0"
         },
@@ -54,20 +50,6 @@
           "ip_addresses": [
             {
               "ip": "10.0.0.2",
-              "subnet": "24"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "cass1",
-      "interfaces": [
-        {
-          "name": "eth0",
-          "ip_addresses": [
-            {
-              "ip": "10.0.0.5",
               "subnet": "24"
             }
           ]
@@ -194,10 +176,6 @@
       "far":  { "host": "zoo1", "interface": "eth0"}
     },
     {
-      "near": { "host": "root", "interface": "cass1eth0"},
-      "far":  { "host": "cass1", "interface": "eth0"}
-    },
-    {
       "near": { "host": "root", "interface": "cmp1eth0"},
       "far":  { "host": "cmp1", "interface": "eth0"}
     },
@@ -234,18 +212,11 @@
       "zookeeper_ips": ["10.0.0.2"]
     },
     {
-      "host": "cass1",
-      "impl": "PTM.CassandraHost",
-      "id": "1",
-      "init_token": "56713727820156410577229101238628035242",
-      "cassandra_ips": ["10.0.0.5"]
-    },
-    {
       "host": "cmp1",
       "impl": "PTM.ComputeHost",
       "id": "1",
       "zookeeper_ips": ["10.0.0.2"],
-      "cassandra_ips": ["10.0.0.5"]
+      "cassandra_ips": []
     },
     {
       "host": "external1",
@@ -271,7 +242,6 @@
     "test-host1", "test-host2",
     "edge1",
     "zoo1",
-    "cass1",
     "cmp1"
   ]
 }

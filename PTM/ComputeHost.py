@@ -27,7 +27,7 @@ from common.FileLocation import *
 from ConfigurationHandler import FileConfigurationHandler, ProgramConfigurationHandler
 from NetNSHost import NetNSHost
 from VMHost import VMHost
-from PhysicalTopologyConfig import InterfaceDef
+from PhysicalTopologyConfig import InterfaceDef, HostDef
 from Interface import Interface
 from VirtualInterface import VirtualInterface
 
@@ -48,6 +48,7 @@ class ComputeHost(NetNSHost):
             self.configurator = ComputeMNConfConfiguration()
         else:
             self.configurator = ComputeFileConfiguration()
+        self.my_ip = '127.0.0.1'
 
     def do_extra_config_from_ptc_def(self, cfg, impl_cfg):
         """
@@ -57,6 +58,9 @@ class ComputeHost(NetNSHost):
         :type impl_cfg: ImplementationDef
         :return:
         """
+
+        self.LOG.debug("Individual host configuration for [" + self.name + "]")
+
         if 'cassandra_ips' in impl_cfg.kwargs:
             for i in impl_cfg.kwargs['cassandra_ips']:
                 self.cassandra_ips.append(IP(i))
@@ -68,9 +72,14 @@ class ComputeHost(NetNSHost):
         if 'id' in impl_cfg.kwargs:
             self.num_id = impl_cfg.kwargs['id']
 
+        if u'eth0' in cfg.interfaces:
+            self.my_ip = cfg.interfaces[u'eth0'].ip_addresses[0].ip
+            self.LOG.debug("Found eth0 in interface cfg with IP[" + self.my_ip + "]")
+
     def print_config(self, indent=0):
         super(ComputeHost, self).print_config(indent)
         print ('    ' * (indent + 1)) + 'Num-id: ' + self.num_id
+        print ('    ' * (indent + 1)) + 'My IP: ' + self.my_ip
         print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(str(ip) for ip in self.zookeeper_ips)
         print ('    ' * (indent + 1)) + 'Cassandra-IPs: ' + ', '.join(str(ip) for ip in self.cassandra_ips)
         if len(self.vms) > 0:
@@ -90,17 +99,18 @@ class ComputeHost(NetNSHost):
                                                    '%Y.%m.%d %H:%M:%S.%f')
 
     def do_extra_create_host_cfg_map_for_process_control(self):
-        return {'num_id': self.num_id, 'uuid': str(self.unique_id),
+        return {'num_id': self.num_id, 'uuid': str(self.unique_id), 'my_ip': self.my_ip,
                 'zookeeper_ips': ','.join(str(ip) for ip in self.zookeeper_ips)}
 
     def do_extra_config_host_for_process_control(self, cfg_map):
         self.num_id = cfg_map['num_id']
+        self.my_ip = cfg_map['my_ip']
         self.unique_id = uuid.UUID('urn:uuid:' + cfg_map['uuid'])
         self.zookeeper_ips = [IP.make_ip(s) for s in cfg_map['zookeeper_ips'].split(',')]
 
     def wait_for_process_start(self):
         retries = 0
-        max_retries = 30
+        max_retries = 60
         connected = False
         while not connected:
             if self.cli.grep_cmd(version_config.cmd_list_datapath, 'midonet') is True:
@@ -192,6 +202,8 @@ class ComputeHost(NetNSHost):
             self.cli.write_to_file(pid_file, dnsm_real_pid)
 
         self.cli.cmd('hostname ' + self.name)
+        self.cli.add_to_host_file(self.name, self.my_ip)
+
         self.cli.cmd("sysctl -w net.ipv6.conf.default.disable_ipv6=1")
         process = self.cli.cmd('/usr/share/midolman/midolman-start', blocking=False)
         if process.pid == -1:

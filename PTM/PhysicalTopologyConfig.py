@@ -145,8 +145,8 @@ class HostDef(object):
             new_br = BridgeDef.make_bridge(br_cfg)
             bridges[new_br.name] = new_br
         for if_cfg in host_cfg['interfaces'] if 'interfaces' in host_cfg else []:
-            new_br = InterfaceDef.make_interface(if_cfg)
-            interfaces[new_br.name] = new_br
+            new_if = InterfaceDef.make_interface(if_cfg)
+            interfaces[new_if.name] = new_if
 
         return HostDef(name, bridges, interfaces)
 

@@ -46,7 +46,7 @@ class PhysicalTopologyManager(object):
     """
     def __init__(self, root_dir='.', log_manager=None):
         super(PhysicalTopologyManager, self).__init__()
-        self.log_manager = log_manager
+        self.log_manager = log_manager if log_manager is not None else LogManager(root_dir="logs")
         """ :type: LogManager"""
         self.hosts_by_name = {}
         self.host_by_start_order = []
@@ -54,29 +54,31 @@ class PhysicalTopologyManager(object):
         self.root_dir = root_dir
         self.LOG = logging.getLogger('ptm-null-root')
         self.LOG.addHandler(logging.NullHandler())
-
         self.CONSOLE = logging.getLogger('ptm-null-console')
         self.CONSOLE.addHandler(logging.NullHandler())
+        self.log_level = logging.INFO
+        self.debug = False
 
     def configure_logging(self, log_name='ptm-root', log_file_name=PTM_LOG_FILE_NAME, debug=False):
 
-        level = logging.DEBUG if debug is True else logging.INFO
+        self.log_level = logging.DEBUG if debug is True else logging.INFO
+        self.debug = True
 
         if debug is True:
             self.LOG = self.log_manager.add_tee_logger(file_name=log_file_name,
                                                        name=log_name,
-                                                       file_log_level=level,
-                                                       stdout_log_level=level)
+                                                       file_log_level=self.log_level,
+                                                       stdout_log_level=self.log_level)
         else:
             self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
                                                         name=log_name,
-                                                        log_level=level)
+                                                        log_level=self.log_level)
 
         self.CONSOLE = self.log_manager.add_stdout_logger(name=log_name + '-console', log_level=logging.INFO)
 
         # Update all loggers for all configured hosts
         for host in self.hosts_by_name.itervalues():
-            host.set_logger(self.LOG)
+            host.set_log_level(self.log_level)
 
     def configure(self, file_name='config.json', file_type='json'):
         """
@@ -122,9 +124,15 @@ class PhysicalTopologyManager(object):
 
             h = impl_class(host_cfg.name, self)
             """ :type h: Host"""
-            host_logger = self.log_manager.add_file_logger(PTM_LOG_FILE_NAME,
-                                                           name=h.name,
-                                                           log_level=logging.DEBUG)
+            if self.debug is True:
+                host_logger = self.log_manager.add_tee_logger(file_name=PTM_LOG_FILE_NAME,
+                                                              name=h.name,
+                                                              file_log_level=self.log_level,
+                                                              stdout_log_level=self.log_level)
+            else:
+                host_logger = self.log_manager.add_file_logger(PTM_LOG_FILE_NAME,
+                                                               name=h.name,
+                                                               log_level=self.log_level)
             h.set_logger(host_logger)
             self.hosts_by_name[h.name] = h
 

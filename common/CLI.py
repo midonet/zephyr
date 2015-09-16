@@ -250,6 +250,21 @@ class LinuxCLI(object):
     def whoami(self):
         return pwd.getpwuid(os.getuid())[0]
 
+    def add_to_host_file(self, name, ip):
+        host_line = self.cmd('grep -w ' + name + ' /etc/hosts').splitlines(False)
+        if len(host_line) == 0:
+            self.write_to_file('/etc/hosts', ip + ' ' + name + '\n', append=True)
+        else:
+            match_num = 0
+            for hl in host_line:
+                if hl.split()[0] != ip:
+                    match_num += 1
+                    if match_num > 1:
+                        self.regex_file('/etc/hosts', '/{0} {1}/d'.format(hl.split()[0], name))
+                    else:
+                        self.regex_file('/etc/hosts', 's/{0} {2}/{1} {2}/g'.format(hl.split()[0], ip, name))
+
+
 class NetNSCLI(LinuxCLI):
     def __init__(self, name, priv=True, debug=(DEBUG >= 2), log_cmd=(DEBUG >= 2), logger=None):
         super(NetNSCLI, self).__init__(priv, debug=debug, log_cmd=log_cmd, logger=logger)

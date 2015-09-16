@@ -52,6 +52,83 @@ class CLITest(unittest.TestCase):
         finally:
             cli.rm('tmp')
 
+    def test_host_file_replacement(self):
+        cli = LinuxCLI()
+        if cli.exists('/etc/hosts.backup'):
+            self.fail("Backup file present, please cleanup to prevent system corruption")
+        else:
+            cli.copy_file('/etc/hosts', '/etc/hosts.backup')
+            try:
+                cli.write_to_file('/etc/hosts', '1.1.1.1 foo\n')
+                cli.write_to_file('/etc/hosts', '2.2.2.2 bar\n', append=True)
+                cli.write_to_file('/etc/hosts', '64.64.64.64 dontchange\n', append=True)
+                cli.add_to_host_file('baz', '3.3.3.3')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '1.1.1.1 foo'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '2.2.2.2 bar'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '64.64.64.64 dontchange'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '3.3.3.3 baz'))
+
+                cli.add_to_host_file('baz', '4.4.4.4')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '1.1.1.1 foo'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '2.2.2.2 bar'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '4.4.4.4 baz'))
+
+                cli.add_to_host_file('foo', '5.5.5.5')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '5.5.5.5 foo'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '2.2.2.2 bar'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '4.4.4.4 baz'))
+
+                cli.add_to_host_file('foobar', '6.6.6.6')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '4.4.4.4 baz'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '6.6.6.6 foobar'))
+
+                cli.write_to_file('/etc/hosts', '7.7.7.7 bamf blaze\n', append=True)
+                cli.add_to_host_file('bamf', '9.9.9.9')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '6.6.6.6 foobar'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '9.9.9.9 bamf blaze'))
+
+                cli.write_to_file('/etc/hosts', '#10.10.10.10 test\n', append=True)
+                cli.add_to_host_file('test', '11.11.11.11')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '9.9.9.9 bamf blaze'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '11.11.11.11 test'))
+
+                cli.add_to_host_file('baz2', '4.4.4.4')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '4.4.4.4 baz'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '11.11.11.11 test'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '4.4.4.4 baz2'))
+
+                cli.add_to_host_file('baz2', '6.6.6.6')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '6.6.6.6 foobar'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '4.4.4.4 baz'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '6.6.6.6 baz2'))
+
+                cli.write_to_file('/etc/hosts', '12.12.12.12 baz\n', append=True)
+                cli.add_to_host_file('baz', '13.13.13.13')
+
+                self.assertTrue(cli.grep_file('/etc/hosts', '5.5.5.5 foo'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '2.2.2.2 bar'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '64.64.64.64 dontchange'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '13.13.13.13 baz'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '6.6.6.6 foobar'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '9.9.9.9 bamf blaze'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '11.11.11.11 test'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '6.6.6.6 baz2'))
+                self.assertTrue(cli.grep_file('/etc/hosts', '13.13.13.13 baz'))
+                self.assertEqual(1, len(cli.cmd('grep "13.13.13.13 baz" /etc/hosts').splitlines(False)))
+                self.assertFalse(cli.grep_file('/etc/hosts', '12.12.12.12 baz'))
+
+            finally:
+                cli.copy_file('/etc/hosts', '/tmp/hosts.tested')
+                cli.move('/etc/hosts.backup', '/etc/hosts')
+
     def tearDown(self):
         LinuxCLI().rm('tmp-test')
 

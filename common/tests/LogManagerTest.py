@@ -462,6 +462,12 @@ class LogManagerTest(unittest.TestCase):
         LinuxCLI().rm('log_levels.txt')
         LinuxCLI().rm('log_multiple.txt')
         LinuxCLI().rm('log_multiple2.txt')
+        LinuxCLI().rm('logs')
+        LinuxCLI().rm('logs2')
+        LinuxCLI().rm('logs3')
+        LinuxCLI().rm('logs4')
+        LinuxCLI().rm('logs-all')
+        LinuxCLI().rm('sliced-logs')
 
 from CBT.UnitTestRunner import run_unit_test
 run_unit_test(LogManagerTest)

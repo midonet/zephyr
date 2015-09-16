@@ -164,7 +164,7 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
         self.assertTrue('zoo1eth0' in ptc.hosts['root'].interfaces)
         self.assertTrue('zoo1' in ptc.hosts)
         self.assertTrue('eth0' in ptc.hosts['zoo1'].interfaces)
-        self.assertTrue('cass1' in ptc.hosts)
+        #self.assertTrue('cass1' in ptc.hosts)
         self.assertTrue('cmp1' in ptc.hosts)
         self.assertTrue('root' in ptc.implementation)
         self.assertTrue(ptc.implementation['root'].impl == 'PTM.RootHost')
@@ -181,7 +181,7 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
         self.assertTrue('test-host1' in ptc.host_start_order)
         self.assertTrue('test-host2' in ptc.host_start_order)
         self.assertTrue('zoo1' in ptc.host_start_order)
-        self.assertTrue('cass1' in ptc.host_start_order)
+        #self.assertTrue('cass1' in ptc.host_start_order)
         self.assertTrue('cmp1' in ptc.host_start_order)
         self.assertTrue('edge1' in ptc.host_start_order)
 

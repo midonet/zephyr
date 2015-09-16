@@ -83,7 +83,7 @@ class CassandraHost(NetNSHost):
         max_retries = 10
         connected = False
         while not connected:
-            if self.cli.oscmd('nodetool -h ' + str(self.ip.ip) + ' status', return_status=True) == 0:
+            if self.cli.cmd('nodetool -h 127.0.0.1 status', return_status=True) == 0:
                 connected = True
             else:
                 retries += 1

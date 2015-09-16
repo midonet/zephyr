@@ -14,8 +14,6 @@ __author__ = 'micucci'
 # limitations under the License.
 
 
-import neutronclient.neutron.client
-
 from common.Exceptions import *
 from common.IP import IP
 from common.LogManager import LogManager
@@ -28,6 +26,7 @@ from VTM.Guest import Guest
 
 def create_neutron_client(api_version='2.0', endpoint_url='http://localhost:9696',
                           auth_strategy='noauth', **kwargs):
+    import neutronclient.neutron.client
     return neutronclient.neutron.client.Client(api_version, endpoint_url=endpoint_url,
                                                auth_strategy=auth_strategy, **kwargs)
 
@@ -36,7 +35,7 @@ class VirtualTopologyManager(object):
 
     def __init__(self,
                  physical_topology_manager,
-                 client_api_impl=create_neutron_client(),
+                 client_api_impl=None,
                  log_manager=None):
 
         self.client_api_impl = client_api_impl

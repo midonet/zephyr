@@ -180,7 +180,7 @@ try:
                 print 'Error Message:'
                 print err
 
-    rdir = results_dir + '.' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
+    rdir = results_dir + '/' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
     tsm.create_results(results_dir=rdir, leeway=3)
 
 except ExitCleanException:
