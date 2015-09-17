@@ -20,4 +20,5 @@ for dir in $TEST_PACKAGES; do
   done
 done
 
-$ZEPHYR_ROOT/tsm-run.py -d -t tests.t3.test_basic_ping.TestBasicPing -c midonet -r $ZEPHYR_TEST_JUNIT_OUTDIR
+$ZEPHYR_ROOT/tsm-run.py -d -t tests.t3.test_basic_ping.TestBasicPing -c midonet \
+-l $ZEPHYR_ROOT/test-logs -r $ZEPHYR_TEST_JUNIT_OUTDIR

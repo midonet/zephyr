@@ -189,7 +189,7 @@ class LinuxCLI(object):
         line = map(int, self.cmd("wc " + file).split()[0:3])
         return dict(zip(['lines', 'words', 'chars'], line))
 
-    def write_to_file(self, wfile, data, append=False):
+    def write_to_file(self, wfile, data, append=False, debug=False):
         old_data = ''
         if append is True:
             with open(wfile, 'r') as f:
@@ -201,6 +201,9 @@ class LinuxCLI(object):
         file_ptr.close()
         ret = self.copy_file('./.tmp.file', wfile)
         self.rm("./.tmp.file")
+        if debug:
+            print 'Would have written: ' + data
+
         return ret
 
     def rm(self, old_file):

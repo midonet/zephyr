@@ -13,52 +13,108 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.CLI import LinuxCLI
-from common.Exceptions import SubprocessFailedException
+from CBT.EnvSetupInstallers import *
+from CBT.EnvSetupRepos import *
+from common.Exceptions import *
 
-class EnvSetup:
-    @staticmethod
-    def install_neutron_client():
 
-        cli_safe = LinuxCLI(priv=False)
+url_scheme = "http://"
+artifactory_server = "artifactory-dev.bcn.midokura.com/artifactory"
 
-        if LinuxCLI().exists('devstack') is True:
-            cli_safe.cmd('cd devstack ; git pull; cd ..')
-        else:
-            cli_safe.cmd('git clone http://github.com/openstack-dev/devstack',)
+install_config = {
+    'midonet':
+        {
+            'repo': 'midonet',
+            'scheme': 'http',
+            'installer': MidonetComponentInstaller,
+            'deps': [],
+        },
+    'midonet-mem':
+        {
+            'repo': 'mem',
+            'scheme': 'https',
+            'installer': MidonetComponentInstaller,
+            'deps': [],
+        },
+    'midonet-utils':
+        {
+            'repo': 'midonet',
+            'scheme': 'http',
+            'installer': MidonetUtilsComponentInstaller,
+            'deps': [],
+        },
+    'plugin':
+        {
+            'repo': 'networking-midonet',
+            'scheme': 'http',
+            'installer': PluginComponentInstaller,
+            'deps': ['python-midonetclient'],
+        },
+    'neutron':
+        {
+            'repo': '',
+            'scheme': 'http',
+            'installer': NeutronComponentInstaller,
+            'deps': [],
+        }
+}
 
-        cli = LinuxCLI(priv=False)
 
-        cli.add_environment_variable('HOME', cli_safe.cmd('echo $HOME').strip('\n'))
-        cli.add_environment_variable('PATH', cli_safe.cmd('echo $PATH').strip('\n'))
-        cli.add_environment_variable('USER', cli_safe.cmd('echo $USER').strip('\n'))
-        cli.add_environment_variable('WORKSPACE', cli_safe.cmd('pwd').strip('\n'))
-        #cli.add_environment_variable('MIDONET_ENABLE_Q_SVC_ONLY', 'True')
-        cli.add_environment_variable('LOG_COLOR', 'False')
-        cli.add_environment_variable('LOGDIR', cli_safe.cmd('echo `pwd`/logs').strip('\n'))
-        cli.add_environment_variable('SCREEN_LOGDIR', cli_safe.cmd('echo `pwd`/logs').strip('\n'))
-        cli.add_environment_variable('LOGFILE', cli_safe.cmd('echo `pwd`/logs/stack.sh.log').strip('\n'))
-        #cli.add_environment_variable('NEUTRON_REPO', 'http://github.com/tomoe/neutron')
-        #cli.add_environment_variable('NEUTRON_BRANCH', 'midonet1')
+def get_config_info(component, version):
+    if component not in install_config:
+        raise ArgMismatchException('Component has no defined install process: ' + component)
 
-        plugin_url = 'https://github.com/openstack/networking-midonet release/kilo'
-        #plugin_url = 'http://openstack./tomoe/networking-midonet.git midonet1'
-        cf_str = '#!/usr/bin/env bash\n' \
-                 '[[local|localrc]]\n' \
-                 '\n' \
-                 'ENABLED_SERVICES=rabbit,mysql,key\n' \
-                 'ENABLED_SERVICES+=,q-svc,neutron\n' \
-                 'ENABLED_SERVICES+=,q-lbaas\n' \
-                 'enable_plugin networking-midonet ' + plugin_url + '\n'
-        LinuxCLI().write_to_file('devstack/local.conf', cf_str, False)
+    class_type = install_config[component]['installer']
+    """ :type: type"""
 
-        if cli.cmd('cd devstack ; ./stack.sh', return_status=True) is not 0:
-            raise SubprocessFailedException('devstack/stack.sh')
+    installer_obj = class_type(version)
+    """ :type: ComponentInstaller"""
 
-        LinuxCLI().regex_file('/etc/midolman/midolman.conf', 's/\(enabled = \)true/\1false/')
+    scheme = install_config[component]['scheme']
+    """ :type: str"""
 
-    def install_midonet_packages(self):
-        pass
+    main_dir = install_config[component]['repo']
+    """ :type: str"""
 
-    def install_midonet_openstack_plugin(self):
-        pass
+    deps = install_config[component]['deps']
+    """ :type: list[str]"""
+
+    return (installer_obj, scheme, main_dir, deps)
+
+
+def install_component(component='midonet',
+                      server=artifactory_server, username=None, password=None,
+                      version=None, distribution='stable',
+                      exact_version=None):
+    """
+    :type repo: PackageRepo
+    :type component: string
+    :type version: Version
+    """
+    cfg_tuple = get_config_info(component, version)
+    installer = cfg_tuple[0]
+    repo = PackageRepo.get_os_repo()
+    installer.create_repo_file(repo, cfg_tuple[1], server, cfg_tuple[2], username, password, version, distribution)
+
+    dep_list = cfg_tuple[3]
+    for dep in dep_list:
+        print "Checking dependency: " + dep
+        if not repo.is_installed(dep):
+            raise ObjectNotFoundException('Dependent package must be installed first: ' + dep)
+
+    installer.install_packages(repo, exact_version=exact_version)
+
+
+def uninstall_component(component='midolman',
+                        server=artifactory_server, username='', password='',
+                        version='master', distribution='stable',
+                        exact_version=None):
+    """
+    :type repo: PackageRepo
+    :type component: string
+    :type version: Version
+    """
+    cfg_tuple = get_config_info(component, version)
+    repo = PackageRepo.get_os_repo()
+
+    cfg_tuple[0].uninstall_packages(repo, exact_version=exact_version)

@@ -1,4 +1,5 @@
 {
+  "master_major_version": "5",
   "1": {
     "installed_packages": ["midolman", "midonet-api", "python-midonetclient"],
     "cmd_list_datapath": "mm-dpctl --list-dps",
@@ -37,7 +38,7 @@
     }
   },
   "5": {
-    "installed_packages": ["midolman", "python-midonetclient", "midonet-cluster"],
+    "installed_packages": ["midolman", "python-midonetclient", "midonet-cluster", "midonet-tools"],
     "cmd_list_datapath": "mm-dpctl datapath --list",
     "option_use_v2_stack": true,
     "option_api_uses_cluster": true,

@@ -115,7 +115,7 @@ class NetworkHostTest(unittest.TestCase):
                 raw_input("Press Enter to continue...")
 
         self.assertTrue(LinuxCLI().cmd('midonet-cli --midonet-url="' +
-                                       version_config.get_configured_parameter('param_midonet_api_url') +
+                                       version_config.ConfigMap.get_configured_parameter('param_midonet_api_url') +
                                        '" -A -e "host list"', return_status=True) == 0)
 
 

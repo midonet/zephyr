@@ -18,11 +18,12 @@ from common.Exceptions import *
 
 import json
 import platform
+import os
 
 LINUX_CENTOS = 1
 LINUX_UBUNTU = 2
 
-supported_linux_dist_map = { "Ubuntu": LINUX_UBUNTU, "centos": LINUX_CENTOS }
+supported_linux_dist_map = {"Ubuntu": LINUX_UBUNTU, "centos": LINUX_CENTOS}
 
 
 def get_linux_dist():
@@ -33,7 +34,7 @@ def get_linux_dist():
 
 
 class Version(object):
-    def __init__(self, major, minor='0', patch='0', tag=''):
+    def __init__(self, major, minor='0', patch='0', tag='', epoch=''):
         self.major = major
         """ :type: str"""
         self.minor = minor
@@ -42,19 +43,29 @@ class Version(object):
         """ :type: str"""
         self.tag = tag
         """ :type: str"""
+        self.epoch = epoch
+        """ :type: str"""
 
     def __repr__(self):
-        return self.major + '.' + self.minor + '.' + self.patch + '.' + self.tag
+        return ('' if self.epoch == '' else self.epoch + ':') + \
+               self.major + '.' + self.minor + '.' + self.patch + '-' + self.tag
 
     def __eq__(self, other):
-        return (other.major == self.major and
+        return (other.epoch == self.epoch and
+                other.major == self.major and
                 other.minor == self.minor and
                 other.patch == self.patch and
                 other.tag == self.tag)
 
 
-def parse_midolman_version(mnv, tag_ver):
-    major_minor_patch = mnv.split(':')[-1].split('.')[0:3]
+def parse_midolman_version(mnv, tag_ver=''):
+    epoch_version = mnv.split(':', 2)
+
+    epoch = ''
+    if len(epoch_version) > 1:
+        epoch = epoch_version[0]
+
+    major_minor_patch = epoch_version[-1].split('.')[0:3]
 
     tag_array = tag_ver.rstrip('.el7').rstrip('.el6').split('.')
     if len(tag_array) > 2:
@@ -62,10 +73,8 @@ def parse_midolman_version(mnv, tag_ver):
     else:
         tag = '.'.join(tag_array)
 
-    def strip_zero(ver):
-        return ver.lstrip('0') if ver != '0' else '0'
-
-    return Version(*map(lambda ver: ver.lstrip('0') if ver != '0' else '0', major_minor_patch[0:3]), tag=tag)
+    return Version(*map(lambda ver: ver.lstrip('0') if ver != '0' else '0', major_minor_patch[0:3]),
+                   tag=tag, epoch=epoch)
 
 
 def get_installed_midolman_version():
@@ -88,27 +97,48 @@ def get_installed_midolman_version():
     return parse_midolman_version(ver, tag_ver)
 
 
-def get_config_map(config_json="config/version_configuration.json"):
-    with open(config_json, "r") as f:
-        major_version_config_map = json.load(f)
-    return major_version_config_map
+class ConfigMap(object):
+
+    major_version_config_map = None
+
+    @classmethod
+    def get_config_map(cls,
+                       config_json=os.path.dirname(os.path.realpath(__file__)) +
+                                   '/../config/version_configuration.json'):
 
 
-def get_configured_parameter(param, config_json="config/version_configuration.json"):
-    mn_version = get_installed_midolman_version()
+        with open(config_json, "r") as f:
+            cls.major_version_config_map = json.load(f)
+        return cls.major_version_config_map
 
-    major_version_config_map = get_config_map(config_json)
-    if param == 'mn_version':
-        return mn_version
+    @classmethod
+    def get_configured_parameter(cls, param,
+                                 config_json=os.path.dirname(os.path.realpath(__file__)) +
+                                             '/../config/version_configuration.json'):
+        """
+        Retrieve a parameter based on the actively installed verison of Midolman.  If Midolman
+        is not installed, do not use this function as it will throw an exception.  Instead, get
+        the map manually and check the keys with the 'get_config_map' function.
+        :type param: str
+        :type config_json: str
+        :return:
+        """
+        mn_version = get_installed_midolman_version()
 
-    major_version_params = major_version_config_map[mn_version.major]
-    minor_version_params = major_version_params[mn_version.minor]
+        if cls.major_version_config_map is None:
+            cls.major_version_config_map = cls.get_config_map(config_json)
 
-    # Minor version config takes precedence and can override major version config
-    if (param in minor_version_params):
-        return minor_version_params[param]
+        if param == 'mn_version':
+            return mn_version
 
-    if (param in major_version_params):
-        return major_version_params[param]
+        major_version_params = cls.major_version_config_map[mn_version.major]
+        minor_version_params = major_version_params[mn_version.minor]
 
-    raise ObjectNotFoundException("Param not found in either major or minor version config: " + param)
+        # Minor version config takes precedence and can override major version config
+        if (param in minor_version_params):
+            return minor_version_params[param]
+
+        if (param in major_version_params):
+            return major_version_params[param]
+
+        raise ObjectNotFoundException("Param not found in either major or minor version config: " + param)

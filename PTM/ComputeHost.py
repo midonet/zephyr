@@ -44,7 +44,7 @@ class ComputeHost(NetNSHost):
         self.unique_id = uuid.uuid4()
         self.zookeeper_ips = []
         self.cassandra_ips = []
-        if version_config.get_configured_parameter('option_config_mnconf') is True:
+        if version_config.ConfigMap.get_configured_parameter('option_config_mnconf') is True:
             self.configurator = ComputeMNConfConfiguration()
         else:
             self.configurator = ComputeFileConfiguration()
@@ -113,7 +113,7 @@ class ComputeHost(NetNSHost):
         max_retries = 60
         connected = False
         while not connected:
-            if self.cli.grep_cmd(version_config.get_configured_parameter('cmd_list_datapath'), 'midonet') is True:
+            if self.cli.grep_cmd(version_config.ConfigMap.get_configured_parameter('cmd_list_datapath'), 'midonet') is True:
                 connected = True
             else:
                 retries += 1
@@ -250,7 +250,7 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
             z_ip_str = ''
 
         midonet_key = '/midonet/v1' \
-            if version_config.get_configured_parameter('option_use_v2_stack') is False \
+            if version_config.ConfigMap.get_configured_parameter('option_use_v2_stack') is False \
             else '/midonet/v2'
 
         self.cli.rm(etc_dir)

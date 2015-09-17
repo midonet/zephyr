@@ -32,9 +32,9 @@ class NetworkHost(RootHost):
         self.zookeeper_ips = []
         self.cassandra_ips = []
         self.unique_id = uuid.uuid4()
-        self.use_cluster = version_config.get_configured_parameter('option_api_uses_cluster')
+        self.use_cluster = version_config.ConfigMap.get_configured_parameter('option_api_uses_cluster')
         self.configurator = ClusterConfiguration() if self.use_cluster else TomcatFileConfiguration()
-        self.url = version_config.get_configured_parameter('param_midonet_api_url')
+        self.url = version_config.ConfigMap.get_configured_parameter('param_midonet_api_url')
 
     def do_extra_config_from_ptc_def(self, cfg, impl_cfg):
         """
@@ -164,7 +164,7 @@ class ClusterConfiguration(FileConfigurationHandler):
         else:
             z_ip_str = ''
 
-        midonet_key = version_config.get_configured_parameter('param_midonet_conf_key')
+        midonet_key = version_config.ConfigMap.get_configured_parameter('param_midonet_conf_key')
 
         zkcli = LinuxCLI()
         zkcli.add_environment_variable('MIDO_ZOOKEEPER_HOSTS', z_ip_str)
