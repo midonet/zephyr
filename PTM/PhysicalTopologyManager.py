@@ -295,7 +295,7 @@ class PhysicalTopologyManager(object):
         host_cfg_str = json.dumps(host.create_host_cfg_map_for_process_control()).replace('"', '\\"')
         cmd = 'unshare --mount --uts -- /bin/bash -x -c -- "PYTHONPATH=' + self.root_dir + ' python ' + \
               self.root_dir + '/' + HOST_CONTROL_CMD_NAME + ' -c ' + command + " -j '" + \
-              host_cfg_str + "' " + ' '.join(arg_list) + '"'
+              host_cfg_str + "' -l " + self.log_manager.root_dir + " " + ' '.join(arg_list) + '"'
 
         return LinuxCLI().cmd(cmd, blocking=False)
 
