@@ -27,12 +27,45 @@ from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
 from VTM.Guest import Guest
 from VTM.VirtualTopologyManager import VirtualTopologyManager
-from VTM.tests.VirtualTopologyManagerTest import MockClient
 
 import logging
 import datetime
 import os
 from common.LogManager import LogManager
+
+
+class MockClient(object):
+    def __init__(self, *args, **kwargs):
+        super(MockClient, self).__init__()
+        self.subnet = {}
+        self.options = {}
+        if kwargs is not None:
+            for k, v in kwargs.iteritems():
+                self.options[k] = v
+        pass
+
+    def list_ports(self):
+        pass
+
+    def list_networks(self):
+        pass
+
+    def delete_port(self, port):
+        pass
+
+    def delete_network(self, network):
+        pass
+
+    def set_subnet(self, subnet):
+        self.subnet = subnet
+
+    def show_subnet(self):
+        return self.subnet
+
+    def get_option(self, key):
+        if key in self.options:
+            return self.options[key]
+        return None
 
 
 class GuestTest(unittest.TestCase):
