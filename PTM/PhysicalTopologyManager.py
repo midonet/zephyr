@@ -80,7 +80,7 @@ class PhysicalTopologyManager(object):
         for host in self.hosts_by_name.itervalues():
             host.set_log_level(self.log_level)
 
-    def configure(self, file_name='config.json', file_type='json'):
+    def configure(self, file_name='config/ptm-config.json', file_type='json'):
         """
         Configure the PTM with information from the given JSON file
         :type file_name: str
