@@ -1,9 +1,10 @@
 __author__ = 'micucci'
 
 import unittest
+
 import CBT.EnvSetup as env
-from CBT.EnvSetupInstallers import *
-import CBT.VersionConfig as version_config
+from installers.EnvSetupInstallers import *
+
 
 class EnvSetupTest(unittest.TestCase):
     def test_repo_info(self):

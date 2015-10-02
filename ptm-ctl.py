@@ -19,20 +19,18 @@ import getopt
 from common.Exceptions import *
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager, CONTROL_CMD_NAME
 from common.CLI import LinuxCLI
-from CBT.EnvSetup import EnvSetup
 import traceback
 from common.LogManager import LogManager
 
 def usage(exceptObj):
     print 'Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print} [--config-file <JSON file>]'
-    print 'Usage: ' + CONTROL_CMD_NAME + ' --neutron {install} [options]'
     if exceptObj is not None:
         raise exceptObj
 
 try:
 
     arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdpc:l:',
-                                        ['help', 'debug', 'startup', 'shutdown', 'print', 'neutron=', 'config-file=',
+                                        ['help', 'debug', 'startup', 'shutdown', 'print', 'config-file=',
                                          'log-dir='])
 
     # Defaults
@@ -52,9 +50,6 @@ try:
             command = 'startup'
         elif arg in ('--shutdown'):
             command = 'shutdown'
-        elif arg in ('--neutron'):
-            command = 'neutron'
-            neutron_command = value
         elif arg in ('-c', '--config-file'):
             ptm_config_file = value
         elif arg in ('-l', '--log-dir'):
@@ -77,13 +72,7 @@ try:
     ptm.configure_logging(debug=debug)
     ptm.configure(ptm_config_file)
 
-    if command == 'neutron':
-        if neutron_command == 'install':
-            ptm.LOG.debug('Installing neutron client')
-            EnvSetup.install_neutron_client()
-        else:
-            raise ArgMismatchException('Neutron command not recognized: ' + neutron_command)
-    elif command == 'startup':
+    if command == 'startup':
         ptm.startup()
     elif command == 'shutdown':
         ptm.shutdown()

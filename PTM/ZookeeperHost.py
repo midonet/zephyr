@@ -121,8 +121,7 @@ class ZookeeperHost(NetNSHost):
                                blocking=False, shell=True)
         if process.pid == -1:
             raise SubprocessFailedException('java-zookeeper')
-        real_pid = self.cli.cmd("ps -aef | sed -e 's/  */ /g' | cut -d ' ' -f 2,3 | awk '{ if ($2==" +
-                                str(process.pid) + ") print $1 }'")
+        real_pid = self.cli.get_parent_pids(process.pid)[-1]
         self.cli.write_to_file('/run/zookeeper/pid', str(real_pid))
 
     def control_stop(self):

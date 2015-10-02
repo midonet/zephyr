@@ -16,6 +16,7 @@ __author__ = 'micucci'
 import time
 import uuid
 from os import path
+import datetime
 
 import CBT.VersionConfig as version_config
 
@@ -121,6 +122,25 @@ class ComputeHost(NetNSHost):
                     raise SubprocessFailedException('MidoNet Agent host ' + self.num_id + ' timed out while starting')
                 time.sleep(1)
 
+    def wait_for_process_stop(self):
+        if self.cli.exists('/run/midolman/pid'):
+            pid = self.cli.read_from_file('/run/midolman/pid')
+            self.cli.cmd('kill ' + str(pid))
+
+            deadline = datetime.datetime.now() + datetime.timedelta(seconds=30)
+            while LinuxCLI().is_pid_running(pid):
+                if datetime.datetime.now() > deadline:
+                    self.LOG.error("Process " + str(pid) + " not stopping, killing with extreme prejudice (kill -9)")
+                    self.cli.cmd('kill -9' + str(pid))
+
+                    deadline2 = datetime.datetime.now() + datetime.timedelta(seconds=30)
+                    while LinuxCLI().is_pid_running(pid):
+                        if datetime.datetime.now() > deadline2:
+                            self.LOG.error("Process " + str(pid) + " not stopped, even with SIGKILL")
+                            raise SubprocessTimeoutException("Couldn't stop process: midolman")
+
+            self.cli.rm('/run/midolman/pid')
+
     def prepare_environment(self):
         self.configurator.mount_config(self.num_id)
 
@@ -196,7 +216,7 @@ class ComputeHost(NetNSHost):
             pid_file = '/run/midolman/dnsmasq.pid'
 
             self.cli.cmd('dnsmasq --no-host --no-resolv -S 8.8.8.8')
-            dnsm_real_pid = self.cli.cmd("ps -aef | sed -e 's/  */ /g' | grep dnsmasq | cut -d ' ' -f 2")
+            dnsm_real_pid = self.cli.get_process_pids('dnsmasq')[-1]
             self.LOG.debug('dnsmasq PID=' + dnsm_real_pid)
             self.cli.rm(pid_file)
             self.cli.write_to_file(pid_file, dnsm_real_pid)
@@ -208,15 +228,13 @@ class ComputeHost(NetNSHost):
         process = self.cli.cmd('/usr/share/midolman/midolman-start', blocking=False)
         if process.pid == -1:
             raise SubprocessFailedException('midolman')
-        real_pid = self.cli.cmd("ps -aef | sed -e 's/  */ /g' | cut -d ' ' -f 2,3 | awk '{ if ($2==" +
-                                str(process.pid) + ") print $1 }'")
+        real_pid = self.cli.get_parent_pids(process.pid)[-1]
         self.cli.write_to_file('/run/midolman/pid', str(real_pid))
 
     def control_stop(self):
         if self.cli.exists('/run/midolman/pid'):
             pid = self.cli.read_from_file('/run/midolman/pid')
             self.cli.cmd('kill ' + str(pid))
-            self.cli.rm('/run/midolman/pid')
 
         if self.num_id == '1':
             pid_file = '/run/midolman/dnsmasq.pid'

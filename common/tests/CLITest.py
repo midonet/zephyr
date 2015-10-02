@@ -129,6 +129,16 @@ class CLITest(unittest.TestCase):
                 cli.copy_file('/etc/hosts', '/tmp/hosts.tested')
                 cli.move('/etc/hosts.backup', '/etc/hosts')
 
+    def test_pid_functions(self):
+        cli = LinuxCLI()
+        root_pids = cli.get_process_pids("root")
+        pids = cli.get_running_pids()
+        ppids = cli.get_parent_pids("1")
+
+        self.assertTrue(len(root_pids) > 0)
+        self.assertTrue(len(pids) > 0)
+        self.assertTrue(len(ppids) > 0)
+
     def tearDown(self):
         LinuxCLI().rm('tmp-test')
 

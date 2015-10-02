@@ -71,8 +71,8 @@ class RouterHostTest(unittest.TestCase):
 
         bgpd_pid = LinuxCLI().read_from_file('/run/quagga.1/bgpd.pid').rstrip()
         zebra_pid = LinuxCLI().read_from_file('/run/quagga.1/zebra.pid').rstrip()
-        self.assertTrue(LinuxCLI().grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', bgpd_pid))
-        self.assertTrue(LinuxCLI().grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', zebra_pid))
+        self.assertTrue(bgpd_pid in LinuxCLI().get_running_pids())
+        self.assertTrue(zebra_pid in LinuxCLI().get_running_pids())
 
         stop_process = ptm.unshare_control('stop', edge1)
         stdout, stderr = stop_process.communicate()
@@ -86,7 +86,7 @@ class RouterHostTest(unittest.TestCase):
 
         edge1.wait_for_process_stop()
         time.sleep(1)
-        self.assertFalse(LinuxCLI().grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', bgpd_pid))
+        self.assertFalse(bgpd_pid in LinuxCLI().get_running_pids())
 
         root.net_down()
         edge1.net_down()

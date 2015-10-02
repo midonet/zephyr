@@ -164,7 +164,10 @@ class ComputeHostTest(unittest.TestCase):
             h.wait_for_process_start()
 
         pid = LinuxCLI().read_from_file('/run/midolman.1/pid').rstrip()
-        self.assertTrue(LinuxCLI(log_cmd=True).grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', pid))
+        print "PID = " + pid
+        print "PS = " + LinuxCLI().cmd("ps -aef")
+
+        self.assertTrue(LinuxCLI().is_pid_running(pid))
 
         for h in ptm.host_by_start_order:
             stop_process = ptm.unshare_control('stop', h)
@@ -178,11 +181,6 @@ class ComputeHostTest(unittest.TestCase):
                 raise SubprocessFailedException('Host control stop failed with: ' + str(stop_process.returncode))
 
             h.wait_for_process_stop()
-
-        deadline = datetime.datetime.now() + datetime.timedelta(seconds=5)
-        while LinuxCLI(log_cmd=False).grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', pid):
-            if datetime.datetime.now() > deadline:
-                self.fail("MM process " + pid + " did not stop within timeout")
 
         for h in ptm.host_by_start_order:
             h.net_down()

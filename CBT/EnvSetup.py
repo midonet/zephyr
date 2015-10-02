@@ -13,9 +13,17 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from CBT.EnvSetupInstallers import *
-from CBT.EnvSetupRepos import *
+from installers.MidonetComponentInstaller import MidonetComponentInstaller
+from installers.MidonetUtilsComponentInstaller import MidonetUtilsComponentInstaller
+from installers.PluginComponentInstaller import PluginComponentInstaller
+from installers.NeutronComponentInstaller import NeutronComponentInstaller
+
+from repos.DebianPackageRepo import DebianPackageRepo
+from repos.RPMPackageRepo import RPMPackageRepo
+
 from common.Exceptions import *
+
+import VersionConfig as version_config
 
 
 url_scheme = "http://"
@@ -60,6 +68,20 @@ install_config = {
 }
 
 
+def get_os_repo():
+    """
+    Returns a proper repo for the given parameters and the base OS (debian, rpm, etc.)
+    :return: PackageRepo
+    """
+    if version_config.get_linux_dist() == version_config.LINUX_CENTOS:
+        repo = RPMPackageRepo()
+    elif version_config.get_linux_dist() == version_config.LINUX_UBUNTU:
+        repo = DebianPackageRepo()
+    else:
+        raise ArgMismatchException("Only supported on CentOS or Ubuntu")
+    return repo
+
+
 def get_config_info(component, version):
     if component not in install_config:
         raise ArgMismatchException('Component has no defined install process: ' + component)
@@ -93,7 +115,7 @@ def install_component(component='midonet',
     """
     cfg_tuple = get_config_info(component, version)
     installer = cfg_tuple[0]
-    repo = PackageRepo.get_os_repo()
+    repo = get_os_repo()
     installer.create_repo_file(repo, cfg_tuple[1], server, cfg_tuple[2], username, password, version, distribution)
 
     dep_list = cfg_tuple[3]
@@ -115,6 +137,6 @@ def uninstall_component(component='midolman',
     :type version: Version
     """
     cfg_tuple = get_config_info(component, version)
-    repo = PackageRepo.get_os_repo()
+    repo = get_os_repo()
 
     cfg_tuple[0].uninstall_packages(repo, exact_version=exact_version)

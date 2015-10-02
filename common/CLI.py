@@ -133,6 +133,33 @@ class LinuxCLI(object):
         sed_str = ''.join(['-e "' + str(i) + '" ' for i in args])
         return self.cmd('sed ' + sed_str + ' -i ' + rfile)
 
+    def get_running_pids(self):
+        """
+        Gets all running processes' PIDS as a list
+        :return: list[str]
+        """
+        return [i.strip() for i in self.cmd("ps -aef | grep -v grep | awk '{print $2}'").split()]
+
+    def get_process_pids(self, process_name):
+        """
+        Gets all running processes' PIDS which match the process name as a list
+        :return: list[str]
+        """
+        awk_cmd = r'{printf "%s\n", $2}'
+        return [i.strip() for i in
+                self.cmd("ps -aef | grep -v grep | grep " + process_name + r" | awk '" + awk_cmd + r"'").split()]
+
+    def get_parent_pids(self, child_pid):
+        """
+        Gets all running processes' PIDS which match the process name as a list
+        :return: list[str]
+        """
+        return [i.strip() for i in
+                self.cmd("ps -aef | grep -v grep | awk '{ if ($3==" + str(child_pid) + ") print $2 }'").split()]
+
+    def is_pid_running(self, pid):
+        return str(pid) in self.get_running_pids()
+
     def replace_text_in_file(self, rfile, search_str, replace_str, line_global_replace=False):
         """
         Replace text line-by-line in given file, on each line replaces all or only first
@@ -189,7 +216,7 @@ class LinuxCLI(object):
         line = map(int, self.cmd("wc " + file).split()[0:3])
         return dict(zip(['lines', 'words', 'chars'], line))
 
-    def write_to_file(self, wfile, data, append=False, debug=False):
+    def write_to_file(self, wfile, data, append=False):
         old_data = ''
         if append is True:
             with open(wfile, 'r') as f:
@@ -201,7 +228,7 @@ class LinuxCLI(object):
         file_ptr.close()
         ret = self.copy_file('./.tmp.file', wfile)
         self.rm("./.tmp.file")
-        if debug:
+        if self.debug:
             print 'Would have written: ' + data
 
         return ret

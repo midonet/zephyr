@@ -71,7 +71,7 @@ class ZookeeperTest(unittest.TestCase):
         zoo1.wait_for_process_start()
 
         pid = LinuxCLI().read_from_file('/run/zookeeper.1/pid').rstrip()
-        self.assertTrue(LinuxCLI().grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', pid))
+        self.assertTrue(LinuxCLI().is_pid_running(pid))
 
         stop_process = ptm.unshare_control('stop', zoo1)
         stdout, stderr = stop_process.communicate()
@@ -85,7 +85,7 @@ class ZookeeperTest(unittest.TestCase):
 
         zoo1.wait_for_process_stop()
         time.sleep(1)
-        self.assertFalse(LinuxCLI().grep_cmd('ps -aef | sed -e "s/  */ /g" | cut -f 2 -d " "', pid))
+        self.assertFalse(LinuxCLI().is_pid_running(pid))
 
         root.net_down()
         zoo1.net_down()
