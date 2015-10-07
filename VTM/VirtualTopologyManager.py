@@ -24,12 +24,6 @@ from PTM.ComputeHost import ComputeHost
 from VTM.Guest import Guest
 
 
-def create_neutron_client(api_version='2.0', endpoint_url='http://localhost:9696',
-                          auth_strategy='noauth', **kwargs):
-    import neutronclient.neutron.client
-    return neutronclient.neutron.client.Client(api_version, endpoint_url=endpoint_url,
-                                               auth_strategy=auth_strategy, **kwargs)
-
 class VirtualTopologyManager(object):
     global_vm_id = 0
 
@@ -47,14 +41,16 @@ class VirtualTopologyManager(object):
     def get_client(self):
         return self.client_api_impl
 
-    def create_vm(self, ip=None, preferred_hv_host=None, preferred_name=None):
+    def create_vm(self, ip, preferred_hv_host=None, preferred_name=None):
         """
         Creates a guest VM on the Physical Topology and returns the Guest
         object representing the VM as part of the virtual topology.
+        :param ip: str IP Address to use for the VM (required)
         :param preferred_hv_host: str: Hypervisor to use, otherwise the least-loaded HV host is chosen.
         :param preferred_name: str: Name to use for the VM.  Otherwise one is generated.
         :return: Guest
         """
+        self.physical_topology_manager.LOG.debug("Creating VM on IP: " + str(ip))
         if preferred_hv_host is None:
             # Pick the HV with the fewest running VMs
             least_busy_hv = None
@@ -75,6 +71,8 @@ class VirtualTopologyManager(object):
             vm_name = 'vm_' + str(VirtualTopologyManager.global_vm_id)
             VirtualTopologyManager.global_vm_id += 1
 
+        self.physical_topology_manager.LOG.debug("Starting VM with name: " + vm_name + " and IP: " +
+                                                 str(ip) + " on hypervisor: " + start_hv.name)
         new_vm = start_hv.create_vm(vm_name)
         new_vm.create_interface('eth0', ip_list=[IP.make_ip(ip)])
 

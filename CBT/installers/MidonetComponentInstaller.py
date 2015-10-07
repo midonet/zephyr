@@ -22,7 +22,7 @@ class MidonetComponentInstaller(ComponentInstaller):
     def create_repo_file(self, repo, scheme, server, main_dir, username=None, password=None,
                          version=None, distribution='stable'):
         sub_dir = ('master' if version is None else version.major + '.' + version.minor) + '/' + distribution
-        repo.create_repo_file('midonet', scheme, server, main_dir, username, password, sub_dir)
+        repo.create_repo_file('midokura.midonet', scheme, server, main_dir, username, password, sub_dir)
 
     def get_pkg_list(self):
         config_map = version_config.ConfigMap.get_config_map()

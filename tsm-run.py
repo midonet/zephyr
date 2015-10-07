@@ -23,12 +23,12 @@ from common.Exceptions import *
 from common.CLI import LinuxCLI
 from common.LogManager import LogManager
 
-from CBT.EnvSetup import EnvSetup
 
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager, CONTROL_CMD_NAME
 
-from VTM.VirtualTopologyManager import VirtualTopologyManager, create_neutron_client
+from VTM.VirtualTopologyManager import VirtualTopologyManager
 from VTM.MNAPI import create_midonet_client
+from VTM.NeutronAPI import create_neutron_client
 
 from TSM.TestSystemManager import TestSystemManager
 from TSM.TestScenario import TestScenario
@@ -187,11 +187,9 @@ except ExitCleanException:
     exit(1)
 except ArgMismatchException as a:
     print 'Argument mismatch: ' + str(a)
-    traceback.print_tb(sys.exc_traceback)
     exit(2)
 except ObjectNotFoundException as e:
     print 'Object not found: ' + str(e)
-    traceback.print_tb(sys.exc_traceback)
     exit(2)
 except SubprocessFailedException as e:
     print 'Subprocess failed to execute: ' + str(e)

@@ -188,11 +188,13 @@ class ComputeHost(NetNSHost):
 
     def connect_iface_to_port(self, vm_host, iface, port_id):
         near_if_name = vm_host.name + iface.name
+        self.LOG.debug('Binding interface: ' + near_if_name + ' to port ID: ' + port_id)
         proc = self.ptm.unshare_control('bind_port', self, [near_if_name, port_id])
         stdout, stderr = proc.communicate()
         self.LOG.debug("--\n" + stdout + "--\n" + stderr + "==")
 
     def disconnect_port(self, port_id):
+        self.LOG.debug('Unbinding port ID: ' + port_id)
         proc = self.ptm.unshare_control('unbind_port', self, [port_id])
         stdout, stderr = proc.communicate()
         self.LOG.debug("--\n" + stdout + "--\n" + stderr + "==")

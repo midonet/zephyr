@@ -34,7 +34,7 @@ class DebianPackageRepo(PackageRepo):
                 url_line += '@'
         url_line += repo_server + '/' + repo_dir
 
-        cli.write_to_file('/etc/apt/sources.list.d/midokura.' + component + '.list',
+        cli.write_to_file('/etc/apt/sources.list.d/' + component + '.list',
                           'deb ' + url_line + ' ' + subdir + ' main\n',
                           append=False)
         cli.cmd('curl -k http://artifactory-dev.bcn.midokura.com/artifactory/api/gpg/key/public | apt-key add -')
@@ -51,7 +51,7 @@ class DebianPackageRepo(PackageRepo):
         pkg_list = ' '.join(map(lambda v: v + (('=' + exact_version) if exact_version is not None else ''),
                                 packages))
         print 'Installing Debian packages: ' + pkg_list
-        cli.cmd('apt-get install -y ' + pkg_list)
+        print cli.cmd('apt-get install -y ' + pkg_list)
 
 
     def uninstall_packages(self, packages, exact_version=None):

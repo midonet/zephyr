@@ -38,11 +38,15 @@ class VMHost(NetNSHost):
         new_if.config_addr()
         new_if.start_vlans()
 
-    def plugin_iface(self, iface, port_id):
+    def plugin_iface(self, iface, port_id, mac=None):
         if iface not in self.interfaces:
             raise ObjectNotFoundException('Cannot plug in interface: ' + iface + ' on VM ' +
                                           self.name + ' not found')
+        self.LOG.debug('Connecting interface: ' + iface + ' to port ID: ' + port_id + ' with mac: ' +
+                       'default' if mac is None else mac)
         self.hyper_visor.connect_iface_to_port(self, self.interfaces[iface], port_id)
+        if mac is not None:
+            self.interfaces[iface].set_mac(mac)
 
     def unplug_iface(self, port_id):
         self.hyper_visor.disconnect_port(port_id)

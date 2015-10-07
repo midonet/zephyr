@@ -28,20 +28,23 @@ class Guest(object):
         self.open_ports_by_id = set()
         """ :type: set[str]"""
 
-    def plugin_vm(self, iface, port):
+    def plugin_vm(self, iface, port, mac=None):
         """ Links an interface on this VM to a virtual network port
             * bind interface to MidoNet with mm-ctl
+            * set iface to the indicated mac address (if provided)
         :type iface: str
         :type port: str
+        :type mac: str
         """
-
-        self.vm_host.plugin_iface(iface, port)
+        self.vm_host.LOG.debug("Plugging in VM interface: " + iface + " to port: " + str(port))
+        self.vm_host.plugin_iface(iface, port, mac)
         self.open_ports_by_id.add(port)
 
     def unplug_vm(self, port):
         """ Unlinks a port on this VM from the virtual network
         :type port: str
         """
+        self.vm_host.LOG.debug("Unplugging VM port: " + str(port))
         self.vm_host.unplug_iface(port)
         self.open_ports_by_id.remove(port)
 

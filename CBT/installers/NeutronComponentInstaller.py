@@ -16,12 +16,17 @@ __author__ = 'micucci'
 from common.Exceptions import *
 from common.CLI import LinuxCLI
 from CBT.installers.ComponentInstaller import ComponentInstaller
+from CBT.repos.PackageRepo import PackageRepo
 import CBT.VersionConfig as version_config
 
 class NeutronComponentInstaller(ComponentInstaller):
     def create_repo_file(self, repo, scheme, server, main_dir, username=None, password=None,
                          version=None, distribution='stable'):
-        pass
+        """
+        :type repo: PackageRepo
+        """
+        LinuxCLI().cmd("add-apt-repository -y cloud-archive:" + str(version))
+        LinuxCLI().cmd("apt-get update")
 
     def install_packages(self, repo, exact_version=None):
         if repo.get_type() == "RPM":
@@ -31,15 +36,14 @@ class NeutronComponentInstaller(ComponentInstaller):
 
         cli = LinuxCLI(log_cmd=True)
 
-        my_ip = LinuxCLI(log_cmd=True).cmd('cat /etc/hosts | grep `hostname` | '
-                                           'cut -d \' \' -f 1 | grep -v "127.0.0.1" | head -n 1').strip()
-        print "My IP is: " + my_ip
+        cli.cmd("sudo debconf-set-selections <<< 'mysql-server-5.1 mysql-server/root_password password 'cat''")
+        cli.cmd("sudo debconf-set-selections <<< 'mysql-server-5.1 mysql-server/root_password_again password 'cat''")
 
-        if not repo.is_installed('mysql') and not repo.is_installed('mariadb'):
-            repo.install_packages(['mariadb-server', 'mariadb-client', 'python-mysqldb'])
+        if not repo.is_installed('mysql-server-5.5'):
+            repo.install_packages(['mysql-server-5.5', 'mysql-client-5.5', 'python-mysqldb'])
 
         cli.cmd('mysqladmin -u root password cat')
-        cli.regex_file('/etc/mysql/my.cnf', 's/.*bind-address.*/bind-address = ' + my_ip + '/')
+        cli.regex_file('/etc/mysql/my.cnf', 's/.*bind-address.*/bind-address = 127.0.0.1/')
         cli.regex_file('/etc/mysql/my.cnf', 's/.*max_connections.*/max_connections = 1024/')
         cli.cmd("service mysql start")
 
@@ -58,13 +62,6 @@ class NeutronComponentInstaller(ComponentInstaller):
             cli.cmd('mysql --user=root --password=cat -e "CREATE USER neutron@\'%\' IDENTIFIED BY \'cat\'"')
             cli.cmd('mysql --user=root --password=cat -e "GRANT ALL PRIVILEGES ON neutron.* TO neutron@localhost"')
             cli.cmd('mysql --user=root --password=cat -e "GRANT ALL PRIVILEGES ON neutron.* TO neutron@\'%\'"')
-
-            if exact_version == "juno":
-                cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
-                        '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade juno')
-            if exact_version == "kilo" or exact_version is None:
-                cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
-                        '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head')
 
         version_config.get_installed_midolman_version()
         mn_api_url = version_config.ConfigMap.get_configured_parameter('param_midonet_api_url')
@@ -130,13 +127,21 @@ class NeutronComponentInstaller(ComponentInstaller):
         cli.cmd('ln -s /etc/neutron/plugins/midonet/midonet_plugin.ini /etc/neutron/plugin.ini')
 
         if exact_version == "kilo" or exact_version is None:
+            cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
+                    '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head')
             cli.cmd('midonet-db-manage upgrade head')
+        else:
+            cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
+                    '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade ' + exact_version)
+            cli.cmd('midonet-db-manage upgrade ' + exact_version)
 
         cli.write_to_file('/etc/default/neutron-server', 'NEUTRON_PLUGIN_CONFIG="/etc/neutron/plugin.ini"\n')
 
         cli.cmd("service neutron-server restart")
         cli.cmd("service neutron-dhcp-agent restart")
 
+        repo.install_packages(['neutron-server', 'neutron-dhcp-agent', 'python-neutronclient',
+                               'python-neutron-lbaas', 'python-mysql.connector'])
 
     def uninstall_packages(self, repo, exact_version=None):
         """

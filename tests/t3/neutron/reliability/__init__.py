@@ -12,9 +12,3 @@ __author__ = 'micucci'
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-#Test configuration parameters
-param_compute_start_retry_count = 45
-
-neutron_server_url = 'http://localhost:9696'
-neutron_server_token = 'cat'

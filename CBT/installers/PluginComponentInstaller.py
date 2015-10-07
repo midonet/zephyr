@@ -14,13 +14,16 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from CBT.installers.ComponentInstaller import ComponentInstaller
+from common.CLI import LinuxCLI
 
 
 class PluginComponentInstaller(ComponentInstaller):
     def create_repo_file(self, repo, scheme, server, main_dir, username=None, password=None,
                          version=None, distribution='stable'):
         sub_dir = ('master' if version is None else version.major) + '/' + distribution
-        repo.create_repo_file('networking-midonet', scheme, server, main_dir, username, password, sub_dir)
+        repo.create_repo_file('midokura.networking-midonet', scheme, server, main_dir, username, password, sub_dir)
+        LinuxCLI().cmd("add-apt-repository -y cloud-archive:kilo")
+        LinuxCLI().cmd("apt-get update")
 
     def install_packages(self, repo, exact_version=None):
         """
@@ -29,7 +32,8 @@ class PluginComponentInstaller(ComponentInstaller):
         :return:
         """
         #TODO: Plugin's exact version is a little different from the version in the repo
-        repo.install_packages(['python-neutron-plugin-midonet', ''])
+        repo.install_packages(['python-neutron-plugin-midonet', 'python-neutron-lbaas',
+                               'python-oslo-log'])
 
     def uninstall_packages(self, repo, exact_version=None):
         """

@@ -21,6 +21,11 @@ import logging.handlers
 import datetime
 import os
 
+#TODO:  CT-159: Clean up logging
+# Allow multiple logs to easily log to the same file with different names
+# The log should have <datetimestamp> [component] | LEVEL | Msg
+# where component can be multiple loggers all logging to the same file, to make it easy to see
+# who is logging what message where.
 class LogManager(object):
 
     def __init__(self, root_dir='.'):
