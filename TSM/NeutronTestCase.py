@@ -18,6 +18,7 @@ import logging
 import datetime
 
 from common.Exceptions import *
+from common.CLI import LinuxCLI
 from TestScenario import TestScenario
 
 from VTM.VirtualTopologyManager import VirtualTopologyManager
@@ -28,10 +29,14 @@ from TSM.TestCase import TestCase
 from VTM.NeutronAPI import setup_neutron, clean_neutron
 from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
 
+import neutronclient.v2_0.client as neutron_client
+
 
 class NeutronTestCase(TestCase):
     main_network = None
     main_subnet = None
+    pub_network = None
+    pub_subnet = None
     api = None
     """ :type: neutron_client.Client """
     mn_api = None
@@ -44,16 +49,25 @@ class NeutronTestCase(TestCase):
         """
         Sets up neutron network and subnet.  Can be overridden by subclasses to change behavior
         """
-        cls.api = cls.vtm.get_client()
-        cls.mn_api = create_midonet_client()
+        try:
+            cls.api = cls.vtm.get_client()
+            """ :type: neutron_client.Client """
 
-        setup_main_tunnel_zone(cls.mn_api,
-                               {h.name: h.interfaces['eth0'].ip_list[0].ip
-                                for h in cls.ptm.hypervisors.itervalues()},
-                               cls.setup_logger)
+            cls.mn_api = create_midonet_client()
 
-        (cls.main_network, cls.main_subnet) = setup_neutron(cls.api,
-                                                              subnet_cidr='10.0.1.1/24', log=cls.setup_logger)
+            setup_main_tunnel_zone(cls.mn_api,
+                                   {h.name: h.interfaces['eth0'].ip_list[0].ip
+                                    for h in cls.ptm.hypervisors.itervalues()},
+                                   cls.setup_logger)
+
+            (cls.main_network, cls.main_subnet, cls.pub_network, cls.pub_subnet) = \
+                setup_neutron(cls.api,
+                              subnet_cidr='10.0.1.0/24',
+                              pubsubnet_cidr='192.168.0.0/24',
+                              log=cls.setup_logger)
+        except Exception:
+            cls.cleanup_neutron_test()
+            raise
 
     @classmethod
     def cleanup_neutron_test(cls):
@@ -61,6 +75,8 @@ class NeutronTestCase(TestCase):
         Cleans up neutron database and restores it to a zero-state.  Can be overridden by
         subclasses to change behavior
         """
+        LinuxCLI(log_cmd=True).cmd('mysqldump --user=root --password=cat neutron > ' +
+                                   cls.ptm.log_manager.root_dir + '/neutron.db.dump')
         clean_neutron(cls.api, log=cls.setup_logger)
 
     @classmethod

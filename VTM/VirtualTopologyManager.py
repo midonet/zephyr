@@ -20,6 +20,7 @@ from common.LogManager import LogManager
 
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from PTM.ComputeHost import ComputeHost
+from PTM.ComputeHost import VMHost
 
 from VTM.Guest import Guest
 
@@ -41,7 +42,7 @@ class VirtualTopologyManager(object):
     def get_client(self):
         return self.client_api_impl
 
-    def create_vm(self, ip, preferred_hv_host=None, preferred_name=None):
+    def create_vm(self, ip, gw_ip=None, preferred_hv_host=None, preferred_name=None):
         """
         Creates a guest VM on the Physical Topology and returns the Guest
         object representing the VM as part of the virtual topology.
@@ -74,6 +75,36 @@ class VirtualTopologyManager(object):
         self.physical_topology_manager.LOG.debug("Starting VM with name: " + vm_name + " and IP: " +
                                                  str(ip) + " on hypervisor: " + start_hv.name)
         new_vm = start_hv.create_vm(vm_name)
-        new_vm.create_interface('eth0', ip_list=[IP.make_ip(ip)])
+        """ :type: VMHost """
+        real_ip = IP.make_ip(ip)
+        new_vm.create_interface('eth0', ip_list=[real_ip])
+        if gw_ip is None:
+            # Figure out a default gw based on IP, usually (IP & subnet_mask + 1)
+            subnet_mask = [255, 255, 255, 255]
+            if real_ip.subnet != "":
+                smask = int(real_ip.subnet)
+                subnet_mask = []
 
+                current_mask = smask
+                for i in range(0, 4):
+                    if current_mask > 8:
+                        subnet_mask.append(255)
+                    else:
+                        lastmask = 0
+                        for i in range(0, current_mask):
+                            lastmask += pow(2, 8-(i+1))
+                        subnet_mask.append(lastmask)
+                    current_mask -= 8
+
+            split_ip = real_ip.ip.split(".")
+            gw_ip_split = []
+            for ip_part in split_ip:
+                gw_ip_split.append(int(ip_part) & subnet_mask[len(gw_ip_split)])
+
+            gw_ip_split[3] += 1
+            gw_ip = '.'.join(map(lambda x: str(x), gw_ip_split))
+
+        self.physical_topology_manager.LOG.debug("Adding default route for VM: " + gw_ip)
+
+        new_vm.add_route(gw_ip=IP.make_ip(gw_ip))
         return Guest(new_vm)

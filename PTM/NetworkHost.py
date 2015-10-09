@@ -177,5 +177,5 @@ class ClusterConfiguration(FileConfigurationHandler):
         conf_str = "[zookeeper]\n" \
                    "zookeeper_hosts = " + z_ip_str + "\n" \
                    "root_key = /midonet/v2\n"
-        self.cli.write_to_file('/etc/midonet-cluster/midonet-cluster.conf', conf_str)
+        self.cli.write_to_file('/etc/midonet/midonet.conf', conf_str)
         ret = zkcli.cmd('mn-conf set -t default "agent.cluster.enabled: true"')

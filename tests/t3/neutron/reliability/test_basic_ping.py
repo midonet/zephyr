@@ -13,7 +13,7 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.scenarios.TwoComputeScenario import TwoComputeScenario
+from tests.scenarios.Secnario_1z_1c_2m import Secnario_1z_1c_2m
 from TSM.NeutronTestCase import NeutronTestCase
 
 
@@ -21,7 +21,7 @@ class TestBasicPing(NeutronTestCase):
 
     @staticmethod
     def supported_scenarios():
-        return {TwoComputeScenario}
+        return {Secnario_1z_1c_2m}
 
     def test_neutron_api_ping_two_hosts_same_hv(self):
         port1 = None
@@ -101,8 +101,8 @@ class TestBasicPing(NeutronTestCase):
             self.ptm.LOG.info("Got VM1 IP: " + str(ip1))
             self.ptm.LOG.info("Got VM2 IP: " + str(ip2))
 
-            vm1 = self.vtm.create_vm(ip1, 'cmp1', 'vm1')
-            vm2 = self.vtm.create_vm(ip2, 'cmp2', 'vm2')
+            vm1 = self.vtm.create_vm(ip1, preferred_hv_host='cmp1', preferred_name='vm1')
+            vm2 = self.vtm.create_vm(ip2, preferred_hv_host='cmp2', preferred_name='vm2')
 
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])

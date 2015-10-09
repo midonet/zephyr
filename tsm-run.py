@@ -61,7 +61,7 @@ def usage(exceptObj):
 try:
     arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:l:r:',
                                         ['help', 'tests=', 'scenarios=', 'client=', 'client-args=', 'ptm=',
-                                         'log-dir=', 'debug', 'results-dir='])
+                                         'log-dir=', 'debug', 'results-dir=', 'debug-test'])
 
     # Defaults
     client_impl_type = 'neutron'
@@ -70,6 +70,7 @@ try:
     scenario_filter_list = ''
     ptm_config_file = ''
     debug = False
+    test_debug = False
     log_dir = '/tmp/zephyr/logs'
     results_dir = '/tmp/zephyr/results'
 
@@ -93,6 +94,8 @@ try:
             pass
         elif arg in ('-d', '--debug'):
             debug = True
+        elif arg in ('--debug-test'):
+            test_debug = True
         elif arg in ('-r', '--results-dir'):
             results_dir = value
             pass
@@ -142,6 +145,9 @@ try:
     tsm = TestSystemManager(ptm, vtm, log_manager=log_manager)
     tsm.configure_logging(debug=debug)
 
+    if test_debug:
+        tsm.set_test_debug()
+
     scenario_filters = [TestScenario.get_class(s) for s in scenario_filter_list] \
         if len(scenario_filter_list) != 0 else None
     test_cases = map(TestCase.get_class, tests)
@@ -153,35 +159,37 @@ try:
 
     console_log.debug('Running all tests with scenario filter: ' + str(scenario_filters))
 
-    results = tsm.run_all_tests(scenario_filters)
+    try:
+        results = tsm.run_all_tests(scenario_filters)
 
-    for s, tr in results.iteritems():
-        print '========================================'
-        print 'Scenario [' + s.__name__ + ']'
-        print 'Passed [{0}/{1}]'.format(len(results[s].successes), results[s].testsRun)
-        print 'Failed [{0}/{1}]'.format(len(results[s].failures), results[s].testsRun)
-        print 'Error [{0}/{1}]'.format(len(results[s].errors), results[s].testsRun)
-        print ''
-        for tc, err in results[s].failures:
-            print '------------------------------'
-            print 'Test Case FAILED: [' + tc._get_name() + ']'
-            print 'Failure Message:'
-            print err
-
-        for tc, err in results[s].errors:
-            if isinstance(tc, TestCase):
+        for s, tr in results.iteritems():
+            print '========================================'
+            print 'Scenario [' + s.__name__ + ']'
+            print 'Passed [{0}/{1}]'.format(len(results[s].successes), results[s].testsRun)
+            print 'Failed [{0}/{1}]'.format(len(results[s].failures), results[s].testsRun)
+            print 'Error [{0}/{1}]'.format(len(results[s].errors), results[s].testsRun)
+            print ''
+            for tc, err in results[s].failures:
                 print '------------------------------'
-                print 'Test Case ERROR: [' + tc._get_name() + ']'
-                print 'Error Message:'
-                print err
-            else:
-                print '------------------------------'
-                print 'Test Framework ERROR'
-                print 'Error Message:'
+                print 'Test Case FAILED: [' + tc._get_name() + ']'
+                print 'Failure Message:'
                 print err
 
-    rdir = results_dir + '/' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
-    tsm.create_results(results_dir=rdir, leeway=3)
+            for tc, err in results[s].errors:
+                if isinstance(tc, TestCase):
+                    print '------------------------------'
+                    print 'Test Case ERROR: [' + tc._get_name() + ']'
+                    print 'Error Message:'
+                    print err
+                else:
+                    print '------------------------------'
+                    print 'Test Framework ERROR'
+                    print 'Error Message:'
+                    print err
+
+    finally:
+        #rdir = results_dir + '/' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        tsm.create_results(results_dir=results_dir, leeway=3)
 
 except ExitCleanException:
     exit(1)

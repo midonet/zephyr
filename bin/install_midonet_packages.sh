@@ -6,6 +6,7 @@ ZEPHYR_ROOT=`dirname $SCRIPT_ROOT`
 PRODUCT=midonet
 VERSION=nightly
 ART_DIST=unstable
+PLUGIN_DIST=stable
 OST_VERSION=kilo
 OST_DIST=stable
 ART_USER=
@@ -16,7 +17,7 @@ function usage() {
     if [ ".$1" != "." ]; then
         echo "Error: $1"
     fi
-    echo "Usage: install_midonet_packages.sh -c <component> -v <version> -d <distribution>"
+    echo "Usage: install_midonet_packages.sh -c <component> -v <version> -d <distribution> -n <plugin_dist>"
     echo "                                   -o <openstack_version> -D <openstack_distribution>"
     echo "                                   [-u <user> -p <pass>]"
 }
@@ -61,7 +62,14 @@ while [ ".$1" != "." ]; do
         -d)
             shift
             if ! check_and_set ART_DIST $*; then
-                usage "Invalid distribution: $1"
+                usage "Invalid distribution for midonet: $1"
+                exit 1
+            fi
+            ;;
+        -n)
+            shift
+            if ! check_and_set PLUGIN_DIST $*; then
+                usage "Invalid distribution for plugin: $1"
                 exit 1
             fi
             ;;
@@ -107,6 +115,8 @@ done
 
 cd $ZEPHYR_ROOT
 
+./cbt-ctl.py -i midonet-utils
+
 if [ ".$PRODUCT" == ".midonet-mem" ]; then
   ./cbt-ctl.py -i midonet-mem -V $VERSION -D $ART_DIST -U $ART_USER -P $ART_PASS
 elif [ ".$PRODUCT" == ".midonet" ]; then
@@ -116,7 +126,6 @@ else
   exit 1
 fi
 
-./cbt-ctl.py -i midonet-utils
-./cbt-ctl.py -i plugin -V $OST_VERSION -D $OST_DIST
+./cbt-ctl.py -i plugin -V $OST_VERSION -D $PLUGIN_DIST
 
 

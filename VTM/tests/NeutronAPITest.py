@@ -43,6 +43,8 @@ class NeutronAPITest(unittest.TestCase):
     mn_api = None
     main_network = None
     main_subnet = None
+    pub_network = None
+    pub_subnet = None
 
     @classmethod
     def setUpClass(cls):
@@ -67,7 +69,8 @@ class NeutronAPITest(unittest.TestCase):
                                cls.ptm.LOG)
 
         try:
-            (cls.main_network, cls.main_subnet) = setup_neutron(cls.api, subnet_cidr='10.0.1.1/24', log=log)
+            (cls.main_network, cls.main_subnet,
+            cls.pub_network, cls.pub_subnet) = setup_neutron(cls.api, subnet_cidr='10.0.1.1/24', log=log)
         except Exception:
             clean_neutron(cls.api, log=log)
             cls.ptm.shutdown()
@@ -142,9 +145,9 @@ class NeutronAPITest(unittest.TestCase):
             self.ptm.LOG.info("Got port 1 IP: " + str(ip1))
             self.ptm.LOG.info("Got port 2 IP: " + str(ip2))
 
-            vm1 = self.vtm.create_vm(ip1, 'cmp1', 'vm1')
+            vm1 = self.vtm.create_vm(ip1, preferred_hv_host='cmp1', preferred_name='vm1')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip2, 'cmp2', 'vm2')
+            vm2 = self.vtm.create_vm(ip2, preferred_hv_host='cmp2', preferred_name='vm2')
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])

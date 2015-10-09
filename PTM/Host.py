@@ -226,7 +226,19 @@ class Host(PTMObject):
             self.cli.cmd('ip addr add ' + str(ip) + ' dev lo')
         self.cli.cmd('ip link set dev lo up')
 
-    def add_route(self, route_ip, gw_ip):
+    def add_route(self, route_ip='default', gw_ip=None):
+        """
+        :param route_ip: str
+        :param gw_ip: str
+        :return:
+        """
+        if gw_ip is None:
+            iface = None
+            for i, j in self.interfaces.iterkeys():
+                if i != 'lo':
+                    iface = j
+                    break
+            gw_ip = iface.ip_addresses[0] if iface is not None else IP.make_ip("127.0.0.1/32")
         self.cli.cmd('ip route add ' + str(route_ip) + ' via ' + gw_ip.ip)
 
     def del_route(self, route_ip):

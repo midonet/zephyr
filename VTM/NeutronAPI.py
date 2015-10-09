@@ -27,7 +27,7 @@ def create_neutron_client(api_version='2.0', endpoint_url='http://localhost:9696
                                                token=token, tenant_name=tenant_name, **kwargs)
     
 
-def setup_neutron(api, subnet_cidr='10.0.1.1/24', log=None):
+def setup_neutron(api, subnet_cidr='10.0.1.0/24', pubsubnet_cidr='192.168.0.0/24', log=None):
     """
     Creates a network named 'main' in the 'admin' tenant and creates a single subnet 'main_sub'
     with the given IP network.
@@ -40,29 +40,53 @@ def setup_neutron(api, subnet_cidr='10.0.1.1/24', log=None):
         log = logging.getLogger('neutron-api-null-logger')
         log.addHandler(logging.NullHandler())
 
+    # Create main network
     tenant_id = 'admin'
     networks = api.list_networks(name='main')
-    log.debug('Current Networks: ' + str(networks))
     if len(networks['networks']) == 0:
         network_resp = api.create_network({'network': {'name': 'main', 'admin_state_up': True,
                                                        'tenant_id': tenant_id}})
-        log.debug('Created network: ' + str(network_resp))
         main_network = network_resp['network']
     else:
         main_network = networks['networks'][0]
+    log.debug('Using main network: ' + str(main_network))
 
+    # Create main network's subnet
     subnets = api.list_subnets(name='main_sub', network_id=main_network['id'])
-    log.debug('Current Subnets: ' + str(subnets))
     if len(subnets['subnets']) == 0:
         subnet_resp = api.create_subnet({'subnet': {'name': 'main_sub',
                                                     'network_id': main_network['id'],
                                                     'ip_version': 4, 'cidr': subnet_cidr,
                                                     'tenant_id': tenant_id}})
-        log.debug('Created subnet: ' + str(subnet_resp))
         main_subnet = subnet_resp['subnet']
     else:
         main_subnet = subnets['subnets'][0]
+    log.debug('Using main subnet: ' + str(main_subnet))
 
+    # Create a public network
+    pubnetworks = api.list_networks(name='public')
+    if len(pubnetworks['networks']) == 0:
+        pubnetwork_resp = api.create_network({'network': {'name': 'public', 'admin_state_up': True,
+                                                          'router:external': True,
+                                                          'tenant_id': tenant_id}})
+        pub_network = pubnetwork_resp['network']
+    else:
+        pub_network = pubnetworks['networks'][0]
+    log.debug('Using public network: ' + str(pub_network))
+
+    # Create public network's subnet
+    pubsubnets = api.list_subnets(name='pub_sub', network_id=pub_network['id'])
+    if len(pubsubnets['subnets']) == 0:
+        pubsubnet_resp = api.create_subnet({'subnet': {'name': 'main_sub',
+                                                       'network_id': pub_network['id'],
+                                                       'ip_version': 4, 'cidr': pubsubnet_cidr,
+                                                       'tenant_id': tenant_id}})
+        pub_subnet = pubsubnet_resp['subnet']
+    else:
+        pub_subnet = pubsubnets['subnets'][0]
+    log.debug('Using public subnet: ' + str(pub_subnet))
+
+    # Create default security group
     default_secgroups = api.list_security_groups(name='default')['security_groups']
     if len(default_secgroups) == 0:
         log.debug('Creating default sec group: ')
@@ -72,6 +96,7 @@ def setup_neutron(api, subnet_cidr='10.0.1.1/24', log=None):
     else:
         def_sg_id = default_secgroups[0]['id']
 
+    # Add rules to default security group
     log.debug('Creating default sec group rules for sec group: ' + def_sg_id)
     api.create_security_group_rule({'security_group_rule': {'direction': 'ingress', 'protocol': 'icmp',
                                                             'security_group_id': def_sg_id, 'tenant_id': tenant_id}})
@@ -82,7 +107,7 @@ def setup_neutron(api, subnet_cidr='10.0.1.1/24', log=None):
     api.create_security_group_rule({'security_group_rule': {'direction': 'egress', 'protocol': 'tcp',
                                                             'security_group_id': def_sg_id, 'tenant_id': tenant_id}})
 
-    return main_network, main_subnet
+    return main_network, main_subnet, pub_network, pub_subnet
 
 
 def clean_neutron(api, log=None):

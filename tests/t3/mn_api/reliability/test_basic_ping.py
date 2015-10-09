@@ -24,7 +24,7 @@ from VTM.MNAPI import setup_main_tunnel_zone, setup_main_bridge
 
 from TSM.TestCase import TestCase
 
-from tests.scenarios.TwoComputeScenario import TwoComputeScenario
+from tests.scenarios.Secnario_1z_1c_2m import Secnario_1z_1c_2m
 
 
 class TestBasicPing(TestCase):
@@ -35,7 +35,7 @@ class TestBasicPing(TestCase):
 
     @staticmethod
     def supported_scenarios():
-        return {TwoComputeScenario}
+        return {Secnario_1z_1c_2m}
 
     @classmethod
     def setUpClass(cls):
@@ -56,9 +56,9 @@ class TestBasicPing(TestCase):
         port2 = TestBasicPing.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', 'cmp1', 'vm1')
+        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', preferred_hv_host='cmp1', preferred_name='vm1')
         """ :type: Guest"""
-        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', 'cmp1', 'vm2')
+        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', preferred_hv_host='cmp1', preferred_name='vm2')
         """ :type: Guest"""
 
         try:
@@ -78,9 +78,9 @@ class TestBasicPing(TestCase):
         port2 = TestBasicPing.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', 'cmp1', 'vm1')
+        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', preferred_hv_host='cmp1', preferred_name='vm1')
         """ :type: Guest"""
-        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', 'cmp2', 'vm2')
+        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', preferred_hv_host='cmp2', preferred_name='vm2')
         """ :type: Guest"""
 
         try:

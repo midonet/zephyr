@@ -20,8 +20,7 @@ class MidonetUtilsComponentInstaller(ComponentInstaller):
     def create_repo_file(self, repo_obj, scheme, repo, username=None, password=None,
                          version=None, distribution='stable'):
         repo_dir = 'misc-' + repo_obj.get_type()
-        repo_obj.create_repo_file('midokura.misc', scheme, repo_dir, username, password, sub_dir)
-
+        repo_obj.create_repo_file('midokura.misc', scheme, repo_dir, username, password, distribution)
 
     def install_packages(self, repo, exact_version=None):
         """

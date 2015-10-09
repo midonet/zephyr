@@ -16,7 +16,7 @@ __author__ = 'micucci'
 from TSM.TestScenario import TestScenario
 
 
-class TwoComputeScenario(TestScenario):
+class Secnario_1z_1c_2m(TestScenario):
     def setup(self):
         self.ptm.configure(self.ptm.root_dir + '/tests/scenarios/json/1z-1c-2m.json')
         self.ptm.startup()

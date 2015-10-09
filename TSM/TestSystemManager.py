@@ -13,8 +13,8 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib
-import inspect
+import traceback
+import sys
 import unittest
 import logging
 import datetime
@@ -45,6 +45,8 @@ class TestSystemManager(object):
         """ :type: dict[TestScenario, TestResult]"""
         self.debug = debug
         """ :type: bool"""
+        self.test_debug = False
+        """ :type: bool"""
         self.log_manager = log_manager if log_manager is not None else LogManager('logs')
         """ :type: LogManager"""
 
@@ -57,7 +59,7 @@ class TestSystemManager(object):
         self.CONSOLE.addHandler(logging.NullHandler())
 
     def configure_logging(self, log_name='tsm-root', log_file_name=TSM_LOG_FILE_NAME, debug=False):
-
+        self.debug = debug
         level = logging.INFO
         if debug:
             level = logging.DEBUG
@@ -82,6 +84,9 @@ class TestSystemManager(object):
 
     def add_test(self, test):
         self.test_cases[test._get_name()] = test
+
+    def set_test_debug(self, debug_flag=True):
+        self.test_debug=debug_flag
 
     def run_all_tests(self, scenario_filter=None):
         """
@@ -129,11 +134,18 @@ class TestSystemManager(object):
             if scenario in test_class.supported_scenarios():
                 scenario_obj = scenario(self.ptm, self.vtm)
                 """ :type scenario_obj: TestScenario"""
+                scenario_name = scenario_obj.__class__.__name__
 
-                log_file_name = test_class._get_name() + "-" + scenario_obj.__class__.__name__ + ".log"
-                tsm_log = self.log_manager.add_file_logger(name=scenario_obj.__class__.__name__,
-                                                            file_name=log_file_name,
-                                                            log_level=logging.DEBUG)
+                log_file_name = test_class._get_name() + "-" + scenario_name + ".log"
+                if self.debug:
+                    tsm_log = self.log_manager.add_tee_logger(name=scenario_name,
+                                                              file_name=log_file_name,
+                                                              file_log_level=logging.DEBUG,
+                                                              stdout_log_level=logging.DEBUG)
+                else:
+                    tsm_log = self.log_manager.add_file_logger(name=scenario_name,
+                                                               file_name=log_file_name,
+                                                               log_level=logging.INFO)
 
                 tsm_log.info('TSM: Preparing test class: ' + test_class._get_name())
                 test_class._prepare_class(scenario_obj, tsm_log)
@@ -143,18 +155,38 @@ class TestSystemManager(object):
                 """ :type suite: unittest.TestSuite"""
 
                 for tc in suite:
-                    test_log = self.log_manager.add_file_logger(name=tc.id().split('.')[-1],
-                                                                file_name=log_file_name,
-                                                                log_level=logging.DEBUG)
+                    if self.debug:
+                        test_log = self.log_manager.add_tee_logger(name=tc.id().split('.')[-1],
+                                                                    file_name=log_file_name,
+                                                                    file_log_level=logging.DEBUG,
+                                                                    stdout_log_level=logging.DEBUG)
+                    else:
+                        test_log = self.log_manager.add_file_logger(name=tc.id().split('.')[-1],
+                                                                    file_name=log_file_name,
+                                                                    log_level=logging.INFO)
+
                     test_log.debug('TSM: Setting logger on test: ' + tc.id())
                     tc.set_logger(test_log)
 
                 # Run the test by setting up the scenario, then executing the case, and
                 # finally cleaning up the scenario
                 try:
-                    scenario_obj.setup()
+                    try:
+                        scenario_obj.setup()
+                    except Exception as e:
+                        self.LOG.fatal('Fatal error starting up scenario: ' + scenario_name)
+                        self.LOG.fatal('Traceback: ')
+                        self.LOG.fatal(traceback.format_tb(sys.exc_traceback))
+                        dummy_tc = TestCase()
+                        dummy_tc.start_time = datetime.datetime.utcnow()
+                        dummy_tc.stop_time = datetime.datetime.utcnow()
+                        dummy_tc.run_time = datetime.timedelta()
+                        dummy_tc.current_scenario = scenario_obj
+                        scenario_result.addError(dummy_tc, sys.exc_info())
+                        return scenario_result
+
                     scenario_result.start_time = datetime.datetime.utcnow()
-                    suite.run(scenario_result, debug=self.debug)
+                    suite.run(scenario_result, debug=self.test_debug)
                     scenario_result.stop_time = datetime.datetime.utcnow()
                     scenario_result.run_time = (scenario_result.stop_time - scenario_result.start_time)
                 finally:
@@ -163,6 +195,7 @@ class TestSystemManager(object):
         return scenario_result
 
     def create_results(self, results_dir='./results', leeway=5):
+        self.LOG.debug("Creating test_results")
         cli = LinuxCLI(priv=False)
         cli.rm(results_dir)
         for scen, res in self.result_map.iteritems():
@@ -174,10 +207,11 @@ class TestSystemManager(object):
 
             for tc in res.all_tests():
                 tcname = tc.id().split('.')[-1]
+                self.LOG.debug("Creating test_results for " + tcname)
                 cli.mkdir(log_out_dir + '/' + tcname)
                 self.log_manager.slice_log_files_by_time(log_out_dir + '/' + tcname,
-                                                         start_time=tc.start_time,
-                                                         stop_time=tc.stop_time,
+                                                         start_time=tc.start_time if tc.start_time is not None else '0.0',
+                                                         stop_time=tc.stop_time if tc.start_time is not None else '0.0',
                                                          leeway=leeway,
                                                          collated_only=True)
 

@@ -82,7 +82,7 @@ class TestCase(unittest.TestCase):
         self.stop_time = None
         """ :type: datetime.datetime"""
         self.run_time = None
-        """ :type: datetime.datetime"""
+        """ :type: datetime.timedelta"""
         self.current_scenario = self.class_scenario
         """ :type: TestScenario"""
         self.LOG.addHandler(logging.NullHandler())
@@ -90,10 +90,28 @@ class TestCase(unittest.TestCase):
     def run(self, result=None):
         self.start_time = datetime.datetime.utcnow()
         self.LOG.info('Running test case: ' + self._get_name() + ' - ' + self._testMethodName)
-        super(TestCase, self).run(result)
-        self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
-        self.stop_time = datetime.datetime.utcnow()
-        self.run_time = (self.stop_time - self.start_time)
+        try:
+            super(TestCase, self).run(result)
+            self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
+        except Exception as e:
+            self.LOG.fatal('Test case error: ' + self._get_name() + ' - ' + self._testMethodName + ": " + str(e))
+            self.fail('Exception thrown by test: ' + str(e))
+        finally:
+            self.stop_time = datetime.datetime.utcnow()
+            self.run_time = (self.stop_time - self.start_time)
+
+    def debug(self):
+        self.start_time = datetime.datetime.utcnow()
+        self.LOG.info('Running test case: ' + self._get_name() + ' - ' + self._testMethodName)
+        try:
+            super(TestCase, self).debug()
+            self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
+        except Exception as e:
+            self.LOG.fatal('Test case error: ' + self._get_name() + ' - ' + self._testMethodName + ": " + str(e))
+            raise e
+        finally:
+            self.stop_time = datetime.datetime.utcnow()
+            self.run_time = (self.stop_time - self.start_time)
 
     def set_logger(self, log, console=None):
         self.LOG = log

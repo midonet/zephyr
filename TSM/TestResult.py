@@ -39,25 +39,28 @@ class TestResult(unittest.TestResult):
         def format_tc(tc):
             tcclass = '.'.join(tc.id().split('.')[:-1])
             tcname = tc.id().split('.')[-1]
-            tcruntime = '{0:d}.{1:d}'.format(tc.run_time.seconds, tc.run_time.microseconds)
+            tcruntime = '{0:d}.{1:d}'.format(tc.run_time.seconds, tc.run_time.microseconds) \
+                if tc.run_time is not None else '0.0'
             return '  <testcase classname="{0}" name="{1}" time="{2}"/>\n'.format(tcclass, tcname, tcruntime)
 
         def format_tc_data(tc, data):
             tcclass = '.'.join(tc.id().split('.')[:-1])
             tcname = tc.id().split('.')[-1]
-            tcruntime = '{0:d}.{1:d}'.format(tc.run_time.seconds, tc.run_time.microseconds)
+            tcruntime = '{0:d}.{1:d}'.format(tc.run_time.seconds, tc.run_time.microseconds) \
+                if tc.run_time is not None else '0.0'
             return '  <testcase classname="{0}" name="{1}" time="{2}">\n' \
                    '    {3}\n' \
                    '  </testcase>\n'.format(tcclass, tcname, tcruntime, data)
 
-        runtime = '{0:d}.{1:d}'.format(self.run_time.seconds, self.run_time.microseconds)
+        runtime = '{0:d}.{1:d}'.format(self.run_time.seconds, self.run_time.microseconds) \
+            if self.run_time is not None else '0.0'
         ts_str = '<testsuite errors="{errors:d}" failures="{failures:d}" name="{name}" ' \
                             'tests="{tests:d}" timestamp="{starttime}" time="{runtime}">\n'
         ret_xml = ts_str.format(errors=len(self.errors),
                                 failures=len(self.failures) + len(self.unexpectedSuccesses),
                                 name=self.scenario.__class__.__name__,
                                 tests=self.testsRun,
-                                starttime=self.start_time.isoformat(),
+                                starttime=self.start_time.isoformat() if self.start_time is not None else '0.0',
                                 runtime=runtime)
 
         for tc in self.successes:
@@ -65,7 +68,7 @@ class TestResult(unittest.TestResult):
 
         for tc, data in self.failures:
             reason = 'Trace [' + data + ']'
-            fail = '<failure type={0}>'.format(tc.failureException.__name__) + reason + '</failure>'
+            fail = '<failure type="{0}">'.format(tc.failureException.__name__) + reason + '</failure>'
             ret_xml += format_tc_data(tc, fail)
 
         for tc in self.unexpectedSuccesses:
@@ -74,7 +77,7 @@ class TestResult(unittest.TestResult):
 
         for tc, data in self.errors:
             reason = 'Trace [' + data + ']'
-            err = '<error type={0}>'.format(tc.failureException.__name__) + reason + '</error>'
+            err = '<error type="{0}">'.format(tc.failureException.__name__) + reason + '</error>'
             ret_xml += format_tc_data(tc, err)
 
         for tc, data in self.skipped:
