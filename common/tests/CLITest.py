@@ -122,7 +122,7 @@ class CLITest(unittest.TestCase):
                 self.assertTrue(cli.grep_file('/etc/hosts', '11.11.11.11 test'))
                 self.assertTrue(cli.grep_file('/etc/hosts', '6.6.6.6 baz2'))
                 self.assertTrue(cli.grep_file('/etc/hosts', '13.13.13.13 baz'))
-                self.assertEqual(1, len(cli.cmd('grep "13.13.13.13 baz" /etc/hosts').splitlines(False)))
+                self.assertEqual(1, len(cli.cmd('grep "13.13.13.13 baz" /etc/hosts').stdout.splitlines(False)))
                 self.assertFalse(cli.grep_file('/etc/hosts', '12.12.12.12 baz'))
 
             finally:

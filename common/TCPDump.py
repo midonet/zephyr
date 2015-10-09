@@ -222,7 +222,7 @@ class TCPDump(object):
             with open(tmp_dump_filename, 'w') as f:
                 f.write("--START--\n")
 
-            tcp_process = cli.cmd(cmd_line=cmd_str, blocking=False)
+            tcp_process = cli.cmd(cmd_line=cmd_str, blocking=False).process
 
             flags_se = fcntl(tcp_process.stderr, F_GETFL) # get current p.stderr flags
             fcntl(tcp_process.stderr, F_SETFL, flags_se | os.O_NONBLOCK)

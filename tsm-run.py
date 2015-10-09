@@ -117,7 +117,7 @@ try:
     if len(tests) == 0:
         usage(ArgMismatchException('Must specify at least one test with the -t or --tests option'))
 
-    root_dir = LinuxCLI().cmd('pwd').strip()
+    root_dir = LinuxCLI().cmd('pwd').stdout.strip()
     print 'Setting root dir to: ' + root_dir
 
     client_impl = None
@@ -128,7 +128,7 @@ try:
     else:
         raise ArgMismatchException('Invalid client API implementation:' + client_impl_type)
 
-    print 'Setting up log manager'
+    print 'Setting up log manager with debug=' + str(debug)
     log_manager = LogManager(root_dir=log_dir)
     console_log = log_manager.add_stdout_logger(name='tsm-run-console',
                                                 log_level=logging.DEBUG if debug is True else logging.INFO)

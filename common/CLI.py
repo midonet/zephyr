@@ -24,6 +24,30 @@ CREATENSCMD = lambda name: LinuxCLI().cmd('ip netns add ' + name)
 REMOVENSCMD = lambda name: LinuxCLI().cmd('ip netns del ' + name)
 DEBUG = 0
 
+class CommandStatus(object):
+    def __init__(self, process=None, command='', ret_code=0, stdout='', stderr=''):
+        """
+        :type process: subprocess.Popen
+        :type ret_code: int
+        :type cmd: str
+        :type stdout: str
+        :type stderr: str
+        :return:
+        """
+        self.process = process
+        self.ret_code = ret_code
+        self.command = command
+        self.stdout = stdout
+        self.stderr = stderr
+
+    def __repr__(self):
+        return 'PID: ' + str(self.process.pid) + '\n' + \
+               'RETCODE: ' + str(self.ret_code) + '\n' + \
+               'CMD: ' + self.command + '\n' + \
+               'STDOUT: [' + self.stdout + ']' + '\n' + \
+               'STDERR: [' + self.stderr + ']'
+
+
 class LinuxCLI(object):
     def __init__(self, priv=True, debug=(DEBUG >= 2), log_cmd=(DEBUG >= 1), logger=None):
         self.env_map = None
@@ -34,12 +58,8 @@ class LinuxCLI(object):
         """ :type: bool"""
         self.log_cmd = log_cmd
         """ :type: bool"""
-        self.last_process = None
-        """ :type: subprocess.Popen"""
         self.logger = logger
         """ :type: logging.Logger"""
-        self.last_cmd_return_code = 0
-        """ :type: int"""
 
     def add_environment_variable(self, name, val):
         if (self.env_map is None):
@@ -52,16 +72,15 @@ class LinuxCLI(object):
 
     # TODO: Unify the output of cmd function and make new functions for different types of outputs
     # TODO: Unify the multi and normal cmd functions
-    def cmd(self, cmd_line, return_status=False, timeout=None, blocking=True, shell=True, *args):
+    def cmd(self, cmd_line, timeout=None, blocking=True, shell=True, *args):
         """
         Execute a command on the system.  The exact command will be transformed based
          on the timeout parameter and whether or not the command is being run against
          an IP net namespace.
         :param cmd_line: str The base command to run
-        :param return_output: bool True to return the output, False to simply execute command
         :param timeout: int Timeout value, None for no timeout
         :param cmd_event: A threading.Event object to set when command is run, or None for no synchronization
-        :return:
+        :return CommandStatus:
         """
         new_cmd_line = ('timeout ' + str(timeout) + ' ' if timeout is not None else '') + cmd_line
 
@@ -77,14 +96,13 @@ class LinuxCLI(object):
                 print('>>>' + cmd)
 
         if self.debug is True:
-            return cmd
-
+            return CommandStatus(command=cmd)
 
         p = subprocess.Popen(cmd, *args, shell=shell, stdout=subprocess.PIPE,
                                              stderr=subprocess.PIPE, env=self.env_map)
-        self.last_process = p
+        self.last_process_status = p
         if blocking is False:
-            return p
+            return CommandStatus(process=p, command=cmd)
 
         stdout, stderr = p.communicate()
 
@@ -92,16 +110,15 @@ class LinuxCLI(object):
         if p.returncode == 124 and timeout is not None:
             raise SubprocessTimeoutException('Process timed out: ' + cmd)
 
-        if return_status is True:
-            return p.returncode
-        else:
-            self.last_cmd_return_code = p.returncode
-
         out = ''
         for line in stdout:
             out += line
 
-        return out
+        err = ''
+        for line in stderr:
+            err += line
+
+        return CommandStatus(process=p, command=cmd, ret_code=p.returncode, stdout=out, stderr=err)
 
     def create_cmd(self, cmd_line):
         return cmd_line
@@ -110,39 +127,39 @@ class LinuxCLI(object):
         return 'sudo -E ' + cmd_line
 
     def oscmd(self, *args, **kwargs):
-        return LinuxCLI().cmd(*args, **kwargs)
+        return LinuxCLI().cmd(*args, **kwargs).stdout
 
-    def grep_file(self, gfile, grep):
-        if self.cmd('grep -q "' + grep + '" ' + gfile, return_status=True) == 0:
+    def grep_file(self, gfile, grep, options=''):
+        if self.cmd('grep -q ' + options + ' "' + grep + '" ' + gfile).ret_code == 0:
             return True
         else:
             return False
 
-    def grep_cmd(self, cmd_line, grep):
-        if self.cmd(cmd_line + '| grep -q "' + grep + '"', return_status=True) == 0:
+    def grep_cmd(self, cmd_line, grep, options=''):
+        if self.cmd(cmd_line + '| grep -q ' + options + ' "' + grep + '"').ret_code == 0:
             return True
         else:
             return False
 
     def mkdir(self, dir_name):
-        return self.cmd('mkdir -p ' + dir_name)
+        return self.cmd('mkdir -p ' + dir_name).stdout
 
     def chown(self, file_name, user_name, group_name):
-        return self.cmd('chown -R ' + user_name + '.' + group_name + ' ' + file_name)
+        return self.cmd('chown -R ' + user_name + '.' + group_name + ' ' + file_name).stdout
 
     def regex_file(self, rfile, regex):
-        return self.cmd('sed -e "' + regex + '" -i ' + rfile)
+        return self.cmd('sed -e "' + regex + '" -i ' + rfile).stdout
 
     def regex_file_multi(self, rfile, *args):
         sed_str = ''.join(['-e "' + str(i) + '" ' for i in args])
-        return self.cmd('sed ' + sed_str + ' -i ' + rfile)
+        return self.cmd('sed ' + sed_str + ' -i ' + rfile).stdout
 
     def get_running_pids(self):
         """
         Gets all running processes' PIDS as a list
         :return: list[str]
         """
-        return [i.strip() for i in self.cmd("ps -aef | grep -v grep | awk '{print $2}'").split()]
+        return [i.strip() for i in self.cmd("ps -aef | grep -v grep | awk '{print $2}'").stdout.split()]
 
     def get_process_pids(self, process_name):
         """
@@ -151,7 +168,7 @@ class LinuxCLI(object):
         """
         awk_cmd = r'{printf "%s\n", $2}'
         return [i.strip() for i in
-                self.cmd("ps -aef | grep -v grep | grep " + process_name + r" | awk '" + awk_cmd + r"'").split()]
+                self.cmd("ps -aef | grep -v grep | grep " + process_name + r" | awk '" + awk_cmd + r"'").stdout.split()]
 
     def get_parent_pids(self, child_pid):
         """
@@ -159,7 +176,7 @@ class LinuxCLI(object):
         :return: list[str]
         """
         return [i.strip() for i in
-                self.cmd("ps -aef | grep -v grep | awk '{ if ($3==" + str(child_pid) + ") print $2 }'").split()]
+                self.cmd("ps -aef | grep -v grep | awk '{ if ($3==" + str(child_pid) + ") print $2 }'").stdout.split()]
 
     def is_pid_running(self, pid):
         return str(pid) in self.get_running_pids()
@@ -187,16 +204,16 @@ class LinuxCLI(object):
                 new_replace_str = new_replace_str.replace(c, "\\" + c)
 
         sed_str = "sed -e 's/" + new_search_str + "/" + new_replace_str + "/" + global_flag + "' -i " + rfile
-        return self.cmd(sed_str)
+        return self.cmd(sed_str).stdout
 
     def copy_dir(self, old_dir, new_dir):
-        return self.cmd('cp -RL --preserve=all ' + old_dir + ' ' + new_dir)
+        return self.cmd('cp -RL --preserve=all ' + old_dir + ' ' + new_dir).stdout
 
     def copy_file(self, old_file, new_file):
         dir = os.path.dirname(new_file)
         if dir != '' and dir != '.' and not self.exists(dir):
             self.mkdir(dir)
-        return self.cmd('cp ' + old_file + ' ' + new_file)
+        return self.cmd('cp ' + old_file + ' ' + new_file).stdout
 
     def move(self, old_file, new_file):
         self.copy_dir(old_file, new_file)
@@ -217,7 +234,7 @@ class LinuxCLI(object):
     def wc(self, file):
         if not self.exists(file):
             raise ObjectNotFoundException('File not found: ' + file)
-        line = map(int, self.cmd("wc " + file).split()[0:3])
+        line = map(int, self.cmd("wc " + file).stdout.split()[0:3])
         return dict(zip(['lines', 'words', 'chars'], line))
 
     def write_to_file(self, wfile, data, append=False):
@@ -244,23 +261,23 @@ class LinuxCLI(object):
         if old_file in forbidden_rms:
             raise ArgMismatchException('Not allowed to remove ' + old_file +
                                        ' as it is listed as a vital system directory')
-        return self.cmd('rm -rf ' + old_file)
+        return self.cmd('rm -rf ' + old_file).stdout
     
     def rm_files(self, root_dir, match_pattern=''):
         if match_pattern == '':
-            return self.cmd('find ' + root_dir + ' -type f -exec sudo rm -f {} \; || true')
+            return self.cmd('find ' + root_dir + ' -type f -exec sudo rm -f {} \; || true').stdout
         else:
-            return self.cmd('find ' + root_dir + ' -name ' + match_pattern + ' -exec sudo rm -f {} \; || true')
+            return self.cmd('find ' + root_dir + ' -name ' + match_pattern + ' -exec sudo rm -f {} \; || true').stdout
 
     @staticmethod
     def exists(efile):
         return os.path.exists(efile)
 
     def mount(self, drive, as_drive):
-        return self.cmd('mount --bind ' + drive + ' ' + as_drive)
+        return self.cmd('mount --bind ' + drive + ' ' + as_drive).stdout
 
     def unmount(self, drive):
-        return self.cmd('umount -l ' + drive + " > /dev/null 2>&1")
+        return self.cmd('umount -l ' + drive + " > /dev/null 2>&1").stdout
 
     def start_screen(self, host, window_name, cmd_line):
         cmd_in_screen = self.create_cmd(cmd_line)
@@ -270,22 +287,22 @@ class LinuxCLI(object):
         else:
             # subsequent screens = sub screens
             cmd_opts = '-S ' + host + ' -X screen'
-        return self.cmd('screen ' + cmd_opts + ' -t ' + window_name + ' /bin/bash -c "' + cmd_in_screen + '"')
+        return self.cmd('screen ' + cmd_opts + ' -t ' + window_name + ' /bin/bash -c "' + cmd_in_screen + '"').stdout
 
     def start_screen_unshare(self, host, window_name, cmd_line):
         return self.start_screen(host, window_name, 'unshare -m ' + cmd_line)
 
     def os_name(self):
-        return self.cmd('cat /etc/*-release | grep ^NAME= | cut -d "=" -f 2').strip('"').lower()
+        return self.cmd('cat /etc/*-release | grep ^NAME= | cut -d "=" -f 2').stdout.strip('"').lower()
 
     def pwd(self):
-        return self.cmd('pwd').strip()
+        return self.cmd('pwd').stdout.strip()
 
     def whoami(self):
         return pwd.getpwuid(os.getuid())[0]
 
     def add_to_host_file(self, name, ip):
-        host_line = self.cmd('grep -w ' + name + ' /etc/hosts').splitlines(False)
+        host_line = self.cmd('grep -w ' + name + ' /etc/hosts').stdout.splitlines(False)
         if len(host_line) == 0:
             self.write_to_file('/etc/hosts', ip + ' ' + name + '\n', append=True)
         else:

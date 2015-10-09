@@ -165,7 +165,7 @@ class ComputeHostTest(unittest.TestCase):
 
         pid = LinuxCLI().read_from_file('/run/midolman.1/pid').rstrip()
         print "PID = " + pid
-        print "PS = " + LinuxCLI().cmd("ps -aef")
+        print "PS = " + LinuxCLI().cmd("ps -aef").stdout
 
         self.assertTrue(LinuxCLI().is_pid_running(pid))
 

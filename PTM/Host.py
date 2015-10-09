@@ -317,7 +317,7 @@ class Host(PTMObject):
         :return: bool
         """
         iface_str = ('-I ' + iface) if iface is not None else ''
-        return self.cli.cmd('ping -n ' + iface_str + ' -c ' + str(count) + ' ' + target_ip, return_status=True) == 0
+        return self.cli.cmd('ping -n ' + iface_str + ' -c ' + str(count) + ' ' + target_ip).ret_code == 0
 
     def start_capture(self, interface,
                       count=0, type='', filter=None,

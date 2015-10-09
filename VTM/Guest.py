@@ -97,9 +97,10 @@ class Guest(object):
         self.vm_host.cli.log_cmd = True
         result = self.vm_host.cli.cmd(*args, **kwargs)
         self.vm_host.cli.log_cmd = prev
-        if self.vm_host.cli.last_cmd_return_code != 0:
-            raise SubprocessFailedException('Retcode: ' + str(self.vm_host.cli.last_cmd_return_code) +
-                                            ', cmd output: ' + result)
+        if result.returncode != 0:
+            raise SubprocessFailedException('Retcode: ' + str(result.returncode) +
+                                            ', cmd output: ' + result.stdout +
+                                            ', cmd error: ' + result.stderr)
         return result
 
     def terminate(self):

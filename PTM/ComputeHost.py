@@ -203,16 +203,16 @@ class ComputeHost(NetNSHost):
         if self.num_id == '1':
             this_dir = path.dirname(path.abspath(__file__))
 
-            ret = self.cli.cmd('mn-conf set -t default < ' + this_dir + '/scripts/midolman.mn-conf', return_status=True)
-            if ret != 0:
-                self.LOG.fatal('\n'.join(self.cli.last_process.stdout.readlines()))
-                self.LOG.fatal('\n'.join(self.cli.last_process.stderr.readlines()))
+            ret = self.cli.cmd('mn-conf set -t default < ' + this_dir + '/scripts/midolman.mn-conf')
+            if ret.ret_code != 0:
+                self.LOG.fatal('\n'.join(ret.stdout.readlines()))
+                self.LOG.fatal('\n'.join(ret.stderr.readlines()))
                 raise SubprocessFailedException('Failed to run mn-conf with defaults: ' + str(ret))
 
-            ret = self.cli.cmd('mn-conf set -t default < .mnconf.data', return_status=True)
-            if ret != 0:
-                self.LOG.fatal('\n'.join(self.cli.last_process.stdout.readlines()))
-                self.LOG.fatal('\n'.join(self.cli.last_process.stderr.readlines()))
+            ret = self.cli.cmd('mn-conf set -t default < .mnconf.data')
+            if ret.ret_code != 0:
+                self.LOG.fatal('\n'.join(ret.stdout.readlines()))
+                self.LOG.fatal('\n'.join(ret.stderr.readlines()))
                 raise SubprocessFailedException('Failed to run mn-conf: ' + str(ret))
 
             pid_file = '/run/midolman/dnsmasq.pid'
@@ -227,7 +227,7 @@ class ComputeHost(NetNSHost):
         self.cli.add_to_host_file(self.name, self.my_ip)
 
         self.cli.cmd("sysctl -w net.ipv6.conf.default.disable_ipv6=1")
-        process = self.cli.cmd('/usr/share/midolman/midolman-start', blocking=False)
+        process = self.cli.cmd('/usr/share/midolman/midolman-start', blocking=False).process
         if process.pid == -1:
             raise SubprocessFailedException('midolman')
         real_pid = self.cli.get_parent_pids(process.pid)[-1]
@@ -250,10 +250,10 @@ class ComputeHost(NetNSHost):
 
     def control_bind_port(self, near_if_name, port_id):
         self.LOG.debug('binding port ' + port_id + ' to ' + near_if_name)
-        return self.cli.cmd('mm-ctl --bind-port ' + port_id + ' ' + near_if_name)
+        return self.cli.cmd('mm-ctl --bind-port ' + port_id + ' ' + near_if_name).stdout
 
     def control_unbind_port(self, port_id):
-        return self.cli.cmd('mm-ctl --unbind-port ' + port_id)
+        return self.cli.cmd('mm-ctl --unbind-port ' + port_id).stdout
 
 
 class ComputeMNConfConfiguration(ProgramConfigurationHandler):

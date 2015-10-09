@@ -79,12 +79,17 @@ class NetworkHost(RootHost):
         connected = False
         deadline = time.time() + 80
         while not connected:
-            if self.cli.cmd('midonet-cli --midonet-url="' + self.url + '" -A -e "host list"', return_status=True) == 0:
-                connected = True
+            if self.use_cluster:
+                if self.cli.grep_cmd('tac /var/log/midonet-cluster/midonet-cluster.log', "MidoNet Cluster is up",
+                                     options='-m1'):
+                    connected = True
             else:
-                if time.time() > deadline:
-                    raise SubprocessFailedException('Network host timed out while starting')
-                time.sleep(1)
+                if self.cli.cmd('midonet-cli --midonet-url="' + self.url + '" -A -e "host list"').ret_code == 0:
+                    connected = True
+                else:
+                    if time.time() > deadline:
+                        raise SubprocessFailedException('Network host timed out while starting')
+                    time.sleep(1)
 
     def control_start(self):
         if self.use_cluster:
@@ -170,6 +175,7 @@ class ClusterConfiguration(FileConfigurationHandler):
         zkcli.add_environment_variable('MIDO_ZOOKEEPER_HOSTS', z_ip_str)
         zkcli.add_environment_variable('MIDO_ZOOKEEPER_ROOT_KEY', midonet_key)
 
+        self.cli.rm('/var/log/midonet-cluster/midonet-cluster.log')
         self.cli.rm('/etc/midonet_host_id.properties')
         uuid_str = 'host_uuid=' + str(unique_id) + '\n'
         self.cli.write_to_file('/etc/midolman/host_uuid.properties', uuid_str)
@@ -178,4 +184,4 @@ class ClusterConfiguration(FileConfigurationHandler):
                    "zookeeper_hosts = " + z_ip_str + "\n" \
                    "root_key = /midonet/v2\n"
         self.cli.write_to_file('/etc/midonet/midonet.conf', conf_str)
-        ret = zkcli.cmd('mn-conf set -t default "agent.cluster.enabled: true"')
+        ret = zkcli.cmd('mn-conf set -t default "agent.cluster.enabled: true"').stdout

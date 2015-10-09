@@ -61,15 +61,16 @@ class TestSystemManager(object):
     def configure_logging(self, log_name='tsm-root', log_file_name=TSM_LOG_FILE_NAME, debug=False):
         self.debug = debug
         level = logging.INFO
-        if debug:
+        if debug is True:
             level = logging.DEBUG
             self.LOG = self.log_manager.add_tee_logger(file_name=log_file_name,
-                                                        name=(log_name + '-debug'),
-                                                        file_log_level=level,
-                                                        stdout_log_level=level)
+                                                       name=(log_name + '-debug'),
+                                                       file_log_level=level,
+                                                       stdout_log_level=level)
+            self.LOG.info("Turning on debug logs")
         else:
             self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
-                                                        name=(log_name + '-debug'),
+                                                        name=log_name,
                                                         log_level=level)
 
         self.CONSOLE = self.log_manager.add_stdout_logger(name=log_name + '-console', log_level=level)
@@ -137,18 +138,19 @@ class TestSystemManager(object):
                 scenario_name = scenario_obj.__class__.__name__
 
                 log_file_name = test_class._get_name() + "-" + scenario_name + ".log"
-                if self.debug:
-                    tsm_log = self.log_manager.add_tee_logger(name=scenario_name,
-                                                              file_name=log_file_name,
-                                                              file_log_level=logging.DEBUG,
-                                                              stdout_log_level=logging.DEBUG)
+                if self.debug is True:
+                    scenario_log = self.log_manager.add_tee_logger(name=scenario_name + '-debug',
+                                                                   file_name=log_file_name,
+                                                                   file_log_level=logging.DEBUG,
+                                                                   stdout_log_level=logging.DEBUG)
+                    scenario_log.info('Starting debug logs')
                 else:
-                    tsm_log = self.log_manager.add_file_logger(name=scenario_name,
+                    scenario_log = self.log_manager.add_file_logger(name=scenario_name,
                                                                file_name=log_file_name,
                                                                log_level=logging.INFO)
 
-                tsm_log.info('TSM: Preparing test class: ' + test_class._get_name())
-                test_class._prepare_class(scenario_obj, tsm_log)
+                scenario_log.debug('TSM: Preparing test class: ' + test_class._get_name())
+                test_class._prepare_class(scenario_obj, scenario_log)
 
                 test_loader = unittest.defaultTestLoader
                 suite = test_loader.loadTestsFromTestCase(test_class)
@@ -156,22 +158,24 @@ class TestSystemManager(object):
 
                 for tc in suite:
                     if self.debug:
-                        test_log = self.log_manager.add_tee_logger(name=tc.id().split('.')[-1],
-                                                                    file_name=log_file_name,
-                                                                    file_log_level=logging.DEBUG,
-                                                                    stdout_log_level=logging.DEBUG)
+                        testcase_log = self.log_manager.add_tee_logger(name=tc.id().split('.')[-1] + '-debug',
+                                                                       file_name=log_file_name,
+                                                                       file_log_level=logging.DEBUG,
+                                                                       stdout_log_level=logging.DEBUG)
+                        testcase_log.info('Starting debug logs')
                     else:
-                        test_log = self.log_manager.add_file_logger(name=tc.id().split('.')[-1],
+                        testcase_log = self.log_manager.add_file_logger(name=tc.id().split('.')[-1],
                                                                     file_name=log_file_name,
                                                                     log_level=logging.INFO)
 
-                    test_log.debug('TSM: Setting logger on test: ' + tc.id())
-                    tc.set_logger(test_log)
+                    testcase_log.debug('TSM: Setting logger on test: ' + tc.id())
+                    tc.set_logger(testcase_log)
 
                 # Run the test by setting up the scenario, then executing the case, and
                 # finally cleaning up the scenario
                 try:
                     try:
+                        scenario_log.debug('Setting up scenario [' + scenario_name + ']')
                         scenario_obj.setup()
                     except Exception as e:
                         self.LOG.fatal('Fatal error starting up scenario: ' + scenario_name)
@@ -182,14 +186,20 @@ class TestSystemManager(object):
                         dummy_tc.stop_time = datetime.datetime.utcnow()
                         dummy_tc.run_time = datetime.timedelta()
                         dummy_tc.current_scenario = scenario_obj
+                        dummy_tc.failureException = e
                         scenario_result.addError(dummy_tc, sys.exc_info())
                         return scenario_result
 
                     scenario_result.start_time = datetime.datetime.utcnow()
+                    scenario_log.debug('Starting scenario [' + scenario_name + '] at timestamp[' +
+                                       str(scenario_result.start_time) + ']')
                     suite.run(scenario_result, debug=self.test_debug)
                     scenario_result.stop_time = datetime.datetime.utcnow()
+                    scenario_log.debug('Finished scenario [' + scenario_name + '] at timestamp[' +
+                                       str(scenario_result.stop_time) + ']')
                     scenario_result.run_time = (scenario_result.stop_time - scenario_result.start_time)
                 finally:
+                    scenario_log.debug('Tearing down scenario [' + scenario_name + ']')
                     scenario_obj.teardown()
 
         return scenario_result
@@ -206,12 +216,13 @@ class TestSystemManager(object):
             self.log_manager.collate_logs(log_out_dir + '/full-logs')
 
             for tc in res.all_tests():
-                tcname = tc.id().split('.')[-1]
-                self.LOG.debug("Creating test_results for " + tcname)
-                cli.mkdir(log_out_dir + '/' + tcname)
-                self.log_manager.slice_log_files_by_time(log_out_dir + '/' + tcname,
-                                                         start_time=tc.start_time if tc.start_time is not None else '0.0',
-                                                         stop_time=tc.stop_time if tc.start_time is not None else '0.0',
-                                                         leeway=leeway,
-                                                         collated_only=True)
+                if isinstance(tc, TestCase):
+                    tcname = tc.id().split('.')[-1]
+                    self.LOG.debug("Creating test_results for " + tcname)
+                    cli.mkdir(log_out_dir + '/' + tcname)
+                    self.log_manager.slice_log_files_by_time(log_out_dir + '/' + tcname,
+                                                             start_time=tc.start_time if tc.start_time is not None else '0.0',
+                                                             stop_time=tc.stop_time if tc.start_time is not None else '0.0',
+                                                             leeway=leeway,
+                                                             collated_only=True)
 

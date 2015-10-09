@@ -88,7 +88,7 @@ class TCPSender(object):
                            {'iface': interface,
                             'arglist': arg_str,
                             'bytes': byte_data}
-            out = cli.cmd(full_cmd_str, timeout=timeout)
+            out = cli.cmd(full_cmd_str, timeout=timeout).stdout
             if tcp_ready is not None:
                 tcp_ready.set()
             return out
@@ -125,7 +125,7 @@ class TCPSender(object):
                         'cmd': cmd_str}
         prev = cli.log_cmd
         cli.log_cmd = True
-        out = cli.cmd(full_cmd_str, timeout=timeout)
+        out = cli.cmd(full_cmd_str, timeout=timeout).stdout
         if tcp_ready is not None:
             tcp_ready.set()
         cli.log_cmd = prev

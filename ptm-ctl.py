@@ -62,7 +62,7 @@ try:
     if command == '':
         usage(ArgMismatchException('Must specify at least one command option'))
 
-    root_dir = LinuxCLI().cmd('pwd').strip()
+    root_dir = LinuxCLI().cmd('pwd').stdout.strip()
 
     log_manager = LogManager(root_dir=log_dir)
     if command == 'startup':

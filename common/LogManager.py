@@ -118,11 +118,12 @@ class LogManager(object):
         handler_obj.setLevel(level if level is not None else self.default_log_level)
         handler_obj.setFormatter(self.get_format(format_name))
 
-        new_log.setLevel(level if level is not None else self.default_log_level)
+        # Set logger's log level to be all inclusive and let handlers set more specific levels
+        new_log.setLevel(1)
         new_log.addHandler(handler_obj)
 
         #new_log.debug("Starting log [" + name + "] with handler type [" +
-        #             handler_obj.__class__.__name__ + "]")
+        #             handler_obj.__class__.__name__ + "] and level" + str(level))
 
         self.loggers[name] = new_log
 
@@ -220,18 +221,17 @@ class LogManager(object):
         :return: logging.Logger Created logger
         """
         mode = 'a' if file_overwrite is False else 'w'
-        handler = logging.FileHandler(self.root_dir + "/" + file_name, mode)
-        new_log = self._log_check_and_create(name, file_log_level,
-                                             handler,
-                                             file_format_name)
+        new_log = self._log_check_and_create(name, stdout_log_level,
+                                             logging.StreamHandler(),
+                                             stdout_format_name)
 
-        stdout_handler = logging.StreamHandler()
-        stdout_handler.setLevel(stdout_log_level if stdout_log_level is not None else self.default_log_level)
-        stdout_handler.setFormatter(self.get_format(stdout_format_name))
+        file_handler = logging.FileHandler(self.root_dir + "/" + file_name, mode)
+        file_handler.setLevel(file_log_level if file_log_level is not None else self.default_log_level)
+        file_handler.setFormatter(self.get_format(file_format_name))
 
-        new_log.addHandler(stdout_handler)
+        new_log.addHandler(file_handler)
         date_format, date_position = self.date_formats[file_format_name]
-        self.add_log_file(FileLocation(self.root_dir + "/" + file_name), new_log, handler,
+        self.add_log_file(FileLocation(self.root_dir + "/" + file_name), new_log, file_handler,
                           date_format, date_position)
 
         return new_log

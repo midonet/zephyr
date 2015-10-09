@@ -16,6 +16,8 @@ __author__ = 'micucci'
 import unittest
 import datetime
 import itertools
+from TSM.TestCase import TestCase
+
 
 class TestResult(unittest.TestResult):
     def __init__(self, scenario):
@@ -64,31 +66,39 @@ class TestResult(unittest.TestResult):
                                 runtime=runtime)
 
         for tc in self.successes:
-            ret_xml += format_tc(tc)
+            if isinstance(tc, TestCase):
+                ret_xml += format_tc(tc)
 
         for tc, data in self.failures:
             reason = 'Trace [' + data + ']'
-            fail = '<failure type="{0}">'.format(tc.failureException.__name__) + reason + '</failure>'
-            ret_xml += format_tc_data(tc, fail)
+            if isinstance(tc, TestCase):
+                fail = '<failure type="{0}">'.format(tc.failureException.__name__) + reason + '</failure>'
+                ret_xml += format_tc_data(tc, fail)
 
         for tc in self.unexpectedSuccesses:
             reason = '<failure>Unexpected Success</failure>'
-            ret_xml += format_tc_data(tc, reason)
+            if isinstance(tc, TestCase):
+                ret_xml += format_tc_data(tc, reason)
 
         for tc, data in self.errors:
             reason = 'Trace [' + data + ']'
-            err = '<error type="{0}">'.format(tc.failureException.__name__) + reason + '</error>'
-            ret_xml += format_tc_data(tc, err)
+            if isinstance(tc, TestCase):
+                err = '<error type="{0}">'.format(tc.failureException.__name__) + reason + '</error>'
+                ret_xml += format_tc_data(tc, err)
+            else:
+                ret_xml += '<testcase name="dummy"><error type="FrameworkError">' + reason + '</error></testcase>'
 
         for tc, data in self.skipped:
             reason = 'Trace [' + data + ']'
-            info = '<skipped>' + data + '</skipped>'
-            ret_xml += format_tc_data(tc, info)
+            if isinstance(tc, TestCase):
+                info = '<skipped>' + data + '</skipped>'
+                ret_xml += format_tc_data(tc, info)
 
         for tc, data in self.expectedFailures:
             reason = 'Trace [' + data + ']'
-            info = '<skipped>Expected Failure: [' + tc.failureException.__name__ + '] ' + reason + '</skipped>'
-            ret_xml += format_tc_data(tc, info)
+            if isinstance(tc, TestCase):
+                info = '<skipped>Expected Failure: [' + tc.failureException.__name__ + '] ' + reason + '</skipped>'
+                ret_xml += format_tc_data(tc, info)
 
         ret_xml += '</testsuite>\n'
         return ret_xml

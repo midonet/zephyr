@@ -21,7 +21,7 @@ def packet_callback(packet, file_name):
 def send_packet():
     time.sleep(5)
     tcps = TCPSender()
-    out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+    out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"').stdout
     lo_iface = out.split()[0].rstrip()
     tcps.start_send(interface=lo_iface, packet_type='tcp', count=3, source_ip='127.0.0.1',
                     dest_ip='127.0.0.1', dest_port=6055, source_port=6015)
@@ -49,7 +49,7 @@ class TCPDumpTest(unittest.TestCase):
     def test_read_packet_buffered(self):
         tcpd = TCPDump()
 
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"').stdout
         lo_iface = out.split()[0].rstrip()
 
         p = multiprocessing.Process(target=send_packet)
@@ -77,7 +77,7 @@ class TCPDumpTest(unittest.TestCase):
         tcps = TCPSender()
         try:
 
-            out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+            out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"').stdout
             lo_iface = out.split()[0].rstrip()
             tcpd.start_capture(interface=lo_iface, count=1)
             tcps.start_send(interface=lo_iface, packet_type='tcp', count=1, source_ip='127.0.0.1',
@@ -96,7 +96,7 @@ class TCPDumpTest(unittest.TestCase):
         tcpd = TCPDump()
         tcps = TCPSender()
 
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"').stdout
         iface = out.split()[0].rstrip()
 
         tcpd.start_capture(timeout=10, interface=iface, count=1,
@@ -133,7 +133,7 @@ class TCPDumpTest(unittest.TestCase):
         tcpd = TCPDump()
         tcps = TCPSender()
 
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"').stdout
         lo_iface = out.split()[0].rstrip()
 
         try:
@@ -156,7 +156,7 @@ class TCPDumpTest(unittest.TestCase):
         tcpd = TCPDump()
         tcps = TCPSender()
 
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"').stdout
         lo_iface = out.split()[0].rstrip()
 
         LinuxCLI().rm('tmp.file')
@@ -191,7 +191,7 @@ class TCPDumpTest(unittest.TestCase):
         tcpd = TCPDump()
         tcps = TCPSender()
 
-        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"')
+        out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"').stdout
         lo_iface = out.split()[0].rstrip()
 
         tcpd.start_capture(interface=lo_iface, count=0,

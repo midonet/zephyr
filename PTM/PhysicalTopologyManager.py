@@ -66,9 +66,10 @@ class PhysicalTopologyManager(object):
 
         if debug is True:
             self.LOG = self.log_manager.add_tee_logger(file_name=log_file_name,
-                                                       name=log_name,
+                                                       name=log_name + '-debug',
                                                        file_log_level=self.log_level,
                                                        stdout_log_level=self.log_level)
+            self.LOG.info("Turning on debug logs")
         else:
             self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
                                                         name=log_name,
@@ -297,7 +298,7 @@ class PhysicalTopologyManager(object):
               self.root_dir + '/' + HOST_CONTROL_CMD_NAME + ' -c ' + command + " -j '" + \
               host_cfg_str + "' -l " + self.log_manager.root_dir + " " + ' '.join(arg_list) + '"'
 
-        return LinuxCLI().cmd(cmd, blocking=False)
+        return LinuxCLI().cmd(cmd, blocking=False).process
 
     def ptm_host_control(self, host_cmd, host_json, arg_list):
 

@@ -94,7 +94,7 @@ def get_installed_midolman_version():
     cli = LinuxCLI()
 
     if get_linux_dist() == LINUX_UBUNTU:
-        full_ver_str = cli.cmd('dpkg -l | grep -w midolman')
+        full_ver_str = cli.cmd('dpkg -l | grep -w midolman').stdout
         if full_ver_str == "":
             raise ArgMismatchException('Midolman package not found.  Zephyr cannot run without Midolman.')
 
@@ -102,8 +102,8 @@ def get_installed_midolman_version():
         ver = full_ver[0]
         tag_ver = '' if len(full_ver) == 1 else full_ver[1]
     elif get_linux_dist() == LINUX_CENTOS:
-        ver = cli.cmd('yum info midolman | grep Version').split()[2]
-        tag_ver = cli.cmd('yum info midolman | grep Release').split()[2]
+        ver = cli.cmd('yum info midolman | grep Version').stdout.split()[2]
+        tag_ver = cli.cmd('yum info midolman | grep Release').stdout.split()[2]
     else:
         raise ArgMismatchException('Must run on Ubuntu or CentOS')
 

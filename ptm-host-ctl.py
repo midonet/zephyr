@@ -64,7 +64,7 @@ try:
 
     arg_list = extra_args
 
-    root_dir = LinuxCLI().cmd('pwd').strip()
+    root_dir = LinuxCLI().cmd('pwd').stdout.strip()
 
     log_manager = LogManager(root_dir=log_dir)
 

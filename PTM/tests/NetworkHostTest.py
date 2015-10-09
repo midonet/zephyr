@@ -116,7 +116,7 @@ class NetworkHostTest(unittest.TestCase):
 
         self.assertTrue(LinuxCLI().cmd('midonet-cli --midonet-url="' +
                                        version_config.ConfigMap.get_configured_parameter('param_midonet_api_url') +
-                                       '" -A -e "host list"', return_status=True) == 0)
+                                       '" -A -e "host list"').ret_code == 0)
 
 
         for h in reversed(ptm.host_by_start_order):
@@ -135,8 +135,7 @@ class NetworkHostTest(unittest.TestCase):
         time.sleep(1)
         self.assertFalse(LinuxCLI().cmd('midonet-cli '
                                         '--midonet-url="http://localhost:8080/midonet-api/" '
-                                        '-A -e "hosts list"',
-                                        return_status=True) == 0)
+                                        '-A -e "hosts list"').ret_code == 0)
 
         for h in reversed(ptm.host_by_start_order):
             h.net_down()

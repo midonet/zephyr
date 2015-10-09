@@ -32,6 +32,8 @@ from VTM.Guest import Guest
 
 import neutronclient.v2_0.client as neutron_client
 
+import neutronclient.v2_0.client as neutron_client
+
 
 class NeutronTestCase(TestCase):
     main_network = None

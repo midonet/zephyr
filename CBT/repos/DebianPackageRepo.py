@@ -49,7 +49,7 @@ class DebianPackageRepo(PackageRepo):
         pkg_list = ' '.join(map(lambda v: v + (('=' + exact_version) if exact_version is not None else ''),
                                 packages))
         print 'Installing Debian packages: ' + pkg_list
-        print cli.cmd('apt-get install --allow-unauthenticated -y ' + pkg_list)
+        print cli.cmd('apt-get install --allow-unauthenticated -y ' + pkg_list).stdout
 
 
     def uninstall_packages(self, packages, exact_version=None):
@@ -63,6 +63,7 @@ class DebianPackageRepo(PackageRepo):
                                 packages))
         print 'Uninstalling Debian packages: ' + pkg_list
         ret = cli.cmd('apt-get remove -y ' + pkg_list)
+        print ret.stdout
 
     def is_installed(self, package):
         cli = LinuxCLI()
