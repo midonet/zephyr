@@ -15,7 +15,7 @@ __author__ = 'micucci'
 
 from common.Exceptions import *
 from common.TCPSender import TCPSender
-from common.PCAPRules import PCAP_Rule
+from common.PCAPRules import *
 from common.PCAPPacket import PCAPPacket
 from common.TCPDump import TCPDump
 from common.LogManager import LogManager
@@ -312,7 +312,7 @@ class Host(PTMObject):
         Ping a target IP.  Can specify the interface to use and/or the number of pings to send.
         Returns true if all pings succeeded, false otherwise.
         :param target_ip: str: target IP in CIDR format
-        :param iface: str: Interface to act as source
+        :param iface: str: Interface or IP to act as source
         :param count: int: Number of pings to send
         :return: bool
         """
@@ -376,11 +376,9 @@ class Host(PTMObject):
         :param interface: str: Interface to stop capture on
         :return:
         """
-        if interface not in self.packet_captures:
-            raise ObjectNotFoundException('No packet capture is running or was run on host/interface' +
-                                          self.name + '/' + interface)
-        tcpd = self.packet_captures[interface]
-        tcpd.stop_capture()
+        if interface in self.packet_captures:
+            tcpd = self.packet_captures[interface]
+            tcpd.stop_capture()
 
     def flush_arp(self):
         self.cli.cmd('ip neighbour flush all')

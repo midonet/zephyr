@@ -344,10 +344,7 @@ class TestExtraRoutes(NeutronTestCase):
             self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.18.0.2'))
 
         finally:
-            if vm1 is not None:
-                vm1.terminate()
-            if vm2 is not None:
-                vm2.terminate()
+            self.cleanup_vms([(vm1, None), (vm2, None)])
             self.clear_neutron_topo(td)
 
     def test_extra_routes_1R2SN_multi_ip_interface_ping_subnet_route(self):
@@ -402,9 +399,6 @@ class TestExtraRoutes(NeutronTestCase):
             self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.16.0.3'))
 
         finally:
-            if vm1 is not None:
-                vm1.terminate()
-            if vm2 is not None:
-                vm2.terminate()
+            self.cleanup_vms([(vm1, None), (vm2, None)])
             self.clear_neutron_topo(td)
 

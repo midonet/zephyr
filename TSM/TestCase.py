@@ -93,9 +93,6 @@ class TestCase(unittest.TestCase):
         try:
             super(TestCase, self).run(result)
             self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
-        except Exception as e:
-            self.LOG.fatal('Test case error: ' + self._get_name() + ' - ' + self._testMethodName + ": " + str(e))
-            self.fail('Exception thrown by test: ' + str(e))
         finally:
             self.stop_time = datetime.datetime.utcnow()
             self.run_time = (self.stop_time - self.start_time)

@@ -76,6 +76,7 @@ class NeutronComponentInstaller(ComponentInstaller):
                         "service_plugins = lbaas\n"
                         "allow_overlapping_ips = True\n"
                         "router_scheduler_driver =\n"
+                        "debug = True\n"
                         "\n"
                         "[agent]\n"
                         "root_helper = sudo /usr/bin/neutron-rootwrap /etc/neutron/rootwrap.conf\n"

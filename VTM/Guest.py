@@ -16,6 +16,8 @@ __author__ = 'tomoe'
 
 import subprocess
 from PTM.VMHost import VMHost
+from common.Exceptions import *
+
 
 class Guest(object):
     """
@@ -59,14 +61,45 @@ class Guest(object):
                                             source_mac=src_mac, dest_mac=dest_mac,
                                             command='reply', count=1)
 
-    def send_packet(self, on_iface, **kwargs):
+    def send_packet(self, on_iface='eth0', **kwargs):
         return self.vm_host.send_custom_packet(iface=on_iface, **kwargs)
+
+    def start_capture(self, on_iface='eth0',
+                      count=0, type='', filter=None,
+                      callback=None, callback_args=None,
+                      save_dump_file=False, save_dump_filename=None):
+        """
+        :param interface: str: Interface to capture on ('any' is also acceptable)
+        :param count: int: Number of packets to capture, or '0' to capture until explicitly stopped (default)
+        :param type: str: Type of packet to filter
+        :param filter: PCAP_Rule: Ruleset for packet filtering
+        :param callback: callable: Optional callback function
+        :param callback_args: list[T]: Arguments to optional callback function
+        :param save_dump_file: bool: Optionally save the temporary packet capture file
+        :param save_dump_filename: str: Filename to save temporary packet capture file
+        :return:
+        """
+        return self.vm_host.start_capture(interface=on_iface, count=count, type=type, filter=filter,
+                                          callback=callback, callback_args=callback_args,
+                                          save_dump_file=save_dump_file, save_dump_filename=save_dump_filename)
+
+    def capture_packets(self, on_iface='eth0', count=1, timeout=10):
+        return self.vm_host.capture_packets(interface=on_iface, count=count, timeout=timeout)
+
+    def stop_capture(self, on_iface='eth0'):
+        return self.vm_host.stop_capture(interface=on_iface)
 
     def ping(self, on_iface, target_ip, count=3):
         return self.vm_host.ping(iface=on_iface, target_ip=target_ip, count=count)
 
     def execute(self, *args, **kwargs):
+        prev = self.vm_host.cli.log_cmd
+        self.vm_host.cli.log_cmd = True
         result = self.vm_host.cli.cmd(*args, **kwargs)
+        self.vm_host.cli.log_cmd = prev
+        if self.vm_host.cli.last_cmd_return_code != 0:
+            raise SubprocessFailedException('Retcode: ' + str(self.vm_host.cli.last_cmd_return_code) +
+                                            ', cmd output: ' + result)
         return result
 
     def terminate(self):

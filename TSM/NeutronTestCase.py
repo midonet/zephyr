@@ -28,6 +28,7 @@ from TSM.TestCase import TestCase
 
 from VTM.NeutronAPI import setup_neutron, clean_neutron
 from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
+from VTM.Guest import Guest
 
 import neutronclient.v2_0.client as neutron_client
 
@@ -88,3 +89,20 @@ class NeutronTestCase(TestCase):
     def tearDownClass(cls):
         cls.cleanup_neutron_test()
         super(NeutronTestCase, cls).tearDownClass()
+
+    def cleanup_vms(self, vm_port_list):
+        """
+        :type vm_port_list: list[(Guest, port)]
+        """
+        for vm, port in vm_port_list:
+            try:
+                self.LOG.debug('Shutting down vm on port: ' + str(port))
+                if vm is not None:
+                    vm.stop_capture(on_iface='eth0')
+                    if port is not None:
+                        vm.unplug_vm(port['id'])
+                if port is not None:
+                    self.api.delete_port(port['id'])
+            finally:
+                if vm is not None:
+                    vm.terminate()

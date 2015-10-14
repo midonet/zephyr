@@ -42,8 +42,6 @@ class TestScenario(object):
         class_name = fqn.split('.')[-1]
         module_name = '.'.join(fqn.split('.')[0:-1])
 
-        print "fqn=" + fqn + "/classname=" + class_name
-
         module = importlib.import_module(module_name if module_name != '' else class_name)
 
         impl_class = getattr(module, class_name)

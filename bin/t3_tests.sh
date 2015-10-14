@@ -17,5 +17,6 @@ export ZEPHYR_TEST_JUNIT_OUTDIR=$ZEPHYR_ROOT/test-results
 TESTS_TO_RUN=
 TESTS_TO_RUN="$TESTS_TO_RUN,tests.t3.neutron.reliability.test_basic_ping.TestBasicPing"
 TESTS_TO_RUN="$TESTS_TO_RUN,tests.t3.neutron.features.test_extra_routes.TestExtraRoutes"
+TESTS_TO_RUN="$TESTS_TO_RUN,tests.t3.neutron.features.test_port_security.TestPortSecurity"
 
 ./tsm-run.py -d -l $ZEPHYR_ROOT/test-logs -r $ZEPHYR_TEST_JUNIT_OUTDIR -c neutron -t $TESTS_TO_RUN

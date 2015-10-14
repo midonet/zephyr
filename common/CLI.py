@@ -38,6 +38,8 @@ class LinuxCLI(object):
         """ :type: subprocess.Popen"""
         self.logger = logger
         """ :type: logging.Logger"""
+        self.last_cmd_return_code = 0
+        """ :type: int"""
 
     def add_environment_variable(self, name, val):
         if (self.env_map is None):
@@ -92,6 +94,8 @@ class LinuxCLI(object):
 
         if return_status is True:
             return p.returncode
+        else:
+            self.last_cmd_return_code = p.returncode
 
         out = ''
         for line in stdout:

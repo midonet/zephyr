@@ -175,6 +175,9 @@ class TCPDump(object):
         self.tcpdump_stop.set()
 
         # Join the thread and if it hasn't finished already, kill it
+        if self.process is None:
+            return None
+
         self.process.join(5)
         if self.process.is_alive():
             self.process.terminate()
@@ -212,7 +215,7 @@ class TCPDump(object):
                       "'" + (pcap_filter.to_str() if pcap_filter is not None else '') + "'" + \
                       ' >> ' + tmp_dump_filename
 
-            #cli.log_cmd = True
+            cli.log_cmd = True
 
             # FLAG STATE: ready[clear], stop[clear], finished[clear]
 
