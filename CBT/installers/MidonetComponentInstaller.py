@@ -19,15 +19,22 @@ import CBT.VersionConfig as version_config
 
 
 class MidonetComponentInstaller(ComponentInstaller):
-    def create_repo_file(self, repo, scheme, server, main_dir, username=None, password=None,
+    def create_repo_file(self, repo_obj, scheme, repo, username=None, password=None,
                          version=None, distribution='stable'):
-        sub_dir = ('master' if version is None else version.major + '.' + version.minor) + '/' + distribution
-        repo.create_repo_file('midokura.midonet', scheme, server, main_dir, username, password, sub_dir)
+        repo_name = repo + '-'
+        if version is None or version == 'nightly':
+            repo_name += 'nightly'
+        else:
+            repo_name += version_config.ConfigMap.get_configured_parameter('package_repo_version', version=version)
+        repo_name += '-' + repo_obj.get_type()
+        repo_obj.create_repo_file('midokura.midonet', scheme, repo_name, username, password, distribution)
 
     def get_pkg_list(self):
         config_map = version_config.ConfigMap.get_config_map()
         """ :type: dict [str, str]"""
-        major_version = config_map["master_major_version"] if self.version is None else self.version.major
+        major_version = config_map["master_major_version"] \
+            if (self.version == 'nightly' or self.version is None) \
+            else self.version.major
 
         if major_version not in config_map:
             raise ArgMismatchException("Major version not found in config map: " + major_version)

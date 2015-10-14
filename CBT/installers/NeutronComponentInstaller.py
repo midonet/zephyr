@@ -20,7 +20,7 @@ from CBT.repos.PackageRepo import PackageRepo
 import CBT.VersionConfig as version_config
 
 class NeutronComponentInstaller(ComponentInstaller):
-    def create_repo_file(self, repo, scheme, server, main_dir, username=None, password=None,
+    def create_repo_file(self, repo_obj, scheme, repo, username=None, password=None,
                          version=None, distribution='stable'):
         """
         :type repo: PackageRepo
@@ -29,7 +29,7 @@ class NeutronComponentInstaller(ComponentInstaller):
         LinuxCLI().cmd("apt-get update")
 
     def install_packages(self, repo, exact_version=None):
-        if repo.get_type() == "RPM":
+        if repo.get_type() == "rpm":
             raise ArgMismatchException("Not yet supported on Redhat!")
             #neutron_dep_packages = ['mysql', 'rabbitmq-server']
             #neutron_packages = ['openstack-neutron', 'python-neutronclient', 'openstack-neutron-ml2']

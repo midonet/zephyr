@@ -17,10 +17,10 @@ from CBT.installers.ComponentInstaller import ComponentInstaller
 
 
 class MidonetUtilsComponentInstaller(ComponentInstaller):
-    def create_repo_file(self, repo, scheme, server, main_dir, username=None, password=None,
+    def create_repo_file(self, repo_obj, scheme, repo, username=None, password=None,
                          version=None, distribution='stable'):
-        sub_dir = 'thirdparty'
-        repo.create_repo_file('midokura.midonet-3rdparty', scheme, server, main_dir, username, password, sub_dir)
+        repo_dir = 'misc-' + repo_obj.get_type()
+        repo_obj.create_repo_file('midokura.misc', scheme, repo_dir, username, password, sub_dir)
 
 
     def install_packages(self, repo, exact_version=None):

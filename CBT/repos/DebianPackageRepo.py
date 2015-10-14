@@ -20,9 +20,9 @@ from common.CLI import LinuxCLI
 
 
 class DebianPackageRepo(PackageRepo):
-    def create_repo_file(self, component, repo_scheme, repo_server, repo_dir,
+    def create_repo_file(self, component, repo_scheme, repo_dir,
                          repo_user=None, repo_pass=None,
-                         subdir='master/stable'):
+                         repo_distro='nightly', repo_component='main'):
         cli = LinuxCLI(log_cmd=True)
 
         url_line = repo_scheme + "://"
@@ -32,14 +32,12 @@ class DebianPackageRepo(PackageRepo):
                 if repo_pass is not None:
                     url_line += ':' + repo_pass
                 url_line += '@'
-        url_line += repo_server + '/' + repo_dir
-
+        url_line += self.repo_server + '/' + repo_dir
         cli.write_to_file('/etc/apt/sources.list.d/' + component + '.list',
-                          'deb ' + url_line + ' ' + subdir + ' main\n',
+                          'deb ' + url_line + ' ' + repo_distro + ' ' + repo_component + '\n',
                           append=False)
-        cli.cmd('curl -k http://artifactory-dev.bcn.midokura.com/artifactory/api/gpg/key/public | apt-key add -')
+        cli.cmd('curl -k ' + self.curl_server + ' | apt-key add -')
         cli.cmd('apt-get update')
-
 
     def install_packages(self, packages, exact_version=None):
         """
@@ -51,7 +49,7 @@ class DebianPackageRepo(PackageRepo):
         pkg_list = ' '.join(map(lambda v: v + (('=' + exact_version) if exact_version is not None else ''),
                                 packages))
         print 'Installing Debian packages: ' + pkg_list
-        print cli.cmd('apt-get install -y ' + pkg_list)
+        print cli.cmd('apt-get install --allow-unauthenticated -y ' + pkg_list)
 
 
     def uninstall_packages(self, packages, exact_version=None):
@@ -73,5 +71,5 @@ class DebianPackageRepo(PackageRepo):
         return True
 
     def get_type(self):
-        return "Debian"
+        return "deb"
 

@@ -27,15 +27,14 @@ class ComponentInstaller(object):
         """
         self.version = version
 
-    def create_repo_file(self, repo, scheme, server, main_dir, username=None, password=None,
+    def create_repo_file(self, repo_obj, scheme, repo, username=None, password=None,
                          version=None, distribution='stable'):
         """
         Creates an entry in the repo file given the parameters, which can access and install
         the component.
-        :type repo: PackageRepo
+        :type repo_obj: PackageRepo
         :type scheme: str
-        :type server: str
-        :type main_dir: str
+        :type repo: str
         :type username: str
         :type password: str
         :type version: Version

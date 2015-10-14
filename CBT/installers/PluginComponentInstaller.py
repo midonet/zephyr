@@ -18,10 +18,11 @@ from common.CLI import LinuxCLI
 
 
 class PluginComponentInstaller(ComponentInstaller):
-    def create_repo_file(self, repo, scheme, server, main_dir, username=None, password=None,
+    def create_repo_file(self, repo_obj, scheme, repo, username=None, password=None,
                          version=None, distribution='stable'):
-        sub_dir = ('master' if version is None else version.major) + '/' + distribution
-        repo.create_repo_file('midokura.networking-midonet', scheme, server, main_dir, username, password, sub_dir)
+        repo_name = repo + '-' + version.major + '-' + repo_obj.get_type()
+        repo_obj.create_repo_file('midokura.networking-midonet', scheme, repo_name,
+                                  username, password, distribution)
         LinuxCLI().cmd("add-apt-repository -y cloud-archive:kilo")
         LinuxCLI().cmd("apt-get update")
 

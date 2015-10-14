@@ -8,12 +8,15 @@
     "param_midonet_api_url": "http://localhost:8080/midonet-api",
     "param_midonet_conf_key": "midonet/v1",
     "7": {
+      "package_repo_version": "1.7",
       "option_config_mnconf": false
     },
     "8": {
+      "package_repo_version": "1.8",
       "option_config_mnconf": false
     },
     "9": {
+      "package_repo_version": "1.9",
       "option_config_mnconf": true
     }
   },
@@ -25,19 +28,24 @@
     "param_midonet_api_url": "http://localhost:8080/midonet-api",
     "param_midonet_conf_key": "midonet/v1",
     "1": {
+      "package_repo_version": "2015.01",
       "option_config_mnconf": false
     },
     "2": {
+      "package_repo_version": "2015.02",
       "option_config_mnconf": false
     },
     "3": {
+      "package_repo_version": "2015.03",
       "option_config_mnconf": true
     },
     "6": {
+      "package_repo_version": "2015.06",
       "option_config_mnconf": true
     }
   },
   "5": {
+    "package_repo_version": "5",
     "installed_packages": ["midolman", "python-midonetclient", "midonet-cluster", "midonet-tools"],
     "cmd_list_datapath": "mm-dpctl datapath --list",
     "option_use_v2_stack": true,

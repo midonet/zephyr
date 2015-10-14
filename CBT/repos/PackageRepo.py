@@ -19,7 +19,7 @@ from common.CLI import LinuxCLI
 
 
 class PackageRepo(object):
-    def __init__(self):
+    def __init__(self, repo_server, curl_server):
         """
         Create a new package repo with the parameterized values.
         :type repo_scheme: str
@@ -31,10 +31,12 @@ class PackageRepo(object):
         :type subdir: str
         :return:
         """
+        self.repo_server = repo_server
+        self.curl_server = curl_server
 
-    def create_repo_file(self, component, repo_scheme, repo_server, repo_dir,
+    def create_repo_file(self, component, repo_scheme, repo_dir,
                          repo_user=None, repo_pass=None,
-                         subdir='master/stable'):
+                         repo_distro='nightly', repo_component=''):
         """
         Create the repository config file on the OS for the given component
         :type component: str

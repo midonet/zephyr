@@ -3,7 +3,8 @@ __author__ = 'micucci'
 import unittest
 
 import CBT.EnvSetup as env
-from installers.EnvSetupInstallers import *
+from installers.MidonetComponentInstaller import *
+from repos.DebianPackageRepo import *
 
 
 class EnvSetupTest(unittest.TestCase):

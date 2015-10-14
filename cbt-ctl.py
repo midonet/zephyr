@@ -40,7 +40,7 @@ def usage(except_obj):
     print '                          1.X.Y - MEM only'
     print '                          2014.X[.Y]/2015.X[.Y] - OSS only'
     print '                          >5.X[.Y] - MEM/OSS using ZOOM architecture'
-    print '                          master - Current, nightly packages'
+    print '                          nightly - Current, nightly packages'
     print 'Distributions:'
     print '                  unstable - Not yet tested'
     print '                  testing - Tested with automated system; awaiting manual scenario testing'
@@ -79,7 +79,7 @@ try:
             command = 'uninstall'
             component = value
         elif arg in ('-V', '--version'):
-            if value != 'master':
+            if value != 'nightly':
                 exact_version = value
                 version = version_config.parse_midolman_version(value)
         elif arg in ('-D', '--dist', '--distribution'):
@@ -96,7 +96,7 @@ try:
             raise ArgMismatchException('Invalid argument' + arg)
 
     if command == 'install':
-        print('Installing ' + component)
+        print('Installing ' + component + " " + distribution)
         env.install_component(component, server, username, password,
                               version, distribution, exact_version)
 

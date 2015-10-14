@@ -27,7 +27,8 @@ import VersionConfig as version_config
 
 
 url_scheme = "http://"
-artifactory_server = "artifactory-dev.bcn.midokura.com/artifactory"
+artifactory_server = "artifactory.bcn.midokura.com/artifactory"
+curl_server = "http://artifactory.bcn.midokura.com/artifactory/api/gpg/key/public"
 
 install_config = {
     'midonet':
@@ -46,14 +47,14 @@ install_config = {
         },
     'midonet-utils':
         {
-            'repo': 'midonet',
+            'repo': 'misc',
             'scheme': 'http',
             'installer': MidonetUtilsComponentInstaller,
             'deps': [],
         },
     'plugin':
         {
-            'repo': 'networking-midonet',
+            'repo': 'openstack',
             'scheme': 'http',
             'installer': PluginComponentInstaller,
             'deps': ['python-midonetclient'],
@@ -68,15 +69,15 @@ install_config = {
 }
 
 
-def get_os_repo():
+def get_os_repo(server=artifactory_server):
     """
     Returns a proper repo for the given parameters and the base OS (debian, rpm, etc.)
     :return: PackageRepo
     """
     if version_config.get_linux_dist() == version_config.LINUX_CENTOS:
-        repo = RPMPackageRepo()
+        repo = RPMPackageRepo(server, curl_server)
     elif version_config.get_linux_dist() == version_config.LINUX_UBUNTU:
-        repo = DebianPackageRepo()
+        repo = DebianPackageRepo(server, curl_server)
     else:
         raise ArgMismatchException("Only supported on CentOS or Ubuntu")
     return repo
@@ -95,13 +96,13 @@ def get_config_info(component, version):
     scheme = install_config[component]['scheme']
     """ :type: str"""
 
-    main_dir = install_config[component]['repo']
+    repo = install_config[component]['repo']
     """ :type: str"""
 
     deps = install_config[component]['deps']
     """ :type: list[str]"""
 
-    return (installer_obj, scheme, main_dir, deps)
+    return (installer_obj, scheme, repo, deps)
 
 
 def install_component(component='midonet',
@@ -115,21 +116,21 @@ def install_component(component='midonet',
     """
     cfg_tuple = get_config_info(component, version)
     installer = cfg_tuple[0]
-    repo = get_os_repo()
-    installer.create_repo_file(repo, cfg_tuple[1], server, cfg_tuple[2], username, password, version, distribution)
+    repo_obj = get_os_repo(server)
+    installer.create_repo_file(repo_obj, cfg_tuple[1], cfg_tuple[2], username, password, version, distribution)
 
     dep_list = cfg_tuple[3]
     for dep in dep_list:
         print "Checking dependency: " + dep
-        if not repo.is_installed(dep):
+        if not repo_obj.is_installed(dep):
             raise ObjectNotFoundException('Dependent package must be installed first: ' + dep)
 
-    installer.install_packages(repo, exact_version=exact_version)
+    installer.install_packages(repo_obj, exact_version=exact_version)
 
 
 def uninstall_component(component='midolman',
                         server=artifactory_server, username='', password='',
-                        version='master', distribution='stable',
+                        version=None, distribution='stable',
                         exact_version=None):
     """
     :type repo: PackageRepo
@@ -137,6 +138,6 @@ def uninstall_component(component='midolman',
     :type version: Version
     """
     cfg_tuple = get_config_info(component, version)
-    repo = get_os_repo()
+    repo = get_os_repo(server)
 
     cfg_tuple[0].uninstall_packages(repo, exact_version=exact_version)

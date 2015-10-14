@@ -47,10 +47,23 @@ class Version(object):
         """ :type: str"""
 
     def __repr__(self):
-        return ('' if self.epoch == '' else self.epoch + ':') + \
-               self.major + '.' + self.minor + '.' + self.patch + '-' + self.tag
+        ret = ''
+        if self.epoch != '':
+            ret += self.epoch + ":"
+        ret += self.major
+        if self.minor != '':
+            ret += '.' + self.minor
+        if self.patch != '':
+            ret += '.' + self.patch
+        if self.tag != '':
+            ret += '-' + self.tag
+
+        return ret
 
     def __eq__(self, other):
+        if isinstance(other, str):
+            return str(self) == other
+
         return (other.epoch == self.epoch and
                 other.major == self.major and
                 other.minor == self.minor and
@@ -112,7 +125,7 @@ class ConfigMap(object):
         return cls.major_version_config_map
 
     @classmethod
-    def get_configured_parameter(cls, param,
+    def get_configured_parameter(cls, param, version=None,
                                  config_json=os.path.dirname(os.path.realpath(__file__)) +
                                              '/../config/version_configuration.json'):
         """
@@ -123,7 +136,7 @@ class ConfigMap(object):
         :type config_json: str
         :return:
         """
-        mn_version = get_installed_midolman_version()
+        mn_version = get_installed_midolman_version() if version is None else version
 
         if cls.major_version_config_map is None:
             cls.major_version_config_map = cls.get_config_map(config_json)

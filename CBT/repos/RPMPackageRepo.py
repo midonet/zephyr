@@ -18,9 +18,9 @@ from common.CLI import LinuxCLI
 
 
 class RPMPackageRepo(PackageRepo):
-    def create_repo_file(self, component, repo_scheme, repo_server, repo_dir,
+    def create_repo_file(self, component, repo_scheme, repo_dir,
                          repo_user=None, repo_pass=None,
-                         subdir='master/stable'):
+                         repo_distro='nightly', repo_component=''):
         cli = LinuxCLI()
 
     def install_packages(self, package, exact_version=None):
@@ -45,5 +45,5 @@ class RPMPackageRepo(PackageRepo):
         return False
 
     def get_type(self):
-        return "RPM"
+        return "rpm"
 
