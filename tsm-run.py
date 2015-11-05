@@ -150,12 +150,11 @@ try:
 
     scenario_filters = [TestScenario.get_class(s) for s in scenario_filter_list] \
         if len(scenario_filter_list) != 0 else None
-    test_cases = map(TestCase.get_class, tests)
 
-    console_log.debug('Test Case Classes = ' + str(test_cases))
+    console_log.debug('Test Case Classes = ' + str(tests))
 
     # Run test cases, possibly filtered on scenarios
-    tsm.load_tests(test_cases)
+    tsm.load_tests(tests)
 
     console_log.debug('Running all tests with scenario filter: ' + str(scenario_filters))
 

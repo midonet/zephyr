@@ -14,8 +14,7 @@ sudo pip -q install xmlrunner
 export ZEPHYR_TEST_JUNIT_OUTDIR=$ZEPHYR_ROOT/test-results
 
 # Run all tests in each package's tests directory
-TESTS_TO_RUN=
-TESTS_TO_RUN="$TESTS_TO_RUN,tests.t3.neutron.reliability.test_basic_ping.TestBasicPing"
+TESTS_TO_RUN=tests.t3.neutron.reliability.test_basic_ping.TestBasicPing
 TESTS_TO_RUN="$TESTS_TO_RUN,tests.t3.neutron.features.test_extra_routes.TestExtraRoutes"
 TESTS_TO_RUN="$TESTS_TO_RUN,tests.t3.neutron.features.test_port_security.TestPortSecurity"
 
