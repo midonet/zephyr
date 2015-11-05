@@ -16,9 +16,9 @@ __author__ = 'micucci'
 from TSM.TestScenario import TestScenario
 
 
-class Secnario_1z_1c_2m(TestScenario):
+class Scenario_1z_1c_2m(TestScenario):
     def setup(self):
-        self.ptm.configure(self.ptm.root_dir + '/tests/scenarios/json/1z-1c-2m.json')
+        self.ptm.configure(self.ptm.root_dir + '/config/ptm/1z-1c-2m.json')
         self.ptm.startup()
 
     def teardown(self):

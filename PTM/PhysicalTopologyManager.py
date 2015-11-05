@@ -81,21 +81,21 @@ class PhysicalTopologyManager(object):
         for host in self.hosts_by_name.itervalues():
             host.set_log_level(self.log_level)
 
-    def configure(self, file_name='config/ptm-config.json', file_type='json'):
+    def configure(self, config_file, file_type='json'):
         """
         Configure the PTM with information from the given JSON file
         :type file_name: str
         :return:
         """
         self.LOG.debug('**PTM configuration started**')
-        self.LOG.debug('Configuring PTM with file: ' + file_name)
+        self.LOG.debug('Configuring PTM with file: ' + config_file)
         #TODO: Enable multiple config files to define roots across several Linux hosts
         config_obj = None
-        with open(file_name, 'r') as f:
+        with open(config_file, 'r') as f:
             if file_type == 'json':
                 config_obj = json.load(f)
             else:
-                raise InvallidConfigurationException('Could not open file of type: ' + file_type)
+                raise InvallidConfigurationException(config_file, 'Could not open file of type: ' + file_type)
 
         self.LOG.debug('Read JSON, configure object=' + str(config_obj))
         ptc = PhysicalTopologyConfig.make_physical_topology(config_obj)

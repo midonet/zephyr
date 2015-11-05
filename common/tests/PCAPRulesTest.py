@@ -64,9 +64,9 @@ class PCAPRulesTest(unittest.TestCase):
         icmp_rule = PCAP_IPProto('icmp')
         udp_rule = PCAP_IPProto('udp')
 
-        self.assertEqual('ip proto tcp', tcp_rule.to_str())
-        self.assertEqual('ip proto icmp', icmp_rule.to_str())
-        self.assertEqual('ip proto udp', udp_rule.to_str())
+        self.assertEqual('ip proto \\tcp', tcp_rule.to_str())
+        self.assertEqual('ip proto \\icmp', icmp_rule.to_str())
+        self.assertEqual('ip proto \\udp', udp_rule.to_str())
 
     def test_ether_proto_rules(self):
         ip_rule = PCAP_EtherProto('ip')
@@ -169,7 +169,7 @@ class PCAPRulesTest(unittest.TestCase):
             '( dst port 80 ) and ' \
             '( ' \
             '( src portrange 30000-50000 ) or ' \
-            '( ip proto tcp ) or ' \
+            '( ip proto \\tcp ) or ' \
             '( not ( ether broadcast ) ) ' \
             ') and ' \
             '( ' \

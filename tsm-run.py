@@ -187,8 +187,8 @@ try:
                     print err
 
     finally:
-        #rdir = results_dir + '/' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
-        tsm.create_results(results_dir=results_dir, leeway=3)
+        rdir = results_dir + '/' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        tsm.create_results(results_dir=rdir, leeway=3)
 
 except ExitCleanException:
     exit(1)

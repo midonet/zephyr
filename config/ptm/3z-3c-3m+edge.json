@@ -30,7 +30,7 @@
         {
           "name": "zoo3eth0",
           "linked_bridge": "br0"
-        },        
+        },
         {
           "name": "cass1eth0",
           "linked_bridge": "br0"
@@ -42,7 +42,7 @@
         {
           "name": "cass3eth0",
           "linked_bridge": "br0"
-        },        
+        },
         {
           "name": "cmp1eth0",
           "linked_bridge": "br0"
@@ -55,7 +55,7 @@
           "name": "cmp3eth0",
           "linked_bridge": "br0"
         }
-      ] 
+      ]
     },
     {
       "name": "zoo1",
@@ -63,7 +63,7 @@
         {
           "name": "eth0",
           "ip_addresses": [{"ip": "10.0.0.2"}]
-        }        
+        }
       ]
     },
     {
@@ -117,6 +117,10 @@
         {
           "name": "eth0",
           "ip_addresses": [{"ip": "10.0.0.8"}]
+        },
+        {
+          "name": "eth1",
+          "ip_addresses": [{"ip": "10.0.1.240"}]
         }
       ]
     },
@@ -126,6 +130,10 @@
         {
           "name": "eth0",
           "ip_addresses": [{"ip": "10.0.0.9"}]
+        },
+        {
+          "name": "eth1",
+          "ip_addresses": [{"ip": "10.0.1.240"}]
         }
       ]
     },
@@ -136,6 +144,18 @@
           "name": "eth0",
           "ip_addresses": [{"ip": "10.0.0.10"}]
         }
+      ]
+    },
+    {
+      "name": "edge1",
+      "interfaces": [
+        {
+          "name": "eth0"
+        },
+        {
+          "name": "eth1"
+        }
+
       ]
     },
     {
@@ -178,6 +198,14 @@
     {
       "near": { "host": "root", "interface": "cmp3eth0" },
       "far":  { "host": "cmp3", "interface": "eth0" }
+    },
+    {
+      "near": { "host": "edge1", "interface": "eth0" },
+      "far":  { "host": "cmp1", "interface": "eth1" }
+    },
+    {
+      "near": { "host": "edge1", "interface": "eth1" },
+      "far":  { "host": "cmp2", "interface": "eth1" }
     }
   ],
   "implementation": [
@@ -227,13 +255,17 @@
       "cassandra_ips": ["10.0.0.5", "10.0.0.6", "10.0.0.7"]},
     { "host": "net1",
       "impl": "PTM.NetworkHost",
-      "zookeeper_ips": ["10.0.0.2", "10.0.0.3", "10.0.0.4"]}
+      "zookeeper_ips": ["10.0.0.2", "10.0.0.3", "10.0.0.4"]},
+    { "host": "edge1",
+      "impl": "PTM.RouterHost",
+      "id": "1"}
   ],
   "host_start_order": [
     "root",
     "zoo1", "zoo2", "zoo3",
     "cass1", "cass2", "cass3",
     "cmp1", "cmp2", "cmp3",
+    "edge1",
     "net1"
   ]
 }

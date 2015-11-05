@@ -163,7 +163,7 @@ class ComputeHost(NetNSHost):
         new_host.net_finalize()
         self.vms[name] = new_host
         return new_host
-    
+
     def get_vm(self, name):
         if name not in self.vms:
             raise HostNotFoundException(name)
@@ -205,14 +205,14 @@ class ComputeHost(NetNSHost):
 
             ret = self.cli.cmd('mn-conf set -t default < ' + this_dir + '/scripts/midolman.mn-conf')
             if ret.ret_code != 0:
-                self.LOG.fatal('\n'.join(ret.stdout.readlines()))
-                self.LOG.fatal('\n'.join(ret.stderr.readlines()))
+                self.LOG.fatal(ret.stdout)
+                self.LOG.fatal(ret.stderr)
                 raise SubprocessFailedException('Failed to run mn-conf with defaults: ' + str(ret))
 
             ret = self.cli.cmd('mn-conf set -t default < .mnconf.data')
             if ret.ret_code != 0:
-                self.LOG.fatal('\n'.join(ret.stdout.readlines()))
-                self.LOG.fatal('\n'.join(ret.stderr.readlines()))
+                self.LOG.fatal(ret.stdout)
+                self.LOG.fatal(ret.stderr)
                 raise SubprocessFailedException('Failed to run mn-conf: ' + str(ret))
 
             pid_file = '/run/midolman/dnsmasq.pid'

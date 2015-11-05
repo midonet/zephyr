@@ -24,7 +24,7 @@ from VTM.MNAPI import setup_main_tunnel_zone, setup_main_bridge
 
 from TSM.TestCase import TestCase
 
-from tests.scenarios.Secnario_1z_1c_2m import Secnario_1z_1c_2m
+from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
 
 
 class TestBasicPing(TestCase):
@@ -35,7 +35,7 @@ class TestBasicPing(TestCase):
 
     @staticmethod
     def supported_scenarios():
-        return {Secnario_1z_1c_2m}
+        return {Scenario_1z_1c_2m}
 
     @classmethod
     def setUpClass(cls):

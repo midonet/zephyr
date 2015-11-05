@@ -72,7 +72,7 @@ class TCPSender(object):
         :type delay: int
         :type byte_data: str
         :type timeout: int
-        :return: str
+        :return: CommandStatus
         """
 
         count_str = '-c %d' % count if count is not None else ''
@@ -88,7 +88,7 @@ class TCPSender(object):
                            {'iface': interface,
                             'arglist': arg_str,
                             'bytes': byte_data}
-            out = cli.cmd(full_cmd_str, timeout=timeout).stdout
+            out = cli.cmd(full_cmd_str, timeout=timeout)
             if tcp_ready is not None:
                 tcp_ready.set()
             return out
@@ -125,7 +125,7 @@ class TCPSender(object):
                         'cmd': cmd_str}
         prev = cli.log_cmd
         cli.log_cmd = True
-        out = cli.cmd(full_cmd_str, timeout=timeout).stdout
+        out = cli.cmd(full_cmd_str, timeout=timeout)
         if tcp_ready is not None:
             tcp_ready.set()
         cli.log_cmd = prev

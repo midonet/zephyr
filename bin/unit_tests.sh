@@ -22,9 +22,9 @@ done
 
 $ZEPHYR_ROOT/tsm-run.py -d -l $ZEPHYR_ROOT/test-logs -r $ZEPHYR_TEST_JUNIT_OUTDIR \
     -c midonet \
-    -t tests.t3.mn_api.reliability.test_basic_ping.TestBasicPing
+    -t tests.mn_api.reliability.test_basic_ping
 
 $ZEPHYR_ROOT/tsm-run.py -d -l $ZEPHYR_ROOT/test-logs -r $ZEPHYR_TEST_JUNIT_OUTDIR \
     -c neutron \
-    -t tests.t3.neutron.reliability.test_basic_ping.TestBasicPing
+    -t tests.neutron.reliability.test_basic_ping
 

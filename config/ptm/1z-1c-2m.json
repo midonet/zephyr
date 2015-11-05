@@ -31,7 +31,7 @@
           "name": "cmp2eth0",
           "linked_bridge": "br0"
         }
-      ] 
+      ]
     },
     {
       "name": "zoo1",
@@ -39,7 +39,7 @@
         {
           "name": "eth0",
           "ip_addresses": [{"ip": "10.0.0.2"}]
-        }        
+        }
       ]
     },
     {

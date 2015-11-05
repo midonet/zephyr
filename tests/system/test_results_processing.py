@@ -19,7 +19,7 @@ from common.FileLocation import *
 from TSM.TestCase import TestCase
 
 from tests.scenarios.Scenario_allinone import Scenario_allinone
-from tests.scenarios.Secnario_1z_1c_2m import Secnario_1z_1c_2m
+from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
 from AllInOneCopy import AllInOneCopyScenario
 
 import unittest

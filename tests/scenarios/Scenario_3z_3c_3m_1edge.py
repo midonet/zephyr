@@ -18,7 +18,7 @@ from TSM.TestScenario import TestScenario
 
 class Scenario_3z_3c_3m_1edge(TestScenario):
     def setup(self):
-        self.ptm.configure(self.ptm.root_dir + '/tests/scenarios/json/3z-3c-3m+edge.json')
+        self.ptm.configure(self.ptm.root_dir + '/config/ptm/3z-3c-3m+edge.json')
         self.ptm.startup()
 
     def teardown(self):

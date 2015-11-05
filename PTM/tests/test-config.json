@@ -168,6 +168,9 @@
           ]
         }
       ]
+    },
+    {
+      "name": "net1"
     }
   ],
   "wiring": [
@@ -234,7 +237,10 @@
     {
       "host": "test-host2",
       "impl": "PTM.NetNSHost"
-    }
+    },
+    { "host": "net1",
+      "impl": "PTM.NetworkHost",
+      "zookeeper_ips": ["10.0.0.2"]}
   ],
   "host_start_order": [
     "root",
@@ -242,6 +248,7 @@
     "test-host1", "test-host2",
     "edge1",
     "zoo1",
+    "net1",
     "cmp1"
   ]
 }

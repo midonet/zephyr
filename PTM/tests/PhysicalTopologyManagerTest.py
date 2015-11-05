@@ -31,7 +31,6 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         ptm.configure(dir_path + '/test-config.json')
 
         self.assertTrue('zoo1' in ptm.hosts_by_name)
-        #self.assertTrue('cass1' in ptm.hosts_by_name)
         self.assertTrue('edge1' in ptm.hosts_by_name)
 
         self.assertEqual(ptm.host_by_start_order[0].name, 'root')
@@ -40,9 +39,8 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         self.assertEqual(ptm.host_by_start_order[3].name, 'test-host2')
         self.assertEqual(ptm.host_by_start_order[4].name, 'edge1')
         self.assertEqual(ptm.host_by_start_order[5].name, 'zoo1')
-        #self.assertEqual(ptm.host_by_start_order[6].name, 'cass1')
-        #self.assertEqual(ptm.host_by_start_order[7].name, 'cmp1')
-        self.assertEqual(ptm.host_by_start_order[6].name, 'cmp1')
+        self.assertEqual(ptm.host_by_start_order[6].name, 'net1')
+        self.assertEqual(ptm.host_by_start_order[7].name, 'cmp1')
 
         zk_host = ptm.hosts_by_name['zoo1']
 
@@ -100,27 +98,33 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
 
     def test_startup(self):
-
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
         ptm = PhysicalTopologyManager(root_dir=dir_path + '/../..', log_manager=lm)
 
-        ptm.configure(dir_path + '/test-config.json')
-        ptm.startup()
+        try:
+            ptm.configure(dir_path + '/test-config.json')
+            ptm.startup()
 
-        self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
-        self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
-        root_host = ptm.hosts_by_name['root']
-        test_host1 = ptm.hosts_by_name['test-host1']
+            self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
+            self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
+            root_host = ptm.hosts_by_name['root']
+            test_host1 = ptm.hosts_by_name['test-host1']
 
-        self.assertTrue(root_host.cli.grep_cmd('ip l', 'th1eth1'))
-        self.assertTrue(test_host1.cli.grep_cmd('ip l', 'eth1'))
+            self.assertTrue(root_host.cli.grep_cmd('ip l', 'th1eth1'))
+            self.assertTrue(test_host1.cli.grep_cmd('ip l', 'eth1'))
 
-        ptm.shutdown()
+            ptm.shutdown()
 
-        self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
-        self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
+            self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
+            self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
+        except:
+            cmp_host = ptm.hosts_by_name['cmp1']
+            """ :type: ComputeHost"""
+            LinuxCLI().copy_file('/var/log/midolman.' + cmp_host.num_id + '/midolman.log',
+                                 './test-logs/PhysicalTopologyManagerTest-midolman.log')
+            raise
 
     def tearDown(self):
         #LinuxCLI().cmd('ip netns del cass1')

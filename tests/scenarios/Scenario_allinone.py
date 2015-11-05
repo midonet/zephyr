@@ -18,7 +18,7 @@ from TSM.TestScenario import TestScenario
 
 class Scenario_allinone(TestScenario):
     def setup(self):
-        self.ptm.configure(self.ptm.root_dir + '/tests/scenarios/json/allinone.json')
+        self.ptm.configure(self.ptm.root_dir + '/config/ptm/allinone.json')
         self.ptm.startup()
 
     def teardown(self):

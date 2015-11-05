@@ -278,15 +278,37 @@ class Host(PTMObject):
         pass
 
     def is_hypervisor(self):
+        """
+        Returns True if this Host is a hypervisor type, False otherwise
+        :return:
+        """
         return False
 
     # Specialized host-testing methods
     def send_custom_packet(self, iface, **kwargs):
+        """
+        Send a custom TCP packet from this host using args for TCPSender::send_packet()
+        :type iface: str
+        :type kwargs: dict[str, any] 
+        :return:
+        """
         tcps = TCPSender()
-        return tcps.send_packet(self.cli, interface=iface, **kwargs)
+        return tcps.send_packet(self.cli, interface=iface, **kwargs).stdout
 
     def send_arp_packet(self, iface, dest_ip, source_ip=None, command='request',
                         source_mac=None, dest_mac=None, packet_options=None, count=1):
+        """ 
+        Send [count] ARP packet(s) from this host with command as "request" or "reply".
+        :type iface :str
+        :type dest_ip: str
+        :type source_ip: str
+        :type command: str
+        :type source_mac: str
+        :type dest_mac: str
+        :type packet_options: dict[str, str]
+        :type count: int
+        :return:
+        """
         tcps = TCPSender()
         opt_map = {'command': command}
         if source_mac is not None:
@@ -299,13 +321,23 @@ class Host(PTMObject):
             opt_map = {'tip': dest_ip}
         opt_map += packet_options
         return tcps.send_packet(self.cli, interface=iface, dest_ip=dest_ip, packet_type='arp',
-                                packet_options=opt_map, count=count)
+                                packet_options=opt_map, count=count).stdout
 
     def send_tcp_packet(self, iface, dest_ip, source_port, dest_port, packet_options=None, count=1):
+        """
+        Send [count] TCP packets from this Host using TCPSender::Send_packet()
+        :type iface: str
+        :type dest_ip: str
+        :type source_port: int
+        :type dest_port: int
+        :type packet_options: dict[str,str]
+        :type count: int
+        :return:
+        """
         tcps = TCPSender()
         return tcps.send_packet(self.cli, interface=iface, dest_ip=dest_ip, packet_type='tcp',
                                 source_port=source_port, dest_port=dest_port,
-                                packet_options=packet_options, count=count)
+                                packet_options=packet_options, count=count).stdout
 
     def ping(self, target_ip, iface=None, count=1):
         """
@@ -381,6 +413,10 @@ class Host(PTMObject):
             tcpd.stop_capture()
 
     def flush_arp(self):
+        """
+        Flush the ARP table on this Host
+        :return:
+        """
         self.cli.cmd('ip neighbour flush all')
 
 
