@@ -157,6 +157,7 @@ class ComputeHost(NetNSHost):
         :return: VMHost
         """
         new_host = VMHost(name, self.ptm, self)
+        new_host.set_logger(self.LOG)
         new_host.create()
         new_host.boot()
         new_host.net_up()

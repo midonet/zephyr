@@ -32,7 +32,12 @@ from VTM.Guest import Guest
 
 import neutronclient.v2_0.client as neutron_client
 
-import neutronclient.v2_0.client as neutron_client
+from collections import namedtuple
+
+GuestData = namedtuple('GuestData', 'port vm ip')
+""" :type: (str, Guest, str)"""
+NetData = namedtuple('NetData', 'network subnet')
+RouterData = namedtuple('RouterData', 'router if_list')
 
 
 class NeutronTestCase(TestCase):
@@ -92,6 +97,7 @@ class NeutronTestCase(TestCase):
         cls.cleanup_neutron_test()
         super(NeutronTestCase, cls).tearDownClass()
 
+    #TODO: Change this to use the GuestData namedtuple
     def cleanup_vms(self, vm_port_list):
         """
         :type vm_port_list: list[(Guest, port)]

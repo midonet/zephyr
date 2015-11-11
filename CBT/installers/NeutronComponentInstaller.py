@@ -68,6 +68,7 @@ class NeutronComponentInstaller(ComponentInstaller):
 
         cfg_file_str = ("[DEFAULT]\n"
                         "core_plugin = midonet.neutron.plugin_v2.MidonetPluginV2\n"
+                        "service_plugins = midonet.neutron.services.l3.l3_midonet.MidonetL3ServicePlugin\n"
                         "auth_strategy = noauth\n"
                         "rpc_backend = neutron.openstack.common.rpc.impl_kombu\n"
                         "rabbit_host = localhost\n"

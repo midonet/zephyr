@@ -56,7 +56,7 @@ class TCPSender(object):
                     source_port=None, dest_port=None,
                     source_ip=None, dest_ip=None,  source_mac=None,
                     dest_mac=None, packet_options=None, count=None,
-                    delay=None, byte_data=None, timeout=None):
+                    delay=None, byte_data=None, payload=None, timeout=None):
         """
         :type cli: LinuxCLI
         :type interface: str
@@ -71,6 +71,7 @@ class TCPSender(object):
         :type count: int
         :type delay: int
         :type byte_data: str
+        :type payload: str
         :type timeout: int
         :return: CommandStatus
         """
@@ -98,7 +99,8 @@ class TCPSender(object):
         src_ip_str = '-A %s' % source_ip if source_ip is not None else ''
         dest_ip_str = '-B %s' % dest_ip if dest_ip is not None else ''
         delay_str = '-d %d' % delay if delay is not None else ''
-        pkt_bldr_arg_str = ' '.join((src_ip_str, dest_ip_str, delay_str))
+        payload_str = '-P %s' % payload if payload is not None else ''
+        pkt_bldr_arg_str = ' '.join((src_ip_str, dest_ip_str, delay_str, payload_str))
         opt_list = ', '.join('%s=%s' % (k, v)
                              for k, v in packet_options.iteritems()) if packet_options is not None else ''
 

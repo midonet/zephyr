@@ -98,8 +98,8 @@ class LinuxCLI(object):
         if self.debug is True:
             return CommandStatus(command=cmd)
 
-        p = subprocess.Popen(cmd, *args, shell=shell, stdout=subprocess.PIPE,
-                                             stderr=subprocess.PIPE, env=self.env_map)
+        p = subprocess.Popen(cmd, *args, shell=shell, stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=self.env_map)
         self.last_process_status = p
         if blocking is False:
             return CommandStatus(process=p, command=cmd)
@@ -262,7 +262,7 @@ class LinuxCLI(object):
             raise ArgMismatchException('Not allowed to remove ' + old_file +
                                        ' as it is listed as a vital system directory')
         return self.cmd('rm -rf ' + old_file).stdout
-    
+
     def rm_files(self, root_dir, match_pattern=''):
         if match_pattern == '':
             return self.cmd('find ' + root_dir + ' -type f -exec sudo rm -f {} \; || true').stdout

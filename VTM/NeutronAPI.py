@@ -25,9 +25,9 @@ def create_neutron_client(api_version='2.0', endpoint_url='http://localhost:9696
     return neutronclient.neutron.client.Client(api_version, endpoint_url=endpoint_url,
                                                auth_strategy=auth_strategy,
                                                token=token, tenant_name=tenant_name, **kwargs)
-    
 
-def setup_neutron(api, subnet_cidr='10.0.1.0/24', pubsubnet_cidr='192.168.0.0/24', log=None):
+
+def setup_neutron(api, subnet_cidr='192.168.0.0/24', pubsubnet_cidr='10.0.0.0/24', log=None):
     """
     Creates a network named 'main' in the 'admin' tenant and creates a single subnet 'main_sub'
     with the given IP network.
@@ -77,7 +77,7 @@ def setup_neutron(api, subnet_cidr='10.0.1.0/24', pubsubnet_cidr='192.168.0.0/24
     # Create public network's subnet
     pubsubnets = api.list_subnets(name='pub_sub', network_id=pub_network['id'])
     if len(pubsubnets['subnets']) == 0:
-        pubsubnet_resp = api.create_subnet({'subnet': {'name': 'main_sub',
+        pubsubnet_resp = api.create_subnet({'subnet': {'name': 'pub_sub',
                                                        'network_id': pub_network['id'],
                                                        'ip_version': 4, 'cidr': pubsubnet_cidr,
                                                        'tenant_id': tenant_id}})
