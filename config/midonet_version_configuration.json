@@ -52,8 +52,6 @@
     "option_api_uses_cluster": true,
     "param_midonet_api_url": "http://localhost:8181/midonet-api",
     "param_midonet_conf_key": "midonet/v2",
-    "0": {
-      "option_config_mnconf": true
-    }
+    "option_config_mnconf": true
   }
 }
