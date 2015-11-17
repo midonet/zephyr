@@ -151,6 +151,17 @@ class TCPDump(object):
     def wait_for_packets(self, count=1, timeout=None):
         ret = []
         start_time = time.time()
+
+        if count == 0:
+            # 0 count means just return waiting buffer, or empty list if nothing is present
+            try:
+                while True:
+                    item = self.data_queue.get_nowait()
+                    ret.append(item)
+            except Queue.Empty:
+                pass
+            return ret
+
         while len(ret) < count:
             try:
                 item = self.data_queue.get_nowait()
@@ -299,7 +310,6 @@ class TCPDump(object):
                                 # Create and parse the packet and push it onto the return list, calling
                                 # the callback function if one is set.
                                 packet = PCAPPacket(packet_data, timestamp)
-                                packet.parse()
                                 packet_queue.put(packet)
                                 if callback is not None:
                                     callback(packet, *(callback_args if callback_args is not None else ()))
@@ -320,7 +330,6 @@ class TCPDump(object):
                             # Create and parse the packet and push it onto the return list, calling
                             # the callback function if one is set.
                             packet = PCAPPacket(packet_data, timestamp)
-                            packet.parse()
                             packet_queue.put(packet)
                             if callback is not None:
                                 callback(packet, *(callback_args if callback_args is not None else []))

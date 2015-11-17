@@ -64,9 +64,9 @@ class TCPDumpTest(unittest.TestCase):
                                 ),
                                 save_dump_file=True, save_dump_filename='tcp.out')
         p.join()
-        p1 = ret.get(block=False)
-        p2 = ret.get(block=False)
-        p3 = ret.get(block=False)
+        p1 = ret.get(block=False).parse()
+        p2 = ret.get(block=False).parse()
+        p3 = ret.get(block=False).parse()
 
         """ :type: PCAPPacket"""
         self.assertTrue(p3 is not None)
@@ -87,7 +87,32 @@ class TCPDumpTest(unittest.TestCase):
 
             self.assertEquals(1, len(ret))
 
-            self.assertTrue('ethernet' in ret[0])
+            self.assertTrue('ethernet' in ret[0].parse())
+
+        finally:
+            tcpd.stop_capture()
+
+    def test_sniff_host_packet_immediate(self):
+        tcpd = TCPDump()
+        tcps = TCPSender()
+        try:
+
+            out = LinuxCLI().cmd('ip l | grep "LOOPBACK" | cut -f 2 -d " "| cut -f 1 -d ":"').stdout
+            lo_iface = out.split()[0].rstrip()
+            tcpd.start_capture(interface=lo_iface,
+                               pcap_filter=PCAP_And([PCAP_Port(6015, proto='tcp', source=True),
+                                                     PCAP_Port(6055, proto='tcp', dest=True)]))
+            tcps.start_send(interface=lo_iface, packet_type='tcp', count=10, source_ip='127.0.0.1',
+                            dest_ip='127.0.0.1', dest_port=6055, source_port=6015)
+
+            time.sleep(3)
+            tcpd.stop_capture()
+
+            ret = tcpd.wait_for_packets(count=0)
+
+            self.assertEqual(10, len(ret))
+
+            self.assertTrue('ethernet' in ret[0].parse())
 
         finally:
             tcpd.stop_capture()

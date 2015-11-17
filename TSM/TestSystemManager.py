@@ -177,7 +177,7 @@ class TestSystemManager(object):
                     current_module = None
                 except AttributeError as e:
                     # Bad.  This means the module was imported fine, but the class wasn't in there!
-                    raise ObjectNotFoundException('Malformed name: class: ' + current_context +
+                    raise ObjectNotFoundException('Malformed name: class: ' + fqn_split[len(fqn_split)-i:][0] +
                                                   ', not in module: ' + current_module.__name__)
 
         if current_module is None:

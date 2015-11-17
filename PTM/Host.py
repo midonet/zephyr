@@ -279,8 +279,7 @@ class Host(PTMObject):
 
     def is_hypervisor(self):
         """
-        Returns True if this Host is a hypervisor type, False otherwise
-        :return:
+        Returns True if this Host is a hypervisor type, False otherwise:return:
         """
         return False
 
@@ -289,7 +288,7 @@ class Host(PTMObject):
         """
         Send a custom TCP packet from this host using args for TCPSender::send_packet()
         :type iface: str
-        :type kwargs: dict[str, any] 
+        :type kwargs: dict[str, any]
         :return:
         """
         tcps = TCPSender()
@@ -297,7 +296,7 @@ class Host(PTMObject):
 
     def send_arp_packet(self, iface, dest_ip, source_ip=None, command='request',
                         source_mac=None, dest_mac=None, packet_options=None, count=1):
-        """ 
+        """
         Send [count] ARP packet(s) from this host with command as "request" or "reply".
         :type iface :str
         :type dest_ip: str
@@ -323,20 +322,22 @@ class Host(PTMObject):
         return tcps.send_packet(self.cli, interface=iface, dest_ip=dest_ip, packet_type='arp',
                                 packet_options=opt_map, count=count).stdout
 
-    def send_tcp_packet(self, iface, dest_ip, source_port, dest_port, packet_options=None, count=1):
+    def send_tcp_packet(self, iface, dest_ip, source_port, dest_port, data=None,
+                        packet_options=None, count=1):
         """
         Send [count] TCP packets from this Host using TCPSender::Send_packet()
         :type iface: str
         :type dest_ip: str
         :type source_port: int
         :type dest_port: int
+        :type data: str
         :type packet_options: dict[str,str]
         :type count: int
         :return:
         """
         tcps = TCPSender()
         return tcps.send_packet(self.cli, interface=iface, dest_ip=dest_ip, packet_type='tcp',
-                                source_port=source_port, dest_port=dest_port,
+                                source_port=source_port, dest_port=dest_port, payload=data,
                                 packet_options=packet_options, count=count).stdout
 
     def ping(self, target_ip, iface=None, count=1):
@@ -391,7 +392,7 @@ class Host(PTMObject):
         The optional timeout can be specified to bound the time waiting for the packets
         (an exception will be raised if the timeout is hit).
         :param interface: str: Interface on which to wait for packets
-        :param count: int: Number of packets to wait for
+        :param count: int: Number of packets to wait for (0 means just return what is buffered)
         :param timeout: int: Upper bound on length of time to wait before exception is raised
         :return: list [PCAPPacket]
         """

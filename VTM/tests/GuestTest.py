@@ -74,6 +74,7 @@ class GuestTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        cls.ptm.configure_logging(debug=True)
         cls.ptm.configure(os.path.dirname(os.path.abspath(__file__)) + '/test-basic-config.json')
         cls.ptm.startup()
 
@@ -143,6 +144,37 @@ class GuestTest(unittest.TestCase):
             vm2.shutdown()
             vm1.remove()
             vm2.remove()
+
+    def test_echo_server(self):
+        vtm = VirtualTopologyManager(client_api_impl=MockClient,
+                                     physical_topology_manager=self.ptm)
+
+        hv1 = self.ptm.hosts_by_name['cmp1']
+        """ :type hv1: HypervisorHost """
+
+        vm1 = hv1.create_vm('vm1')
+        virtual_host1 = Guest(vm1)
+
+        try:
+            vm1.create_interface('eth0', ip_list=[IP("10.3.3.3", "8")])
+
+            # Normally we get this from network, but just go with a mocked up port for this test
+            port1 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+
+            virtual_host1.plugin_vm('eth0', port1)
+
+            virtual_host1.start_echo_server(echo_data='test')
+            ret = virtual_host1.send_echo_request(echo_request='ping')
+            self.assertEqual('ping:test', ret)
+            virtual_host1.stop_echo_server()
+
+            virtual_host1.unplug_vm(port1)
+
+        finally:
+            virtual_host1.stop_echo_server()
+            vm1.net_down()
+            vm1.shutdown()
+            vm1.remove()
 
     @classmethod
     def tearDownClass(cls):
