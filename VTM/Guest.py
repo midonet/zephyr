@@ -209,8 +209,8 @@ class Guest(object):
         self.vm_host.cli.log_cmd = True
         result = self.vm_host.cli.cmd(cmd_line, timeout=timeout, blocking=blocking, shell=True)
         self.vm_host.cli.log_cmd = prev
-        if result.returncode != 0:
-            raise SubprocessFailedException('Retcode: ' + str(result.returncode) +
+        if result.ret_code != 0:
+            raise SubprocessFailedException('Retcode: ' + str(result.ret_code) +
                                             ', cmd output: ' + result.stdout +
                                             ', cmd error: ' + result.stderr)
         return result
