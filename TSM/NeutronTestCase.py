@@ -25,6 +25,7 @@ from VTM.VirtualTopologyManager import VirtualTopologyManager
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
 from TSM.TestCase import TestCase
+from TSM.NeutronTestFixture import NeutronTestFixture
 
 from VTM.NeutronAPI import setup_neutron, clean_neutron
 from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
@@ -41,61 +42,53 @@ RouterData = namedtuple('RouterData', 'router if_list')
 
 
 class NeutronTestCase(TestCase):
-    main_network = None
-    main_subnet = None
-    pub_network = None
-    pub_subnet = None
-    api = None
-    """ :type: neutron_client.Client """
-    mn_api = None
 
     def __init__(self, methodName='runTest'):
         super(NeutronTestCase, self).__init__(methodName)
+        self.neutron_fixture = None
+        """:type: NeutronTestFixture"""
+        self.main_network = None
+        self.main_subnet = None
+        self.pub_network = None
+        self.pub_subnet =None
+        self.api = None
+        """ :type: neutron_client.Client """
+        self.mn_api = None
 
     @classmethod
-    def setup_neutron_test(cls):
+    def _prepare_class(cls, current_scenario,
+                       test_case_logger=logging.getLogger()):
         """
-        Sets up neutron network and subnet.  Can be overridden by subclasses to change behavior
+        :type current_scenario: TestScenario
+        :type test_case_logger: logging.logger
         """
-        try:
-            cls.api = cls.vtm.get_client()
-            """ :type: neutron_client.Client """
+        super(NeutronTestCase, cls)._prepare_class(current_scenario, test_case_logger)
 
-            cls.mn_api = create_midonet_client()
+        cls.api = cls.vtm.get_client()
+        """ :type: neutron_client.Client """
+        cls.mn_api = create_midonet_client()
 
-            setup_main_tunnel_zone(cls.mn_api,
-                                   {h.name: h.interfaces['eth0'].ip_list[0].ip
-                                    for h in cls.ptm.hypervisors.itervalues()},
-                                   cls.setup_logger)
+        # Only add the neutron-setup fixture once for each scenario.
+        if 'neutron-setup' not in current_scenario.fixtures:
+            test_case_logger.debug('Adding neutron-setup fixture for scenario: ' +
+                                   type(current_scenario).__name__)
+            neutron_fixture = NeutronTestFixture(cls.vtm, cls.ptm, current_scenario.LOG)
+            current_scenario.add_fixture('neutron-setup', neutron_fixture)
 
-            (cls.main_network, cls.main_subnet, cls.pub_network, cls.pub_subnet) = \
-                setup_neutron(cls.api,
-                              subnet_cidr='10.0.1.0/24',
-                              pubsubnet_cidr='192.168.0.0/24',
-                              log=cls.setup_logger)
-        except Exception:
-            cls.cleanup_neutron_test()
-            raise
-
-    @classmethod
-    def cleanup_neutron_test(cls):
+    def run(self, result=None):
         """
-        Cleans up neutron database and restores it to a zero-state.  Can be overridden by
-        subclasses to change behavior
+        Special run override to make sure to set up neutron data prior to running
+        the test case function.
         """
-        LinuxCLI(log_cmd=True).cmd('mysqldump --user=root --password=cat neutron > ' +
-                                   cls.ptm.log_manager.root_dir + '/neutron.db.dump')
-        clean_neutron(cls.api, log=cls.setup_logger)
-
-    @classmethod
-    def setUpClass(cls):
-        super(NeutronTestCase, cls).setUpClass()
-        cls.setup_neutron_test()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.cleanup_neutron_test()
-        super(NeutronTestCase, cls).tearDownClass()
+        self.neutron_fixture = self.current_scenario.get_fixture('neutron-setup')
+        self.LOG.debug("Initializing Test Case Neutron Data from neutron-setup fixture")
+        self.main_network = self.neutron_fixture.main_network
+        self.main_subnet = self.neutron_fixture.main_subnet
+        self.pub_network = self.neutron_fixture.pub_network
+        self.pub_subnet = self.neutron_fixture.pub_subnet
+        self.api = self.neutron_fixture.api
+        self.mn_api = self.neutron_fixture.mn_api
+        super(NeutronTestCase, self).run(result)
 
     #TODO: Change this to use the GuestData namedtuple
     def cleanup_vms(self, vm_port_list):

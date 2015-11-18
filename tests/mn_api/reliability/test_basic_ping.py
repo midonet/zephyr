@@ -47,9 +47,9 @@ class TestBasicPing(TestCase):
             setup_main_tunnel_zone(cls.api,
                                    {h.name: h.interfaces['eth0'].ip_list[0].ip
                                     for h in cls.ptm.hypervisors.itervalues()},
-                                   cls.setup_logger)
+                                   cls.LOG)
         except Exception as e:
-            cls.setup_logger.fatal(str(e))
+            cls.LOG.fatal(str(e))
             raise
 
         cls.main_bridge = setup_main_bridge(cls.api)

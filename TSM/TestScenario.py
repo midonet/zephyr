@@ -14,10 +14,12 @@ __author__ = 'micucci'
 # limitations under the License.
 
 import importlib
+import logging
 
 from common.Exceptions import *
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from VTM.VirtualTopologyManager import VirtualTopologyManager
+from TSM.TestFixture import TestFixture
 
 class TestScenario(object):
     def __init__(self, ptm, vtm):
@@ -25,12 +27,68 @@ class TestScenario(object):
         """ :type: PhysicalTopologyManager"""
         self.vtm = vtm
         """ :type: VirtualTopologyManager"""
+        self.fixtures = {}
+        """ :type: dict[str, TestFixture]"""
+        self.LOG = logging.getLogger('scen-null-root')
+        self.LOG.addHandler(logging.NullHandler())
+        """ :type: logging.Logger"""
+        self.debug = False
+        self.log_manager = self.ptm.log_manager if self.ptm else None
 
     def setup(self):
         pass
 
     def teardown(self):
         pass
+
+    def configure_logging(self, log_name='scenario', log_file_name='scenario.log', debug=False):
+        self.debug = debug
+        if self.log_manager is None:
+            return
+
+        if self.debug is True:
+            scenario_log = self.log_manager.add_tee_logger(name=log_name + '-debug',
+                                                           file_name=log_file_name,
+                                                           file_log_level=logging.DEBUG,
+                                                           stdout_log_level=logging.DEBUG)
+            scenario_log.info('Starting debug logs')
+        else:
+            scenario_log = self.log_manager.add_file_logger(name=log_name,
+                                                            file_name=log_file_name,
+                                                            log_level=logging.INFO)
+        self.LOG = scenario_log
+
+    def add_fixture(self, name, fixture):
+        """
+        Add a TestFixture to setup and tear down this scenario in addition to standard
+        setup() and teardown() functions defined in scenario subclasses (most notably,
+        this is useful when a certain batch of tests have specialized scenario needs
+        that aren't suitable to create a hard dependency to the scenario subclass, such
+        as virtual topology requirements, etc.).  The fixtures are added by name so they
+        can be checked and accessed at a later time (or only set to be included once from
+        many sources, etc.)
+        :type name: str
+        :type fixture: TestFixture
+        """
+        if fixture:
+            self.fixtures[name] = fixture
+
+    def fixture_setup(self):
+        for name, fix in self.fixtures.iteritems():
+            """ :type: TestFixture"""
+            self.LOG.debug("Running fixture setup: " + name)
+            fix.setup()
+
+    def fixture_teardown(self):
+        for name, fix in self.fixtures.iteritems():
+            """ :type: TestFixture"""
+            self.LOG.debug("Running fixture teardown: " + name)
+            fix.teardown()
+
+    def get_fixture(self, name):
+        if name in self.fixtures:
+            return self.fixtures[name]
+        raise ObjectNotFoundException('No fixture defined in scenario: ' + name)
 
     @staticmethod
     def get_class(fqn):

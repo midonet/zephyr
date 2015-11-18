@@ -106,36 +106,6 @@ class TestLBaaSSessionPersistence(NeutronTestCase):
             if net_data.network is not None:
                 self.api.delete_network(net_data.network['id'])
 
-    def send_packets_to_vip(self, host_list, pinger, vip, count):
-        host_replies = {}
-        host_procs = []
-        """ :type: list[CommandStatus] """
-        try:
-            for g in host_list:
-                g.vm.start_echo_server(echo_data=g.vm.vm_host.name)
-                host_replies[g.vm.vm_host.name] = 0
-
-            self.LOG.debug("Sending " + str(count) +
-                           " TCP count from LBaaS VM to VIP:" + str(vip))
-            for i in range(0, count):
-                reply = pinger.vm.send_echo_request(dest_ip=str(vip)).strip()
-                self.LOG.debug('Got reply from echo-server: ' + reply)
-                if reply == '':
-                    self.fail('Empty reply received from VIP: ' + vip)
-                if reply not in host_replies:
-                    self.fail('Received mismatched and unexpected reply: ' + reply + ' from VIP: ' + vip)
-                host_replies[reply] += 1
-
-        finally:
-            for g in host_list:
-                g.vm.stop_echo_server()
-        total_packet_count = sum(host_replies.values())
-
-        self.LOG.debug("Got total of " + str(total_packet_count) + " packets")
-        self.assertEqual(NUM_PACKETS_TO_SEND, total_packet_count)
-
-        return host_replies
-
     def test_lbaas_basic_internal_vip_session_persistence(self):
         g1 = None
         g2 = None

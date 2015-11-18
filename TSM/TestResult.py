@@ -86,7 +86,11 @@ class TestResult(unittest.TestResult):
                 err = '<error type="{0}">'.format(tc.failureException.__name__) + reason + '</error>'
                 ret_xml += format_tc_data(tc, err)
             else:
-                ret_xml += '<testcase name="dummy"><error type="FrameworkError">' + reason + '</error></testcase>'
+                name = 'unknown'
+                if tc.current_scenario:
+                    name = tc.current_scenario.__name__
+                ret_xml += '<testcase name="' + name + '-framework-error"><error type="FrameworkError">' + \
+                           reason + '</error></testcase>'
 
         for tc, data in self.skipped:
             reason = 'Trace [' + data + ']'

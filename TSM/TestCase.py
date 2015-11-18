@@ -32,7 +32,7 @@ class TestCase(unittest.TestCase):
     """ :type: VirtualTopologyManager"""
     ptm = None
     """ :type: PhysicalTopologyManager"""
-    setup_logger = None
+    LOG = None
     """ :type: logging.Logger"""
 
     @staticmethod
@@ -64,19 +64,16 @@ class TestCase(unittest.TestCase):
         return cls.__name__
 
     @classmethod
-    def _prepare_class(cls, current_scenario, tsm_logger=logging.getLogger()):
+    def _prepare_class(cls, current_scenario,
+                       test_case_logger=logging.getLogger()):
         cls.class_scenario = current_scenario
         cls.ptm = current_scenario.ptm
         cls.vtm = current_scenario.vtm
-        cls.setup_logger = tsm_logger
+        cls.LOG = test_case_logger
 
     def __init__(self, methodName='runTest'):
         super(TestCase, self).__init__(methodName)
 
-        self.LOG = logging.getLogger('test-case-null-logger')
-        """ :type: logging.Logger"""
-        self.CONSOLE = logging.getLogger('test-case-null-logger')
-        """ :type: logging.Logger"""
         self.start_time = None
         """ :type: datetime.datetime"""
         self.stop_time = None
@@ -85,7 +82,6 @@ class TestCase(unittest.TestCase):
         """ :type: datetime.timedelta"""
         self.current_scenario = self.class_scenario
         """ :type: TestScenario"""
-        self.LOG.addHandler(logging.NullHandler())
 
     def run(self, result=None):
         self.start_time = datetime.datetime.utcnow()
