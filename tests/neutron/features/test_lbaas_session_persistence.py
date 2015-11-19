@@ -13,11 +13,11 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import NeutronTestCase, GuestData, NetData, RouterData
+from TSM.NeutronTestCase import NeutronTestCase, GuestData, NetData, RouterData, require_extension
 from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
 from common.CLI import NetNSCLI, CommandStatus
 
-import time
+import unittest
 
 NUM_PACKETS_TO_SEND = 50
 
@@ -106,6 +106,7 @@ class TestLBaaSSessionPersistence(NeutronTestCase):
             if net_data.network is not None:
                 self.api.delete_network(net_data.network['id'])
 
+    @require_extension('lbaas')
     def test_lbaas_basic_internal_vip_session_persistence(self):
         g1 = None
         g2 = None

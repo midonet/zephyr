@@ -13,7 +13,7 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import NeutronTestCase, GuestData, NetData, RouterData
+from TSM.NeutronTestCase import NeutronTestCase, GuestData, NetData, RouterData, require_extension
 from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
 from common.CLI import NetNSCLI, CommandStatus
 import unittest
@@ -154,6 +154,7 @@ class TestLBaaSRoundRobin(NeutronTestCase):
                       str(baseline_average) +'+/-' + str(acceptable_delta) + '): ' +
                       ', '.join([g + ': ' + c for g, c in fail_list]))
 
+    @require_extension('lbaas')
     def test_lbaas_basic_internal_vip_round_robin(self):
         g1 = None
         g2 = None
@@ -216,6 +217,7 @@ class TestLBaaSRoundRobin(NeutronTestCase):
             self.clear_lbaas_topo(lb_net, lb_router)
             self.cleanup_vms([(g1.vm, g1.port), (g2.vm, g2.port), (g_pinger.vm, g_pinger.port)])
 
+    @require_extension('lbaas')
     def test_lbaas_basic_internal_vip_round_robin_sender_on_host_subnet(self):
         g1 = None
         g2 = None
@@ -279,6 +281,7 @@ class TestLBaaSRoundRobin(NeutronTestCase):
             self.clear_lbaas_topo(lb_net, lb_router)
             self.cleanup_vms([(g1.vm, g1.port), (g2.vm, g2.port), (g_pinger.vm, g_pinger.port)])
 
+    @require_extension('lbaas')
     def test_lbaas_basic_internal_vip_add_member(self):
         g1 = None
         g2 = None

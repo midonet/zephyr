@@ -15,12 +15,12 @@ __author__ = 'micucci'
 
 from common.PCAPRules import *
 from common.PCAPPacket import *
-from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import NeutronTestCase, require_extension
 from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
 from VTM.Guest import Guest
 
 from  collections import namedtuple
-
+import unittest
 
 class TestPortSecurity(NeutronTestCase):
     @staticmethod
@@ -55,6 +55,7 @@ class TestPortSecurity(NeutronTestCase):
         finally:
             receiver.stop_capture(on_iface='eth0')
 
+    @require_extension('port-security')
     def test_port_security_basic_normal_antispoof(self):
         port1 = None
         port2 = None
@@ -120,6 +121,7 @@ class TestPortSecurity(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension('port-security')
     def test_port_security_basic_disable_port(self):
         port1 = None
         port2 = None
@@ -174,6 +176,7 @@ class TestPortSecurity(NeutronTestCase):
             net = self.api.show_network(self.main_network['id'])
             self.LOG.debug('net=' + str(net))
 
+    @require_extension('port-security')
     def test_port_security_disable_entire_net(self):
         port1 = None
         port2 = None
@@ -223,6 +226,7 @@ class TestPortSecurity(NeutronTestCase):
             net = self.api.show_network(self.main_network['id'])
             self.LOG.debug('net=' + str(net))
 
+    @require_extension('port-security')
     def test_port_security_defaults_on_net(self):
         port1 = None
         port2 = None

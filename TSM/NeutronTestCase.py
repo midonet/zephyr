@@ -68,6 +68,9 @@ class NeutronTestCase(TestCase):
         """ :type: neutron_client.Client """
         cls.mn_api = create_midonet_client()
 
+        ext_list = cls.api.list_extensions()['extensions']
+        cls.api_extension_map = {v['alias']: v for v in ext_list}
+
         # Only add the neutron-setup fixture once for each scenario.
         if 'neutron-setup' not in current_scenario.fixtures:
             test_case_logger.debug('Adding neutron-setup fixture for scenario: ' +
@@ -107,3 +110,19 @@ class NeutronTestCase(TestCase):
             finally:
                 if vm is not None:
                     vm.terminate()
+
+
+class require_extension(object):
+    def __init__(self, ext):
+        self.ext = ext
+
+    def __call__(self, f):
+        def new_tester(slf, *args):
+            """
+            :param slf: TestCase
+            """
+            if self.ext in slf.api_extension_map:
+                f(slf, *args)
+            else:
+                slf.skipTest('Skipping because extension: ' + str(self.ext) + ' is not installed')
+        return new_tester
