@@ -19,12 +19,13 @@ from PTM.VMHost import VMHost
 from common.Exceptions import *
 from common.CLI import CommandStatus
 from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
+from common.Utils import terminate_process
 
 import time
 import signal
 
-# Default TIMEOUT is 10 seconds for any Guest function that uses a timeout
-TIMEOUT = 10
+PACKET_CAPTURE_TIMEOUT = 10
+ECHO_SERVER_TIMEOUT = 3
 
 class Guest(object):
     """
@@ -99,7 +100,7 @@ class Guest(object):
                                    callback=callback, callback_args=callback_args,
                                    save_dump_file=save_dump_file, save_dump_filename=save_dump_filename)
 
-    def capture_packets(self, on_iface='eth0', count=1, timeout=TIMEOUT):
+    def capture_packets(self, on_iface='eth0', count=1, timeout=PACKET_CAPTURE_TIMEOUT):
         """
         Capture (count) number of packets that have come into the given interface on an
         running capture (raises ObjectNotFoundException if capture isn't running already),
@@ -141,18 +142,20 @@ class Guest(object):
         """
         if port in self.echo_server_procs and self.echo_server_procs[port] is not None:
             self.stop_echo_server(ip, port)
-
+        self.vm_host.cli.log_cmd = True
         proc_name = self.vm_host.ptm.root_dir + '/echo-server.py'
         self.vm_host.LOG.debug('Starting echo server: ' + proc_name + ' on: ' + ip + ':' + str(port))
-        proc = self.vm_host.cli.cmd(proc_name + ' -i ' + ip + ' -p ' + str(port) + ' -d ' + echo_data,
-                                    blocking=False)
-        if proc.process.returncode is not None:
-            out, err = proc.process.communicate()
-            self.vm_host.LOG.error('Error starting echo server: ' + str(out) + '/' + str(err))
-            raise SubprocessFailedException('Error starting echo server: ' + str(out) + '/' + str(err))
-
-        timeout = time.time() + TIMEOUT
-        while not self.vm_host.cli.grep_cmd('netstat -l -t -n ', ':' + str(port)):
+        cmd0 = [proc_name, '-i', ip, '-p', str(port), '-d', echo_data]
+        proc = self.vm_host.cli.cmd_pipe(commands=[cmd0], blocking=False)
+        timeout = time.time() + ECHO_SERVER_TIMEOUT
+        pid_file = '/run/zephyr_echo_server.' + str(port) + '.pid'
+        while not self.vm_host.cli.exists(pid_file):
+            proc.process_array[0].poll()
+            if proc.process_array[0].returncode is not None:
+                out, err = proc.process.communicate()
+                self.vm_host.LOG.error('Error starting echo server: ' + str(out) + '/' + str(err))
+                raise SubprocessFailedException('Error starting echo server: ' + str(out) + '/' + str(err))
+            print "HERE"
             time.sleep(1)
             if time.time() > timeout:
                 raise SubprocessTimeoutException('Echo server listener failed to bind to port within timeout')
@@ -169,15 +172,19 @@ class Guest(object):
         """
         if port in self.echo_server_procs and self.echo_server_procs[port] is not None:
             self.vm_host.LOG.debug('Stopping echo server on: ' + ip + ':' + str(port))
-            if self.echo_server_procs[port].process.returncode is None:
-                self.echo_server_procs[port].process.stdin.write('quit\n')
-            self.echo_server_procs[port] = None
+            proc = self.echo_server_procs[port]
+            proc.process_array[0].poll()
+            terminate_process(proc.process, signal='TERM')
 
-        timeout = time.time() + TIMEOUT
-        while self.vm_host.cli.grep_cmd('netstat -l -t -n ', ':' + str(port)):
-            time.sleep(1)
-            if time.time() > timeout:
-                raise SubprocessTimeoutException('Echo server listener failed to stop within timeout')
+            timeout = time.time() + ECHO_SERVER_TIMEOUT
+            pid_file = '/run/zephyr_echo_server.' + str(port) + '.pid'
+            while self.vm_host.cli.exists(pid_file):
+                time.sleep(1)
+                if time.time() > timeout:
+                    terminate_process(proc.process, signal='KILL')
+                    break
+            self.vm_host.cli.rm(pid_file)
+            self.echo_server_procs[port] = None
 
     def send_echo_request(self, dest_ip='localhost', dest_port=DEFAULT_ECHO_PORT, echo_request='ping'):
         """
@@ -191,8 +198,9 @@ class Guest(object):
         self.vm_host.LOG.debug('Sending echo command to: nc ' + str(dest_ip) + ' ' + str(dest_port))
         self.vm_host.cli.log_cmd = True
         self.vm_host.cli.debug = False
-        ret = self.vm_host.cli.cmd('bash -c "echo -n \'' + echo_request + '\' | nc ' +
-                                    dest_ip + ' ' + str(dest_port) + '"').stdout
+        cmd0 = ['echo', '-n', echo_request]
+        cmd1 = ['nc', dest_ip, str(dest_port)]
+        ret = self.vm_host.cli.cmd_pipe(commands=[cmd0, cmd1]).stdout
         self.vm_host.LOG.debug('Received echo response: ' + ret)
         return ret
 
@@ -207,7 +215,7 @@ class Guest(object):
         """
         prev = self.vm_host.cli.log_cmd
         self.vm_host.cli.log_cmd = True
-        result = self.vm_host.cli.cmd(cmd_line, timeout=timeout, blocking=blocking, shell=True)
+        result = self.vm_host.cli.cmd(cmd_line, timeout=timeout, blocking=blocking)
         self.vm_host.cli.log_cmd = prev
         if result.ret_code != 0:
             raise SubprocessFailedException('Retcode: ' + str(result.ret_code) +

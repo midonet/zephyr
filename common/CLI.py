@@ -25,13 +25,14 @@ REMOVENSCMD = lambda name: LinuxCLI().cmd('ip netns del ' + name)
 DEBUG = 0
 
 class CommandStatus(object):
-    def __init__(self, process=None, command='', ret_code=0, stdout='', stderr=''):
+    def __init__(self, process=None, command='', ret_code=0, stdout='', stderr='', process_array=None):
         """
         :type process: subprocess.Popen
         :type ret_code: int
         :type cmd: str
         :type stdout: str
         :type stderr: str
+        :type process_array
         :return:
         """
         self.process = process
@@ -39,6 +40,7 @@ class CommandStatus(object):
         self.command = command
         self.stdout = stdout
         self.stderr = stderr
+        self.process_array = process_array
 
     def __repr__(self):
         return 'PID: ' + str(self.process.pid) + '\n' + \
@@ -70,24 +72,96 @@ class LinuxCLI(object):
         if (self.env_map is not None):
             self.env_map.pop(name)
 
-    # TODO: Unify the output of cmd function and make new functions for different types of outputs
-    # TODO: Unify the multi and normal cmd functions
-    def cmd(self, cmd_line, timeout=None, blocking=True, shell=True, *args):
+    def cmd_pipe(self, commands, timeout=None, blocking=True,
+                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         """
-        Execute a command on the system.  The exact command will be transformed based
+        Execute piped commands on the system without a shell.  The exact command will be
+        transformed based on the timeout parameter and whether or not the command is being
+        run against an IP net namespace.  The parameter is a list of commands to pipe together,
+        with each item being the [base command to run + args] as a list.
+        :type commands: list[list[str]]
+        :type timeout: int
+        :type blocking: bool
+        :param stdin: int File descriptor for std in (PIPE by default)
+        :param stdout: int File descriptor for std in (PIPE by default)
+        :param stderr: int File descriptor for std in (PIPE by default)
+        :return CommandStatus:
+        """
+        ret = CommandStatus()
+        if len(commands) == 0:
+            return ret
+
+        cmd_array = [(['timeout'] if timeout else []) +
+                     self.priv_prefix().split() + self.cmd_prefix().split() + commands[0]]
+
+        for cmd in commands[1:]:
+            cmd_array.append(self.priv_prefix().split() + self.cmd_prefix().split() + cmd)
+
+        if self.log_cmd is True:
+            if self.logger is not None:
+                self.logger.debug('>>>' + str(cmd_array))
+            else:
+                print('>>>' + str(cmd_array))
+
+        cmd_str = '|'.join([' '.join(i) for i in cmd_array])
+        if self.debug is True:
+            return CommandStatus(command=cmd_str)
+
+        processes = []
+        """ :type: list[subprocess.Popen]"""
+
+        # First process, should have user-set stdin
+        # Second -> Second to last (if more than one), chain the stdout -> next stdin
+        # The last process (whether one or many) needs to have the user-set stdout, stderr
+        for i in range(0, len(cmd_array)):
+            p = subprocess.Popen(cmd_array[i], shell=False,
+                                 stdin=stdin if i == 0 else processes[i-1].stdout,
+                                 stdout=stdout if i == len(cmd_array)-1 else subprocess.PIPE,
+                                 stderr=stderr if i == len(cmd_array)-1 else subprocess.PIPE,
+                                 env=self.env_map,
+                                 preexec_fn=os.setsid)
+            processes.append(p)
+
+        # The resulting process error code, output, etc is dependent on last process
+        # to run in pipe-chain
+        p = processes[-1]
+
+        if blocking is False:
+            return CommandStatus(process=p, command=cmd_str, process_array=processes)
+
+        stdout, stderr = p.communicate()
+
+        # 'timeout' returns 124 on timeout
+        if p.returncode == 124 and timeout is not None:
+            raise SubprocessTimeoutException('Process timed out: ' + cmd_str)
+
+        out = ''
+        for line in stdout:
+            out += line
+
+        err = ''
+        for line in stderr:
+            err += line
+
+        return CommandStatus(process=p, command=cmd_str, ret_code=p.returncode,
+                             stdout=out, stderr=err, process_array=processes)
+
+    def cmd(self, cmd_line, timeout=None, blocking=True,
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
+        """
+        Execute a shell command on the system.  The exact command will be transformed based
          on the timeout parameter and whether or not the command is being run against
          an IP net namespace.
         :param cmd_line: str The base command to run
         :param timeout: int Timeout value, None for no timeout
-        :param cmd_event: A threading.Event object to set when command is run, or None for no synchronization
+        :param blocking: bool Block on this command or return the running process.
+        :param stdin: int File descriptor for std in (PIPE by default)
+        :param stdout: int File descriptor for std in (PIPE by default)
+        :param stderr: int File descriptor for std in (PIPE by default)
         :return CommandStatus:
         """
-        new_cmd_line = ('timeout ' + str(timeout) + ' ' if timeout is not None else '') + cmd_line
-
-        if self.priv is True:
-            cmd = self.create_cmd_priv(new_cmd_line)
-        else:
-            cmd = self.create_cmd(new_cmd_line)
+        cmd = ('timeout ' + str(timeout) + ' ' if timeout is not None else '') + \
+              self.priv_prefix() + self.cmd_prefix() + cmd_line
 
         if self.log_cmd is True:
             if self.logger is not None:
@@ -98,33 +172,33 @@ class LinuxCLI(object):
         if self.debug is True:
             return CommandStatus(command=cmd)
 
-        p = subprocess.Popen(cmd, *args, shell=shell, stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=self.env_map)
-        self.last_process_status = p
+        p = subprocess.Popen(cmd, shell=True,
+                             stdin=stdin, stdout=stdout, stderr=stderr,
+                             env=self.env_map, preexec_fn=os.setsid)
         if blocking is False:
             return CommandStatus(process=p, command=cmd)
 
-        stdout, stderr = p.communicate()
+        o, e = p.communicate()
 
         # 'timeout' returns 124 on timeout
         if p.returncode == 124 and timeout is not None:
             raise SubprocessTimeoutException('Process timed out: ' + cmd)
 
         out = ''
-        for line in stdout:
+        for line in o if o else []:
             out += line
 
         err = ''
-        for line in stderr:
+        for line in e if e else []:
             err += line
 
         return CommandStatus(process=p, command=cmd, ret_code=p.returncode, stdout=out, stderr=err)
 
-    def create_cmd(self, cmd_line):
-        return cmd_line
+    def cmd_prefix(self):
+        return ''
 
-    def create_cmd_priv(self, cmd_line):
-        return 'sudo -E ' + cmd_line
+    def priv_prefix(self):
+        return 'sudo -E ' if self.priv else ''
 
     def oscmd(self, *args, **kwargs):
         return LinuxCLI().cmd(*args, **kwargs).stdout
@@ -280,7 +354,7 @@ class LinuxCLI(object):
         return self.cmd('umount -l ' + drive + " > /dev/null 2>&1").stdout
 
     def start_screen(self, host, window_name, cmd_line):
-        cmd_in_screen = self.create_cmd(cmd_line)
+        cmd_in_screen = self.priv_prefix() + self.cmd_prefix() + cmd_line
         if self.grep_cmd('screen -ls', host) is False:
             # first screen = main screen
             cmd_opts = '-d -m -S ' + host
@@ -321,9 +395,5 @@ class NetNSCLI(LinuxCLI):
         super(NetNSCLI, self).__init__(priv, debug=debug, log_cmd=log_cmd, logger=logger)
         self.name = name
 
-    def create_cmd(self, cmd_line):
-        return super(NetNSCLI, self).create_cmd('ip netns exec ' + self.name + ' ' + cmd_line)
-
-    def create_cmd_priv(self, cmd_line):
-        return super(NetNSCLI, self).create_cmd_priv('ip netns exec ' + self.name + ' ' + cmd_line)
-
+    def cmd_prefix(self):
+        return 'ip netns exec ' + self.name + ' '

@@ -118,7 +118,7 @@ class ZookeeperHost(NetNSHost):
                                 ' -Dzookeeper.root.logger=INFO,ROLLINGFILE'
                                 ' org.apache.zookeeper.server.quorum.QuorumPeerMain'
                                 ' /etc/zookeeper/conf/zoo.cfg'),
-                               blocking=False, shell=True).process
+                               blocking=False).process
         if process.pid == -1:
             raise SubprocessFailedException('java-zookeeper')
         real_pid = self.cli.get_parent_pids(process.pid)[-1]

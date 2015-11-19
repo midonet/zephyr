@@ -157,10 +157,10 @@ class ConfigMap(object):
             minor_version_params = major_version_params[mn_version.minor]
 
         # Minor version config takes precedence and can override major version config
-        if (minor_version_params and param in minor_version_params):
+        if minor_version_params and param in minor_version_params:
             return minor_version_params[param]
 
-        if (param in major_version_params):
+        if param in major_version_params:
             return major_version_params[param]
 
         raise ObjectNotFoundException("Param not found in either major or minor version config: " + param)

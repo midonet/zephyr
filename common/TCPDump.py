@@ -28,6 +28,7 @@ import signal
 
 import time
 
+TCPDUMP_LISTEN_START_TIMEOUT = 10
 
 def sig_handler():
     with open('tcpdump.out', 'a') as f:
@@ -61,6 +62,8 @@ class TCPDump(object):
     def __init__(self):
         self.process = None
         """ :type: multiprocessing.Process"""
+        self.tcpdump_pid = None
+        """ :type: int"""
 
     def start_capture(self, cli=LinuxCLI(), interface='any',
                       count=0, packet_type='', pcap_filter=None, max_size=0,
@@ -110,6 +113,7 @@ class TCPDump(object):
         self.tcpdump_error.clear()
         self.tcpdump_stop.clear()
         self.tcpdump_finished.clear()
+        self.tcpdump_pid = None
 
         kwarg_map = {'cli': cli,
                      'interface': interface,
@@ -126,13 +130,12 @@ class TCPDump(object):
                      }
         self.process = multiprocessing.Process(target=tcpdump_start, args=(kwarg_map,))
         self.process.start()
-
-        deadline_time = time.time() + 10
+        deadline_time = time.time() + TCPDUMP_LISTEN_START_TIMEOUT
         while not self.tcpdump_ready.is_set():
             if time.time() > deadline_time:
-                raise SubprocessFailedException("tcpdump failed to start within 10 seconds")
+                self.process.terminate()
+                raise SubprocessFailedException("tcpdump failed to start listening within timeout")
             if self.tcpdump_error.is_set():
-                print 'ERRROR!!!'
                 error_info = self.subprocess_info_queue.get(timeout=2)
                 if 'error' in error_info:
                     raise SubprocessFailedException('tcpdump error { ' +
@@ -190,8 +193,6 @@ class TCPDump(object):
             return None
 
         self.process.join(5)
-        if self.process.is_alive():
-            self.process.terminate()
         ret = self.process
         self.process = None
         return ret
@@ -203,7 +204,7 @@ class TCPDump(object):
                      save_dump_file=False, save_dump_filename=None):
 
         tmp_dump_filename = './.tcpdump.out.' + str(time.time())
-
+        tcp_processes = []
         try:
             # If flag set provided, use them instead, for synch with external functions
             tcp_ready = threading.Event() if flag_set is None else flag_set[0]
@@ -215,33 +216,33 @@ class TCPDump(object):
             packet_queue = Queue.Queue() if packet_queues is None else packet_queues[0]
             status_queue = Queue.Queue() if packet_queues is None else packet_queues[1]
 
-            count_str = ('-c ' + str(count) if count > 0 else '')
-            iface_str = '-i ' + interface
-            max_size_str = '-s ' + max_size if max_size != 0 else ''
-            type_str = '-T ' + packet_type if packet_type != '' else ''
+            cmd1 = ['tcpdump', '-n', '-xx', '-l']
+            cmd1 += ['-c', str(count)] if count > 0 else []
+            cmd1 += ['-i', interface]
+            cmd1 += ['-s', str(max_size)] if max_size != 0 else []
+            cmd1 += ['-T', packet_type] if packet_type != '' else []
+            cmd1 += [pcap_filter.to_str()] if pcap_filter is not None else []
 
-            cmd_str = 'tcpdump -n -xx -l ' + \
-                      count_str + ' ' + iface_str + ' ' + \
-                      max_size_str + ' ' + type_str + \
-                      "'" + (pcap_filter.to_str() if pcap_filter is not None else '') + "'" + \
-                      ' >> ' + tmp_dump_filename
-
-            cli.log_cmd = True
+            cmd2 = ['tee', '-a', tmp_dump_filename]
 
             # FLAG STATE: ready[clear], stop[clear], finished[clear]
-
-            with open(tmp_dump_filename, 'w') as f:
+            with open(name=tmp_dump_filename, mode='w') as f:
                 f.write("--START--\n")
 
-            tcp_process = cli.cmd(cmd_line=cmd_str, blocking=False).process
+            tcp_processes = cli.cmd_pipe(commands=[cmd1, cmd2], blocking=False)
+            tcp_piped_process = tcp_processes.process
+            tcp_actual_process = tcp_processes.process_array[0]
 
-            flags_se = fcntl(tcp_process.stderr, F_GETFL) # get current p.stderr flags
-            fcntl(tcp_process.stderr, F_SETFL, flags_se | os.O_NONBLOCK)
+            # set current p.stderr flags to NONBLOCK
+            # Note that as stderr is NOT redirected through pipes, we must listen
+            # on the actual tcpdump process's stderr (not the tee process!)
+            flags_se = fcntl(tcp_actual_process.stderr, F_GETFL)
+            fcntl(tcp_actual_process.stderr, F_SETFL, flags_se | os.O_NONBLOCK)
 
             err_out = ''
-            while tcp_ready.is_set() is False:
+            while not tcp_ready.is_set():
                 try:
-                    line = os.read(tcp_process.stderr.fileno(), 256)
+                    line = os.read(tcp_actual_process.stderr.fileno(), 256)
                     if line.find('listening on') != -1:
                         # TODO: Replace sleep after TCPDump starts with a real check
                         # This is dangerous, and might not actually be enough to signal the
@@ -252,24 +253,25 @@ class TCPDump(object):
                         tcp_ready.set()
                     else:
                         err_out += line
-                        if tcp_process.poll() is not None:
-                            out, err = tcp_process.communicate()
+                        if tcp_piped_process.poll() is not None:
+                            out, err = tcp_piped_process.communicate()
                             status_queue.put({'error': 'tcpdump exited abnormally',
-                                              'returncode': tcp_process.returncode,
+                                              'returncode': tcp_piped_process.returncode,
                                               'stdout': out,
                                               'stderr': err_out})
-                            print 'item on status queue'
                             tcp_error.set()
 
                             raise SubprocessFailedException('tcpdump exited abnormally with status: ' +
-                                                            str(tcp_process.returncode))
+                                                            str(tcp_piped_process.returncode) +
+                                                            ', out: ' + out +
+                                                            ', err: ' + err +
+                                                            ', err_out: ' + err_out)
                         time.sleep(0)
 
                 except OSError:
                     pass
 
             # FLAG STATE: ready[set], stop[clear], finished[clear]
-
             # tcpdump return output format:
             # hh:mm:ss.tick L3Proto <Proto-specific fields>\n
             # \t0x<addr>:  FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF\n <- eight quads of hexadecimal numbers
@@ -285,7 +287,7 @@ class TCPDump(object):
                 # packet's lines arrive (or until stopped by a stop_capture call)
                 if f.readline().rstrip() != '--START--':
                     status_queue.put({'error': 'Expected --START-- tag at beginning of dumpfile',
-                                      'returncode': tcp_process.returncode,
+                                      'returncode': tcp_piped_process.returncode,
                                       'stdout': '',
                                       'stderr': ''})
                     tcp_error.set()
@@ -293,18 +295,12 @@ class TCPDump(object):
 
                 while True:
                     # Read the lines and either append data, start a new packet, or finish
-                    # Read the lines and either append data, start a new packet, or finish
                     line = f.readline()
-
                     if line == '':
                         #EOF
 
                         # Is the tcpdump process finished or signaled to finish?
-                        if tcp_process.poll() is not None or tcp_stop.is_set():
-                            if tcp_process.poll() is None:
-                                # Kill the TCP subprocess if it is still running
-                                common.Utils.terminate_process(tcp_process)
-
+                        if tcp_piped_process.poll() is not None or tcp_stop.is_set():
                             # If we finished with packet data buffered up, append that packet to the queue
                             if len(packet_data) > 0:
                                 # Create and parse the packet and push it onto the return list, calling
@@ -338,19 +334,19 @@ class TCPDump(object):
                         # Start the new packet by reading the timestamp
                         timestamp = line.split(' ', 2)[0]
         finally:
-            # Save the tcpdump output (if requested) and delete the temporary file
+            # Save the tcpdump output (if requested), and delete the temporary file
             if save_dump_file is True:
                 LinuxCLI().copy_file(tmp_dump_filename,
                                      save_dump_filename if save_dump_filename is not None
                                      else 'tcp.out.' + str(time.time()))
-
             LinuxCLI().rm(tmp_dump_filename)
-
+            for i in tcp_processes.process_array:
+                common.Utils.terminate_process(i, signal='KILL')
 
         status_queue.put({'success': '',
-                          'returncode' : tcp_process.returncode,
-                          'stdout': tcp_process.stdout,
-                          'stderr': tcp_process.stderr})
+                          'returncode': tcp_piped_process.returncode,
+                          'stdout': tcp_piped_process.stdout,
+                          'stderr': tcp_piped_process.stderr})
 
         # FLAG STATE: ready[set], stop[set], finished[clear]
         tcp_finished.set()

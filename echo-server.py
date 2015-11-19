@@ -14,9 +14,12 @@
 # limitations under the License.
 
 from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
+from common.CLI import LinuxCLI
 
 import getopt
 import sys
+import threading
+
 import signal
 
 arg_map, _ = getopt.getopt(sys.argv[1:], 'i:p:d:')
@@ -33,18 +36,32 @@ for arg, value in arg_map:
     elif arg in ('-d'):
         data = value
 
+stop_event = threading.Event()
+stop_event.clear()
+
+es = EchoServer(ip, port, data)
+
 def term_handler(signum, frame):
     print "Exiting..."
-    es.stop()
+    LinuxCLI().cmd("echo 'TERM: Stopping' >> /tmp/echo-server-status")
+    stop_event.set()
+    LinuxCLI().cmd("echo 'TERM: Exiting' >> /tmp/echo-server-status")
     exit(0)
 
 signal.signal(signal.SIGTERM, term_handler)
+LinuxCLI().cmd("echo 'Starting' > /tmp/echo-server-status")
 
-es = EchoServer(ip, port, data)
-es.start()
-ret = ''
-while ret != 'quit':
-    ret = raw_input("Enter 'quit' to stop server...").strip()
+try:
+    es.start()
+    running = True
+    while running:
+        stop_event.wait()
+    LinuxCLI().cmd("echo 'Stopping' >> /tmp/echo-server-status")
+    es.stop()
+    LinuxCLI().cmd("echo 'Exiting' >> /tmp/echo-server-status")
+except Exception as e:
+    print "ERROR: " + str(e)
+    LinuxCLI().cmd("echo 'ERROR: " + str(e) + "' >> /tmp/echo-server-status")
+    exit(2)
 
-es.stop()
-print "Exiting..."
+exit(0)

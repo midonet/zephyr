@@ -19,32 +19,40 @@ import multiprocessing
 import time
 import os
 from common.Exceptions import *
+from common.CLI import LinuxCLI
 
 DEFAULT_ECHO_PORT = 5080
 TIMEOUT = 2
 
 
 def echo_server_listener(ip, port, echo_data, running_event, stop_event, finished_event):
-    _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    _socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    _socket.setblocking(False)
-    _socket.bind((ip, port))
-    _socket.listen(1)
-    running_event.set()
-    while not stop_event.is_set():
-        ready_list, _, _ = select.select([_socket], [], [], 0)
-        if len(ready_list) == 0:
-            time.sleep(1)
-            continue
-        conn, addr = ready_list[0].accept()
-        data = conn.recv(1024)
-        conn.sendall(data + ':' + echo_data)
-        conn.close()
+    try:
+        LinuxCLI().cmd('echo "Listener Socket starting up" >> /tmp/echo-server-status')
+        _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        _socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        _socket.setblocking(False)
+        _socket.bind((ip, port))
+        _socket.listen(1)
+        running_event.set()
+        LinuxCLI().cmd('echo "Listener Socket listening" >> /tmp/echo-server-status')
+        while not stop_event.is_set():
+            ready_list, _, _ = select.select([_socket], [], [], 0)
+            if len(ready_list) > 0:
+                conn, addr = ready_list[0].accept()
+                data = conn.recv(1024)
+                conn.sendall(data + ':' + echo_data)
+                conn.close()
 
-    _socket.shutdown(socket.SHUT_RDWR)
-    _socket.close()
-    finished_event.set()
-
+        LinuxCLI().cmd('echo "Listener Socket terminating" >> /tmp/echo-server-status')
+        _socket.shutdown(socket.SHUT_RDWR)
+        _socket.close()
+        finished_event.set()
+    except Exception as e:
+        LinuxCLI().cmd('echo "SERVER ERROR: ' + str(e) + '" >> /tmp/echo-server-status')
+        exit(2)
+    except socket.error as e:
+        LinuxCLI().cmd('echo "SOCKET-SETUP ERROR: ' + str(e) + "' >> /tmp/echo-server-status")
+        exit(2)
 
 class EchoServer(object):
     def __init__(self, ip='localhost', port=DEFAULT_ECHO_PORT, echo_data='pong'):
@@ -57,6 +65,8 @@ class EchoServer(object):
         self.stop_server = multiprocessing.Event()
         self.server_done = multiprocessing.Event()
         self.server_running = multiprocessing.Event()
+        self.run_dir = '/run'
+        self.pid_file = self.run_dir + '/zephyr_echo_server.' + str(self.port) + '.pid'
 
     def start(self):
         self.stop_server.clear()
@@ -69,6 +79,7 @@ class EchoServer(object):
         self.server_running.wait(TIMEOUT)
         if not self.server_running.is_set():
             raise SubprocessTimeoutException('TCP echo server did not start within timeout')
+        LinuxCLI().write_to_file(self.pid_file, str(multiprocessing.current_process().pid))
 
     def stop(self):
         """
@@ -78,9 +89,14 @@ class EchoServer(object):
         self.stop_server.set()
         self.server_done.wait(TIMEOUT)
         if not self.server_done.is_set():
-            raise SubprocessTimeoutException('TCP echo server did not start within timeout')
+            raise SubprocessTimeoutException('TCP echo server did not stop within timeout')
 
         self.server_process.join()
+
+        if LinuxCLI().exists(self.pid_file):
+            pid = LinuxCLI().read_from_file(self.pid_file)
+            LinuxCLI().cmd('kill ' + str(pid))
+            LinuxCLI().rm(self.pid_file)
 
     @staticmethod
     def send(ip, port, echo_request='ping'):

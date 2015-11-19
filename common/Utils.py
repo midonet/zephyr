@@ -16,43 +16,14 @@ __author__ = 'micucci'
 import time
 from subprocess import Popen
 
-from Exceptions import *
+from common.CLI import LinuxCLI
 
 
-def terminate_process(process):
+def terminate_process(process, signal='TERM'):
     """
     Poll and terminate a process if it is still running.  If it doesn't exit
     within 5 seconds, send a SIGKILL signal to the process.
     :type process: Popen
     :return:
     """
-
-    def _poll_loop(p):
-        # Wait to get return code
-        countdown = 5
-        while countdown > 0:
-            r = p.poll()
-            if r is not None:
-                return r
-            time.sleep(1)
-            countdown -= 1
-
-    ret = process.poll()
-    if ret is not None:
-        return ret
-
-    process.terminate()
-
-    ret = _poll_loop(process)
-    if ret is not None:
-        return ret
-
-    # If it didn't die nicely, be a little more insistent
-    process.kill()
-
-    _poll_loop(process)
-    if ret is not None:
-        return ret
-
-    # If it still doesn't die, raise an error
-    raise SubprocessFailedException('Process failed to die: ' + process.pid)
+    LinuxCLI().cmd('pkill -s ' + str(process.pid) + ' -' + signal)

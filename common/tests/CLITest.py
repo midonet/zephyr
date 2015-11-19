@@ -52,6 +52,69 @@ class CLITest(unittest.TestCase):
         finally:
             cli.rm('tmp')
 
+    def test_cmd(self):
+        cli = LinuxCLI(priv=False)
+
+        try:
+            with open('test-file1', mode='w') as file1:
+                ret = cli.cmd('ls | grep py', stdout=file1)
+
+            data = cli.read_from_file('test-file1')
+            self.assertNotEqual(0, len(data))
+
+        finally:
+            cli.rm('test-file1')
+
+    def test_pipes(self):
+        cli = LinuxCLI(priv=False)
+        ret = cli.cmd_pipe([['ls'], ['grep', 'py']])
+        self.assertEqual('ls|grep py', ret.command)
+        self.assertNotEqual(0, len(ret.stdout))
+
+        ret2 = cli.cmd_pipe([['ls'], ['grep', 'py']], blocking=False)
+        self.assertEqual('ls|grep py', ret2.command)
+        self.assertIsNotNone(ret2.process)
+        o, e = ret2.process.communicate()
+        self.assertEqual(0, ret2.process.returncode)
+        self.assertNotEqual(0, len(o))
+
+        ret3 = cli.cmd_pipe([['ls']])
+        self.assertEqual('ls', ret3.command)
+        self.assertNotEqual(0, len(ret3.stdout))
+
+        try:
+            with open('test-file4', mode='w') as file4:
+                ret4 = cli.cmd_pipe([['ls'], ['grep', 'py']], blocking=False, stdout=file4)
+
+            self.assertIsNotNone(ret4.process)
+            ret4.process.communicate()
+
+            data4 = cli.read_from_file('test-file4')
+            self.assertNotEqual(0, len(data4))
+        finally:
+            cli.rm('test-file4')
+
+        try:
+            with open('test-file5', mode='w') as file5:
+                ret5 = cli.cmd_pipe([['ls']], blocking=False, stdout=file5)
+                self.assertIsNotNone(ret5.process)
+                ret5.process.communicate()
+
+            data5 = cli.read_from_file('test-file5')
+            self.assertNotEqual(0, len(data5))
+        finally:
+            cli.rm('test-file5')
+
+        try:
+            ret6 = cli.cmd_pipe([['ls'], ['tee', 'test-file6']], blocking=False)
+            self.assertIsNotNone(ret6.process)
+            ret6.process.communicate()
+
+            data6 = cli.read_from_file('test-file6')
+            self.assertNotEqual(0, len(data6))
+        finally:
+            cli.rm('test-file6')
+
     def test_host_file_replacement(self):
         cli = LinuxCLI()
         if cli.exists('/etc/hosts.backup'):
