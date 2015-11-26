@@ -14,11 +14,13 @@ __author__ = 'micucci'
 # limitations under the License.
 
 import unittest
+
 from TSM.TestScenario import TestScenario
 from TSM.NeutronTestCase import NeutronTestCase, require_extension
-from TSM.NeutronTestFixture import NeutronTestFixture
+from TSM.fixtures.NeutronTestFixture import NeutronTestFixture
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from VTM.NeutronAPI import *
+
 
 class SampleScenario(TestScenario):
     def setup(self):

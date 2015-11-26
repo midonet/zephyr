@@ -36,6 +36,8 @@ for arg, value in arg_map:
     elif arg in ('-d'):
         data = value
 
+tmp_status_file_name = '/tmp/echo-server-status.' + str(port)
+
 stop_event = threading.Event()
 stop_event.clear()
 
@@ -43,25 +45,25 @@ es = EchoServer(ip, port, data)
 
 def term_handler(signum, frame):
     print "Exiting..."
-    LinuxCLI().cmd("echo 'TERM: Stopping' >> /tmp/echo-server-status")
+    LinuxCLI().cmd("echo 'TERM: Stopping' >> " + tmp_status_file_name)
     stop_event.set()
-    LinuxCLI().cmd("echo 'TERM: Exiting' >> /tmp/echo-server-status")
+    LinuxCLI().cmd("echo 'TERM: Exiting' >> " + tmp_status_file_name)
     exit(0)
 
 signal.signal(signal.SIGTERM, term_handler)
-LinuxCLI().cmd("echo 'Starting' > /tmp/echo-server-status")
+LinuxCLI().cmd("echo 'Starting' > " + tmp_status_file_name)
 
 try:
     es.start()
     running = True
     while running:
         stop_event.wait()
-    LinuxCLI().cmd("echo 'Stopping' >> /tmp/echo-server-status")
+    LinuxCLI().cmd("echo 'Stopping' >> " + tmp_status_file_name)
     es.stop()
-    LinuxCLI().cmd("echo 'Exiting' >> /tmp/echo-server-status")
+    LinuxCLI().cmd("echo 'Exiting' >> " + tmp_status_file_name)
 except Exception as e:
     print "ERROR: " + str(e)
-    LinuxCLI().cmd("echo 'ERROR: " + str(e) + "' >> /tmp/echo-server-status")
+    LinuxCLI().cmd("echo 'ERROR: " + str(e) + "' >> " + tmp_status_file_name)
     exit(2)
 
 exit(0)

@@ -56,4 +56,6 @@ $INSTALL wget g++ bridge-utils iptables tcpdump python-pip mz dnsmasq-base
 # Install Python tools
 sudo pip install unittest2 numpy setuptools pyyaml futures pyhamcrest
 
+# Use IPv4 forwarding
+sudo bash -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
 

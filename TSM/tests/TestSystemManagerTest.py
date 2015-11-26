@@ -20,6 +20,7 @@ from TSM.TestSystemManager import TestSystemManager
 
 from common.LogManager import LogManager
 
+
 class TestSystemManagerTest(unittest.TestCase):
     def test_add_test_from_pkg_module_class(self):
 

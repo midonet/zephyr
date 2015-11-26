@@ -110,17 +110,19 @@ class LogManager(object):
         if name is None:
             name = 'root' + str(len(self.loggers))
 
-        if name in self.loggers:
-            new_log = self.get_logger(name)
-        else:
-            new_log = logging.getLogger(name)
-
         handler_obj.setLevel(level if level is not None else self.default_log_level)
         handler_obj.setFormatter(self.get_format(format_name))
 
-        # Set logger's log level to be all inclusive and let handlers set more specific levels
-        new_log.setLevel(1)
-        new_log.addHandler(handler_obj)
+        if name in self.loggers:
+            new_log = self.get_logger(name)
+            # Set logger's log level to be all inclusive and let handlers set more specific levels
+            new_log.setLevel(1)
+            new_log.addHandler(handler_obj)
+        else:
+            new_log = logging.getLogger(name)
+            # Set logger's log level to be all inclusive and let handlers set more specific levels
+            new_log.setLevel(1)
+            new_log.handlers = [handler_obj]
 
         #new_log.debug("Starting log [" + name + "] with handler type [" +
         #             handler_obj.__class__.__name__ + "] and level" + str(level))
@@ -293,27 +295,28 @@ class LogManager(object):
 
         for f, df, dp in log_file_set:
             lines_to_write = []
-            with open(f.full_path(), 'r') as cf:
-                for line in cf.readlines():
-                    dateline = ' '.join(line.split(' ')[dp:dp+2])
-                    try:
-                        current_time = datetime.datetime.strptime(dateline, df)
-                        if current_time < concrete_start_time:
+            if LinuxCLI(priv=False).exists(f.full_path()):
+                with open(f.full_path(), 'r') as cf:
+                    for line in cf.readlines():
+                        dateline = ' '.join(line.split(' ')[dp:dp+2])
+                        try:
+                            current_time = datetime.datetime.strptime(dateline, df)
+                            if current_time < concrete_start_time:
+                                continue
+                            elif current_time > concrete_stop_time:
+                                break
+                            else:
+                                lines_to_write.append(line)
+                        except ValueError:
                             continue
-                        elif current_time > concrete_stop_time:
-                            break
-                        else:
-                            lines_to_write.append(line)
-                    except ValueError:
-                        continue
 
-            if len(lines_to_write) != 0:
-                filename = new_dir + '/' + f.filename + ext
-                LinuxCLI(priv=False).write_to_file(filename,
-                                                   'SLICE OF LOG [' + f.full_path() + '] FROM [' +
-                                                   str(concrete_start_time) + '] TO [' +
-                                                   str(concrete_stop_time) + ']\n')
-                LinuxCLI(priv=False).write_to_file(filename, ''.join(lines_to_write), append=True)
+                if len(lines_to_write) != 0:
+                    filename = new_dir + '/' + f.filename + ext
+                    LinuxCLI(priv=False).write_to_file(filename,
+                                                       'SLICE OF LOG [' + f.full_path() + '] FROM [' +
+                                                       str(concrete_start_time) + '] TO [' +
+                                                       str(concrete_stop_time) + ']\n')
+                    LinuxCLI(priv=False).write_to_file(filename, ''.join(lines_to_write), append=True)
 
     def _rollover_file(self, file_path, backup_dir=None,
                        date_pattern='%Y%m%d%H%M%S', zip_file=True):

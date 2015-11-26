@@ -17,10 +17,13 @@ import sys
 import getopt
 
 from common.Exceptions import *
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager, CONTROL_CMD_NAME
+from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from PTM.ptm_constants import CONTROL_CMD_NAME
 from common.CLI import LinuxCLI
 import traceback
 from common.LogManager import LogManager
+
 
 def usage(exceptObj):
     print 'Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print} [--config-file <JSON file>]'
@@ -68,8 +71,10 @@ try:
     if command == 'startup':
         log_manager.rollover_logs_fresh(file_filter='ptm*.log')
 
-    ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
-    ptm.configure_logging(debug=debug)
+    ptm_impl = HostPhysicalTopologyManagerImpl(root_dir=root_dir, log_manager=log_manager)
+    ptm_impl.configure_logging(debug=debug)
+
+    ptm = PhysicalTopologyManager(ptm_impl)
     ptm.configure(ptm_config_file)
 
     if command == 'startup':
@@ -80,7 +85,7 @@ try:
         ptm.print_config()
     else:
         usage(ArgMismatchException('Command option not recognized: ' + command))
-   
+
 except ExitCleanException:
     exit(1)
 except ArgMismatchException as a:

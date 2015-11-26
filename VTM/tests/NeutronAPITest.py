@@ -13,31 +13,23 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
 import unittest
-import logging
-import datetime
 import os
 
-from common.IP import IP
-from common.CLI import LinuxCLI
 from common.LogManager import LogManager
-
-from PTM.VMHost import VMHost
-from PTM.ComputeHost import ComputeHost
+from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
-from VTM.Guest import Guest
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from VTM.NeutronAPI import *
 from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
-
-import neutronclient.v2_0.client as neutron_client
+from PTM.application.Midolman import Midolman
 
 
 class NeutronAPITest(unittest.TestCase):
     lm = LogManager('test-logs')
-    ptm = PhysicalTopologyManager(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
+    ptm_i = None
+    ptm = None
     vtm = None
     api = None
     mn_api = None
@@ -48,31 +40,46 @@ class NeutronAPITest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.ptm.configure_logging(debug=True)
+        cls.ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
+                                                    log_manager=cls.lm)
+        cls.ptm_i.configure_logging(debug=True)
+        cls.ptm = PhysicalTopologyManager(cls.ptm_i)
         cls.ptm.configure(os.path.dirname(os.path.abspath(__file__)) + '/test-basic-config.json')
         logging.getLogger("neutronclient").addHandler(logging.StreamHandler())
-        cls.ptm.startup()
-        cls.vtm = VirtualTopologyManager(client_api_impl=create_neutron_client(),
-                                         physical_topology_manager=cls.ptm)
-
-        cls.api = cls.vtm.get_client()
-        """ :type: neutron_client.Client"""
-
-        cls.mn_api = create_midonet_client()
-
-        log = logging.getLogger("neutronclient")
-        log.setLevel(logging.DEBUG)
-
-        setup_main_tunnel_zone(cls.mn_api,
-                               {h.name: h.interfaces['eth0'].ip_list[0].ip
-                                for h in cls.ptm.hypervisors.itervalues()},
-                               cls.ptm.LOG)
-
         try:
-            (cls.main_network, cls.main_subnet,
-            cls.pub_network, cls.pub_subnet) = setup_neutron(cls.api, subnet_cidr='10.0.1.1/24', log=log)
-        except Exception:
-            clean_neutron(cls.api, log=log)
+            cls.ptm.startup()
+            cls.vtm = VirtualTopologyManager(client_api_impl=create_neutron_client(),
+                                             physical_topology_manager=cls.ptm)
+
+            cls.api = cls.vtm.get_client()
+            """ :type: neutron_client.Client"""
+
+            cls.mn_api = create_midonet_client()
+
+            log = logging.getLogger("neutronclient")
+            log.setLevel(logging.DEBUG)
+
+            tunnel_zone_host_map = {}
+            for host_name, host in cls.ptm.impl_.hosts_by_name.iteritems():
+                # On each host, check if there is at least one Midolman app running
+                for app in host.applications:
+                    if isinstance(app, Midolman):
+                        # If so, add the host and its eth0 interface to the tunnel zone map
+                        # and move on to next host
+                        tunnel_zone_host_map[host.name] = host.interfaces['eth0'].ip_list[0].ip
+                        break
+
+            setup_main_tunnel_zone(cls.mn_api,
+                                   tunnel_zone_host_map,
+                                   log)
+
+            try:
+                (cls.main_network, cls.main_subnet, cls.pub_network, cls.pub_subnet) = \
+                    setup_neutron(cls.api, log=log)
+            except Exception:
+                clean_neutron(cls.api, log=log)
+                raise
+        except:
             cls.ptm.shutdown()
             LinuxCLI().cmd('ip netns del vm1')
             raise
@@ -98,8 +105,8 @@ class NeutronAPITest(unittest.TestCase):
             port2 = self.api.create_port(port2def)['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            self.ptm.LOG.info("Got port 1 IP: " + str(ip1))
-            self.ptm.LOG.info("Got port 2 IP: " + str(ip2))
+            self.ptm_i.LOG.info("Got port 1 IP: " + str(ip1))
+            self.ptm_i.LOG.info("Got port 2 IP: " + str(ip2))
 
             vm1 = self.vtm.create_vm(ip=ip1, preferred_hv_host='cmp2')
             vm2 = self.vtm.create_vm(ip=ip2, preferred_hv_host='cmp2')
@@ -129,21 +136,21 @@ class NeutronAPITest(unittest.TestCase):
 
         try:
             port1def = {'port': {'name': 'port1',
-                                 'network_id': self.main_network['id'],
+                                 'network_id': self.pub_network['id'],
                                  'admin_state_up': True,
                                  'tenant_id': 'admin'}}
             port1 = self.api.create_port(port1def)['port']
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             port2def = {'port': {'name': 'port2',
-                                 'network_id': self.main_network['id'],
+                                 'network_id': self.pub_network['id'],
                                  'admin_state_up': True,
                                  'tenant_id': 'admin'}}
             port2 = self.api.create_port(port2def)['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            self.ptm.LOG.info("Got port 1 IP: " + str(ip1))
-            self.ptm.LOG.info("Got port 2 IP: " + str(ip2))
+            self.ptm_i.LOG.info("Got port 1 IP: " + str(ip1))
+            self.ptm_i.LOG.info("Got port 2 IP: " + str(ip2))
 
             vm1 = self.vtm.create_vm(ip1, preferred_hv_host='cmp1', preferred_name='vm1')
             """ :type: Guest"""

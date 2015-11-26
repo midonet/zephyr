@@ -72,7 +72,7 @@ class TestResult(unittest.TestResult):
         for tc, data in self.failures:
             reason = 'Trace [' + data + ']'
             if isinstance(tc, TestCase):
-                fail = '<failure type="{0}">'.format(tc.failureException.__name__) + reason + '</failure>'
+                fail = '<failure type="{0}">'.format(tc.failureException) + reason + '</failure>'
                 ret_xml += format_tc_data(tc, fail)
 
         for tc in self.unexpectedSuccesses:
@@ -83,7 +83,7 @@ class TestResult(unittest.TestResult):
         for tc, data in self.errors:
             reason = 'Trace [' + data + ']'
             if isinstance(tc, TestCase):
-                err = '<error type="{0}">'.format(tc.failureException.__name__) + reason + '</error>'
+                err = '<error type="{0}">'.format(tc.failureException) + reason + '</error>'
                 ret_xml += format_tc_data(tc, err)
             else:
                 name = 'unknown'
@@ -101,7 +101,7 @@ class TestResult(unittest.TestResult):
         for tc, data in self.expectedFailures:
             reason = 'Trace [' + data + ']'
             if isinstance(tc, TestCase):
-                info = '<skipped>Expected Failure: [' + tc.failureException.__name__ + '] ' + reason + '</skipped>'
+                info = '<skipped>Expected Failure: [' + tc.failureException + '] ' + reason + '</skipped>'
                 ret_xml += format_tc_data(tc, info)
 
         ret_xml += '</testsuite>\n'

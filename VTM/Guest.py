@@ -14,15 +14,13 @@ __author__ = 'tomoe'
 # limitations under the License.
 
 
-import subprocess
-from PTM.VMHost import VMHost
+import time
+
 from common.Exceptions import *
 from common.CLI import CommandStatus
 from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
 from common.Utils import terminate_process
 
-import time
-import signal
 
 PACKET_CAPTURE_TIMEOUT = 10
 ECHO_SERVER_TIMEOUT = 3
@@ -142,23 +140,22 @@ class Guest(object):
         """
         if port in self.echo_server_procs and self.echo_server_procs[port] is not None:
             self.stop_echo_server(ip, port)
-        self.vm_host.cli.log_cmd = True
         proc_name = self.vm_host.ptm.root_dir + '/echo-server.py'
         self.vm_host.LOG.debug('Starting echo server: ' + proc_name + ' on: ' + ip + ':' + str(port))
         cmd0 = [proc_name, '-i', ip, '-p', str(port), '-d', echo_data]
         proc = self.vm_host.cli.cmd_pipe(commands=[cmd0], blocking=False)
         timeout = time.time() + ECHO_SERVER_TIMEOUT
-        pid_file = '/run/zephyr_echo_server.' + str(port) + '.pid'
-        while not self.vm_host.cli.exists(pid_file):
+
+        conn_resp = ''
+        while conn_resp != 'connect-test:' + echo_data:
             proc.process_array[0].poll()
             if proc.process_array[0].returncode is not None:
                 out, err = proc.process.communicate()
                 self.vm_host.LOG.error('Error starting echo server: ' + str(out) + '/' + str(err))
                 raise SubprocessFailedException('Error starting echo server: ' + str(out) + '/' + str(err))
-            print "HERE"
-            time.sleep(1)
             if time.time() > timeout:
                 raise SubprocessTimeoutException('Echo server listener failed to bind to port within timeout')
+            conn_resp = self.send_echo_request(dest_ip=ip, dest_port=port, echo_request='connect-test')
 
         self.echo_server_procs[port] = proc
         return proc
@@ -196,8 +193,6 @@ class Guest(object):
         :return: str
         """
         self.vm_host.LOG.debug('Sending echo command to: nc ' + str(dest_ip) + ' ' + str(dest_port))
-        self.vm_host.cli.log_cmd = True
-        self.vm_host.cli.debug = False
         cmd0 = ['echo', '-n', echo_request]
         cmd1 = ['nc', dest_ip, str(dest_port)]
         ret = self.vm_host.cli.cmd_pipe(commands=[cmd0, cmd1]).stdout
@@ -213,10 +208,7 @@ class Guest(object):
         :param blocking: bool
         :return:
         """
-        prev = self.vm_host.cli.log_cmd
-        self.vm_host.cli.log_cmd = True
         result = self.vm_host.cli.cmd(cmd_line, timeout=timeout, blocking=blocking)
-        self.vm_host.cli.log_cmd = prev
         if result.ret_code != 0:
             raise SubprocessFailedException('Retcode: ' + str(result.ret_code) +
                                             ', cmd output: ' + result.stdout +

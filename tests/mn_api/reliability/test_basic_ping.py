@@ -20,14 +20,14 @@ from midonetclient.tunnel_zone import TunnelZone
 from common.Exceptions import *
 
 from VTM.Guest import Guest
-from VTM.MNAPI import setup_main_tunnel_zone, setup_main_bridge
+from VTM.MNAPI import setup_main_bridge
 
-from TSM.TestCase import TestCase
+from TSM.MidonetTestCase import MidonetTestCase
 
 from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
 
 
-class TestBasicPing(TestCase):
+class TestBasicPing(MidonetTestCase):
     api = None
     """ :type: MidonetApi """
     main_bridge = None
@@ -43,17 +43,7 @@ class TestBasicPing(TestCase):
         if not isinstance(cls.api, MidonetApi):
             raise ArgMismatchException('Need midonet client for this test')
 
-        try:
-            setup_main_tunnel_zone(cls.api,
-                                   {h.name: h.interfaces['eth0'].ip_list[0].ip
-                                    for h in cls.ptm.hypervisors.itervalues()},
-                                   cls.LOG)
-        except Exception as e:
-            cls.LOG.fatal(str(e))
-            raise
-
         cls.main_bridge = setup_main_bridge(cls.api)
-
 
     def test_ping_two_vms_same_hv(self):
 

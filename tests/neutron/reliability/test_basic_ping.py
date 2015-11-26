@@ -98,8 +98,8 @@ class TestBasicPing(NeutronTestCase):
 
             self.LOG.info('Created port 2: ' + str(port2))
 
-            self.ptm.LOG.info("Got VM1 IP: " + str(ip1))
-            self.ptm.LOG.info("Got VM2 IP: " + str(ip2))
+            self.LOG.info("Got VM1 IP: " + str(ip1))
+            self.LOG.info("Got VM2 IP: " + str(ip2))
 
             vm1 = self.vtm.create_vm(ip1, preferred_hv_host='cmp1', preferred_name='vm1')
             vm2 = self.vtm.create_vm(ip2, preferred_hv_host='cmp2', preferred_name='vm2')

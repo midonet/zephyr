@@ -80,24 +80,41 @@
   ],
   "implementation": [
     { "host": "root",
-      "impl": "PTM.RootHost"},
+      "impl": "PTM.host.RootHost",
+      "apps": []},
     { "host": "zoo1",
-      "impl": "PTM.ZookeeperHost",
-      "id": "1",
-      "zookeeper_ips": ["10.0.0.2"]},
+      "impl": "PTM.host.IPNetNSHost",
+      "apps": [
+        { "class": "PTM.application.Zookeeper",
+          "id": "1",
+          "zookeeper_ips": ["10.0.0.2"]}
+      ]
+    },
     { "host": "cmp1",
-      "impl": "PTM.ComputeHost",
-      "id": "1",
-      "zookeeper_ips": ["10.0.0.2"],
-      "cassandra_ips": []},
+      "impl": "PTM.host.IPNetNSHost",
+      "apps": [
+        { "class": "PTM.application.Midolman",
+          "id": "1",
+          "zookeeper_ips": ["10.0.0.2"],
+          "cassandra_ips": []}
+      ]
+    },
     { "host": "cmp2",
-      "impl": "PTM.ComputeHost",
-      "id": "2",
-      "zookeeper_ips": ["10.0.0.2"],
-      "cassandra_ips": []},
+      "impl": "PTM.host.IPNetNSHost",
+      "apps": [
+        { "class": "PTM.application.Midolman",
+          "id": "2",
+          "zookeeper_ips": ["10.0.0.2"],
+          "cassandra_ips": []}
+      ]
+    },
     { "host": "net1",
-      "impl": "PTM.NetworkHost",
-      "zookeeper_ips": ["10.0.0.2"]}
+      "impl": "PTM.host.RootHost",
+      "apps": [
+        { "class": "PTM.application.MidonetAPI",
+          "zookeeper_ips": ["10.0.0.2"]}
+      ]
+    }
   ],
   "host_start_order": [
     "root",

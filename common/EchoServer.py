@@ -26,32 +26,38 @@ TIMEOUT = 2
 
 
 def echo_server_listener(ip, port, echo_data, running_event, stop_event, finished_event):
+    tmp_status_file_name = '/tmp/echo-server-status.' + str(port)
+    debug = True
     try:
-        LinuxCLI().cmd('echo "Listener Socket starting up" >> /tmp/echo-server-status')
+        LinuxCLI().cmd('echo "Listener Socket starting up" >> ' + tmp_status_file_name)
         _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         _socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         _socket.setblocking(False)
         _socket.bind((ip, port))
         _socket.listen(1)
         running_event.set()
-        LinuxCLI().cmd('echo "Listener Socket listening" >> /tmp/echo-server-status')
+        LinuxCLI().cmd('echo "Listener Socket listening" >> ' + tmp_status_file_name)
         while not stop_event.is_set():
             ready_list, _, _ = select.select([_socket], [], [], 0)
             if len(ready_list) > 0:
+                debug and LinuxCLI().cmd('echo "Listener Socket connected" >> ' + tmp_status_file_name)
                 conn, addr = ready_list[0].accept()
                 data = conn.recv(1024)
+                debug and LinuxCLI().cmd('echo "Listener Socket received data: ' + data + '" >> ' + tmp_status_file_name)
                 conn.sendall(data + ':' + echo_data)
+                debug and LinuxCLI().cmd('echo "Listener Socket sent appended data: ' +
+                                         echo_data + '" >> ' + tmp_status_file_name)
                 conn.close()
 
-        LinuxCLI().cmd('echo "Listener Socket terminating" >> /tmp/echo-server-status')
+        LinuxCLI().cmd('echo "Listener Socket terminating" >> ' + tmp_status_file_name)
         _socket.shutdown(socket.SHUT_RDWR)
         _socket.close()
         finished_event.set()
     except Exception as e:
-        LinuxCLI().cmd('echo "SERVER ERROR: ' + str(e) + '" >> /tmp/echo-server-status')
+        LinuxCLI().cmd('echo "SERVER ERROR: ' + str(e) + '" >> ' + tmp_status_file_name)
         exit(2)
     except socket.error as e:
-        LinuxCLI().cmd('echo "SOCKET-SETUP ERROR: ' + str(e) + "' >> /tmp/echo-server-status")
+        LinuxCLI().cmd('echo "SOCKET-SETUP ERROR: ' + str(e) + '" >> ' + tmp_status_file_name)
         exit(2)
 
 class EchoServer(object):

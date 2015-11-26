@@ -1,0 +1,239 @@
+{
+  "root_server_host": "local",
+  "hosts": [
+    {
+      "name": "root",
+      "bridges": [
+        {
+          "name": "br0",
+          "ip_addresses": [
+            {
+              "ip": "10.0.0.240",
+              "subnet": "24"
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        {
+          "name": "zoo1eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "cmp1eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "cmp2eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "edge1eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "edge2eth0",
+          "linked_bridge": "br0"
+        }
+      ]
+    },
+    {
+      "name": "zoo1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.2"}]
+        }
+      ]
+    },
+    {
+      "name": "cmp1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.8"}]
+        }
+      ]
+    },
+    {
+      "name": "cmp2",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.9"}]
+        }
+      ]
+    },
+    {
+      "name": "edge1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.12"}]
+        },
+        {
+          "name": "eth1"
+        }
+      ]
+    },
+    {
+      "name": "edge2",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.13"}]
+        },
+        {
+          "name": "eth1"
+        }
+      ]
+    },
+    {
+      "name": "router1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "172.20.1.2"}]
+        },
+        {
+          "name": "eth1",
+          "ip_addresses": [{"ip": "172.16.2.1"}]
+        },
+        {
+          "name": "eth2",
+          "ip_addresses": [{"ip": "172.17.2.1"}]
+        }
+      ],
+      "routes": [
+        {"dest": "default", "gw": "172.20.1.1", "dev": "eth0"}
+      ]
+    },
+    {
+      "name": "ext1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "172.20.1.1"}]
+        }
+      ],
+      "routes": [
+        {"dest": "default", "gw": "172.20.1.2", "dev": "eth0"}
+      ]
+    },
+    {
+      "name": "net1"
+    }
+  ],
+  "wiring": [
+    {
+      "near": { "host": "root", "interface": "zoo1eth0" },
+      "far":  { "host": "zoo1", "interface": "eth0" }
+    },
+    {
+      "near": { "host": "root", "interface": "cmp1eth0" },
+      "far":  { "host": "cmp1", "interface": "eth0" }
+    },
+    {
+      "near": { "host": "root", "interface": "cmp2eth0" },
+      "far":  { "host": "cmp2", "interface": "eth0" }
+    },
+    {
+      "near": { "host": "root", "interface": "edge1eth0" },
+      "far":  { "host": "edge1", "interface": "eth0" }
+    },
+    {
+      "near": { "host": "root", "interface": "edge2eth0" },
+      "far":  { "host": "edge2", "interface": "eth0" }
+    },
+    {
+      "near": { "host": "router1", "interface": "eth1" },
+      "far":  { "host": "edge1", "interface": "eth1" }
+    },
+    {
+      "near": { "host": "router1", "interface": "eth2" },
+      "far":  { "host": "edge2", "interface": "eth1" }
+    },
+    {
+      "near":  { "host": "router1", "interface": "eth0" },
+      "far": { "host": "ext1", "interface": "eth0" }
+    }
+  ],
+  "implementation": [
+    { "host": "root",
+      "impl": "PTM.host.RootHost",
+      "apps": []},
+    { "host": "zoo1",
+      "impl": "PTM.host.IPNetNSHost",
+      "apps": [
+        { "class": "PTM.application.Zookeeper",
+          "id": "1",
+          "zookeeper_ips": ["10.0.0.2"]
+        }
+      ]
+    },
+    { "host": "cmp1",
+      "impl": "PTM.host.IPNetNSHost",
+      "apps": [
+        { "class": "PTM.application.Midolman",
+          "id": "1",
+          "zookeeper_ips": ["10.0.0.2"],
+          "cassandra_ips": []
+        }
+      ]
+    },
+    { "host": "cmp2",
+      "impl": "PTM.IPNetNSHost",
+      "apps": [
+        { "class": "PTM.application.Midolman",
+          "id": "2",
+          "zookeeper_ips": ["10.0.0.2"],
+          "cassandra_ips": []
+        }
+      ]
+    },
+    { "host": "net1",
+      "impl": "PTM.host.RootHost",
+      "apps": [
+        { "class": "PTM.application.MidonetAPI",
+          "zookeeper_ips": ["10.0.0.2"]
+        }
+      ]
+    },
+    { "host": "edge1",
+      "impl": "PTM.IPNetNSHost",
+      "apps": [
+        { "class": "PTM.application.Midolman",
+          "hypervisor": false,
+          "id": "3"
+        }
+      ]
+    },
+    {
+      "host": "edge2",
+      "impl": "PTM.IPNetNSHost",
+      "apps": [
+        { "class": "PTM.application.Midolman",
+          "hypervisor": false,
+          "id": "4"
+        }
+      ]
+    },
+    { "host": "ext1",
+      "impl": "PTM.host.IPNetNSHost",
+      "apps": []
+    },
+    { "host": "router1",
+      "impl": "PTM.host.IPNetNSHost",
+      "apps": []
+    }
+  ],
+  "host_start_order": [
+    "root",
+    "router1",
+    "ext1",
+    "zoo1",
+    "cmp1", "cmp2",
+    "edge1", "edge2",
+    "net1"
+  ]
+}

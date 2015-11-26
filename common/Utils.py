@@ -14,6 +14,8 @@ __author__ = 'micucci'
 # limitations under the License.
 
 import time
+import importlib
+
 from subprocess import Popen
 
 from common.CLI import LinuxCLI
@@ -27,3 +29,13 @@ def terminate_process(process, signal='TERM'):
     :return:
     """
     LinuxCLI().cmd('pkill -s ' + str(process.pid) + ' -' + signal)
+
+
+def get_class_from_fqn(fqn):
+    # Module name is the whole string, while class name is the last name after the last dot (.)
+    mod_name = fqn
+    class_name = fqn.split('.')[-1]
+
+    module = importlib.import_module(mod_name)
+    impl_class = getattr(module, class_name)
+    return impl_class

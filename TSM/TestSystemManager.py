@@ -70,7 +70,7 @@ class TestSystemManager(object):
         """ :type: logging.Logger"""
         self.CONSOLE.addHandler(logging.NullHandler())
 
-    def configure_logging(self, log_name='tsm-root', log_file_name=TSM_LOG_FILE_NAME, debug=False):
+    def configure_logging(self, log_name='tsm-root', debug=False, log_file_name=TSM_LOG_FILE_NAME):
         self.debug = debug
         level = logging.INFO
         if debug is True:
@@ -259,7 +259,7 @@ class TestSystemManager(object):
                         self.LOG.debug("Recursing with: " + str(current_context) + "." + str(m))
                         self.add_test_from_pkg_mod_cls_func(current_context + "." + m, None, None)
             else:
-                # If this is a real python file, it's a module (i.e. .py or .pyc file), so load it directly
+                # If this is a real python file, it's a module (i.e. .Cassandra or .pyc file), so load it directly
                 try:
                     for test_name, test in \
                             inspect.getmembers(mod,
@@ -338,7 +338,7 @@ class TestSystemManager(object):
         scenario_name = scenario_obj.__class__.__name__
         log_file_name = scenario_name + ".log"
 
-        scenario_obj.configure_logging(log_name=scenario_name, log_file_name=log_file_name, debug=self.debug)
+        scenario_obj.configure_logging(log_name=scenario_name, debug=self.debug, log_file_name=log_file_name)
         if self.test_system == 'unittest':
             # Prepare suite with specific functions (or whole class if func_set not specified)
             suite = unittest.TestSuite()
@@ -420,18 +420,19 @@ class TestSystemManager(object):
         cli = LinuxCLI(priv=False)
         cli.rm(results_dir)
         for scen, res in self.result_map.iteritems():
-            log_out_dir = results_dir + '/' + scen.__name__
+            self.LOG.debug("Creating test_results for scenario: " + scen.__name__)
+            results_out_dir = results_dir + '/' + scen.__name__
 
-            cli.write_to_file(wfile=log_out_dir + '/results.xml',
+            cli.write_to_file(wfile=results_out_dir + '/results.xml',
                               data=res.to_junit_xml())
-            self.log_manager.collate_logs(log_out_dir + '/full-logs')
+            self.log_manager.collate_logs(results_out_dir + '/full-logs')
 
             for tc in res.all_tests():
                 if isinstance(tc, TestCase):
                     tcname = tc.id().split('.')[-1]
                     self.LOG.debug("Creating test_results for " + tcname)
-                    cli.mkdir(log_out_dir + '/' + tcname)
-                    self.log_manager.slice_log_files_by_time(log_out_dir + '/' + tcname,
+                    cli.mkdir(results_out_dir + '/' + tcname)
+                    self.log_manager.slice_log_files_by_time(results_out_dir + '/' + tcname,
                                                              start_time=tc.start_time if tc.start_time is not None else '0.0',
                                                              stop_time=tc.stop_time if tc.start_time is not None else '0.0',
                                                              leeway=leeway,

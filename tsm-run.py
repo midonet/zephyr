@@ -18,14 +18,15 @@ import getopt
 import traceback
 import datetime
 import logging
+import importlib
 
 from common.Exceptions import *
 from common.CLI import LinuxCLI
 from common.LogManager import LogManager
-
-
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager, CONTROL_CMD_NAME
-
+from common.Utils import get_class_from_fqn
+from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from PTM.ptm_constants import CONTROL_CMD_NAME
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from VTM.MNAPI import create_midonet_client
 from VTM.NeutronAPI import create_neutron_client
@@ -38,7 +39,7 @@ from TSM.TestCase import TestCase
 def usage(exceptObj):
     print 'Usage: tsm-run.py -t <tests> [-s <scenarios>] [-p <file>]'
     print '                             [-c <neutron|midonet> --client-args="<arg=value,...>"]'
-    print '                             [extra_options]'
+    print '                             [-p <ptm_class>] [extra_options]'
     print ''
     print '   Options:'
     print '     -t, --tests <tests>          List of fully-qualified names of tests to run, separated by '
@@ -50,6 +51,8 @@ def usage(exceptObj):
     print '                                  "neutron" (default) or "midonet".'
     print '     --client-args <args>         List of arguments to give the selected client.  These should be'
     print '                                  key=value pairs, separated by commas, with no spaces.'
+    print '     -p, --ptm <ptm-class>        Use the specified PTM class (HostPhysicalTopologyManagerImpl is'
+    print '                                  the default).'
     print '   Extra Options:'
     print '     -l, --log-dir <dir>          Log file directory (default: /tmp/zephyr/results)'
     print '     -r, --results-dir <dir>      Results file directory (default: /tmp/zephyr/logs) Timestamp'
@@ -73,6 +76,7 @@ try:
     test_debug = False
     log_dir = '/tmp/zephyr/logs'
     results_dir = '/tmp/zephyr/results'
+    ptm_impl_type = 'PTM.HostPhysicalTopologyManagerImpl'
 
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
@@ -88,6 +92,9 @@ try:
             scenario_filter_list = value.split(',')
         elif arg in ('-c', '--client'):
             client_impl_type = value
+            pass
+        elif arg in ('-p', '--ptm'):
+            ptm_impl_type = value
             pass
         elif arg in ('-l', '--log-dir'):
             log_dir = value
@@ -134,9 +141,10 @@ try:
                                                 log_level=logging.DEBUG if debug is True else logging.INFO)
     log_manager.rollover_logs_fresh(file_filter='*.log')
 
-    console_log.debug('Setting up PTM')
-    ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
-    ptm.configure_logging(debug=debug)
+    console_log.debug('Setting up PTM from impl: ' + ptm_impl_type)
+    ptm_impl = get_class_from_fqn(ptm_impl_type)(root_dir=root_dir, log_manager=log_manager)
+    ptm_impl.configure_logging(debug=debug)
+    ptm = PhysicalTopologyManager(ptm_impl)
 
     console_log.debug('Setting up VTM')
     vtm = VirtualTopologyManager(physical_topology_manager=ptm, client_api_impl=client_impl, log_manager=log_manager)
@@ -187,7 +195,7 @@ try:
                     print err
 
     finally:
-        rdir = results_dir + '/' + datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
+        rdir = results_dir + '/' + datetime.datetime.utcnow().strftime('%Y_%m_%d_%H-%M-%S')
         tsm.create_results(results_dir=rdir, leeway=3)
 
 except ExitCleanException:

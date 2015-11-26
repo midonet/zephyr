@@ -28,7 +28,8 @@ __author__ = 'micucci'
 # HostInterfaceDef := { host, interface }
 # WiringDef := { near=HostInterfaceDef, far=HostInterfaceDef }
 # WiringDefList := [ WiringDef1, ..., WiringDefN ]
-# ImplementationDef := { impl, ... }
+# ApplicationDef := { class, ... }
+# ImplementationDef := { impl, [ ApplicationDef1, ..., ApplicationDefN ] }
 # ImplementationDefList := [ ImplementationDef1, ..., ImplementationDefN ]
 
 # PhysicalTopologyConfig :=
@@ -119,20 +120,67 @@ class InterfaceDef(object):
         for vlan in if_cfg['vlans'] if 'vlans' in if_cfg else []:
             new_vlan = VLANDef.make_vlan(vlan)
             vlans[new_vlan.vlan_id] = new_vlan.ip_addresses
-        
+
         return InterfaceDef(name, ip_addresses, mac_address, linked_bridge, vlans)
 
 
+class IPForwardRuleDef(object):
+    def __init__(self, exterior=None, interior=None):
+        """
+        :type exterior: str
+        :type interior: str
+        """
+        self.exterior = exterior
+        self.interior = interior
+
+    @staticmethod
+    def make_ip_forward_rule(if_cfg):
+        if 'exterior' not in if_cfg:
+            raise ObjectNotFoundException('"exterior" field required for interface definition')
+        exterior = if_cfg['exterior']
+        if 'interior' not in if_cfg:
+            raise ObjectNotFoundException('"interior" field required for interface definition')
+        interior = if_cfg['interior']
+
+        return IPForwardRuleDef(exterior, interior)
+
+
+class RouteRuleDef(object):
+    def __init__(self, dest=None, gw=None, dev=None):
+        """
+        :type dest: IP
+        :type gw: IP
+        :type dev: str
+        """
+        self.dest = dest
+        self.gw = gw
+        self.dev = dev
+
+    @staticmethod
+    def make_route_rule(if_cfg):
+        if 'dest' not in if_cfg:
+            raise ObjectNotFoundException('"dest" field required for route definition')
+        dest = if_cfg['dest']
+        gw = IP.make_ip(if_cfg['gw']) if 'gw' in if_cfg else None
+        dev = if_cfg['dev'] if 'dev' in if_cfg else None
+        dest_ip = IP.make_ip('0.0.0.0/0' if dest == 'default' else dest)
+        return RouteRuleDef(dest_ip, gw, dev)
+
+
 class HostDef(object):
-    def __init__(self, name, bridges=None, interfaces=None):
+    def __init__(self, name, bridges=None, interfaces=None, ip_forward_rules=None, route_rules=None):
         """
         :type name: str
         :type bridges: dict[str, BridgeDef]
         :type interfaces: dict[str, InterfaceDef]
+        :type ip_forward_rules: list[IPForwardRuleDef]
+        :type route_rules: list[str, RouteRuleDef]
         """
         self.name = name
         self.bridges = bridges
         self.interfaces = interfaces
+        self.ip_forward_rules = ip_forward_rules
+        self.route_rules = route_rules
 
     @staticmethod
     def make_host(host_cfg):
@@ -140,15 +188,23 @@ class HostDef(object):
         name = host_cfg['name']
         bridges={}
         interfaces={}
-        
+        ip_forward_rules = []
+        route_rules = []
+
         for br_cfg in host_cfg['bridges'] if 'bridges' in host_cfg else []:
             new_br = BridgeDef.make_bridge(br_cfg)
             bridges[new_br.name] = new_br
         for if_cfg in host_cfg['interfaces'] if 'interfaces' in host_cfg else []:
             new_if = InterfaceDef.make_interface(if_cfg)
             interfaces[new_if.name] = new_if
+        for ip_rule_cfg in host_cfg['ip_forward'] if 'ip_forward' in host_cfg else []:
+            new_rule = IPForwardRuleDef.make_ip_forward_rule(ip_rule_cfg)
+            ip_forward_rules.append(new_rule)
+        for route_cfg in host_cfg['routes'] if 'routes' in host_cfg else []:
+            new_rule = RouteRuleDef.make_route_rule(route_cfg)
+            route_rules.append(new_rule)
 
-        return HostDef(name, bridges, interfaces)
+        return HostDef(name, bridges, interfaces, ip_forward_rules, route_rules)
 
 
 class HostInterfaceDef(object):
@@ -189,16 +245,29 @@ class WiringDef(object):
         return WiringDef(near, far)
 
 
+class ApplicationDef(object):
+    def __init__(self, class_name, **kwargs):
+        self.class_name = class_name
+        self.kwargs = kwargs
+
+    @staticmethod
+    def make_application(app_cfg):
+        if 'class' not in app_cfg:
+            raise ObjectNotFoundException('"class" field required for application definition')
+
+        return ApplicationDef(app_cfg['class'], **{k: app_cfg[k] for k in app_cfg.keys() if k != 'class'})
+
+
 class ImplementationDef(object):
-    def __init__(self, host, impl, **kwargs):
+    def __init__(self, host, impl, apps):
         """
         :type host: str
         :type impl: str
-        :type kwargs: dict[str, str]
+        :type apps: list[ApplicationDef]
         """
         self.host = host
         self.impl = impl
-        self.kwargs = kwargs
+        self.apps = apps
 
     @staticmethod
     def make_implementation(impl_cfg):
@@ -207,7 +276,15 @@ class ImplementationDef(object):
         if 'impl' not in impl_cfg:
             raise ObjectNotFoundException('"impl" field required for implementation definition')
 
-        return ImplementationDef(**impl_cfg)
+        host = impl_cfg['host']
+        impl = impl_cfg['impl']
+
+        apps = []
+        for app_cfg in impl_cfg['apps'] if 'apps' in impl_cfg else []:
+            new_app = ApplicationDef.make_application(app_cfg)
+            apps.append(new_app)
+
+        return ImplementationDef(host, impl, apps)
 
 
 class WireConnectionDef(object):

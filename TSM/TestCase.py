@@ -24,6 +24,7 @@ from TestScenario import TestScenario
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
+
 class TestCase(unittest.TestCase):
 
     class_scenario = None
@@ -68,6 +69,7 @@ class TestCase(unittest.TestCase):
                        test_case_logger=logging.getLogger()):
         cls.class_scenario = current_scenario
         cls.ptm = current_scenario.ptm
+        """ :type: PhysicalTopologyManager"""
         cls.vtm = current_scenario.vtm
         cls.LOG = test_case_logger
 

@@ -13,27 +13,16 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib
 import logging
-import datetime
+from collections import namedtuple
 
-from common.Exceptions import *
-from common.CLI import LinuxCLI
 from TestScenario import TestScenario
-
-from VTM.VirtualTopologyManager import VirtualTopologyManager
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-
 from TSM.TestCase import TestCase
-from TSM.NeutronTestFixture import NeutronTestFixture
-
-from VTM.NeutronAPI import setup_neutron, clean_neutron
-from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
+from TSM.fixtures.MidonetTestFixture import MidonetTestFixture
+from TSM.fixtures.NeutronTestFixture import NeutronTestFixture
+from VTM.MNAPI import create_midonet_client
 from VTM.Guest import Guest
 
-import neutronclient.v2_0.client as neutron_client
-
-from collections import namedtuple
 
 GuestData = namedtuple('GuestData', 'port vm ip')
 """ :type: (str, Guest, str)"""
@@ -47,6 +36,8 @@ class NeutronTestCase(TestCase):
         super(NeutronTestCase, self).__init__(methodName)
         self.neutron_fixture = None
         """:type: NeutronTestFixture"""
+        self.midonet_fixture = None
+        """:type: MidonetTestFixture"""
         self.main_network = None
         self.main_subnet = None
         self.pub_network = None
@@ -71,7 +62,13 @@ class NeutronTestCase(TestCase):
         ext_list = cls.api.list_extensions()['extensions']
         cls.api_extension_map = {v['alias']: v for v in ext_list}
 
-        # Only add the neutron-setup fixture once for each scenario.
+        # Only add the midonet- and neutron-setup fixture once for each scenario.
+        if 'midonet-setup' not in current_scenario.fixtures:
+            test_case_logger.debug('Adding midonet-setup fixture for scenario: ' +
+                                   type(current_scenario).__name__)
+            midonet_fixture = MidonetTestFixture(cls.vtm, cls.ptm, current_scenario.LOG)
+            current_scenario.add_fixture('midonet-setup', midonet_fixture)
+
         if 'neutron-setup' not in current_scenario.fixtures:
             test_case_logger.debug('Adding neutron-setup fixture for scenario: ' +
                                    type(current_scenario).__name__)

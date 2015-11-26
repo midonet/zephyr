@@ -17,9 +17,8 @@ import importlib
 import logging
 
 from common.Exceptions import *
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-from VTM.VirtualTopologyManager import VirtualTopologyManager
-from TSM.TestFixture import TestFixture
+from TSM.fixtures.TestFixture import TestFixture
+
 
 class TestScenario(object):
     def __init__(self, ptm, vtm):
@@ -41,7 +40,7 @@ class TestScenario(object):
     def teardown(self):
         pass
 
-    def configure_logging(self, log_name='scenario', log_file_name='scenario.log', debug=False):
+    def configure_logging(self, log_name='scenario', debug=False, log_file_name='scenario.log'):
         self.debug = debug
         if self.log_manager is None:
             return

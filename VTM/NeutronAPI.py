@@ -27,7 +27,7 @@ def create_neutron_client(api_version='2.0', endpoint_url='http://localhost:9696
                                                token=token, tenant_name=tenant_name, **kwargs)
 
 
-def setup_neutron(api, subnet_cidr='192.168.0.0/24', pubsubnet_cidr='10.0.0.0/24', log=None):
+def setup_neutron(api, subnet_cidr='192.168.0.0/24', pubsubnet_cidr='200.200.0.0/24', log=None):
     """
     Creates a network named 'main' in the 'admin' tenant and creates a single subnet 'main_sub'
     with the given IP network.
@@ -63,28 +63,29 @@ def setup_neutron(api, subnet_cidr='192.168.0.0/24', pubsubnet_cidr='10.0.0.0/24
         main_subnet = subnets['subnets'][0]
     log.debug('Using main subnet: ' + str(main_subnet))
 
-    # Create a public network
-    pubnetworks = api.list_networks(name='public')
-    if len(pubnetworks['networks']) == 0:
-        pubnetwork_resp = api.create_network({'network': {'name': 'public', 'admin_state_up': True,
-                                                          'router:external': True,
-                                                          'tenant_id': tenant_id}})
-        pub_network = pubnetwork_resp['network']
-    else:
-        pub_network = pubnetworks['networks'][0]
+    # Create a public network for use with edge routing (if needed
+    pub_network = api.create_network({'network': {'name': 'public',
+                                                  'admin_state_up': True,
+                                                  'router:external': True,
+                                                  'tenant_id': 'admin'}})['network']
     log.debug('Using public network: ' + str(pub_network))
 
     # Create public network's subnet
-    pubsubnets = api.list_subnets(name='pub_sub', network_id=pub_network['id'])
-    if len(pubsubnets['subnets']) == 0:
-        pubsubnet_resp = api.create_subnet({'subnet': {'name': 'pub_sub',
-                                                       'network_id': pub_network['id'],
-                                                       'ip_version': 4, 'cidr': pubsubnet_cidr,
-                                                       'tenant_id': tenant_id}})
-        pub_subnet = pubsubnet_resp['subnet']
-    else:
-        pub_subnet = pubsubnets['subnets'][0]
+    pub_subnet = api.create_subnet({'subnet': {'name': 'pub_sub',
+                                               'network_id': pub_network['id'],
+                                               'ip_version': 4,
+                                               'cidr': pubsubnet_cidr,
+                                               'tenant_id': 'admin'}})['subnet']
     log.debug('Using public subnet: ' + str(pub_subnet))
+    public_router = api.create_router({'router': {'name': 'pub_main_router',
+                                                  'admin_state_up': True,
+                                                  'external_gateway_info': {
+                                                      "network_id": pub_network['id']
+                                                  },
+                                                  'tenant_id': 'admin'}})['router']
+
+    # Route traffic between main subnet and public gateway
+    api.add_interface_router(public_router['id'], {'subnet_id': main_subnet['id']})
 
     # Create default security group
     default_secgroups = api.list_security_groups(name='default')['security_groups']

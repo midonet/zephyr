@@ -72,7 +72,7 @@ class LinuxCLI(object):
         if (self.env_map is not None):
             self.env_map.pop(name)
 
-    def cmd_pipe(self, commands, timeout=None, blocking=True,
+    def cmd_pipe(self, commands, timeout=None, blocking=True, verify=False,
                  stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         """
         Execute piped commands on the system without a shell.  The exact command will be
@@ -143,10 +143,15 @@ class LinuxCLI(object):
         for line in stderr:
             err += line
 
+        if verify and p.returncode != 0:
+            raise SubprocessFailedException('Command: [' + str(cmd) + '] returned error: ' +
+                                            str(p.returncode) + ', output was stdout[' +
+                                            str(out) + ']/stderr[' + str(err) + ']')
+
         return CommandStatus(process=p, command=cmd_str, ret_code=p.returncode,
                              stdout=out, stderr=err, process_array=processes)
 
-    def cmd(self, cmd_line, timeout=None, blocking=True,
+    def cmd(self, cmd_line, timeout=None, blocking=True, verify=False,
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE):
         """
         Execute a shell command on the system.  The exact command will be transformed based
@@ -191,6 +196,11 @@ class LinuxCLI(object):
         err = ''
         for line in e if e else []:
             err += line
+
+        if verify and p.returncode != 0:
+            raise SubprocessFailedException('Command: [' + str(cmd) + '] returned error: ' +
+                                            str(p.returncode) + ', output was stdout[' +
+                                            str(out) + ']/stderr[' + str(err) + ']')
 
         return CommandStatus(process=p, command=cmd, ret_code=p.returncode, stdout=out, stderr=err)
 

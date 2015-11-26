@@ -15,15 +15,15 @@
 
 import sys
 import traceback
-import json
-import importlib
 import getopt
 
 from common.Exceptions import *
 from common.CLI import LinuxCLI
 from common.LogManager import LogManager
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager, HOST_CONTROL_CMD_NAME
-from PTM.Host import Host
+from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from PTM.ptm_constants import HOST_CONTROL_CMD_NAME
+
 
 def usage(exceptClass):
     print 'Usage: ' + HOST_CONTROL_CMD_NAME + ' [-h] [-d] [-l <log_dir>] -c <command> -j <host_json>'
@@ -32,12 +32,13 @@ def usage(exceptClass):
 
 try:
 
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdc:j:l:',
-                                        ['help', 'debug', 'command=', 'host-json=', 'log-dir='])
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdc:j:l:a:',
+                                        ['help', 'debug', 'command=', 'host-json=', 'app-json=', 'log-dir='])
 
     # Defaults
     host_cmd = ''
     host_json = ''
+    app_json = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False
 
@@ -51,6 +52,8 @@ try:
             host_cmd = value
         elif arg in ('-j', '--host-json'):
             host_json = value
+        elif arg in ('-a', '--app-json'):
+            app_json = value
         elif arg in ('-l', '--log-dir'):
             log_dir = value
         else:
@@ -62,20 +65,18 @@ try:
     if host_json == '':
         usage(ArgMismatchException('Must specify JSON representing host'))
 
+    if app_json == '':
+        usage(ArgMismatchException('Must specify JSON representing application'))
+
     arg_list = extra_args
 
     root_dir = LinuxCLI().cmd('pwd').stdout.strip()
 
     log_manager = LogManager(root_dir=log_dir)
 
-    ptm = PhysicalTopologyManager(root_dir=root_dir, log_manager=log_manager)
-    ptm.configure_logging(debug=debug)
-
-    ptm.LOG.debug("Setting root dir to: " + root_dir)
-
-    ptm.LOG.debug("ptm-host-ctl starting cmd: " + host_cmd + " for host: " + host_json)
-    ptm.ptm_host_control(host_cmd, host_json, arg_list)
-    ptm.LOG.debug("ptm-host-ctl finished")
+    ptm_impl = HostPhysicalTopologyManagerImpl(root_dir=root_dir, log_manager=log_manager)
+    ptm_impl.configure_logging(debug=debug)
+    ptm_impl.ptm_host_app_control(host_cmd, host_json, app_json, arg_list)
 
 except ExitCleanException:
     exit(1)
