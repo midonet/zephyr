@@ -25,7 +25,6 @@ from VTM.Guest import Guest
 
 import neutronclient.v2_0.client as neutron_client
 
-
 GuestData = namedtuple('GuestData', 'port vm ip')
 """ :type: (str, Guest, str)"""
 NetData = namedtuple('NetData', 'network subnet')
