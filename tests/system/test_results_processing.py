@@ -18,8 +18,8 @@ from common.FileLocation import *
 
 from TSM.TestCase import TestCase
 
-from tests.scenarios.Scenario_allinone import Scenario_allinone
-from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
+from tests.scenarios.Scenario_AllInOne import Scenario_AllInOne
+from tests.scenarios.Scenario_Basic2Compute import Scenario_Basic2Compute
 from AllInOneCopy import AllInOneCopyScenario
 
 import unittest
@@ -43,7 +43,7 @@ class TestResultsProcessing(TestCase):
 
     @staticmethod
     def supported_scenarios():
-        return {Scenario_allinone, AllInOneCopyScenario}
+        return {Scenario_AllInOne, AllInOneCopyScenario}
 
     def test_passed_test(self):
         self.testlog.debug('test_passed_test')

@@ -16,9 +16,9 @@ __author__ = 'micucci'
 from TSM.TestScenario import TestScenario
 
 
-class Scenario_1z_2m_1edge(TestScenario):
+class Scenario_Full3ComputeWithEdgeVLAN(TestScenario):
     def setup(self):
-        self.ptm.configure(self.ptm.root_dir + '/config/ptm/1z-2m+edge.json')
+        self.ptm.configure(self.ptm.root_dir + '/config/ptm/3z-3c-3cass-4h-1edge+vlan.json')
         self.ptm.startup()
 
     def teardown(self):

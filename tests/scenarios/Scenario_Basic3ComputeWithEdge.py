@@ -16,9 +16,9 @@ __author__ = 'micucci'
 from TSM.TestScenario import TestScenario
 
 
-class Scenario_allinone(TestScenario):
+class Scenario_Basic3ComputeWithEdge(TestScenario):
     def setup(self):
-        self.ptm.configure(self.ptm.root_dir + '/config/ptm/allinone.json')
+        self.ptm.configure(self.ptm.root_dir + '/config/ptm/2z-3c-2edge.json')
         self.ptm.startup()
 
     def teardown(self):

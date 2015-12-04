@@ -13,7 +13,7 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.scenarios.Scenario_1z_2m_1edge import Scenario_1z_2m_1edge
+from tests.scenarios.Scenario_Basic2ComputeWithEdge import Scenario_Basic2ComputeWithEdge
 from TSM.NeutronTestCase import NeutronTestCase#, RouterData
 from collections import namedtuple
 from common.Exceptions import *
@@ -29,7 +29,7 @@ class TestRouterPeering(NeutronTestCase):
 
     @staticmethod
     def supported_scenarios():
-        return {Scenario_1z_2m_1edge}
+        return {Scenario_Basic2ComputeWithEdge}
 
     @unittest.skipUnless(version_config.ConfigMap.get_configured_parameter('option_extension_extra_routes'),
                          'This test requires extra_routes extension in order to add default routes')

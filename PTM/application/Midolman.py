@@ -78,7 +78,7 @@ class Midolman(Application, HypervisorService):
                 self.zookeeper_ips.append(IP(i))
 
         if 'hypervisor' in app_cfg.kwargs:
-            self.hv_active = app_cfg['hypervisor']
+            self.hv_active = app_cfg.kwargs['hypervisor']
 
         if 'id' in app_cfg.kwargs:
             self.num_id = app_cfg.kwargs['id']

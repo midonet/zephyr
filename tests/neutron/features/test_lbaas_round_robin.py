@@ -14,7 +14,7 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from TSM.NeutronTestCase import NeutronTestCase, GuestData, NetData, RouterData, require_extension
-from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
+from tests.scenarios.Scenario_Basic2Compute import Scenario_Basic2Compute
 from common.CLI import NetNSCLI, CommandStatus
 import unittest
 
@@ -26,7 +26,7 @@ NUM_PACKETS_TO_SEND = 50
 class TestLBaaSRoundRobin(NeutronTestCase):
     @staticmethod
     def supported_scenarios():
-        return {Scenario_1z_1c_2m}
+        return {Scenario_Basic2Compute}
 
     def create_lbaas_network_topology(self):
         try:

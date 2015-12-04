@@ -38,7 +38,7 @@ try:
 
     # Defaults
     command = ''
-    ptm_config_file = 'config/ptm/3z-3c-3m+4h+vlan+edge.json'
+    ptm_config_file = 'config/ptm/2z-2c-2edge.json'
     neutron_command = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False

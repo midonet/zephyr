@@ -16,9 +16,9 @@ __author__ = 'micucci'
 from TSM.TestScenario import TestScenario
 
 
-class Scenario_3z_3c_3m_1edge(TestScenario):
+class Scenario_Basic2Compute(TestScenario):
     def setup(self):
-        self.ptm.configure(self.ptm.root_dir + '/config/ptm/3z-3c-3m+edge.json')
+        self.ptm.configure(self.ptm.root_dir + '/config/ptm/2z-3m-2eX2.json')
         self.ptm.startup()
 
     def teardown(self):

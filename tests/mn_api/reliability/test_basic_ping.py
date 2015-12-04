@@ -24,7 +24,7 @@ from VTM.MNAPI import setup_main_bridge
 
 from TSM.MidonetTestCase import MidonetTestCase
 
-from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
+from tests.scenarios.Scenario_Basic2Compute import Scenario_Basic2Compute
 
 
 class TestBasicPing(MidonetTestCase):
@@ -35,7 +35,7 @@ class TestBasicPing(MidonetTestCase):
 
     @staticmethod
     def supported_scenarios():
-        return {Scenario_1z_1c_2m}
+        return {Scenario_Basic2Compute}
 
     @classmethod
     def setUpClass(cls):

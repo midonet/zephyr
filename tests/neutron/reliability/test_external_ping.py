@@ -13,7 +13,7 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.scenarios.Scenario_1z_2m_1edge import Scenario_1z_2m_1edge
+from tests.scenarios.Scenario_Basic2ComputeWithEdge import Scenario_Basic2ComputeWithEdge
 from TSM.NeutronTestCase import NeutronTestCase#, RouterData
 from collections import namedtuple
 from common.Exceptions import *
@@ -29,7 +29,7 @@ class TestExternalPing(NeutronTestCase):
 
     @staticmethod
     def supported_scenarios():
-        return {Scenario_1z_2m_1edge}
+        return {Scenario_Basic2ComputeWithEdge}
 
     @unittest.skipUnless(version_config.ConfigMap.get_configured_parameter('option_extension_extra_routes'),
                          'This test requires extra_routes extension in order to add default routes')
@@ -42,11 +42,6 @@ class TestExternalPing(NeutronTestCase):
                                                             'provider:network_type': 'uplink',
                                                             'tenant_id': 'admin'}})['network']
         self.LOG.debug('Created edge network: ' + str(edge_network))
-
-        if edge_host not in self.ptm.hosts_by_name or \
-                        edge_iface not in self.ptm.hosts_by_name[edge_host].interfaces:
-            raise ObjectNotFoundException('Host/iface not found in physical topology: ' +
-                                          edge_host + '/' + edge_iface)
 
         # Create uplink network's subnet
         edge_ip = '.'.join(edge_subnet.split('.')[:-1]) + '.2'
@@ -78,7 +73,6 @@ class TestExternalPing(NeutronTestCase):
                                                                    'ip_address': edge_ip}],
                                                     'tenant_id': 'admin'}})['port']
         self.LOG.info('Created physical-bound, edge port: ' + str(edge_port1))
-
         # Bind port to edge router
         if1 = self.api.add_interface_router(edge_router['id'], {'port_id': edge_port1['id']})
 
@@ -95,7 +89,7 @@ class TestExternalPing(NeutronTestCase):
                                                                      'nexthop': edge_gw}]}})['router']
         self.LOG.info('Added default route to edge router: ' + str(edge_router))
 
-        router_host = self.ptm.hosts_by_name['router1']
+        router_host = self.ptm.impl_.hosts_by_name['router1']
         router_host.add_route(IP.make_ip(self.pub_subnet['cidr']), IP(edge_ip, '24'))
         self.LOG.info('Added return route to host router')
 
@@ -139,6 +133,7 @@ class TestExternalPing(NeutronTestCase):
 
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
 
+            raw_input("WAIT")
             self.LOG.info('Pinging from VM1 to external')
             self.assertTrue(vm1.ping(on_iface='eth0', target_ip='172.20.1.1'))
 

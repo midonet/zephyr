@@ -16,7 +16,7 @@ __author__ = 'micucci'
 from common.PCAPRules import *
 from common.PCAPPacket import *
 from TSM.NeutronTestCase import NeutronTestCase
-from tests.scenarios.Scenario_1z_1c_2m import Scenario_1z_1c_2m
+from tests.scenarios.Scenario_Basic2Compute import Scenario_Basic2Compute
 from VTM.Guest import Guest
 
 from collections import namedtuple
@@ -27,7 +27,7 @@ import unittest
 class TestAllowedAddressPairs(NeutronTestCase):
     @staticmethod
     def supported_scenarios():
-        return {Scenario_1z_1c_2m}
+        return {Scenario_Basic2Compute}
 
     def send_and_capture_spoof(self, sender, receiver, receiver_ip, spoof_ip, spoof_mac,
                                with_ip=True, with_mac=True, should_fail=False):
