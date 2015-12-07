@@ -104,7 +104,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             # Default IP and MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Default state should be PS enabled on net and any created ports
             # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
@@ -148,7 +148,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             # Default IP and MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                         spoof_ip="192.168.99.99", spoof_mac="",
@@ -192,7 +192,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             # Default IP and MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Send to spoof IP with spoof MAC
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -249,7 +249,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             # Default IP and MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Send to ip1 and mac1
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -308,7 +308,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             # Default IP and MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                         spoof_ip="192.168.99.99", spoof_mac="AA:AA:AA:AA:AA:AA")
@@ -357,7 +357,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             # Default IP and MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                         spoof_ip="192.168.99.2", spoof_mac="", with_mac=False)
@@ -411,7 +411,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             # Default IP and MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                         spoof_ip="192.168.99.2", spoof_mac="AA:AA:AA:AA:AA:AA")
@@ -460,7 +460,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             # Default IP and MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Send to subnet spoof IP with default MAC, should work
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -564,7 +564,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             self.LOG.debug('Updated port1: ' + str(port1))
 
             # Default IP/MAC should still work
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Send to deleted IP/mac - should FAIL
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -608,7 +608,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Send to subnet IP with default MAC
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -685,7 +685,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Send to subnet, default MAC
             self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,

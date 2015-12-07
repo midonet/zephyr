@@ -57,10 +57,10 @@ class TestBasicPing(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip=ip1))
+            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
 
         finally:
             if vm1 is not None:
@@ -108,7 +108,7 @@ class TestBasicPing(NeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
             self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
         finally:
             if vm1 is not None:

@@ -23,7 +23,7 @@ class PluginComponentInstaller(ComponentInstaller):
         repo_name = repo + '-' + version.major + '-' + repo_obj.get_type()
         repo_obj.create_repo_file('midokura.networking-midonet', scheme, repo_name,
                                   username, password, distribution)
-        LinuxCLI().cmd("add-apt-repository -y cloud-archive:kilo")
+        LinuxCLI().cmd("add-apt-repository -y cloud-archive:" + version)
         LinuxCLI().cmd("apt-get update")
 
     def install_packages(self, repo, exact_version=None):

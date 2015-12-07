@@ -51,9 +51,10 @@ def usage(except_obj):
 
 try:
 
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdi:u:V:S:U:P:D:',
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdi:u:V:S:U:P:D:e:',
                                         ['help', 'debug', 'uninstall=', 'install=', 'server=',
-                                         'version=', 'user=', 'pass=', 'dist=', 'distribution='])
+                                         'version=', 'exact-version=', 'user=', 'pass=', 'dist=',
+                                         'distribution='])
 
     # Defaults
     command = ''
@@ -80,8 +81,9 @@ try:
             component = value
         elif arg in ('-V', '--version'):
             if value != 'nightly':
-                exact_version = value
                 version = version_config.parse_midolman_version(value)
+        elif arg in ('-e', '--exact-version'):
+            exact_version = value
         elif arg in ('-D', '--dist', '--distribution'):
             distribution = value
         elif arg in ('-U', '--user'):

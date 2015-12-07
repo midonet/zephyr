@@ -85,7 +85,7 @@ class TestPortSecurity(NeutronTestCase):
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Default state should be PS enabled on net and any created ports
             # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
@@ -110,7 +110,7 @@ class TestPortSecurity(NeutronTestCase):
                               filter=PCAP_And([PCAP_ICMPProto(),
                                                PCAP_Host('192.168.99.99', proto='ip', source=False, dest=True)]))
 
-            self.assertFalse(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertFalse(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             packets = vm2.capture_packets(on_iface='eth0', count=1, timeout=3)
             vm1.stop_capture(on_iface='eth0')
@@ -153,7 +153,7 @@ class TestPortSecurity(NeutronTestCase):
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             # Disable port security
             self.api.update_network(self.main_network['id'],

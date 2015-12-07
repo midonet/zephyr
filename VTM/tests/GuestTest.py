@@ -134,7 +134,7 @@ class GuestTest(unittest.TestCase):
             virtual_host2.plugin_vm('eth0', port2)
 
             # No virtual bridge between VMs means they should NOT talk to each other yet.
-            self.assertFalse(virtual_host1.ping('eth0', '10.55.55.55'))
+            self.assertFalse(virtual_host1.ping('10.55.55.55', 'eth0'))
 
             virtual_host1.unplug_vm(port1)
             virtual_host2.unplug_vm(port2)

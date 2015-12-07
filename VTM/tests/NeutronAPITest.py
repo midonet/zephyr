@@ -114,8 +114,8 @@ class NeutronAPITest(unittest.TestCase):
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip=ip1))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
 
         finally:
             if vm1 is not None:
@@ -160,7 +160,7 @@ class NeutronAPITest(unittest.TestCase):
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
         finally:
             if vm1 is not None:

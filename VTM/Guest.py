@@ -118,16 +118,16 @@ class Guest(object):
         """
         self.vm_host.stop_capture(interface=on_iface)
 
-    def ping(self, on_iface, target_ip, count=3):
+    def ping(self, target_ip, on_iface='eth0', count=3):
         """
         Ping the target_ip on given interface and return true if the ping succeeds,
         false otherwise.
-        :param on_iface: str
         :param target_ip: str
+        :param on_iface: str
         :param count: int
         :return: bool
         """
-        return self.vm_host.ping(iface=on_iface, target_ip=target_ip, count=count)
+        return self.vm_host.ping(target_ip=target_ip, iface=on_iface, count=count)
 
     def start_echo_server(self, ip='localhost', port=DEFAULT_ECHO_PORT, echo_data="echo-reply"):
         """

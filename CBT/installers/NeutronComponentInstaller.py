@@ -128,7 +128,7 @@ class NeutronComponentInstaller(ComponentInstaller):
         cli.rm('/etc/neutron/plugin.ini')
         cli.cmd('ln -s /etc/neutron/plugins/midonet/midonet_plugin.ini /etc/neutron/plugin.ini')
 
-        if exact_version == "kilo" or exact_version is None:
+        if exact_version == "mitaka" or exact_version is None:
             cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
                     '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head')
             cli.cmd('midonet-db-manage upgrade head')

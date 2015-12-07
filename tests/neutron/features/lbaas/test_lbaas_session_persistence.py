@@ -76,8 +76,8 @@ class TestLBaaSSessionPersistence(NeutronTestCase):
             vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
             vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
 
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip=ip1))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
 
             return (GuestData(port1, vm1, ip1),
                     GuestData(port2, vm2, ip2),
@@ -94,12 +94,13 @@ class TestLBaaSSessionPersistence(NeutronTestCase):
         :type router: RouterData
         :return:
         """
-        if router.router is not None:
-            self.api.update_router(router.router['id'], {'router': {'routes': None}})
-            if router.if_list is not None:
-                for iface in router.if_list:
-                    self.api.remove_interface_router(router.router['id'], iface)
-            self.api.delete_router(router.router['id'])
+        if router is not None:
+            if router.router is not None:
+                self.api.update_router(router.router['id'], {'router': {'routes': None}})
+                if router.if_list is not None:
+                    for iface in router.if_list:
+                        self.api.remove_interface_router(router.router['id'], iface)
+                self.api.delete_router(router.router['id'])
         if net_data is not None:
             if net_data.subnet is not None:
                 self.api.delete_subnet(net_data.subnet['id'])

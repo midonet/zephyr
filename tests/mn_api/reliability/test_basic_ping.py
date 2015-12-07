@@ -61,7 +61,7 @@ class TestBasicPing(MidonetTestCase):
             vm1.plugin_vm('eth0', port1.get_id())
             vm2.plugin_vm('eth0', port2.get_id())
 
-            vm1.ping(on_iface='eth0', target_ip='10.0.1.4')
+            vm1.ping(target_ip='10.0.1.4', on_iface='eth0')
 
         finally:
             vm1.terminate()
@@ -83,7 +83,7 @@ class TestBasicPing(MidonetTestCase):
             vm1.plugin_vm('eth0', port1.get_id())
             vm2.plugin_vm('eth0', port2.get_id())
 
-            vm1.ping(on_iface='eth0', target_ip='10.0.1.4')
+            vm1.ping(target_ip='10.0.1.4', on_iface='eth0')
         finally:
             vm1.terminate()
             vm2.terminate()

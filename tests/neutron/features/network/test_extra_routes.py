@@ -163,13 +163,13 @@ class TestExtraRoutes(NeutronTestCase):
             td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip=ip1))
+            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
 
             self.LOG.info("Pinging from VM2 to VM1's extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.16.0.2'))
+            self.assertTrue(vm2.ping(target_ip='172.16.0.2', on_iface='eth0'))
 
         finally:
             if vm1 is not None:
@@ -216,13 +216,13 @@ class TestExtraRoutes(NeutronTestCase):
             td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip=ip1))
+            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
 
             self.LOG.info("Pinging from VM2 to VM1's extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.16.0.2'))
+            self.assertTrue(vm2.ping(target_ip='172.16.0.2', on_iface='eth0'))
 
         finally:
             if vm1 is not None:
@@ -269,10 +269,10 @@ class TestExtraRoutes(NeutronTestCase):
             td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to 8.8.8.8')
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip="8.8.8.8"))
+            self.assertTrue(vm1.ping(target_ip="8.8.8.8"))
 
             self.LOG.info('Pinging from VM2 to 8.8.8.8')
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip="8.8.8.8"))
+            self.assertTrue(vm2.ping(target_ip="8.8.8.8"))
 
         finally:
             raw_input("Pausing...")
@@ -331,19 +331,19 @@ class TestExtraRoutes(NeutronTestCase):
             td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip=ip1))
+            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
 
             self.LOG.info("Pinging from VM2 to VM1's first extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.16.0.2'))
+            self.assertTrue(vm2.ping(target_ip='172.16.0.2', on_iface='eth0'))
 
             self.LOG.info("Pinging from VM2 to VM1's second extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.17.0.2'))
+            self.assertTrue(vm2.ping(target_ip='172.17.0.2', on_iface='eth0'))
 
             self.LOG.info("Pinging from VM1 to VM2's extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.18.0.2'))
+            self.assertTrue(vm2.ping(target_ip='172.18.0.2', on_iface='eth0'))
 
         finally:
             self.cleanup_vms([(vm1, None), (vm2, None)])
@@ -389,16 +389,16 @@ class TestExtraRoutes(NeutronTestCase):
             td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
             self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip=ip1))
+            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
 
             self.LOG.info("Pinging from VM2 to VM1's first extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.16.0.2'))
+            self.assertTrue(vm2.ping(target_ip='172.16.0.2', on_iface='eth0'))
 
             self.LOG.info("Pinging from VM2 to VM1's second extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.16.0.3'))
+            self.assertTrue(vm2.ping(target_ip='172.16.0.3', on_iface='eth0'))
 
         finally:
             self.cleanup_vms([(vm1, None), (vm2, None)])

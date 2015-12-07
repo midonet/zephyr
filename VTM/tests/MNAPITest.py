@@ -89,8 +89,8 @@ class MNAPITest(unittest.TestCase):
             vm1.plugin_vm('eth0', port1.get_id())
             vm2.plugin_vm('eth0', port2.get_id())
             time.sleep(1)
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip='10.1.1.3'))
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='10.1.1.2'))
+            self.assertTrue(vm1.ping(target_ip='10.1.1.3', on_iface='eth0'))
+            self.assertTrue(vm2.ping(target_ip='10.1.1.2', on_iface='eth0'))
 
         finally:
             vm1.terminate()
@@ -112,8 +112,8 @@ class MNAPITest(unittest.TestCase):
             vm1.plugin_vm('eth0', port1.get_id())
             vm2.plugin_vm('eth0', port2.get_id())
             time.sleep(1)
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip='10.1.1.3'))
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='10.1.1.2'))
+            self.assertTrue(vm1.ping(target_ip='10.1.1.3', on_iface='eth0'))
+            self.assertTrue(vm2.ping(target_ip='10.1.1.2', on_iface='eth0'))
 
         finally:
             vm1.terminate()
