@@ -23,6 +23,8 @@ from TSM.fixtures.NeutronTestFixture import NeutronTestFixture
 from VTM.MNAPI import create_midonet_client
 from VTM.Guest import Guest
 
+import neutronclient.v2_0.client as neutron_client
+
 
 GuestData = namedtuple('GuestData', 'port vm ip')
 """ :type: (str, Guest, str)"""
