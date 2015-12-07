@@ -72,7 +72,12 @@ class TestResult(unittest.TestResult):
         for tc, data in self.failures:
             reason = 'Trace [' + data + ']'
             if isinstance(tc, TestCase):
-                fail = '<failure type="{0}">'.format(tc.failureException) + reason + '</failure>'
+                reportStr = ''
+                if hasattr(tc.failureException, "__name__"):
+                    reportStr = tc.failureException.__name__
+                else:
+                    reportStr = tc.failureException
+                fail = '<failure type="{0}">'.format(reportStr) + reason + '</failure>'
                 ret_xml += format_tc_data(tc, fail)
 
         for tc in self.unexpectedSuccesses:
@@ -83,7 +88,12 @@ class TestResult(unittest.TestResult):
         for tc, data in self.errors:
             reason = 'Trace [' + data + ']'
             if isinstance(tc, TestCase):
-                err = '<error type="{0}">'.format(tc.failureException) + reason + '</error>'
+                reportStr = ''
+                if hasattr(tc.failureException, "__name__"):
+                    reportStr = tc.failureException.__name__
+                else:
+                    reportStr = tc.failureException
+                err = '<error type="{0}">'.format(reportStr) + reason + '</error>'
                 ret_xml += format_tc_data(tc, err)
             else:
                 name = 'unknown'
@@ -101,7 +111,12 @@ class TestResult(unittest.TestResult):
         for tc, data in self.expectedFailures:
             reason = 'Trace [' + data + ']'
             if isinstance(tc, TestCase):
-                info = '<skipped>Expected Failure: [' + tc.failureException + '] ' + reason + '</skipped>'
+                reportStr = ''
+                if hasattr(tc.failureException, "__name__"):
+                    reportStr = tc.failureException.__name__
+                else:
+                    reportStr = tc.failureException
+                info = '<skipped>Expected Failure: [' + reportStr + '] ' + reason + '</skipped>'
                 ret_xml += format_tc_data(tc, info)
 
         ret_xml += '</testsuite>\n'
