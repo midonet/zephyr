@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import sys
 import getopt
 import traceback
@@ -49,6 +50,9 @@ def usage(exceptObj):
     print '                                  By default, each test will run all of its supported scenarios.'
     print '     -c, --client <client>        OpenStack Network client to use.  Currently can be either '
     print '                                  "neutron" (default) or "midonet".'
+    print '     -a, --client-auth <auth>     Authentication scheme to use for Openstack authentication. Can be'
+    print '                                  "noauth" or "keystone" ("noauth" is default).'
+    print '                                  "neutron" (default) or "midonet".'
     print '     --client-args <args>         List of arguments to give the selected client.  These should be'
     print '                                  key=value pairs, separated by commas, with no spaces.'
     print '     -p, --ptm <ptm-class>        Use the specified PTM class (HostPhysicalTopologyManagerImpl is'
@@ -62,12 +66,14 @@ def usage(exceptObj):
         raise exceptObj
 
 try:
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:l:r:',
-                                        ['help', 'tests=', 'scenarios=', 'client=', 'client-args=', 'ptm=',
-                                         'log-dir=', 'debug', 'results-dir=', 'debug-test'])
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:l:r:a:',
+                                        ['help', 'tests=', 'scenarios=',
+                                         'client=', 'client-auth=', 'client-args=',
+                                         'ptm=', 'log-dir=', 'debug', 'results-dir=', 'debug-test'])
 
     # Defaults
     client_impl_type = 'neutron'
+    client_auth_type = 'noauth'
     client_args = {}
     tests = ''
     scenario_filter_list = ''
@@ -92,6 +98,9 @@ try:
             scenario_filter_list = value.split(',')
         elif arg in ('-c', '--client'):
             client_impl_type = value
+            pass
+        elif arg in ('-a', '--client-auth'):
+            client_auth_type = value
             pass
         elif arg in ('-p', '--ptm'):
             ptm_impl_type = value
@@ -128,8 +137,16 @@ try:
     print 'Setting root dir to: ' + root_dir
 
     client_impl = None
+    base_client_args = dict()
     if client_impl_type == 'neutron':
-        client_impl = create_neutron_client(**client_args)
+        if client_auth_type == 'keystone':
+            base_client_args = {'auth_strategy': 'keystone',
+                                'auth_url': os.environ.get('OS_ATUH_URL', 'http://localhost:5000/v2.0'),
+                                'username': os.environ.get('OS_USERNAME', 'admin'),
+                                'password': os.environ.get('OS_PASSWORD', 'cat'),
+                                'tenant_name': os.environ.get('OS_TENANT_NAME', 'admin')}
+        base_client_args.update(client_args)
+        client_impl = create_neutron_client(**base_client_args)
     elif client_impl_type == 'midonet':
         client_impl = create_midonet_client(**client_args)
     else:
