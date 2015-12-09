@@ -13,7 +13,7 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import NeutronTestCase, require_extension
 from VTM.Guest import Guest
 
 from collections import namedtuple
@@ -21,6 +21,7 @@ from collections import namedtuple
 SiteData = namedtuple('SiteData', 'net subnet router iface')
 VPNData = namedtuple('VPNData', 'ikepol ipsecpol vpnL ipsecL vpnR ipsecR')
 TopoData = namedtuple('TopoData', 'sites vpn')
+
 
 class TestVPNaaSSingleSite(NeutronTestCase):
     def setup_vpnaas_neutron_topo(self):
@@ -109,7 +110,6 @@ class TestVPNaaSSingleSite(NeutronTestCase):
             rt_site = SiteData(privateR, privateRsub, routerR, routerR_if1)
             vpn_data = VPNData(ike_pol, ipsec_pol, vpn_svcL, ipsec_connL, vpn_svcR, ipsec_connR)
             return TopoData([lt_site, rt_site], vpn_data)
-
         except Exception as e:
             self.LOG.fatal('Error setting up topology: ' + str(e))
             raise e
@@ -145,10 +145,13 @@ class TestVPNaaSSingleSite(NeutronTestCase):
         if td.vpn.ipsecpol is not None:
             self.api.delete_ipsecpolicy(td.vpn.ipsecpol['id'])
 
+    @require_extension('vpnaas')
     def test_vm_communication_through_vpn_tunnel(self):
         vmL1 = None
         vmR1 = None
         td = None
+        portL1 = None
+        portR1 = None
         try:
             td = self.setup_vpnaas_neutron_topo()
 
@@ -175,16 +178,14 @@ class TestVPNaaSSingleSite(NeutronTestCase):
 
             vmL1.plugin_vm('eth0', portL1['id'])
             vmR1.plugin_vm('eth0', portR1['id'])
+            f = vmL1.execute('ls')
 
             self.LOG.info('Pinging from VM L1 to VM R1')
-            self.assertTrue(vmL1.ping(on_iface='eth0', target_ip=ipR1))
+            self.assertTrue(vmL1.ping(target_ip=ipR1, on_iface='eth0'))
 
             self.LOG.info('Pinging from VM R1 to VM L1')
-            self.assertTrue(vmR1.ping(on_iface='eth0', target_ip=ipL1))
+            self.assertTrue(vmR1.ping(target_ip=ipL1, on_iface='eth0'))
 
         finally:
-            if vmL1 is not None:
-                vmL1.terminate()
-            if vmR1 is not None:
-                vmR1.terminate()
             self.clear_neutron_topo(td)
+            self.cleanup_vms([(vmL1, portL1), (vmR1, portR1)])

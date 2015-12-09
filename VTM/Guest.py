@@ -209,6 +209,7 @@ class Guest(object):
         :return:
         """
         result = self.vm_host.cli.cmd(cmd_line, timeout=timeout, blocking=blocking)
+        """ :type: CommandStatus"""
         if result.ret_code != 0:
             raise SubprocessFailedException('Retcode: ' + str(result.ret_code) +
                                             ', cmd output: ' + result.stdout +
