@@ -30,7 +30,6 @@ from common.CLI import LinuxCLI
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 
-from TSM.TestScenario import TestScenario
 from TSM.TestCase import TestCase
 from TSM.TestResult import TestResult
 
@@ -50,7 +49,7 @@ class TestSystemManager(object):
         self.test_cases = {}
         """ :type: dict [TestCase, set[str]]"""
         self.result_map = {}
-        """ :type: dict[TestScenario, TestResult]"""
+        """ :type: dict[str, TestResult]"""
         self.debug = debug
         """ :type: bool"""
         self.test_debug = False
@@ -69,6 +68,9 @@ class TestSystemManager(object):
         self.CONSOLE = logging.getLogger('tsm-null-console')
         """ :type: logging.Logger"""
         self.CONSOLE.addHandler(logging.NullHandler())
+
+        if self.ptm is None:
+            self.ptm = PhysicalTopologyManager()
 
     def configure_logging(self, log_name='tsm-root', debug=False, log_file_name=TSM_LOG_FILE_NAME):
         self.debug = debug
@@ -275,31 +277,6 @@ class TestSystemManager(object):
     def set_test_debug(self, debug_flag=True):
         self.test_debug=debug_flag
 
-    def run_all_tests(self, scenario_filter=None):
-        """
-        Clear previous results and run all tests and return the list of TestResults from the run
-        :type scenario_filter: list[callable]
-        :return: dict [TestScenario, TestResult]
-        """
-        self.result_map.clear()
-        tests_by_scenario_map = {}
-
-        # Rearrange list based on scenarios
-        for test, func_set in self.test_cases.iteritems():
-            self.LOG.debug('Creating scenario map for test: ' + test._get_name())
-            for scen in test.supported_scenarios():
-                if issubclass(test, TestCase) and (scenario_filter is None or scen in scenario_filter):
-                    if scen not in tests_by_scenario_map:
-                        tests_by_scenario_map[scen] = []
-                    self.LOG.debug('Adding test: ' + test._get_name() + ' to scenario [' + scen.__name__ + ']')
-                    tests_by_scenario_map[scen].append((test, func_set))
-
-        for scen, test_list in tests_by_scenario_map.iteritems():
-            result = self.run_scenario(scen, test_list)
-            self.result_map[scen] = result
-
-        return self.result_map
-
     def test_suite_to_flat_list(self, test_suite):
         """
         Flattens the given TestSuite so that only TestCases are inside (no nested TestSuites)
@@ -316,46 +293,31 @@ class TestSystemManager(object):
                 raise ArgMismatchException('Unknown object type in Suite: ' + t.__type__.__name__)
         return ret_list
 
-    def run_scenario(self, scenario, test_list):
+    def run_all_tests(self, suite_name, topology):
         """
-        Run a given test with all scenarios the test supports, unless a filter list is given,
-        in which case, only run the test with listed scenarios if the test case supports it.
-        :type scenario: callable
-        :type test_list: list[(TestCase, set[str]|None)]
+        Clear previous results and run all tests and return the list of TestResults from the run
+        :type suite_name: str
+        :type topology: str
         :return: TestResult
         """
+        result = TestResult(suite_name)
 
-        if not issubclass(scenario, TestScenario):
-            raise ArgMismatchException('Scenario class is not a subclass of TSM.TestScenario: ' + scenario.__name__)
+        self.LOG.debug('Running suite [' + suite_name + '] with tests: ' +
+                       str([t._get_name() + ' (' + (', '.join(fns) if fns else 'all') + ')'
+                            for t, fns in self.test_cases.iteritems()]))
 
-        scenario_result = TestResult(scenario)
+        log_file_name = suite_name + ".log"
 
-        self.LOG.debug('Running scenario [' + scenario.__name__ + '] with tests: ' +
-                       str([t[0].__name__ + ' (' + (', '.join(t[1]) if t[1] else 'all') + ')' for t in test_list]))
-
-        scenario_obj = scenario(self.ptm, self.vtm)
-        """ :type scenario_obj: TestScenario"""
-        scenario_name = scenario_obj.__class__.__name__
-        log_file_name = scenario_name + ".log"
-
-        scenario_obj.configure_logging(log_name=scenario_name, debug=self.debug, log_file_name=log_file_name)
         if self.test_system == 'unittest':
             # Prepare suite with specific functions (or whole class if func_set not specified)
             suite = unittest.TestSuite()
             """ :type suite: unittest.TestSuite"""
 
-        # Prepare all of the test classes in this scenario before run.  This will set up the
+        # Prepare all of the test classes in this topology before run.  This will set up the
         # entire class type with certain class-globals so that any instances of the class
-        # will have its scenario and logger set.
-        for test_class, func_set in test_list:
-            # Just check that the current scenario is supported by this test class.  It should be
-            # if the normal "run_all_tests" function was run, but if this fn is run directly,
-            # we will need to check here as well.
-            if scenario not in test_class.supported_scenarios():
-                continue
-
+        # will have its topology and logger set.
+        for test_class, func_set in self.test_cases.iteritems():
             test_class_name = test_class._get_name()
-            scenario_obj.LOG.debug('TSM: Preparing scenario: ' + scenario_name)
             if self.debug:
                 testcase_log = self.log_manager.add_tee_logger(name=test_class._get_name().split('.')[-1] + '-debug',
                                                                file_name=log_file_name,
@@ -368,7 +330,7 @@ class TestSystemManager(object):
                                                                 log_level=logging.INFO)
 
             testcase_log.debug('TSM: Preparing test class: ' + test_class._get_name())
-            test_class._prepare_class(scenario_obj, testcase_log)
+            test_class._prepare_class(self.ptm, self.vtm, testcase_log)
 
             test_loader = DEFAULT_TEST_LOADER[self.test_system]
             if func_set is None:
@@ -379,49 +341,52 @@ class TestSystemManager(object):
         # Flatten the tests
         running_suite = unittest.TestSuite(self.test_suite_to_flat_list(suite))
 
-        # Run the test by setting up the scenario, then executing the case, and
-        # finally cleaning up the scenario
+        # Run the test by setting up the topology, then executing the case, and
+        # finally cleaning up the topology
         try:
             try:
-                scenario_obj.LOG.debug('Setting up scenario [' + scenario_name + ']')
-                scenario_obj.setup()
-                scenario_obj.fixture_setup()
+                self.LOG.debug('TSM: Starting topology via config file: ' + topology)
+                self.ptm.configure(topology)
+                self.ptm.startup()
+                self.ptm.fixture_setup()
             except Exception as e:
-                self.LOG.fatal('Fatal error starting up scenario: ' + scenario_name)
+                self.LOG.fatal('Fatal error starting up topology: ' + topology)
                 self.LOG.fatal('Traceback: ')
                 self.LOG.fatal(traceback.format_tb(sys.exc_traceback))
                 dummy_tc = TestCase()
                 dummy_tc.start_time = datetime.datetime.utcnow()
                 dummy_tc.stop_time = datetime.datetime.utcnow()
                 dummy_tc.run_time = datetime.timedelta()
-                dummy_tc.current_scenario = scenario_obj
                 dummy_tc.failureException = e
-                scenario_result.addError(dummy_tc, sys.exc_info())
-                return scenario_result
+                self.ptm.shutdown()
+                result.addError(dummy_tc, sys.exc_info())
+                self.result_map[suite_name] = result
+                return result
 
-            scenario_result.start_time = datetime.datetime.utcnow()
-            scenario_obj.LOG.debug('Starting scenario [' + scenario_name + '] at timestamp[' +
-                               str(scenario_result.start_time) + ']')
+            result.start_time = datetime.datetime.utcnow()
+            self.LOG.debug('Starting suite [' + suite_name + '] at timestamp[' +
+                               str(result.start_time) + ']')
             if self.test_system == 'unittest':
-                running_suite.run(scenario_result, debug=self.test_debug)
-            scenario_result.stop_time = datetime.datetime.utcnow()
-            scenario_obj.LOG.debug('Finished scenario [' + scenario_name + '] at timestamp[' +
-                               str(scenario_result.stop_time) + ']')
-            scenario_result.run_time = (scenario_result.stop_time - scenario_result.start_time)
+                running_suite.run(result, debug=self.test_debug)
+            result.stop_time = datetime.datetime.utcnow()
+            self.LOG.debug('Finished suite [' + suite_name + '] at timestamp[' +
+                               str(result.stop_time) + ']')
+            result.run_time = (result.stop_time - result.start_time)
         finally:
-            scenario_obj.LOG.debug('Tearing down scenario [' + scenario_name + ']')
-            scenario_obj.teardown()
-            scenario_obj.fixture_teardown()
+            self.LOG.debug('Stopping topology from config file: ' + topology)
+            self.ptm.shutdown()
+            self.ptm.fixture_teardown()
 
-        return scenario_result
+        self.result_map[suite_name] = result
+        return result
 
     def create_results(self, results_dir='./results', leeway=5):
         self.LOG.debug("Creating test_results")
         cli = LinuxCLI(priv=False)
         cli.rm(results_dir)
-        for scen, res in self.result_map.iteritems():
-            self.LOG.debug("Creating test_results for scenario: " + scen.__name__)
-            results_out_dir = results_dir + '/' + scen.__name__
+        for suite, res in self.result_map.iteritems():
+            self.LOG.debug("Creating test_results for test suite: " + suite)
+            results_out_dir = results_dir + '/' + suite
 
             cli.write_to_file(wfile=results_out_dir + '/results.xml',
                               data=res.to_junit_xml())
@@ -432,9 +397,9 @@ class TestSystemManager(object):
                     tcname = tc.id().split('.')[-1]
                     self.LOG.debug("Creating test_results for " + tcname)
                     cli.mkdir(results_out_dir + '/' + tcname)
-                    self.log_manager.slice_log_files_by_time(results_out_dir + '/' + tcname,
-                                                             start_time=tc.start_time if tc.start_time is not None else '0.0',
-                                                             stop_time=tc.stop_time if tc.start_time is not None else '0.0',
-                                                             leeway=leeway,
-                                                             collated_only=True)
-
+                    self.log_manager.slice_log_files_by_time(
+                        results_out_dir + '/' + tcname,
+                        start_time=tc.start_time if tc.start_time is not None else '0.0',
+                        stop_time=tc.stop_time if tc.start_time is not None else '0.0',
+                        leeway=leeway,
+                        collated_only=True)

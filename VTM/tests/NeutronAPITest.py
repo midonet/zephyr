@@ -17,9 +17,8 @@ import unittest
 import os
 
 from common.LogManager import LogManager
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from VTM.NeutronAPI import *
 from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
@@ -40,8 +39,8 @@ class NeutronAPITest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
-                                                    log_manager=cls.lm)
+        cls.ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
+                                          log_manager=cls.lm)
         cls.ptm_i.configure_logging(debug=True)
         cls.ptm = PhysicalTopologyManager(cls.ptm_i)
         cls.ptm.configure(os.path.dirname(os.path.abspath(__file__)) + '/test-basic-config.json')

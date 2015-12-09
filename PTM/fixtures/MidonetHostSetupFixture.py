@@ -13,18 +13,18 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.fixtures.TestFixture import TestFixture
+from PTM.fixtures.ServiceFixture import ServiceFixture
 
 from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
 from PTM.application.Midolman import Midolman
 
 
-class MidonetTestFixture(TestFixture):
+class MidonetHostSetupFixture(ServiceFixture):
     def __init__(self, vtm, ptm, logger):
         """
         Sets up everything all tests will need to run Neutron.
         """
-        super(MidonetTestFixture, self).__init__()
+        super(MidonetHostSetupFixture, self).__init__()
         self.vtm = vtm
         self.ptm = ptm
         self.LOG = logger

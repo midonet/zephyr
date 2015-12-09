@@ -20,7 +20,7 @@ import time
 
 from common.CLI import LinuxCLI
 from common.LogManager import LogManager
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from PTM.application.Midolman import Midolman
 from VTM.VirtualTopologyManager import VirtualTopologyManager
@@ -29,8 +29,7 @@ from VTM.MNAPI import create_midonet_client, setup_main_bridge, setup_main_tunne
 
 class MNAPITest(unittest.TestCase):
     lm = LogManager('test-logs')
-    ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
-                                            log_manager=lm)
+    ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
     ptm = PhysicalTopologyManager(ptm_i)
     vtm = None
     main_bridge = None

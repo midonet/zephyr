@@ -3,12 +3,11 @@ __author__ = 'micucci'
 import unittest
 import os
 
-from PTM.application.Midolman import Midolman
 from PTM.host.RootHost import RootHost
 from PTM.host.IPNetNSHost import IPNetNSHost
 from PTM.PhysicalTopologyConfig import *
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from common.LogManager import LogManager
 from common.CLI import LinuxCLI
 
@@ -17,8 +16,7 @@ class VMHostTest(unittest.TestCase):
 
     def setUp(self):
         lm = LogManager('./test-logs')
-        ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
-                                                  log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..', log_manager=lm)
         ptm = PhysicalTopologyManager(ptm_i)
 
         self.hypervisor = None

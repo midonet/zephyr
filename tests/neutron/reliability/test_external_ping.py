@@ -13,8 +13,7 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.scenarios.Scenario_Basic2ComputeWithEdge import Scenario_Basic2ComputeWithEdge
-from TSM.NeutronTestCase import NeutronTestCase#, RouterData
+from TSM.NeutronTestCase import NeutronTestCase, require_extension
 from collections import namedtuple
 from common.Exceptions import *
 from common.IP import IP
@@ -27,12 +26,6 @@ RouterData = namedtuple('RouterData', "router if_list")
 
 class TestExternalPing(NeutronTestCase):
 
-    @staticmethod
-    def supported_scenarios():
-        return {Scenario_Basic2ComputeWithEdge}
-
-    @unittest.skipUnless(version_config.ConfigMap.get_configured_parameter('option_extension_extra_routes'),
-                         'This test requires extra_routes extension in order to add default routes')
     def create_edge_router(self, edge_host='edge1', edge_iface='eth1',
                            edge_subnet='172.16.2.0/24'):
 
@@ -112,6 +105,7 @@ class TestExternalPing(NeutronTestCase):
         if edge_data.network is not None:
             self.api.delete_network(edge_data.network['id'])
 
+    @require_extension('extraroute')
     def test_neutron_api_ping_external(self):
         port1 = None
         vm1 = None

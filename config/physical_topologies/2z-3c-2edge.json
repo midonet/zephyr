@@ -15,8 +15,8 @@
         {"name": "cmp1eth0", "linked_bridge": "br0"},
         {"name": "cmp2eth0", "linked_bridge": "br0"},
         {"name": "cmp3eth0", "linked_bridge": "br0"},
-        {"name": "edg1eth0", "linked_bridge": "br0"},
-        {"name": "edg2eth0", "linked_bridge": "br0"}
+        {"name": "edge1eth0", "linked_bridge": "br0"},
+        {"name": "edge2eth0", "linked_bridge": "br0"}
       ]
     },
     {
@@ -90,7 +90,7 @@
   "implementation": [
     {
       "host": "root",
-      "impl": "PTM.RootHost"
+      "impl": "PTM.host.RootHost"
     },
     {
       "host": "zoo1",

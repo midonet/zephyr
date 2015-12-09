@@ -20,8 +20,7 @@ import getopt
 from common.Exceptions import *
 from common.CLI import LinuxCLI
 from common.LogManager import LogManager
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.ptm_constants import HOST_CONTROL_CMD_NAME
 
 
@@ -74,7 +73,7 @@ try:
 
     log_manager = LogManager(root_dir=log_dir)
 
-    ptm_impl = HostPhysicalTopologyManagerImpl(root_dir=root_dir, log_manager=log_manager)
+    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir, log_manager=log_manager)
     ptm_impl.configure_logging(debug=debug)
     ptm_impl.ptm_host_app_control(host_cmd, host_json, app_json, arg_list)
 

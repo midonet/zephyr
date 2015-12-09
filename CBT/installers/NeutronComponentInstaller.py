@@ -25,6 +25,7 @@ class NeutronComponentInstaller(ComponentInstaller):
         """
         :type repo: PackageRepo
         """
+        LinuxCLI().cmd("apt-get install -y python3-software-properties")
         LinuxCLI().cmd("add-apt-repository -y cloud-archive:" + str(version))
         LinuxCLI().cmd("apt-get update")
 

@@ -18,10 +18,6 @@ from common.FileLocation import *
 
 from TSM.TestCase import TestCase
 
-from tests.scenarios.Scenario_AllInOne import Scenario_AllInOne
-from tests.scenarios.Scenario_Basic2Compute import Scenario_Basic2Compute
-from AllInOneCopy import AllInOneCopyScenario
-
 import unittest
 import time
 import logging
@@ -36,14 +32,9 @@ class TestResultsProcessing(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.testlog = cls.ptm.log_manager.add_file_logger(file_name='test-' +
-                                                                    cls.current_scenario.__class__.__name__ + '.log',
+        cls.testlog = cls.ptm.log_manager.add_file_logger(file_name='test-' + cls.__name__ +'.log',
                                                           name='tester',
                                                           file_overwrite=True, log_level=logging.DEBUG)
-
-    @staticmethod
-    def supported_scenarios():
-        return {Scenario_AllInOne, AllInOneCopyScenario}
 
     def test_passed_test(self):
         self.testlog.debug('test_passed_test')

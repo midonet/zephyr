@@ -1,16 +1,13 @@
 __author__ = 'micucci'
 
 import unittest
-import time
 import os
 
 from common.CLI import LinuxCLI
-from PTM.application.Zookeeper import Zookeeper
 from PTM.host.RootHost import RootHost
 from PTM.host.IPNetNSHost import IPNetNSHost
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-
 from PTM.PhysicalTopologyConfig import *
 from common.LogManager import LogManager
 
@@ -18,8 +15,7 @@ from common.LogManager import LogManager
 class ZookeeperTest(unittest.TestCase):
     def test_startup(self):
         lm = LogManager('./test-logs')
-        ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..',
-                                                log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..', log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 

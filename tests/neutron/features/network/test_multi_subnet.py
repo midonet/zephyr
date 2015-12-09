@@ -16,7 +16,6 @@ __author__ = 'micucci'
 from common.PCAPRules import *
 from common.PCAPPacket import *
 from TSM.NeutronTestCase import NeutronTestCase
-from tests.scenarios.Scenario_Basic2Compute import Scenario_Basic2Compute
 from VTM.Guest import Guest
 
 from collections import namedtuple
@@ -25,10 +24,6 @@ from neutronclient.common.exceptions import *
 import unittest
 
 class TestMultiSubnet(NeutronTestCase):
-    @staticmethod
-    def supported_scenarios():
-        return {Scenario_Basic2Compute}
-
     def test_multiple_subnets_one_network(self):
         # Allowed address pair must have IP address
         port1 = None

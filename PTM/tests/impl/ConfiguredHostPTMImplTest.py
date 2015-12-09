@@ -17,22 +17,22 @@ import unittest
 import os
 
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from common.LogManager import LogManager
 from common.CLI import LinuxCLI
 
-class HostPhysicalTopologyManagerImpTest(unittest.TestCase):
+
+class ConfiguredHostPTMImplTest(unittest.TestCase):
 
     def test_configure(self):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
-        ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
-                                                  log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..', log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
-        ptm.configure(dir_path + '/test-config.json')
+        ptm.configure(dir_path + '/../test-config.json')
 
         self.assertTrue('zoo1' in ptm_i.hosts_by_name)
         self.assertTrue('edge1' in ptm_i.hosts_by_name)
@@ -59,12 +59,11 @@ class HostPhysicalTopologyManagerImpTest(unittest.TestCase):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
-        ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
-                                                  log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..', log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
-        ptm.configure(dir_path + '/test-config.json')
+        ptm.configure(dir_path + '/../test-config.json')
 
         ptm.print_config()
 
@@ -73,12 +72,11 @@ class HostPhysicalTopologyManagerImpTest(unittest.TestCase):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
-        ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
-                                                  log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..', log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
-        ptm.configure(dir_path + '/test-config.json')
+        ptm.configure(dir_path + '/../test-config.json')
 
         for h in ptm_i.host_by_start_order:
             h.create()
@@ -111,13 +109,12 @@ class HostPhysicalTopologyManagerImpTest(unittest.TestCase):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
-        ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
-                                                  log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..', log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
         try:
-            ptm.configure(dir_path + '/test-config.json')
+            ptm.configure(dir_path + '/../test-config.json')
             ptm.startup()
 
             self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
@@ -158,4 +155,4 @@ class HostPhysicalTopologyManagerImpTest(unittest.TestCase):
 
 
 from CBT.UnitTestRunner import run_unit_test
-run_unit_test(HostPhysicalTopologyManagerImpTest)
+run_unit_test(ConfiguredHostPTMImplTest)

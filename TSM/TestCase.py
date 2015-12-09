@@ -19,7 +19,7 @@ import logging
 import datetime
 
 from common.Exceptions import *
-from TestScenario import TestScenario
+
 
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
@@ -27,22 +27,12 @@ from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
 class TestCase(unittest.TestCase):
 
-    class_scenario = None
-    """ :type: TestScenario"""
     vtm = None
     """ :type: VirtualTopologyManager"""
     ptm = None
     """ :type: PhysicalTopologyManager"""
     LOG = None
     """ :type: logging.Logger"""
-
-    @staticmethod
-    def supported_scenarios():
-        """
-        Subclasses should override to return a set of supported scenario classes
-        :return: set[class]
-        """
-        return set()
 
     @staticmethod
     def get_class(fqn):
@@ -65,13 +55,13 @@ class TestCase(unittest.TestCase):
         return cls.__name__
 
     @classmethod
-    def _prepare_class(cls, current_scenario,
-                       test_case_logger=logging.getLogger()):
-        cls.class_scenario = current_scenario
-        cls.ptm = current_scenario.ptm
+    def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
+        cls.ptm = ptm
         """ :type: PhysicalTopologyManager"""
-        cls.vtm = current_scenario.vtm
+        cls.vtm = vtm
         cls.LOG = test_case_logger
+        if cls.LOG is None:
+            cls.LOG = logging.getLogger(cls._get_name())
 
     def __init__(self, methodName='runTest'):
         super(TestCase, self).__init__(methodName)
@@ -82,8 +72,6 @@ class TestCase(unittest.TestCase):
         """ :type: datetime.datetime"""
         self.run_time = None
         """ :type: datetime.timedelta"""
-        self.current_scenario = self.class_scenario
-        """ :type: TestScenario"""
 
     def run(self, result=None):
         self.start_time = datetime.datetime.utcnow()

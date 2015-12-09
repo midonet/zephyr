@@ -13,12 +13,12 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
 
 from common.Exceptions import *
 from common.LogManager import LogManager
-
 from VTM.Guest import Guest
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from PTM.ptm_constants import PTM_LOG_FILE_NAME
 
 
 class VirtualTopologyManager(object):
@@ -32,6 +32,23 @@ class VirtualTopologyManager(object):
         """ :type: PhysicalTopologyManager"""
         self.log_manager = log_manager if log_manager is not None else LogManager(root_dir='logs')
         """ :type: LogManager"""
+        self.LOG = logging.getLogger('vtm-null-root')
+        self.LOG.addHandler(logging.NullHandler())
+
+    def configure_logging(self, log_name='ptm-root', debug=False, log_file_name=PTM_LOG_FILE_NAME):
+        self.log_level = logging.DEBUG if debug is True else logging.INFO
+        self.debug = debug
+
+        if debug is True:
+            self.LOG = self.log_manager.add_tee_logger(file_name=log_file_name,
+                                                       name=log_name + '-debug',
+                                                       file_log_level=self.log_level,
+                                                       stdout_log_level=self.log_level)
+            self.LOG.info("Turning on debug logs")
+        else:
+            self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
+                                                        name=log_name,
+                                                        log_level=self.log_level)
 
     def get_client(self):
         return self.client_api_impl

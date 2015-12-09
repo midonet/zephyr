@@ -21,7 +21,7 @@ import unittest
 from common.IP import IP
 from common.CLI import LinuxCLI
 
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
 from VTM.Guest import Guest
@@ -73,8 +73,8 @@ class GuestTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.lm = LogManager('test-logs')
-        cls.ptm_i = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
-                                                    log_manager=cls.lm)
+        cls.ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
+                                          log_manager=cls.lm)
         cls.ptm_i.configure_logging(debug=True)
         cls.ptm = PhysicalTopologyManager(cls.ptm_i)
         cls.ptm.configure(os.path.dirname(os.path.abspath(__file__)) + '/test-basic-config.json')

@@ -20,9 +20,13 @@ from TSM.TestCase import TestCase
 
 
 class TestResult(unittest.TestResult):
-    def __init__(self, scenario):
+    def __init__(self, suite_name):
+        """
+        :type suite_name:
+        :return:
+        """
         super(TestResult, self).__init__()
-        self.scenario = scenario
+        self.suite_name = suite_name
         self.log_list = None
         self.successes = []
         self.start_time = None
@@ -60,7 +64,7 @@ class TestResult(unittest.TestResult):
                             'tests="{tests:d}" timestamp="{starttime}" time="{runtime}">\n'
         ret_xml = ts_str.format(errors=len(self.errors),
                                 failures=len(self.failures) + len(self.unexpectedSuccesses),
-                                name=self.scenario.__class__.__name__,
+                                name=self.suite_name,
                                 tests=self.testsRun,
                                 starttime=self.start_time.isoformat() if self.start_time is not None else '0.0',
                                 runtime=runtime)
@@ -97,8 +101,6 @@ class TestResult(unittest.TestResult):
                 ret_xml += format_tc_data(tc, err)
             else:
                 name = 'unknown'
-                if tc.current_scenario:
-                    name = tc.current_scenario.__name__
                 ret_xml += '<testcase name="' + name + '-framework-error"><error type="FrameworkError">' + \
                            reason + '</error></testcase>'
 

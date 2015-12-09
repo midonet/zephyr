@@ -13,15 +13,10 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.scenarios.Scenario_Basic2Compute import Scenario_Basic2Compute
 from TSM.NeutronTestCase import NeutronTestCase
 
 
 class TestBasicPing(NeutronTestCase):
-
-    @staticmethod
-    def supported_scenarios():
-        return {Scenario_Basic2Compute}
 
     def test_neutron_api_ping_two_hosts_same_hv(self):
         port1 = None

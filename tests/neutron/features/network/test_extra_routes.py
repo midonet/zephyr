@@ -14,7 +14,6 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from TSM.NeutronTestCase import NeutronTestCase
-from tests.scenarios.Scenario_Basic2Compute import Scenario_Basic2Compute
 from VTM.Guest import Guest
 
 from  collections import namedtuple
@@ -25,10 +24,6 @@ TopoData = namedtuple('TopoData',
 
 
 class TestExtraRoutes(NeutronTestCase):
-    @staticmethod
-    def supported_scenarios():
-        return {Scenario_Basic2Compute}
-
     def setup_standard_neutron_topo(self):
         try:
             net1def = {'network': {'name': 'net1', 'admin_state_up': True,

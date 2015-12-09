@@ -13,13 +13,12 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.TestScenario import TestScenario
+class ServiceFixture(object):
+    def __init__(self):
+        pass
 
-
-class Scenario_Full3ComputeWithEdgeVLAN(TestScenario):
     def setup(self):
-        self.ptm.configure(self.ptm.root_dir + '/config/ptm/3z-3c-3cass-4h-1edge+vlan.json')
-        self.ptm.startup()
+        pass
 
     def teardown(self):
-        self.ptm.shutdown()
+        pass

@@ -15,26 +15,14 @@ __author__ = 'micucci'
 
 import unittest
 
-from TSM.TestScenario import TestScenario
 from TSM.NeutronTestCase import NeutronTestCase, require_extension
-from TSM.fixtures.NeutronTestFixture import NeutronTestFixture
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from PTM.fixtures.NeutronDatabaseFixture import NeutronDatabaseFixture
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from VTM.NeutronAPI import *
 
 
-class SampleScenario(TestScenario):
-    def setup(self):
-        pass
-
-    def teardown(self):
-        pass
-
-
 class SampleTestCase(NeutronTestCase):
-    @staticmethod
-    def supported_scenarios():
-        return {SampleScenario}
-
     @require_extension('agent')
     def test_needs_agent(self):
         pass
@@ -44,7 +32,10 @@ class SampleTestCase(NeutronTestCase):
         self.fail("This test shouldn't be run!")
 
 
-class SampleFixture(NeutronTestFixture):
+class SampleFixture(NeutronDatabaseFixture):
+    def __init__(self, vtm, ptm, logger):
+        super(SampleFixture, self).__init__(vtm, ptm, logger)
+
     def setup(self):
         pass
 
@@ -55,16 +46,16 @@ class SampleFixture(NeutronTestFixture):
 class NeutronTestCaseTest(unittest.TestCase):
     def test_require_extension(self):
         vtm = VirtualTopologyManager(None, create_neutron_client(), None)
-        scen = SampleScenario(None, vtm)
-        scen.add_fixture('neutron-setup', SampleFixture(vtm, None, None))
-        SampleTestCase._prepare_class(scen)
+        ptm = PhysicalTopologyManager()
+        ptm.add_fixture('neutron-setup', SampleFixture(vtm, ptm, None))
+        SampleTestCase._prepare_class(ptm, vtm)
         tc = SampleTestCase('test_needs_agent')
         tr = unittest.TestResult()
         tc.run(tr)
         self.assertEquals(0, len(tr.errors))
         self.assertEquals(0, len(tr.failures))
+        self.assertEquals(0, len(tr.failures))
 
-        SampleTestCase._prepare_class(scen)
         tc = SampleTestCase('test_needs_asdf')
         tr = unittest.TestResult()
         tc.run(tr)

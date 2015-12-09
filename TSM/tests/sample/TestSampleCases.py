@@ -15,38 +15,10 @@ __author__ = 'micucci'
 
 
 from TSM.TestCase import TestCase
-from TSM.TestScenario import TestScenario
-
-
-class SampleTestScenario(TestScenario):
-    def __init(self, ptm, vtm):
-        pass
-
-    def setup(self):
-        pass
-
-    def teardown(self):
-        pass
-
-
-class SampleOtherTestScenario(TestScenario):
-    def __init(self, ptm, vtm):
-        pass
-
-    def setup(self):
-        pass
-
-    def teardown(self):
-        pass
 
 
 class SampleTestCase(TestCase):
-    @staticmethod
-    def supported_scenarios():
-        return {SampleTestScenario, SampleOtherTestScenario}
-
     def test_basic(self):
-        self.assertIn(self.current_scenario.__class__, self.supported_scenarios())
         pass
 
     def test_a_failure(self):
@@ -55,12 +27,7 @@ class SampleTestCase(TestCase):
 
 
 class SampleOtherTestCase(TestCase):
-    @staticmethod
-    def supported_scenarios():
-        return {SampleTestScenario}
-
     def test_basic(self):
-        self.assertIn(self.current_scenario.__class__, self.supported_scenarios())
         pass
 
     def test_a_failure(self):

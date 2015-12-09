@@ -15,9 +15,8 @@ __author__ = 'micucci'
 
 import logging
 
-from TestScenario import TestScenario
 from TSM.TestCase import TestCase
-from TSM.fixtures.MidonetTestFixture import MidonetTestFixture
+from PTM.fixtures.MidonetHostSetupFixture import MidonetHostSetupFixture
 
 
 class MidonetTestCase(TestCase):
@@ -25,31 +24,30 @@ class MidonetTestCase(TestCase):
     def __init__(self, methodName='runTest'):
         super(MidonetTestCase, self).__init__(methodName)
         self.midonet_fixture = None
-        """:type: MidonetTestFixture"""
+        """:type: MidonetHostSetupFixture"""
         self.api = None
         """ :type: MidonetApi"""
 
     @classmethod
-    def _prepare_class(cls, current_scenario,
-                       test_case_logger=logging.getLogger()):
+    def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
         """
-        :type current_scenario: TestScenario
+
+        :param ptm:
         :type test_case_logger: logging.logger
         """
-        super(MidonetTestCase, cls)._prepare_class(current_scenario, test_case_logger)
+        super(MidonetTestCase, cls)._prepare_class(ptm, vtm, test_case_logger)
 
         # Only add the midonet-setup fixture once for each scenario.
-        if 'midonet-setup' not in current_scenario.fixtures:
-            test_case_logger.debug('Adding midonet-setup fixture for scenario: ' +
-                                   type(current_scenario).__name__)
-            midonet_fixture = MidonetTestFixture(cls.vtm, cls.ptm, current_scenario.LOG)
-            current_scenario.add_fixture('midonet-setup', midonet_fixture)
+        if 'midonet-setup' not in ptm.fixtures:
+            test_case_logger.debug('Adding midonet-setup fixture')
+            midonet_fixture = MidonetHostSetupFixture(cls.vtm, cls.ptm, test_case_logger)
+            ptm.add_fixture('midonet-setup', midonet_fixture)
 
     def run(self, result=None):
         """
         Special run override to make sure to set up neutron data prior to running
         the test case function.
         """
-        self.midonet_fixture = self.current_scenario.get_fixture('midonet-setup')
+        self.midonet_fixture = self.ptm.get_fixture('midonet-setup')
         self.api = self.midonet_fixture.api
         super(MidonetTestCase, self).run(result)

@@ -110,7 +110,7 @@
   ],
   "implementation": [
     { "host": "root",
-      "impl": "PTM.RootHost"},
+      "impl": "PTM.host.RootHost"},
     { "host": "zoo1",
       "impl": "PTM.host.IPNetNSHost",
       "apps": [

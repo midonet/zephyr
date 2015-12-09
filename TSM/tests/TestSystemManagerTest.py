@@ -129,84 +129,24 @@ class TestSystemManagerTest(unittest.TestCase):
         for test_class, func_list in tsm.test_cases.iteritems():
             self.assertTrue(issubclass(test_class, TestCase))
 
-    def test_single_case_single_scenario_no_filter_no_topo(self):
+    def test_run_all_tests(self):
 
         lm = LogManager(root_dir="test-logs")
         tsm = TestSystemManager(None, None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
-        from TSM.tests.sample.TestSampleCases import SampleTestScenario, SampleOtherTestCase
-        result = tsm.run_scenario(SampleTestScenario,
-                                  [(SampleOtherTestCase,
-                                    {"TSM.tests.sample.TestSampleCases.SampleOtherTestCase.test_basic"})
-                                  ])
 
-        self.assertEqual(SampleTestScenario, result.scenario)
+        tsm.load_tests(["TSM.tests.sample.TestSampleCases.SampleTestCase",
+                        "TSM.tests.sample.TestSampleCases.SampleOtherTestCase"])
 
-        self.assertEqual(1, result.testsRun)
-        self.assertEqual(0, len(result.failures))
-        self.assertEqual(1, len(result.successes))
+        result = tsm.run_all_tests('test1', 'foo-topo')
+
+        self.assertEqual(4, result.testsRun)
+        self.assertEqual(2, len(result.failures))
+        self.assertEqual(2, len(result.successes))
         self.assertEqual(0, len(result.errors))
 
-    def test_single_case_multi_scenario_no_filter_no_topo(self):
-
-        lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
-        tsm.configure_logging(debug=True)
-
-        from TSM.tests.sample.TestSampleCases \
-            import SampleTestScenario, SampleOtherTestScenario, SampleTestCase, SampleOtherTestCase
-        result1 = tsm.run_scenario(SampleTestScenario, [(SampleTestCase, None)])
-        result2 = tsm.run_scenario(SampleOtherTestScenario, [(SampleTestCase, None)])
-
-        self.assertEqual(SampleTestScenario, result1.scenario)
-        self.assertEqual(SampleOtherTestScenario, result2.scenario)
-
-        self.assertEqual(2, result1.testsRun)
-        self.assertEqual(1, len(result1.failures))
-        self.assertEqual(1, len(result1.successes))
-        self.assertEqual(0, len(result1.errors))
-
-        self.assertEqual(2, result2.testsRun)
-        self.assertEqual(1, len(result2.failures))
-        self.assertEqual(1, len(result2.successes))
-        self.assertEqual(0, len(result2.errors))
-
-    def test_double_case_multi_scenario_no_filter_no_topo(self):
-
-        lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
-        tsm.configure_logging(debug=True)
-
-        from TSM.tests.sample.TestSampleCases \
-            import SampleTestScenario, SampleOtherTestScenario, SampleTestCase, SampleOtherTestCase
-        result1 = tsm.run_scenario(SampleTestScenario,
-                                   [(SampleTestCase, None), (SampleOtherTestCase, None)])
-        result2 = tsm.run_scenario(SampleOtherTestScenario,
-                                   [(SampleTestCase, None), (SampleOtherTestCase, None)])
-
-        self.assertEqual(SampleTestScenario, result1.scenario)
-        self.assertEqual(SampleOtherTestScenario, result2.scenario)
-
-        self.assertEqual(4, result1.testsRun)
-        self.assertEqual(2, len(result1.failures))
-        self.assertEqual(2, len(result1.successes))
-        self.assertEqual(0, len(result1.errors))
-
-        self.assertEqual(result1.successes[0].current_scenario.__class__, SampleTestScenario)
-        self.assertEqual(result1.successes[0].__class__, SampleTestCase)
-        self.assertEqual(result1.successes[1].current_scenario.__class__, SampleTestScenario)
-        self.assertEqual(result1.successes[1].__class__, SampleOtherTestCase)
-
-        self.assertEqual(2, result2.testsRun)
-        self.assertEqual(1, len(result2.failures))
-        self.assertEqual(1, len(result2.successes))
-        self.assertEqual(0, len(result2.errors))
-
-        self.assertEqual(result2.successes[0].current_scenario.__class__, SampleOtherTestScenario)
-        self.assertEqual(result2.successes[0].__class__, SampleTestCase)
-
-    def test_multi_case_multi_scenario_no_filter_no_topo(self):
+    def test_multi_suite_run(self):
 
         lm = LogManager(root_dir="test-logs")
         tsm = TestSystemManager(None, None, log_manager=lm)
@@ -215,64 +155,39 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm.add_test("TSM.tests.sample.TestSampleCases.SampleTestCase")
         tsm.add_test("TSM.tests.sample.TestSampleCases.SampleOtherTestCase")
 
-        results = tsm.run_all_tests()
+        tsm.run_all_tests('test1', 'foo-topo')
+        tsm.run_all_tests('test2', 'foo-topo')
+        results = tsm.result_map
 
-        from TSM.tests.sample.TestSampleCases \
-            import SampleTestScenario, SampleOtherTestScenario
+        self.assertEqual(4, results['test1'].testsRun)
+        self.assertEqual(2, len(results['test1'].failures))
+        self.assertEqual(2, len(results['test1'].successes))
+        self.assertEqual(0, len(results['test1'].errors))
 
-        self.assertIn(SampleTestScenario, results)
-        self.assertIn(SampleOtherTestScenario, results)
+        self.assertEqual(4, results['test2'].testsRun)
+        self.assertEqual(2, len(results['test2'].failures))
+        self.assertEqual(2, len(results['test2'].successes))
+        self.assertEqual(0, len(results['test2'].errors))
 
-        self.assertEqual(4, results[SampleTestScenario].testsRun)
-        self.assertEqual(2, len(results[SampleTestScenario].failures))
-        self.assertEqual(2, len(results[SampleTestScenario].successes))
-        self.assertEqual(0, len(results[SampleTestScenario].errors))
-
-        self.assertEqual(2, results[SampleOtherTestScenario].testsRun)
-        self.assertEqual(1, len(results[SampleOtherTestScenario].failures))
-        self.assertEqual(1, len(results[SampleOtherTestScenario].successes))
-        self.assertEqual(0, len(results[SampleOtherTestScenario].errors))
-
-        for s in results.iterkeys():
+        for s, r in results.iteritems():
             print "========================================"
-            print "Scenario [" + s.__name__ + "]"
-            print "Passed [{0}/{1}]".format(len(results[s].successes), results[s].testsRun)
-            print "Failed [{0}/{1}]".format(len(results[s].failures), results[s].testsRun)
-            print "Error [{0}/{1}]".format(len(results[s].errors), results[s].testsRun)
+            print "Scenario [" + s + "]"
+            print "Passed [{0}/{1}]".format(len(r.successes), r.testsRun)
+            print "Failed [{0}/{1}]".format(len(r.failures), r.testsRun)
+            print "Error [{0}/{1}]".format(len(r.errors), r.testsRun)
             print ""
-            for tc, err in results[s].failures:
+            for tc, err in r.failures:
                 print "------------------------------"
                 print "Test Case FAILED: [" + tc._get_name() + "]"
                 print "Failure Message:"
                 print err
 
-            for tc, err in results[s].errors:
+            for tc, err in r.errors:
                 print "------------------------------"
                 print "Test Case ERROR: [" + tc._get_name() + "]"
                 print "Error Message:"
                 print err
 
-    def test_multi_case_multi_scenario_filter_no_topo(self):
-
-        lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
-        tsm.configure_logging(debug=True)
-
-        tsm.add_test("TSM.tests.sample.TestSampleCases.SampleTestCase")
-        tsm.add_test("TSM.tests.sample.TestSampleCases.SampleOtherTestCase")
-
-        from TSM.tests.sample.TestSampleCases \
-            import SampleTestScenario, SampleOtherTestScenario
-
-        results = tsm.run_all_tests([SampleOtherTestScenario])
-
-        self.assertNotIn(SampleTestScenario, results)
-        self.assertIn(SampleOtherTestScenario, results)
-
-        self.assertEqual(2, results[SampleOtherTestScenario].testsRun)
-        self.assertEqual(1, len(results[SampleOtherTestScenario].failures))
-        self.assertEqual(1, len(results[SampleOtherTestScenario].successes))
-        self.assertEqual(0, len(results[SampleOtherTestScenario].errors))
 
 from CBT.UnitTestRunner import run_unit_test
 run_unit_test(TestSystemManagerTest)

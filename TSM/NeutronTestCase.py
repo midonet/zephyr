@@ -16,14 +16,12 @@ __author__ = 'micucci'
 import logging
 from collections import namedtuple
 
-from TestScenario import TestScenario
 from TSM.TestCase import TestCase
-from TSM.fixtures.MidonetTestFixture import MidonetTestFixture
-from TSM.fixtures.NeutronTestFixture import NeutronTestFixture
+from PTM.fixtures.MidonetHostSetupFixture import MidonetHostSetupFixture
+from PTM.fixtures.NeutronDatabaseFixture import NeutronDatabaseFixture
 from VTM.MNAPI import create_midonet_client
 from VTM.Guest import Guest
 
-import neutronclient.v2_0.client as neutron_client
 
 GuestData = namedtuple('GuestData', 'port vm ip')
 """ :type: (str, Guest, str)"""
@@ -36,9 +34,9 @@ class NeutronTestCase(TestCase):
     def __init__(self, methodName='runTest'):
         super(NeutronTestCase, self).__init__(methodName)
         self.neutron_fixture = None
-        """:type: NeutronTestFixture"""
+        """:type: NeutronDatabaseFixture"""
         self.midonet_fixture = None
-        """:type: MidonetTestFixture"""
+        """:type: MidonetHostSetupFixture"""
         self.main_network = None
         self.main_subnet = None
         self.pub_network = None
@@ -48,13 +46,13 @@ class NeutronTestCase(TestCase):
         self.mn_api = None
 
     @classmethod
-    def _prepare_class(cls, current_scenario,
-                       test_case_logger=logging.getLogger()):
+    def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
         """
-        :type current_scenario: TestScenario
+
+        :param ptm:
         :type test_case_logger: logging.logger
         """
-        super(NeutronTestCase, cls)._prepare_class(current_scenario, test_case_logger)
+        super(NeutronTestCase, cls)._prepare_class(ptm, vtm, test_case_logger)
 
         cls.api = cls.vtm.get_client()
         """ :type: neutron_client.Client """
@@ -64,24 +62,22 @@ class NeutronTestCase(TestCase):
         cls.api_extension_map = {v['alias']: v for v in ext_list}
 
         # Only add the midonet- and neutron-setup fixture once for each scenario.
-        if 'midonet-setup' not in current_scenario.fixtures:
-            test_case_logger.debug('Adding midonet-setup fixture for scenario: ' +
-                                   type(current_scenario).__name__)
-            midonet_fixture = MidonetTestFixture(cls.vtm, cls.ptm, current_scenario.LOG)
-            current_scenario.add_fixture('midonet-setup', midonet_fixture)
+        if 'midonet-setup' not in ptm.fixtures:
+            test_case_logger.debug('Adding midonet-setup fixture')
+            midonet_fixture = MidonetHostSetupFixture(cls.vtm, cls.ptm, test_case_logger)
+            ptm.add_fixture('midonet-setup', midonet_fixture)
 
-        if 'neutron-setup' not in current_scenario.fixtures:
-            test_case_logger.debug('Adding neutron-setup fixture for scenario: ' +
-                                   type(current_scenario).__name__)
-            neutron_fixture = NeutronTestFixture(cls.vtm, cls.ptm, current_scenario.LOG)
-            current_scenario.add_fixture('neutron-setup', neutron_fixture)
+        if 'neutron-setup' not in ptm.fixtures:
+            test_case_logger.debug('Adding neutron-setup fixture')
+            neutron_fixture = NeutronDatabaseFixture(cls.vtm, cls.ptm, test_case_logger)
+            ptm.add_fixture('neutron-setup', neutron_fixture)
 
     def run(self, result=None):
         """
         Special run override to make sure to set up neutron data prior to running
         the test case function.
         """
-        self.neutron_fixture = self.current_scenario.get_fixture('neutron-setup')
+        self.neutron_fixture = self.ptm.get_fixture('neutron-setup')
         self.LOG.debug("Initializing Test Case Neutron Data from neutron-setup fixture")
         self.main_network = self.neutron_fixture.main_network
         self.main_subnet = self.neutron_fixture.main_subnet

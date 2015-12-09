@@ -13,19 +13,19 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.fixtures.TestFixture import TestFixture
+from PTM.fixtures.ServiceFixture import ServiceFixture
 
 from common.CLI import LinuxCLI
 
 from VTM.NeutronAPI import setup_neutron, clean_neutron
 
 
-class NeutronTestFixture(TestFixture):
+class NeutronDatabaseFixture(ServiceFixture):
     def __init__(self, vtm, ptm, logger):
         """
         Sets up everything all tests will need to run Neutron.
         """
-        super(NeutronTestFixture, self).__init__()
+        super(NeutronDatabaseFixture, self).__init__()
         self.vtm = vtm
         self.ptm = ptm
         self.LOG = logger

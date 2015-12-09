@@ -13,7 +13,9 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from PTM.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
+from PTM.impl.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
+from PTM.fixtures.ServiceFixture import ServiceFixture
+from common.Exceptions import *
 
 
 class PhysicalTopologyManager(object):
@@ -24,17 +26,17 @@ class PhysicalTopologyManager(object):
         """
         super(PhysicalTopologyManager, self).__init__()
         self.impl_ = impl
-        self.log_manager = self.impl_.log_manager
-        self.root_dir = self.impl_.root_dir
+        self.log_manager = None
+        self.root_dir = '.'
+        if self.impl_:
+            self.log_manager = self.impl_.log_manager
+            self.root_dir = self.impl_.root_dir
+        self.fixtures = {}
+        """ :type: dict[str, ServiceFixture]"""
 
     def configure(self, config_file, file_type='json'):
         """
         Configure the PTM with information from the given JSON file.
-
-        IMPORTANT NOTE!!!  For Hosts and for Applications, the implementation class name
-        in the [implementation] section MUST have the class's name be the same name as the
-        last dotted-name in the module (the string after the last dot (.), without the
-        .py extension)!
 
         :type file_name: str
         :return:
@@ -58,4 +60,34 @@ class PhysicalTopologyManager(object):
         if self.impl_:
             return self.impl_.create_vm(ip, mac, gw_ip, hv_host, name)
         return None
+
+    def add_fixture(self, name, fixture):
+        """
+        Add a ServiceFixture to setup and tear down this scenario in addition to standard
+        setup() and teardown() functions defined in scenario subclasses (most notably,
+        this is useful when a certain batch of tests have specialized scenario needs
+        that aren't suitable to create a hard dependency to the scenario subclass, such
+        as virtual topology requirements, etc.).  The fixtures are added by name so they
+        can be checked and accessed at a later time (or only set to be included once from
+        many sources, etc.)
+        :type name: str
+        :type fixture: ServiceFixture
+        """
+        if fixture:
+            self.fixtures[name] = fixture
+
+    def fixture_setup(self):
+        for name, fix in self.fixtures.iteritems():
+            """ :type: ServiceFixture"""
+            fix.setup()
+
+    def fixture_teardown(self):
+        for name, fix in self.fixtures.iteritems():
+            """ :type: ServiceFixture"""
+            fix.teardown()
+
+    def get_fixture(self, name):
+        if name in self.fixtures:
+            return self.fixtures[name]
+        raise ObjectNotFoundException('No fixture defined in scenario: ' + name)
 

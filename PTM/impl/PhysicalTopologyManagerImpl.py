@@ -25,7 +25,7 @@ class PhysicalTopologyManagerImpl(object):
     :type root_dir: str
     :type log_manager: LogManager
     """
-    def __init__(self, root_dir='.', log_manager=None):
+    def __init__(self, root_dir='.', log_manager=None, log=None, console=None):
         super(PhysicalTopologyManagerImpl, self).__init__()
         self.log_manager = log_manager if log_manager is not None else LogManager(root_dir="logs")
         """ :type: LogManager"""
@@ -82,3 +82,4 @@ class PhysicalTopologyManagerImpl(object):
 
     def create_vm(self, ip, mac=None, gw_ip=None, requested_hv_host=None, requested_vm_name=None):
         pass
+

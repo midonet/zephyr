@@ -19,35 +19,29 @@ import getopt
 import traceback
 import datetime
 import logging
-import importlib
 
 from common.Exceptions import *
 from common.CLI import LinuxCLI
 from common.LogManager import LogManager
 from common.Utils import get_class_from_fqn
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-from PTM.ptm_constants import CONTROL_CMD_NAME
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from VTM.MNAPI import create_midonet_client
 from VTM.NeutronAPI import create_neutron_client
-
 from TSM.TestSystemManager import TestSystemManager
-from TSM.TestScenario import TestScenario
 from TSM.TestCase import TestCase
 
 
 def usage(exceptObj):
-    print 'Usage: tsm-run.py -t <tests> [-s <scenarios>] [-p <file>]'
+    print 'Usage: tsm-run.py -t <tests> [-t <topology>] [-n <name>] [-p <file>] [-d] '
     print '                             [-c <neutron|midonet> --client-args="<arg=value,...>"]'
     print '                             [-p <ptm_class>] [extra_options]'
     print ''
-    print '   Options:'
+    print '   Test Execution Options:'
     print '     -t, --tests <tests>          List of fully-qualified names of tests to run, separated by '
     print '                                  commas with no spaces.'
-    print '     -s, --scenarios <scenarios>  List of fully-qualified names of scenarios to use as a filter,'
-    print '                                  allowing the given tests to execute under the listed scenarios.'
-    print '                                  By default, each test will run all of its supported scenarios.'
+    print '     -n, --name <name>            Name this test run (timestamp by default).'
+    print '   Client API Options:'
     print '     -c, --client <client>        OpenStack Network client to use.  Currently can be either '
     print '                                  "neutron" (default) or "midonet".'
     print '     -a, --client-auth <auth>     Authentication scheme to use for Openstack authentication. Can be'
@@ -55,9 +49,17 @@ def usage(exceptObj):
     print '                                  "neutron" (default) or "midonet".'
     print '     --client-args <args>         List of arguments to give the selected client.  These should be'
     print '                                  key=value pairs, separated by commas, with no spaces.'
-    print '     -p, --ptm <ptm-class>        Use the specified PTM class (HostPhysicalTopologyManagerImpl is'
-    print '                                  the default).'
-    print '   Extra Options:'
+    print '   Physical Topology Management Options:'
+    print '     -p, --ptm <ptm-class>        Use the specified PTM implementation class'
+    print '                                  (ConfiguredHostPTMImpl is the default).'
+    print '   ConfiguredHostPTMImpl Specific Options:'
+    print '     -o, --topology <topo>        State which physical topologys to configure and run.  Topologies are'
+    print '                                  defined in config/physical_topologies.  By default, tests will run '
+    print '                                  against a 2NSDB + 3Compute + 2Edge topology. Only one topology can '
+    print '                                  be run per execution of this command.'
+    print '   Debug Options:'
+    print '     -d, --debug                  Turn on DEBUG logging (and split log output to stdout).'
+    print '   Output File Options:'
     print '     -l, --log-dir <dir>          Log file directory (default: /tmp/zephyr/results)'
     print '     -r, --results-dir <dir>      Results file directory (default: /tmp/zephyr/logs) Timestamp'
     print '                                  will be appended to prevent overwriting results.'
@@ -66,8 +68,8 @@ def usage(exceptObj):
         raise exceptObj
 
 try:
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:s:c:p:l:r:a:',
-                                        ['help', 'tests=', 'scenarios=',
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:n:o:c:p:l:r:a:',
+                                        ['help', 'tests=', 'name=', 'topologies=',
                                          'client=', 'client-auth=', 'client-args=',
                                          'ptm=', 'log-dir=', 'debug', 'results-dir=', 'debug-test'])
 
@@ -76,13 +78,14 @@ try:
     client_auth_type = 'noauth'
     client_args = {}
     tests = ''
-    scenario_filter_list = ''
     ptm_config_file = ''
     debug = False
     test_debug = False
     log_dir = '/tmp/zephyr/logs'
     results_dir = '/tmp/zephyr/results'
-    ptm_impl_type = 'PTM.HostPhysicalTopologyManagerImpl'
+    ptm_impl_type = 'PTM.impl.ConfiguredHostPTMImpl'
+    topology = 'config/physical_topologies/2z-3c-2edge.json'
+    name = datetime.datetime.utcnow().strftime('%Y_%m_%d_%H-%M-%S')
 
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
@@ -92,29 +95,24 @@ try:
             if value == '':
                 usage(ArgMismatchException('Tests should be given as a comma-delimited list with no spaces'))
             tests = value.split(',')
-        elif arg in ('-s', '--scenarios'):
-            if value == '':
-                usage(ArgMismatchException('Scenarios should be given as a comma-delimited list with no spaces'))
-            scenario_filter_list = value.split(',')
+        elif arg in ('-n', '--name'):
+            name = value
+        elif arg in ('-o', '--topologies'):
+            topology = value
         elif arg in ('-c', '--client'):
             client_impl_type = value
-            pass
         elif arg in ('-a', '--client-auth'):
             client_auth_type = value
-            pass
         elif arg in ('-p', '--ptm'):
             ptm_impl_type = value
-            pass
         elif arg in ('-l', '--log-dir'):
             log_dir = value
-            pass
         elif arg in ('-d', '--debug'):
             debug = True
         elif arg in ('--debug-test'):
             test_debug = True
         elif arg in ('-r', '--results-dir'):
             results_dir = value
-            pass
         elif arg == '--client-args':
             for kv in value.split(','):
                 if kv == '':
@@ -126,7 +124,6 @@ try:
                     usage(ArgMismatchException('Client args should be key=value pairs, with one "=", '
                                                'separated by "," and no spaces.'))
                 client_args[p[0]] = p[1]
-            pass
         else:
             raise ArgMismatchException('Invalid argument' + arg)
 
@@ -165,6 +162,7 @@ try:
 
     console_log.debug('Setting up VTM')
     vtm = VirtualTopologyManager(physical_topology_manager=ptm, client_api_impl=client_impl, log_manager=log_manager)
+    vtm.configure_logging(debug=debug)
 
     console_log.debug('Setting up TSM')
     tsm = TestSystemManager(ptm, vtm, log_manager=log_manager)
@@ -173,33 +171,30 @@ try:
     if test_debug:
         tsm.set_test_debug()
 
-    scenario_filters = [TestScenario.get_class(s) for s in scenario_filter_list] \
-        if len(scenario_filter_list) != 0 else None
-
     console_log.debug('Test Case Classes = ' + str(tests))
 
     # Run test cases, possibly filtered on scenarios
     tsm.load_tests(tests)
 
-    console_log.debug('Running all tests with scenario filter: ' + str(scenario_filters))
+    console_log.debug('Running all tests with topology: ' + str(topology))
 
     try:
-        results = tsm.run_all_tests(scenario_filters)
+        results = tsm.run_all_tests(name, topology)
 
-        for s, tr in results.iteritems():
+        for suite, result in tsm.result_map.iteritems():
             print '========================================'
-            print 'Scenario [' + s.__name__ + ']'
-            print 'Passed [{0}/{1}]'.format(len(results[s].successes), results[s].testsRun)
-            print 'Failed [{0}/{1}]'.format(len(results[s].failures), results[s].testsRun)
-            print 'Error [{0}/{1}]'.format(len(results[s].errors), results[s].testsRun)
+            print 'Suite [' + suite + ']'
+            print 'Passed [{0}/{1}]'.format(len(result.successes), result.testsRun)
+            print 'Failed [{0}/{1}]'.format(len(result.failures), result.testsRun)
+            print 'Error [{0}/{1}]'.format(len(result.errors), result.testsRun)
             print ''
-            for tc, err in results[s].failures:
+            for tc, err in result.failures:
                 print '------------------------------'
                 print 'Test Case FAILED: [' + tc._get_name() + ']'
                 print 'Failure Message:'
                 print err
 
-            for tc, err in results[s].errors:
+            for tc, err in result.errors:
                 if isinstance(tc, TestCase):
                     print '------------------------------'
                     print 'Test Case ERROR: [' + tc._get_name() + ']'
@@ -212,7 +207,7 @@ try:
                     print err
 
     finally:
-        rdir = results_dir + '/' + datetime.datetime.utcnow().strftime('%Y_%m_%d_%H-%M-%S')
+        rdir = results_dir + '/' + name
         tsm.create_results(results_dir=rdir, leeway=3)
 
 except ExitCleanException:

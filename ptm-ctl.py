@@ -15,13 +15,13 @@
 
 import sys
 import getopt
+import traceback
 
 from common.Exceptions import *
-from PTM.HostPhysicalTopologyManagerImpl import HostPhysicalTopologyManagerImpl
+from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from PTM.ptm_constants import CONTROL_CMD_NAME
 from common.CLI import LinuxCLI
-import traceback
 from common.LogManager import LogManager
 
 
@@ -38,7 +38,7 @@ try:
 
     # Defaults
     command = ''
-    ptm_config_file = 'config/ptm/2z-2c-2edge.json'
+    ptm_config_file = 'config/physical_topologies/2z-2c-2edge.json'
     neutron_command = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False
@@ -71,7 +71,7 @@ try:
     if command == 'startup':
         log_manager.rollover_logs_fresh(file_filter='ptm*.log')
 
-    ptm_impl = HostPhysicalTopologyManagerImpl(root_dir=root_dir, log_manager=log_manager)
+    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir, log_manager=log_manager)
     ptm_impl.configure_logging(debug=debug)
 
     ptm = PhysicalTopologyManager(ptm_impl)

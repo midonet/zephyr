@@ -15,7 +15,7 @@ __author__ = 'micucci'
 
 import json
 
-from PTM.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
+from PTM.impl.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
 from PTM.PhysicalTopologyConfig import PhysicalTopologyConfig
 from common.CLI import *
 from common.IP import IP
@@ -24,11 +24,11 @@ from PTM.ptm_constants import PTM_LOG_FILE_NAME
 from PTM.application.HypervisorService import HypervisorService
 
 
-class HostPhysicalTopologyManagerImpl(PhysicalTopologyManagerImpl):
+class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
     global_vm_id = 0
 
-    def __init__(self, root_dir='.', log_manager=None):
-        super(HostPhysicalTopologyManagerImpl, self).__init__(root_dir, log_manager)
+    def __init__(self, root_dir='.', log_manager=None, log=None, console=None):
+        super(ConfiguredHostPTMImpl, self).__init__(root_dir, log_manager)
         self.hosts_by_name = {}
         self.host_by_start_order = []
         self.hypervisors = {}
@@ -36,13 +36,23 @@ class HostPhysicalTopologyManagerImpl(PhysicalTopologyManagerImpl):
         self.virtual_network_hosts = {}
 
     def configure_logging(self, log_name='ptm-root', debug=False, log_file_name=PTM_LOG_FILE_NAME):
-        super(HostPhysicalTopologyManagerImpl, self).configure_logging(log_name, debug, log_file_name)
+        super(ConfiguredHostPTMImpl, self).configure_logging(log_name, debug, log_file_name)
 
         # Update all loggers for all configured hosts
         for host in self.hosts_by_name.itervalues():
             host.set_log_level(self.log_level)
 
     def configure(self, config_file, file_type='json'):
+        """
+        IMPORTANT NOTE!!!  For Hosts and for Applications, the implementation class name
+        in the [implementation] section MUST have the class's name be the same name as the
+        last dotted-name in the module (the string after the last dot (.), without the
+        .py extension)!
+
+        :param config_file:
+        :param file_type:
+        :return:
+        """
         self.LOG.debug('**PTM configuration started**')
         self.LOG.debug('Configuring PTM with file: ' + config_file)
         #TODO: Enable multiple config files to define roots across several Linux hosts
@@ -260,7 +270,7 @@ class HostPhysicalTopologyManagerImpl(PhysicalTopologyManagerImpl):
             raise ObjectNotFoundException('Requested host to start VM: ' + requested_hv_host + ' not found')
 
         for hv_host, hv_app_list in (self.hypervisors.iteritems() if requested_hv_host is None
-                        else [(requested_hv_host, self.hypervisors[requested_hv_host])]):
+                                     else [(requested_hv_host, self.hypervisors[requested_hv_host])]):
             for hv_app in hv_app_list:
                 if start_hv_app is None or start_hv_app.get_vm_count() > hv_app.get_vm_count():
                     start_hv_app = hv_app
@@ -272,8 +282,8 @@ class HostPhysicalTopologyManagerImpl(PhysicalTopologyManagerImpl):
         if requested_vm_name is not None:
             requested_vm_name = requested_vm_name
         else:
-            requested_vm_name = 'vm_' + str(HostPhysicalTopologyManagerImpl.global_vm_id)
-            HostPhysicalTopologyManagerImpl.global_vm_id += 1
+            requested_vm_name = 'vm_' + str(ConfiguredHostPTMImpl.global_vm_id)
+            ConfiguredHostPTMImpl.global_vm_id += 1
 
         self.LOG.debug("Starting VM with name: " + requested_vm_name + " and IP: " +
                        str(ip) + " on hypervisor host: " + start_hv_host +

@@ -8,7 +8,7 @@ class CassandraTest(unittest.TestCase):
         self.skipTest("Cassandra is not working on Jenkins currently")
         """
         lm = LogManager('./test-logs')
-        ptm = HostPhysicalTopologyManagerImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..',
+        ptm = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..',
                                             log_manager=lm)
 
         root_cfg = HostDef('root',

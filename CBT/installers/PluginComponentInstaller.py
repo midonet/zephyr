@@ -23,7 +23,7 @@ class PluginComponentInstaller(ComponentInstaller):
         repo_name = repo + '-' + version.major + '-' + repo_obj.get_type()
         repo_obj.create_repo_file('midokura.networking-midonet', scheme, repo_name,
                                   username, password, distribution)
-        LinuxCLI().cmd("apt-get install python3-software-properties")
+        LinuxCLI().cmd("apt-get install -y python3-software-properties")
         LinuxCLI().cmd("add-apt-repository -y cloud-archive:" + version.major)
         LinuxCLI().cmd("apt-get update")
 
