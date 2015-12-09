@@ -54,8 +54,8 @@ class PhysicalTopologyManager(object):
         if self.impl_:
             self.impl_.shutdown()
 
-    def create_vm(self, ip, gw_ip=None, preferred_hv_host=None, preferred_name=None):
+    def create_vm(self, ip, mac=None, gw_ip=None, hv_host=None, name=None):
         if self.impl_:
-            return self.impl_.create_vm(ip, gw_ip, preferred_hv_host, preferred_name)
+            return self.impl_.create_vm(ip, mac, gw_ip, hv_host, name)
         return None
 

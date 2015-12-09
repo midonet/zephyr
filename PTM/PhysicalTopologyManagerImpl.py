@@ -80,5 +80,5 @@ class PhysicalTopologyManagerImpl(object):
     def ptm_host_app_control(self, app_cmd, host_json, app_json, arg_list):
         pass
 
-    def create_vm(self, ip, gw_ip=None, requested_hv_host=None, requested_vm_name=None):
+    def create_vm(self, ip, mac=None, gw_ip=None, requested_hv_host=None, requested_vm_name=None):
         pass

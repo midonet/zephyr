@@ -135,13 +135,13 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'], preferred_hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'], preferred_hv_host='cmp2')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp2')
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', td.port1['id'], td.port1['mac_address'])
-            vm2.plugin_vm('eth0', td.port2['id'], td.port2['mac_address'])
+            vm1.plugin_vm('eth0', td.port1['id'])
+            vm2.plugin_vm('eth0', td.port2['id'])
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -188,13 +188,13 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'], preferred_hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'], preferred_hv_host='cmp1')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', td.port1['id'], td.port1['mac_address'])
-            vm2.plugin_vm('eth0', td.port2['id'], td.port2['mac_address'])
+            vm1.plugin_vm('eth0', td.port1['id'])
+            vm2.plugin_vm('eth0', td.port2['id'])
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -243,11 +243,11 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'], preferred_hv_host='cmp2')
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'], preferred_hv_host='cmp1')
+            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
+            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
 
-            vm1.plugin_vm('eth0', td.port1['id'], td.port1['mac_address'])
-            vm2.plugin_vm('eth0', td.port2['id'], td.port2['mac_address'])
+            vm1.plugin_vm('eth0', td.port1['id'])
+            vm2.plugin_vm('eth0', td.port2['id'])
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -293,13 +293,13 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'], preferred_hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'], preferred_hv_host='cmp1')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', td.port1['id'], td.port1['mac_address'])
-            vm2.plugin_vm('eth0', td.port2['id'], td.port2['mac_address'])
+            vm1.plugin_vm('eth0', td.port1['id'])
+            vm2.plugin_vm('eth0', td.port2['id'])
 
             # Add two extra IP addrs to vm1's interface and one to vm2
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -359,13 +359,13 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'], preferred_hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'], preferred_hv_host='cmp1')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', td.port1['id'], td.port1['mac_address'])
-            vm2.plugin_vm('eth0', td.port2['id'], td.port2['mac_address'])
+            vm1.plugin_vm('eth0', td.port1['id'])
+            vm2.plugin_vm('eth0', td.port2['id'])
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -455,13 +455,13 @@ class TestExtraRoutes(NeutronTestCase):
             ip1extra = port1extra['fixed_ips'][0]['ip_address']
             ip2extra = port2extra['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'], preferred_hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'], preferred_hv_host='cmp1')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', td.port1['id'], td.port1['mac_address'])
-            vm2.plugin_vm('eth0', td.port2['id'], td.port2['mac_address'])
+            vm1.plugin_vm('eth0', td.port1['id'])
+            vm2.plugin_vm('eth0', td.port2['id'])
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')

@@ -95,13 +95,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -139,13 +139,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -183,13 +183,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -240,13 +240,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -299,13 +299,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -348,13 +348,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -402,13 +402,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -451,13 +451,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -600,13 +600,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
@@ -677,13 +677,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 

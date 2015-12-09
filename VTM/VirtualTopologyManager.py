@@ -36,18 +36,18 @@ class VirtualTopologyManager(object):
     def get_client(self):
         return self.client_api_impl
 
-    def create_vm(self, ip, gw_ip=None, preferred_hv_host=None, preferred_name=None):
+    def create_vm(self, ip, mac=None, gw_ip=None, hv_host=None, name=None):
         """
         Creates a guest VM on the Physical Topology and returns the Guest
         object representing the VM as part of the virtual topology.
         :param ip: str IP Address to use for the VM (required)
-        :param preferred_hv_host: str: Hypervisor to use, otherwise the least-loaded HV host is chosen.
-        :param preferred_name: str: Name to use for the VM.  Otherwise one is generated.
+        :param hv_host: str: Hypervisor to use, otherwise the least-loaded HV host is chosen.
+        :param name: str: Name to use for the VM.  Otherwise one is generated.
         :return: Guest
         """
         if self.physical_topology_manager is None:
             raise ArgMismatchException("Cannot create a VM without a PTM")
-        new_vm = self.physical_topology_manager.create_vm(ip, gw_ip, preferred_hv_host, preferred_name)
+        new_vm = self.physical_topology_manager.create_vm(ip, mac, gw_ip, hv_host, name)
         if not new_vm:
             raise ObjectNotFoundException("VM not created: " + ip)
 

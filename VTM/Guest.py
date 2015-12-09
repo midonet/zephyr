@@ -38,7 +38,7 @@ class Guest(object):
         self.echo_server_procs = {}
         """ :type: dict[int, CommandStatus]"""
 
-    def plugin_vm(self, iface, port, mac=None):
+    def plugin_vm(self, iface, port):
         """ Links an interface on this VM to a virtual network port
             * bind interface to MidoNet with mm-ctl
             * set iface to the indicated mac address (if provided)
@@ -47,7 +47,7 @@ class Guest(object):
         :type mac: str
         """
         self.vm_host.LOG.debug("Plugging in VM interface: " + iface + " to port: " + str(port))
-        self.vm_host.plugin_iface(iface, port, mac)
+        self.vm_host.plugin_iface(iface, port)
         self.open_ports_by_id.add(port)
 
     def unplug_vm(self, port):

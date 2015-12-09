@@ -52,9 +52,9 @@ class TestBasicPing(MidonetTestCase):
         port2 = TestBasicPing.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', preferred_hv_host='cmp1', preferred_name='vm1')
+        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', hv_host='cmp1', name='vm1')
         """ :type: Guest"""
-        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', preferred_hv_host='cmp1', preferred_name='vm2')
+        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', hv_host='cmp1', name='vm2')
         """ :type: Guest"""
 
         try:
@@ -74,9 +74,9 @@ class TestBasicPing(MidonetTestCase):
         port2 = TestBasicPing.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', preferred_hv_host='cmp1', preferred_name='vm1')
+        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', hv_host='cmp1', name='vm1')
         """ :type: Guest"""
-        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', preferred_hv_host='cmp2', preferred_name='vm2')
+        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4', hv_host='cmp2', name='vm2')
         """ :type: Guest"""
 
         try:

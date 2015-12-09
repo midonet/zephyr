@@ -65,8 +65,8 @@ class TestLBaaSRoundRobin(NeutronTestCase):
                                                    'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port1: ' + str(port1))
             ip1 = port1['fixed_ips'][0]['ip_address']
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            vm1.plugin_vm('eth0', port1['id'])
 
             port2 = self.api.create_port({'port': {'name': 'port2',
                                                    'network_id': self.main_network['id'],
@@ -74,8 +74,8 @@ class TestLBaaSRoundRobin(NeutronTestCase):
                                                    'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port2: ' + str(port2))
             ip2 = port2['fixed_ips'][0]['ip_address']
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
             self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
@@ -176,8 +176,8 @@ class TestLBaaSRoundRobin(NeutronTestCase):
             self.LOG.debug('Created port for lbaas pinger: ' + str(port_pinger))
 
             ip_pinger = port_pinger['fixed_ips'][0]['ip_address']
-            vm_pinger = self.vtm.create_vm(ip=ip_pinger, gw_ip=self.pinger_subnet['gateway_ip'])
-            vm_pinger.plugin_vm('eth0', port_pinger['id'], port_pinger['mac_address'])
+            vm_pinger = self.vtm.create_vm(ip=ip_pinger, mac=port_pinger['mac_address'], gw_ip=self.pinger_subnet['gateway_ip'])
+            vm_pinger.plugin_vm('eth0', port_pinger['id'])
             g_pinger = GuestData(port_pinger, vm_pinger, ip_pinger)
 
             pool1 = self.api.create_pool({'pool': {'name': 'pool1',
@@ -239,8 +239,8 @@ class TestLBaaSRoundRobin(NeutronTestCase):
             self.LOG.debug('Created port for lbaas pinger: ' + str(port_pinger))
 
             ip_pinger = port_pinger['fixed_ips'][0]['ip_address']
-            vm_pinger = self.vtm.create_vm(ip=ip_pinger, gw_ip=self.main_subnet['gateway_ip'])
-            vm_pinger.plugin_vm('eth0', port_pinger['id'], port_pinger['mac_address'])
+            vm_pinger = self.vtm.create_vm(ip=ip_pinger, mac=port_pinger['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            vm_pinger.plugin_vm('eth0', port_pinger['id'])
             g_pinger = GuestData(port_pinger, vm_pinger, ip_pinger)
 
             pool1 = self.api.create_pool({'pool': {'name': 'pool1',
@@ -303,8 +303,8 @@ class TestLBaaSRoundRobin(NeutronTestCase):
             self.LOG.debug('Created port for lbaas pinger: ' + str(port_pinger))
 
             ip_pinger = port_pinger['fixed_ips'][0]['ip_address']
-            vm_pinger = self.vtm.create_vm(ip=ip_pinger, gw_ip=self.pinger_subnet['gateway_ip'])
-            vm_pinger.plugin_vm('eth0', port_pinger['id'], port_pinger['mac_address'])
+            vm_pinger = self.vtm.create_vm(ip=ip_pinger, mac=port_pinger['mac_address'], gw_ip=self.pinger_subnet['gateway_ip'])
+            vm_pinger.plugin_vm('eth0', port_pinger['id'])
             g_pinger = GuestData(port_pinger, vm_pinger, ip_pinger)
 
             port3 = self.api.create_port({'port': {'name': 'port4',
@@ -314,9 +314,9 @@ class TestLBaaSRoundRobin(NeutronTestCase):
             self.LOG.debug('Created port1: ' + str(port3))
 
             ip3 = port3['fixed_ips'][0]['ip_address']
-            vm3 = self.vtm.create_vm(ip=ip3, gw_ip=self.main_subnet['gateway_ip'])
+            vm3 = self.vtm.create_vm(ip=ip3, mac=port3['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm3.plugin_vm('eth0', port3['id'], port3['mac_address'])
+            vm3.plugin_vm('eth0', port3['id'])
             g3 = GuestData(port3, vm3, ip3)
 
             pool1 = self.api.create_pool({'pool': {'name': 'pool1',

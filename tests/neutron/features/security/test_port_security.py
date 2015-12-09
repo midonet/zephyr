@@ -77,13 +77,13 @@ class TestPortSecurity(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
@@ -145,13 +145,13 @@ class TestPortSecurity(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
@@ -204,13 +204,13 @@ class TestPortSecurity(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             packets = self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2)
             """ :type: list[PCAPPacket]"""
@@ -252,13 +252,13 @@ class TestPortSecurity(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             # Default state should be PS enabled on net and any created ports
             # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
@@ -306,13 +306,13 @@ class TestPortSecurity(NeutronTestCase):
             ip3 = port3['fixed_ips'][0]['ip_address']
             ip4 = port4['fixed_ips'][0]['ip_address']
 
-            vm3 = self.vtm.create_vm(ip=ip3, gw_ip=self.main_subnet['gateway_ip'])
+            vm3 = self.vtm.create_vm(ip=ip3, mac=port3['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
-            vm4 = self.vtm.create_vm(ip=ip4, gw_ip=self.main_subnet['gateway_ip'])
+            vm4 = self.vtm.create_vm(ip=ip4, mac=port4['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
             """ :type: Guest"""
 
-            vm3.plugin_vm('eth0', port3['id'], port3['mac_address'])
-            vm4.plugin_vm('eth0', port4['id'], port4['mac_address'])
+            vm3.plugin_vm('eth0', port3['id'])
+            vm4.plugin_vm('eth0', port4['id'])
 
             # Should send okay because port and net security is disabled
             packets = self.send_and_capture_spoof(sender=vm3, receiver=vm4, receiver_ip=ip4)

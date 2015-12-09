@@ -241,7 +241,7 @@ class HostPhysicalTopologyManagerImpl(PhysicalTopologyManagerImpl):
 
         self.LOG.debug('**PTM shutdown finished**')
 
-    def create_vm(self, ip, gw_ip=None, requested_hv_host=None, requested_vm_name=None):
+    def create_vm(self, ip, mac=None, gw_ip=None, requested_hv_host=None, requested_vm_name=None):
         """
         Creates a guest VM on the Physical Topology and returns the Guest
         object representing the VM as part of the virtual topology.
@@ -282,7 +282,7 @@ class HostPhysicalTopologyManagerImpl(PhysicalTopologyManagerImpl):
         """ :type: VMHost """
 
         real_ip = IP.make_ip(ip)
-        new_vm.create_interface('eth0', ip_list=[real_ip])
+        new_vm.create_interface('eth0', ip_list=[real_ip], mac=mac)
         if gw_ip is None:
             # Figure out a default gw based on IP, usually (IP & subnet_mask + 1)
             subnet_mask = [255, 255, 255, 255]
@@ -312,6 +312,7 @@ class HostPhysicalTopologyManagerImpl(PhysicalTopologyManagerImpl):
         self.LOG.debug("Adding default route for VM: " + gw_ip)
 
         new_vm.add_route(gw_ip=IP.make_ip(gw_ip))
+
         return new_vm
 
     def ptm_host_app_control(self, app_cmd, host_json, app_json, arg_list):

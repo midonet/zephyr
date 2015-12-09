@@ -64,8 +64,8 @@ class TestLBaaSSessionPersistence(NeutronTestCase):
                                                    'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port1: ' + str(port1))
             ip1 = port1['fixed_ips'][0]['ip_address']
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=self.main_subnet['gateway_ip'])
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            vm1.plugin_vm('eth0', port1['id'])
 
             port2 = self.api.create_port({'port': {'name': 'port2',
                                                    'network_id': self.main_network['id'],
@@ -73,8 +73,8 @@ class TestLBaaSSessionPersistence(NeutronTestCase):
                                                    'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port2: ' + str(port2))
             ip2 = port2['fixed_ips'][0]['ip_address']
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=self.main_subnet['gateway_ip'])
-            vm2.plugin_vm('eth0', port2['id'], port2['mac_address'])
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            vm2.plugin_vm('eth0', port2['id'])
 
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
             self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
@@ -159,8 +159,8 @@ class TestLBaaSSessionPersistence(NeutronTestCase):
                                                        'admin_state_up': True,
                                                        'tenant_id': 'admin'}})['port']
                 pip = pport['fixed_ips'][0]['ip_address']
-                pvm = self.vtm.create_vm(ip=pip, gw_ip=self.pinger_subnet['gateway_ip'])
-                pvm.plugin_vm('eth0', pport['id'], pport['mac_address'])
+                pvm = self.vtm.create_vm(ip=pip, mac=pport['mac_address'], gw_ip=self.pinger_subnet['gateway_ip'])
+                pvm.plugin_vm('eth0', pport['id'])
 
                 resp = pvm.send_echo_request(dest_ip=str(vip1['address']), echo_request='ping')
 

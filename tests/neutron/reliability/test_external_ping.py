@@ -129,9 +129,9 @@ class TestExternalPing(NeutronTestCase):
 
             self.LOG.info("Got VM1 IP: " + str(ip1))
 
-            vm1 = self.vtm.create_vm(ip=ip1)
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'])
 
-            vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
+            vm1.plugin_vm('eth0', port1['id'])
 
             self.LOG.info('Pinging from VM1 to external')
             self.assertTrue(vm1.ping(target_ip='172.20.1.1', on_iface='eth0'))
