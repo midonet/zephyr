@@ -25,7 +25,7 @@ TopoData = namedtuple('TopoData', 'sites vpn')
 
 class TestVPNaaSSingleSite(NeutronTestCase):
     @staticmethod
-    def supported_scenarios():
+    def supported_physical_topologies():
         return {Scenario_Basic3ComputeWithEdge}
 
     def setup_vpnaas_neutron_topo(self):
