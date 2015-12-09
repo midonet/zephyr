@@ -184,7 +184,7 @@
       "apps": [
         { "class": "PTM.application.Zookeeper",
           "id": "1",
-          "zookeeper_ips": ["10.0.0.2"]
+          "zookeeper_ips": ["10.0.0.2", "10.0.0.3"]
         }
       ]
     },
@@ -193,7 +193,7 @@
       "apps": [
         { "class": "PTM.application.Zookeeper",
           "id": "2",
-          "zookeeper_ips": ["10.0.0.3"]
+          "zookeeper_ips": ["10.0.0.2", "10.0.0.3"]
         }
       ]
     },

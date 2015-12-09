@@ -133,7 +133,6 @@ class TestExternalPing(NeutronTestCase):
 
             vm1.plugin_vm('eth0', port1['id'], port1['mac_address'])
 
-            raw_input("WAIT")
             self.LOG.info('Pinging from VM1 to external')
             self.assertTrue(vm1.ping(target_ip='172.20.1.1', on_iface='eth0'))
 
