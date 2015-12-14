@@ -14,6 +14,8 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from TSM.NeutronTestCase import NeutronTestCase
+from TSM.TestCase import require_topology_feature
+import operator
 
 
 class TestBasicPing(NeutronTestCase):
@@ -68,6 +70,7 @@ class TestBasicPing(NeutronTestCase):
             if port2 is not None:
                 self.api.delete_port(port2['id'])
 
+    @require_topology_feature('compute_hosts', operator.gt, 1)
     def test_neutron_api_ping_two_hosts_diff_hv(self):
         port1 = None
         port2 = None

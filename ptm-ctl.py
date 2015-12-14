@@ -26,14 +26,14 @@ from common.LogManager import LogManager
 
 
 def usage(exceptObj):
-    print 'Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print} [--config-file <JSON file>]'
+    print 'Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print|--features} [--config-file <JSON file>]'
     if exceptObj is not None:
         raise exceptObj
 
 try:
 
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdpc:l:',
-                                        ['help', 'debug', 'startup', 'shutdown', 'print', 'config-file=',
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdpc:l:f',
+                                        ['help', 'debug', 'startup', 'shutdown', 'print', 'features', 'config-file=',
                                          'log-dir='])
 
     # Defaults
@@ -59,6 +59,8 @@ try:
             log_dir = value
         elif arg in ('-p', '--print'):
             command = 'print'
+        elif arg in ('-f', '--features'):
+            command = 'features'
         else:
             usage(ArgMismatchException('Invalid argument' + arg))
 
@@ -83,6 +85,8 @@ try:
         ptm.shutdown()
     elif command == 'print':
         ptm.print_config()
+    elif command == 'features':
+        ptm.print_features()
     else:
         usage(ArgMismatchException('Command option not recognized: ' + command))
 

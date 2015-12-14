@@ -119,5 +119,32 @@ class expected_failure(object):
                          ') did not fail!  Remove "expected_failure" annotation?')
             except:
                 slf.skipTest('Expected failure (see issue: ' + str(self.issue_id) + ')')
+        return new_tester
 
+
+class require_topology_feature(object):
+    def __init__(self, feature, func=None, value=None):
+        self.feature = feature
+        self.func = func
+        self.value = value
+    def __call__(self, f):
+        def new_tester(slf, *args):
+            """
+            :type slf: TestCase
+            """
+            feature_val = slf.ptm.get_topology_feature(self.feature)
+
+            # If feature is set, func not set, value not set: Check for feature existence
+            # If feature is set, func not set, value     set: Check feature == value
+            # If feature is set, func     set, value not set: Check func(feature) == True
+            # If feature is set, func     set, value     set: Check func(feature, value) == True
+            # The latter is useful for operator.* functions like operator.lt and operator.gt
+            if feature_val and \
+                    ((self.func is     None and self.value is     None) or
+                     (self.func is     None and self.value is not None and feature_val == self.value) or
+                     (self.func is not None and self.value is     None and self.func(feature_val)) or
+                     (self.func is not None and self.value is not None and self.func(feature_val, self.value))):
+                f(slf, *args)
+            else:
+                slf.skipTest('Skipping because feature is not supported by the topology')
         return new_tester

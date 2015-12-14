@@ -26,11 +26,8 @@ class PhysicalTopologyManager(object):
         """
         super(PhysicalTopologyManager, self).__init__()
         self.impl_ = impl
-        self.log_manager = None
-        self.root_dir = '.'
-        if self.impl_:
-            self.log_manager = self.impl_.log_manager
-            self.root_dir = self.impl_.root_dir
+        self.log_manager = self.impl_.log_manager if self.impl_ and hasattr(self.impl_, "log_manager") else None
+        self.root_dir = self.impl_.root_dir if self.impl_ and hasattr(self.impl_, "root_dir") else '.'
         self.fixtures = {}
         """ :type: dict[str, ServiceFixture]"""
 
@@ -47,6 +44,24 @@ class PhysicalTopologyManager(object):
     def print_config(self, indent=0, logger=None):
         if self.impl_:
             self.impl_.print_config(indent, logger)
+
+    def print_features(self, logger=None):
+        header_list = ['feature', 'value']
+        print_list = []
+        max_str_size = map(len, header_list)
+        if self.impl_:
+            #max_str_size = map(max, max_str_size, self.impl_.get_topology_features())
+            for feat, val in self.impl_.get_topology_features().iteritems():
+                print_list.append((str(feat), str(val)))
+                max_str_size[0] = len(str(feat)) if len(str(feat)) > max_str_size[0] else max_str_size[0]
+                max_str_size[1] = len(str(val)) if len(str(val)) > max_str_size[1] else max_str_size[1]
+        print "Supported features of this PTM:"
+        print '+' + '-' * (max_str_size[0] + 2) + '+' + '-' * (max_str_size[1] + 2) + '+'
+        print '| ' + ' | '.join(header_list) + ' |'
+        print '+' + '-' * (max_str_size[0] + 2) + '+' + '-' * (max_str_size[1] + 2) + '+'
+        for feat, val in print_list:
+            print '| ' + ' | '.join((feat, val)) + ' |'
+        print '+' + '-' * (max_str_size[0] + 2) + '+' + '-' * (max_str_size[1] + 2) + '+'
 
     def startup(self):
         if self.impl_:
@@ -91,3 +106,20 @@ class PhysicalTopologyManager(object):
             return self.fixtures[name]
         raise ObjectNotFoundException('No fixture defined in scenario: ' + name)
 
+    def get_topology_features(self):
+        """
+        :return: dict[str, any]
+        """
+        if self.impl_:
+            self.impl_.get_topology_features()
+
+    def get_topology_feature(self, feature):
+        """
+        :type feature: str
+        :return: any
+        """
+        if self.impl_:
+            feat_map = self.impl_.get_topology_features()
+            if feature in feat_map:
+                return feat_map[feature]
+            return None

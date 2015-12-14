@@ -83,3 +83,5 @@ class PhysicalTopologyManagerImpl(object):
     def create_vm(self, ip, mac=None, gw_ip=None, requested_hv_host=None, requested_vm_name=None):
         pass
 
+    def get_topology_features(self):
+        pass

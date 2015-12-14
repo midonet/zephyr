@@ -397,3 +397,6 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
 
         a.cleanup_environment()
         self.LOG.debug("ptm-host-ctl finished")
+
+    def get_topology_features(self):
+        return {'compute_hosts': len(self.hypervisors)}
