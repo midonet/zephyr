@@ -107,6 +107,12 @@ def setup_neutron(api, subnet_cidr='192.168.0.0/24', pubsubnet_cidr='200.200.0.0
                                                             'security_group_id': def_sg_id, 'tenant_id': tenant_id}})
     api.create_security_group_rule({'security_group_rule': {'direction': 'egress', 'protocol': 'tcp',
                                                             'security_group_id': def_sg_id, 'tenant_id': tenant_id}})
+    api.update_quota(tenant_id, {'quota': {'network': -1,
+                                           'subnet': -1,
+                                           'router': -1,
+                                           'pool': -1,
+                                           'security_group': -1,
+                                           'vip': -1}})
 
     return main_network, main_subnet, pub_network, pub_subnet
 
