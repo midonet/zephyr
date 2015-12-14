@@ -122,10 +122,14 @@ def clean_neutron(api, log=None):
 
     log.debug('Clearing neutron database')
     cli = LinuxCLI(log_cmd=True)
-    current_neutron_db = cli.cmd(r"neutron-db-manage current 2>&1 | grep '(.*)' | "
-                                 r"awk '{ print $2 }' | sed 's/(\(.*\))/\1/g'").stdout.strip().split()[0]
-    current_midonet_db = cli.cmd(r"midonet-db-manage current 2>&1 | grep '(.*)' | "
-                                 r"awk '{ print $2 }' | sed 's/(\(.*\))/\1/g'").stdout.strip().split()[0]
+    cmdout = cli.cmd(r"neutron-db-manage current 2>&1 | grep '(.*)' | "
+                                 r"awk '{ print $2 }' | sed 's/(\(.*\))/\1/g'")
+    log.debug('neutron-db-manage-current out: ' + cmdout.stdout + '/' + cmdout.stderr)
+    current_neutron_db = cmdout.stdout.strip().split()[0]
+    cmdout = cli.cmd(r"midonet-db-manage current 2>&1 | grep '(.*)' | "
+                                 r"awk '{ print $2 }' | sed 's/(\(.*\))/\1/g'")
+    log.debug('midoent-db-manage-current out: ' + cmdout.stdout + '/' + cmdout.stderr)
+    current_midonet_db = cmdout.stdout.strip()
     cli.cmd('mysql -u root --password=cat neutron -e "DROP DATABASE neutron"')
     log.debug('Re-creating clean neutron database')
     cli.cmd('mysql --user=root --password=cat -e "CREATE DATABASE IF NOT EXISTS neutron"')

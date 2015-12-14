@@ -20,6 +20,12 @@ from CBT.repos.PackageRepo import PackageRepo
 import CBT.VersionConfig as version_config
 
 class NeutronComponentInstaller(ComponentInstaller):
+    def __init__(self, version):
+        super(NeutronComponentInstaller, self).__init__(version)
+        self.config_funcs = {}
+        self.config_funcs['kilo'] = self.kilo_config
+        self.config_funcs['liberty'] = self.liberty_config
+
     def create_repo_file(self, repo_obj, scheme, repo, username=None, password=None,
                          version=None, distribution='stable'):
         """
@@ -65,6 +71,20 @@ class NeutronComponentInstaller(ComponentInstaller):
             cli.cmd('mysql --user=root --password=cat -e "GRANT ALL PRIVILEGES ON neutron.* TO neutron@\'%\'"')
 
         version_config.get_installed_midolman_version()
+
+        config_func = self.config_funcs[str(self.version.major)]
+        config_func(cli)
+
+        cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
+                '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head')
+        cli.cmd('midonet-db-manage upgrade head')
+
+        cli.write_to_file('/etc/default/neutron-server', 'NEUTRON_PLUGIN_CONFIG="/etc/neutron/plugin.ini"\n')
+
+        cli.cmd("service neutron-server restart")
+        cli.cmd("service neutron-dhcp-agent restart")
+
+    def kilo_config(self, cli):
         mn_api_url = version_config.ConfigMap.get_configured_parameter('param_midonet_api_url')
 
         cfg_file_str = ("[DEFAULT]\n"
@@ -100,16 +120,16 @@ class NeutronComponentInstaller(ComponentInstaller):
                         "\n"
                         "[MIDONET]\n"
                         "midonet_uri = " + mn_api_url + "\n"
-                        "username = admin\n"
-                        "password = cat\n"
-                        "project_id = admin\n"
-                        "auth_url = http://localhost:5000/v2.0\n")
+                                                        "username = admin\n"
+                                                        "password = cat\n"
+                                                        "project_id = admin\n"
+                                                        "auth_url = http://localhost:5000/v2.0\n")
 
         cli.write_to_file('/etc/neutron/dhcp_agent.ini', dhcp_ini_str)
 
         lbaas_cfg_str = ("[service_providers]\n"
                          "service_provider = LOADBALANCER:Midonet:"
-                            "midonet.neutron.services.loadbalancer.driver.MidonetLoadbalancerDriver:default\n")
+                         "midonet.neutron.services.loadbalancer.driver.MidonetLoadbalancerDriver:default\n")
 
         cli.write_to_file('/etc/neutron/neutron_lbaas.conf', lbaas_cfg_str)
 
@@ -118,33 +138,79 @@ class NeutronComponentInstaller(ComponentInstaller):
                          "sql_max_retries = 100\n"
                          "[MIDONET]\n"
                          "midonet_uri = " + mn_api_url + "\n"
-                         "username = admin\n"
-                         "password = cat\n"
-                         "project_id = admin\n"
-                         "auth_url = http://localhost:5000/v2.0\n"
-                         "provider_router_id =\n")
+                                                         "username = admin\n"
+                                                         "password = cat\n"
+                                                         "project_id = admin\n"
+                                                         "auth_url = http://localhost:5000/v2.0\n"
+                                                         "provider_router_id =\n")
 
         cli.mkdir('/etc/neutron/plugins/midonet')
         cli.write_to_file('/etc/neutron/plugins/midonet/midonet_plugin.ini', mn_plugin_str)
         cli.rm('/etc/neutron/plugin.ini')
         cli.cmd('ln -s /etc/neutron/plugins/midonet/midonet_plugin.ini /etc/neutron/plugin.ini')
 
-        if exact_version == "mitaka" or exact_version is None:
-            cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
-                    '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head')
-            cli.cmd('midonet-db-manage upgrade head')
-        else:
-            cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
-                    '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade ' + exact_version)
-            cli.cmd('midonet-db-manage upgrade ' + exact_version)
+    def liberty_config(self, cli):
+        mn_api_url = version_config.ConfigMap.get_configured_parameter('param_midonet_api_url')
 
-        cli.write_to_file('/etc/default/neutron-server', 'NEUTRON_PLUGIN_CONFIG="/etc/neutron/plugin.ini"\n')
+        cfg_file_str = ("[DEFAULT]\n"
+                        "core_plugin = neutron.plugins.ml2.plugin.Ml2Plugin\n"
+                        "service_plugins = midonet.neutron.services.l3.l3_midonet.MidonetL3ServicePlugin,"
+                                          "neutron_lbaas.services.loadbalancer.plugin.LoadBalancerPlugin\n"
+                        "auth_strategy = noauth\n"
+                        "rpc_backend = neutron.openstack.common.rpc.impl_kombu\n"
+                        "rabbit_host = localhost\n"
+                        "rabbit_userid = guest\n"
+                        "rabbit_password = cat\n"
+                        "allow_overlapping_ips = True\n"
+                        "router_scheduler_driver =\n"
+                        "debug = True\n"
+                        "\n"
+                        "[agent]\n"
+                        "root_helper = sudo /usr/bin/neutron-rootwrap /etc/neutron/rootwrap.conf\n"
+                        "\n"
+                        "[database]\n"
+                        "connection = mysql://neutron:cat@localhost/neutron\n"
+                        "\n"
+                        "[oslo_concurrency]\n"
+                        "lock_path = $state_path/lock\n")
 
-        cli.cmd("service neutron-server restart")
-        cli.cmd("service neutron-dhcp-agent restart")
+        cli.write_to_file('/etc/neutron/neutron.conf', cfg_file_str)
 
-        repo.install_packages(['neutron-server', 'neutron-dhcp-agent', 'python-neutronclient',
-                               'python-neutron-lbaas', 'python-mysql.connector'])
+        dhcp_ini_str = ("[DEFAULT]\n"
+                        "interface_driver = neutron.agent.linux.interface.MidonetInterfaceDriver\n"
+                        "dhcp_driver = midonet.neutron.agent.midonet_driver.DhcpNoOpDriver\n"
+                        "use_namespaces = True\n"
+                        "dnsmasq_config_file = /etc/neutron/dnsmasq-neutron.conf\n"
+                        "enable_isolated_metadata = True\n"
+                        "\n"
+                        "[MIDONET]\n"
+                        "midonet_uri = " + mn_api_url + "\n"
+                                                        "username = admin\n"
+                                                        "password = cat\n"
+                                                        "project_id = admin\n"
+                                                        "auth_url = http://localhost:5000/v2.0\n")
+
+        cli.write_to_file('/etc/neutron/dhcp_agent.ini', dhcp_ini_str)
+
+        lbaas_cfg_str = ("[service_providers]\n"
+                         "service_provider = LOADBALANCER:Midonet:"
+                         "midonet.neutron.services.loadbalancer.driver.MidonetLoadbalancerDriver:default\n")
+
+        cli.write_to_file('/etc/neutron/neutron_lbaas.conf', lbaas_cfg_str)
+
+        mn_plugin_str = ("[ML2]\n"
+                         "tenant_network_types = midonet\n"
+                         "extension_drivers = port_security\n"
+                         "type_drivers = midonet,uplink\n"
+                         "mechanism_drivers = midonet\n"
+                         "[MIDONET]\n"
+                         "client = midonet.neutron.client.api.MidonetApiClient\n"
+                         "project_id = admin\n"
+                         "password = cat\n"
+                         "username = admin\n"
+                         "midonet_uri = " + mn_api_url + "\n")
+
+        cli.write_to_file('/etc/neutron/plugin.ini', mn_plugin_str)
 
     def uninstall_packages(self, repo, exact_version=None):
         """

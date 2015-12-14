@@ -14,7 +14,6 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from TSM.NeutronTestCase import NeutronTestCase
-from tests.scenarios.Scenario_Basic3ComputeWithEdge import Scenario_Basic3ComputeWithEdge
 from VTM.Guest import Guest
 
 from collections import namedtuple

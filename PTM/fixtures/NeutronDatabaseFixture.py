@@ -14,8 +14,10 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from PTM.fixtures.ServiceFixture import ServiceFixture
+from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
 from common.CLI import LinuxCLI
+from common.FileLocation import FileLocation
 
 from VTM.NeutronAPI import setup_neutron, clean_neutron
 
@@ -24,6 +26,9 @@ class NeutronDatabaseFixture(ServiceFixture):
     def __init__(self, vtm, ptm, logger):
         """
         Sets up everything all tests will need to run Neutron.
+        :type vtm: VirtualTopologyManager
+        :type ptm: PhysicalTopologyManager
+        :type logger: logging.logger
         """
         super(NeutronDatabaseFixture, self).__init__()
         self.vtm = vtm
@@ -47,6 +52,11 @@ class NeutronDatabaseFixture(ServiceFixture):
                               subnet_cidr='10.0.1.0/24',
                               pubsubnet_cidr='192.168.0.0/24',
                               log=self.LOG)
+
+            LinuxCLI().cmd('chmod 644 /var/log/neutron/neutron-server.log')
+            self.ptm.log_manager.add_external_log_file(FileLocation('/var/log/neutron/neutron-server.log'),
+                                                       '', '%Y-%m-%d %H:%M:%S.%f')
+
         except Exception:
             self.teardown()
             raise
