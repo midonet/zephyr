@@ -110,6 +110,158 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    def test_allowed_address_pairs_reply_antispoof_same_network(self):
+        port1 = None
+        port2 = None
+        vm1 = None
+        vm2 = None
+        try:
+            port1 = self.api.create_port({'port': {'name': 'port1',
+                                                   'network_id': self.main_network['id'],
+                                                   'admin_state_up': True,
+                                                   'tenant_id': 'admin'}})['port']
+            self.LOG.debug('Created port1: ' + str(port1))
+
+            port2 = self.api.create_port({'port': {'name': 'port2',
+                                                   'network_id': self.main_network['id'],
+                                                   'admin_state_up': True,
+                                                   'tenant_id': 'admin'}})['port']
+            self.LOG.debug('Created port2: ' + str(port2))
+
+            ip1 = port1['fixed_ips'][0]['ip_address']
+            ip2 = port2['fixed_ips'][0]['ip_address']
+
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            """ :type: Guest"""
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            """ :type: Guest"""
+
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
+
+            # Default IP and MAC should still work
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+            new_ip = '.'.join(ip2.split('.')[0:3]) + '.155'
+            vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
+
+            vm2.start_echo_server(ip=new_ip)
+
+            # Echo request should work, but reply will be blocked
+            echo_data = vm1.send_echo_request(dest_ip=new_ip)
+            self.assertEqual('', echo_data)
+
+            # Ping to spoofed IP should work, but reply should be blocked
+            self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0'))
+
+        finally:
+            if vm2:
+                vm2.stop_echo_server()
+            self.cleanup_vms([(vm1, port1), (vm2, port2)])
+
+    def test_allowed_address_pairs_reply_antispoof_diff_network(self):
+        port1 = None
+        port2 = None
+        vm1 = None
+        vm2 = None
+        net1 = None
+        subnet1 = None
+        net2 = None
+        subnet2 = None
+        router1 = None
+        if1 = None
+        if2 = None
+        try:
+            # Create a first network for testing
+            net1 = self.api.create_network({'network': {'name': 'net1', 'admin_state_up': True,
+                                                        'tenant_id': 'admin'}})['network']
+            self.LOG.debug('Created net1: ' + str(net1))
+
+            subnet1 = self.api.create_subnet({'subnet': {'name': 'net1_sub',
+                                                         'network_id': net1['id'],
+                                                         'ip_version': 4, 'cidr': '10.0.50.0/24',
+                                                         'tenant_id': 'admin'}})['subnet']
+            self.LOG.debug('Created subnet1: ' + str(subnet1))
+
+            port1 = self.api.create_port({'port': {'name': 'port1',
+                                                   'network_id': net1['id'],
+                                                   'admin_state_up': True,
+                                                   'tenant_id': 'admin'}})['port']
+            self.LOG.debug('Created port1: ' + str(port1))
+
+            # Create a second network for testing
+            net2 = self.api.create_network({'network': {'name': 'net2', 'admin_state_up': True,
+                                                        'tenant_id': 'admin'}})['network']
+            self.LOG.debug('Created net1: ' + str(net2))
+
+            subnet2 = self.api.create_subnet({'subnet': {'name': 'net2_sub',
+                                                         'network_id': net2['id'],
+                                                         'ip_version': 4, 'cidr': '10.0.55.0/24',
+                                                         'tenant_id': 'admin'}})['subnet']
+            self.LOG.debug('Created subnet1: ' + str(subnet2))
+
+            port2 = self.api.create_port({'port': {'name': 'port2',
+                                                   'network_id': net2['id'],
+                                                   'admin_state_up': True,
+                                                   'tenant_id': 'admin'}})['port']
+            self.LOG.debug('Created port2: ' + str(port2))
+
+            router1def = {'router': {
+                'name': 'router1to2',
+                'admin_state_up': True,
+                'tenant_id': 'admin'
+            }}
+
+            router1 = self.api.create_router(router1def)['router']
+            self.LOG.debug('Created router1 from net1 to net2: ' + str(router1))
+
+            if1 = self.api.add_interface_router(router1['id'], {'subnet_id': subnet1['id']})
+            if2 = self.api.add_interface_router(router1['id'], {'subnet_id': subnet2['id']})
+
+            ip1 = port1['fixed_ips'][0]['ip_address']
+            ip2 = port2['fixed_ips'][0]['ip_address']
+
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=subnet1['gateway_ip'])
+            """ :type: Guest"""
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=subnet2['gateway_ip'])
+            """ :type: Guest"""
+
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
+
+            # Default IP and MAC should still work
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+
+            new_ip = '.'.join(ip2.split('.')[0:3]) + '.155'
+            vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
+
+            vm2.start_echo_server(ip=new_ip)
+
+            # Echo request should work, but reply will be blocked
+            echo_data = vm1.send_echo_request(dest_ip=new_ip)
+            self.assertEqual('', echo_data)
+
+            # Ping to spoofed IP should work, but reply should be blocked
+            self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0'))
+
+        finally:
+            if if1 is not None:
+                self.api.remove_interface_router(router1['id'], if1)
+            if if2 is not None:
+                self.api.remove_interface_router(router1['id'], if2)
+            if router1 is not None:
+                self.api.delete_router(router1['id'])
+            if vm2:
+                vm2.stop_echo_server()
+            self.cleanup_vms([(vm1, port1), (vm2, port2)])
+            if subnet1:
+                self.api.delete_subnet(subnet1['id'])
+            if subnet2:
+                self.api.delete_subnet(subnet2['id'])
+            if net1:
+                self.api.delete_network(net1['id'])
+            if net2:
+                self.api.delete_network(net2['id'])
+
     def test_allowed_address_pairs_single_ip(self):
         port1 = None
         port2 = None
@@ -151,6 +303,68 @@ class TestAllowedAddressPairs(NeutronTestCase):
             """ :type: list[PCAPPacket]"""
 
         finally:
+            self.cleanup_vms([(vm1, port1), (vm2, port2)])
+
+    def test_allowed_address_pairs_single_ip_round_trip(self):
+        port1 = None
+        port2 = None
+        vm1 = None
+        vm2 = None
+        try:
+            port1 = self.api.create_port({'port': {'name': 'port1',
+                                                   'network_id': self.main_network['id'],
+                                                   'admin_state_up': True,
+                                                   'tenant_id': 'admin'}})['port']
+            self.LOG.debug('Created port1: ' + str(port1))
+
+            port2 = self.api.create_port({'port': {'name': 'port2',
+                                                   'network_id': self.main_network['id'],
+                                                   'admin_state_up': True,
+                                                   'tenant_id': 'admin'}})['port']
+            self.LOG.debug('Created port2: ' + str(port2))
+
+            ip1 = port1['fixed_ips'][0]['ip_address']
+            ip2 = port2['fixed_ips'][0]['ip_address']
+
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            """ :type: Guest"""
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            """ :type: Guest"""
+
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
+
+            # Default IP and MAC should still work
+            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+            new_ip = '.'.join(ip2.split('.')[0:3]) + '.155'
+            vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
+
+            vm2.start_echo_server(ip=new_ip)
+
+            # Echo request should work, but reply will be blocked
+            echo_data = vm1.send_echo_request(dest_ip=new_ip)
+            self.assertEqual('', echo_data)
+
+            # Ping to spoofed IP should work, but reply should be blocked
+            self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0'))
+
+            # Update with AAP
+
+            port1 = self.api.update_port(port1['id'],
+                                         {'port': {'allowed_address_pairs': [{"ip_address": "192.168.99.99"}],
+                                                   'tenant_id': 'admin'}})['port']
+            self.LOG.debug('Updated port1: ' + str(port1))
+
+            # Echo request should work now
+            echo_data = vm1.send_echo_request(dest_ip=new_ip)
+            self.assertEqual('ping:echo_reply', echo_data)
+
+            # Ping to spoofed IP should work now
+            self.assertTrue(vm1.ping(target_ip=new_ip, on_iface='eth0'))
+
+        finally:
+            if vm2:
+                vm2.stop_echo_server()
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
     def test_allowed_address_pairs_single_ip_mac(self):
