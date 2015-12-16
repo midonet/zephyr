@@ -34,8 +34,8 @@ class MidonetAPI(Application):
     def get_name():
         return 'midonet-api'
 
-    def __init__(self, host):
-        super(MidonetAPI, self).__init__(host)
+    def __init__(self, host, app_id=''):
+        super(MidonetAPI, self).__init__(host, app_id)
         self.zookeeper_ips = []
         self.cassandra_ips = []
         self.unique_id = uuid.uuid4()

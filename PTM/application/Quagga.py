@@ -22,8 +22,8 @@ from os import path
 
 class Quagga(Application):
 
-    def __init__(self, host):
-        super(Quagga, self).__init__(host)
+    def __init__(self, host, app_id=''):
+        super(Quagga, self).__init__(host, app_id)
         self.num_id = '1'
         self.configurator = RouterFileConfiguration()
 

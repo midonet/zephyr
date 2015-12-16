@@ -33,6 +33,7 @@ from PTM.application.Application import Application
 
 import logging
 import json
+import uuid
 
 
 # TODO: Extrapolate the host access from the host operations
@@ -149,7 +150,8 @@ class Host(PTMObject):
             self.LOG.debug('Configuring host: ' + self.name +
                            ' with application: ' + app_cfg.class_name)
             app_class = get_class_from_fqn(app_cfg.class_name)
-            a = app_class(self)
+            app_id = uuid.uuid4()
+            a = app_class(self, app_id)
             """ :type: Application"""
             a.configure(cfg, app_cfg)
             a.configure_logging(debug=self.debug)
@@ -333,6 +335,10 @@ class Host(PTMObject):
             print ('    ' * (indent+1)) + '[bridges]'
             for b in self.bridges.itervalues():
                 b.print_config(indent + 2)
+        if self.route_rules is not None and len(self.route_rules) > 0:
+            print ('    ' * (indent+1)) + '[routes]'
+            for dest, gw, dev in self.route_rules:
+                print ('    ' * (indent+2)) + 'to ' + str(dest) + ' via ' + str(gw) + ' on ' + dev
         if self.interfaces is not None and len(self.interfaces) > 0:
             print ('    ' * (indent+1)) + '[interfaces]'
             for i in self.interfaces.itervalues():

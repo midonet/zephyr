@@ -29,8 +29,8 @@ class Zookeeper(Application):
     def get_name():
         return 'zookeeper'
 
-    def __init__(self, host):
-        super(Zookeeper, self).__init__(host)
+    def __init__(self, host, app_id=''):
+        super(Zookeeper, self).__init__(host, app_id)
         self.zookeeper_ips = []
         self.num_id = '1'
         self.ip = IP('', '')

@@ -43,8 +43,8 @@ class Midolman(Application, HypervisorService):
     """
     Implements the HypervisorHost contract to create VMs
     """
-    def __init__(self, host):
-        super(Midolman, self).__init__(host)
+    def __init__(self, host, app_id=''):
+        super(Midolman, self).__init__(host, app_id)
         self.vms = {}
         """ :type: dict [str, dict [str, Interface]]"""
         self.num_id = '1'

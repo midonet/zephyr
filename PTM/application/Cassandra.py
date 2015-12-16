@@ -29,8 +29,8 @@ class Cassandra(Application):
     def get_name():
         return 'cassandra'
 
-    def __init__(self, host):
-        super(Cassandra, self).__init__(host)
+    def __init__(self, host, app_id=''):
+        super(Cassandra, self).__init__(host, app_id)
         self.cassandra_ips = []
         self.num_id = '1'
         self.init_token = ''
