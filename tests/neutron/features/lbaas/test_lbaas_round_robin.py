@@ -211,14 +211,14 @@ class TestLBaaSRoundRobin(NeutronTestCase):
 
             pool1 = self.api.create_pool({'pool': {'name': 'pool1',
                                                    'protocol': 'TCP',
-                                                   'subnet_id': td.lbaas.network.subnet['id'],
+                                                   'subnet_id': td.lbaas.subnet['id'],
                                                    'lb_method': 'ROUND_ROBIN',
                                                    'admin_state_up': True,
                                                    'tenant_id': 'admin'}})['pool']
             self.LOG.debug('Created LBaaS Pool: ' + str(pool1))
 
             vip1 = self.api.create_vip({'vip': {'name': 'pool1-vip1',
-                                                'subnet_id': td.lbaas.network.subnet['id'],
+                                                'subnet_id': td.lbaas.subnet['id'],
                                                 'protocol': 'TCP',
                                                 'protocol_port': 5080,
                                                 'pool_id': pool1['id'],
@@ -277,14 +277,14 @@ class TestLBaaSRoundRobin(NeutronTestCase):
 
             pool1 = self.api.create_pool({'pool': {'name': 'pool1',
                                                    'protocol': 'TCP',
-                                                   'subnet_id': td.lbaas.network.subnet['id'],
+                                                   'subnet_id': td.lbaas.subnet['id'],
                                                    'lb_method': 'ROUND_ROBIN',
                                                    'admin_state_up': True,
                                                    'tenant_id': 'admin'}})['pool']
             self.LOG.debug('Created LBaaS Pool: ' + str(pool1))
 
             vip1 = self.api.create_vip({'vip': {'name': 'pool1-vip1',
-                                                'subnet_id': td.lbaas.network.subnet['id'],
+                                                'subnet_id': td.lbaas.subnet['id'],
                                                 'protocol': 'TCP',
                                                 'protocol_port': 5080,
                                                 'pool_id': pool1['id'],
@@ -338,7 +338,8 @@ class TestLBaaSRoundRobin(NeutronTestCase):
             self.LOG.debug('Created port for lbaas pinger: ' + str(port_pinger))
 
             ip_pinger = port_pinger['fixed_ips'][0]['ip_address']
-            vm_pinger = self.vtm.create_vm(ip=ip_pinger, mac=port_pinger['mac_address'], gw_ip=td.pinger.subnet['gateway_ip'])
+            vm_pinger = self.vtm.create_vm(ip=ip_pinger, mac=port_pinger['mac_address'],
+                                           gw_ip=td.pinger.subnet['gateway_ip'])
             vm_pinger.plugin_vm('eth0', port_pinger['id'])
             g_pinger = GuestData(port_pinger, vm_pinger, ip_pinger)
 
