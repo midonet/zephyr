@@ -88,12 +88,18 @@ class MidonetAPITest(unittest.TestCase):
         for h in ptm_i.host_by_start_order:
             h.start_applications()
 
+        for h in ptm_i.host_by_start_order:
+            h.wait_for_all_applications_to_start()
+
         self.assertTrue(LinuxCLI().cmd('midonet-cli --midonet-url="' +
                                        version_config.ConfigMap.get_configured_parameter('param_midonet_api_url') +
                                        '" -A -e "host list"').ret_code == 0)
 
         for h in reversed(ptm_i.host_by_start_order):
             h.stop_applications()
+
+        for h in reversed(ptm_i.host_by_start_order):
+            h.wait_for_all_applications_to_stop()
 
         time.sleep(1)
         self.assertFalse(LinuxCLI().cmd('midonet-cli '

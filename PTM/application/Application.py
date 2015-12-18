@@ -50,7 +50,8 @@ class Application(object):
     def configure_logging(self, debug=False, log_file_name=PTM_LOG_FILE_NAME):
         self.log_level = logging.DEBUG if debug is True else logging.INFO
         self.debug = debug
-        logname = self.name + datetime.datetime.utcnow().strftime('%M%S%f')
+        msec = int(datetime.datetime.utcnow().microsecond / 1000)
+        logname = self.name + '.' + datetime.datetime.utcnow().strftime('%H%M%S') + '.' + str(msec)
         if debug is True:
             self.LOG = self.log_manager.add_tee_logger(file_name=log_file_name,
                                                        name=logname + '-debug',

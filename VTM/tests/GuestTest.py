@@ -147,7 +147,7 @@ class GuestTest(unittest.TestCase):
             vm1.remove()
             vm2.remove()
 
-    def test_echo_server(self):
+    def test_echo_server_tcp(self):
         vtm = VirtualTopologyManager(client_api_impl=MockClient,
                                      physical_topology_manager=self.ptm)
 
@@ -177,6 +177,38 @@ class GuestTest(unittest.TestCase):
             vm1.net_down()
             vm1.shutdown()
             vm1.remove()
+
+    # TODO: Fix UDP
+    # def test_echo_server_udp(self):
+    #     vtm = VirtualTopologyManager(client_api_impl=MockClient,
+    #                                  physical_topology_manager=self.ptm)
+    #
+    #     hv1 = self.ptm_i.hypervisors['cmp1'][0]
+    #     """ :type hv1: Midolman """
+    #
+    #     vm1 = hv1.create_vm('vm1')
+    #     virtual_host1 = Guest(vm1)
+    #
+    #     try:
+    #         vm1.create_interface('eth0', ip_list=[IP("10.3.3.3", "8")])
+    #
+    #         # Normally we get this from network, but just go with a mocked up port for this test
+    #         port1 = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
+    #
+    #         virtual_host1.plugin_vm('eth0', port1)
+    #
+    #         virtual_host1.start_echo_server(echo_data='test', protocol='udp')
+    #         ret = virtual_host1.send_echo_request(echo_request='ping', protocol='udp')
+    #         self.assertEqual('ping:test', ret)
+    #         virtual_host1.stop_echo_server()
+    #
+    #         virtual_host1.unplug_vm(port1)
+    #
+    #     finally:
+    #         virtual_host1.stop_echo_server()
+    #         vm1.net_down()
+    #         vm1.shutdown()
+    #         vm1.remove()
 
     @classmethod
     def tearDownClass(cls):

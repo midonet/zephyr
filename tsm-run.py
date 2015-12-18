@@ -206,6 +206,12 @@ try:
                     print 'Error Message:'
                     print err
 
+            for tc, err in result.skipped:
+                print '------------------------------'
+                print 'Test Case SKIPPED: [' + tc._get_name() + ']'
+                print 'Reason:'
+                print err
+
     finally:
         rdir = results_dir + '/' + name
         tsm.create_results(results_dir=rdir, leeway=3)

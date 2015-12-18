@@ -19,7 +19,7 @@ from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from common.CLI import LinuxCLI
 from common.FileLocation import FileLocation
 
-from VTM.NeutronAPI import setup_neutron, clean_neutron
+from VTM.NeutronAPI import setup_neutron, clean_neutron, BasicTopoData
 
 
 class NeutronDatabaseFixture(ServiceFixture):
@@ -39,6 +39,7 @@ class NeutronDatabaseFixture(ServiceFixture):
         self.main_subnet = None
         self.pub_network = None
         self.pub_subnet = None
+        self.main_pub_router = None
         self.api = None
         self.mn_api = None
 
@@ -47,11 +48,14 @@ class NeutronDatabaseFixture(ServiceFixture):
             self.api = self.vtm.get_client()
             """ :type: neutron_client.Client """
 
-            (self.main_network, self.main_subnet, self.pub_network, self.pub_subnet) = \
-                setup_neutron(self.api,
-                              subnet_cidr='10.0.1.0/24',
-                              pubsubnet_cidr='192.168.0.0/24',
-                              log=self.LOG)
+            btd = setup_neutron(self.api,
+                                log=self.LOG)
+
+            self.main_network = btd.main_net.network
+            self.main_subnet = btd.main_net.subnet
+            self.pub_network = btd.pub_net.network
+            self.pub_subnet = btd.pub_net.subnet
+            self.main_pub_router = btd.router.router
 
             LinuxCLI().cmd('chmod 644 /var/log/neutron/neutron-server.log')
             self.ptm.log_manager.add_external_log_file(FileLocation('/var/log/neutron/neutron-server.log'),

@@ -15,7 +15,8 @@ from common.LogManager import LogManager
 class ZookeeperTest(unittest.TestCase):
     def test_startup(self):
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..', log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../../..',
+                                      log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
@@ -61,6 +62,7 @@ class ZookeeperTest(unittest.TestCase):
             zoo_host1.net_finalize()
 
             zoo_host1.start_applications()
+            zoo_host1.wait_for_all_applications_to_start()
 
             self.assertEqual('imok', zoo_host1.cli.cmd_pipe([['echo', 'ruok'], ['nc', 'localhost', '2181']]).stdout)
 
@@ -81,6 +83,7 @@ class ZookeeperTest(unittest.TestCase):
         finally:
             if LinuxCLI().exists('/run/zookeeper.1/pid'):
                 zoo_host1.stop_applications()
+                zoo_host1.wait_for_all_applications_to_stop()
 
             root.net_down()
             zoo_host1.net_down()

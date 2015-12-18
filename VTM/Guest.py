@@ -17,13 +17,10 @@ __author__ = 'tomoe'
 import time
 
 from common.Exceptions import *
-from common.CLI import CommandStatus
 from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
-from common.Utils import terminate_process
 
 
 PACKET_CAPTURE_TIMEOUT = 10
-ECHO_SERVER_TIMEOUT = 3
 
 class Guest(object):
     """
@@ -35,8 +32,6 @@ class Guest(object):
         """ :type: VMHost"""
         self.open_ports_by_id = set()
         """ :type: set[str]"""
-        self.echo_server_procs = {}
-        """ :type: dict[int, CommandStatus]"""
 
     def plugin_vm(self, iface, port):
         """ Links an interface on this VM to a virtual network port
@@ -85,7 +80,7 @@ class Guest(object):
                       callback=None, callback_args=None,
                       save_dump_file=False, save_dump_filename=None):
         """
-        :param interface: str: Interface to capture on ('any' is also acceptable)
+        :param on_iface: str: Interface to capture on ('any' is also acceptable)
         :param count: int: Number of packets to capture, or '0' to capture until explicitly stopped (default)
         :param type: str: Type of packet to filter
         :param filter: PCAP_Rule: Ruleset for packet filtering
@@ -129,36 +124,19 @@ class Guest(object):
         """
         return self.vm_host.ping(target_ip=target_ip, iface=on_iface, count=count)
 
-    def start_echo_server(self, ip='localhost', port=DEFAULT_ECHO_PORT, echo_data="echo-reply"):
+    def start_echo_server(self, ip='localhost', port=DEFAULT_ECHO_PORT, echo_data="echo-reply",
+                          protocol='tcp'):
         """
         Start an echo server listening on given ip/port (default to localhost:80)
-        which returns the echo_data on any TCP connection made to the port.
+        with the given protocol, which returns the echo_data on any TCP connection
+        made to the port.
         :param ip: str
         :param port: int
         :param echo_data: str
+        :param protocol: str
         :return: CommandStatus
         """
-        if port in self.echo_server_procs and self.echo_server_procs[port] is not None:
-            self.stop_echo_server(ip, port)
-        proc_name = self.vm_host.ptm.root_dir + '/echo-server.py'
-        self.vm_host.LOG.debug('Starting echo server: ' + proc_name + ' on: ' + ip + ':' + str(port))
-        cmd0 = [proc_name, '-i', ip, '-p', str(port), '-d', echo_data]
-        proc = self.vm_host.cli.cmd_pipe(commands=[cmd0], blocking=False)
-        timeout = time.time() + ECHO_SERVER_TIMEOUT
-
-        conn_resp = ''
-        while conn_resp != 'connect-test:' + echo_data:
-            proc.process_array[0].poll()
-            if proc.process_array[0].returncode is not None:
-                out, err = proc.process.communicate()
-                self.vm_host.LOG.error('Error starting echo server: ' + str(out) + '/' + str(err))
-                raise SubprocessFailedException('Error starting echo server: ' + str(out) + '/' + str(err))
-            if time.time() > timeout:
-                raise SubprocessTimeoutException('Echo server listener failed to bind to port within timeout')
-            conn_resp = self.send_echo_request(dest_ip=ip, dest_port=port, echo_request='connect-test')
-
-        self.echo_server_procs[port] = proc
-        return proc
+        return self.vm_host.start_echo_server(ip, port, echo_data, protocol)
 
     def stop_echo_server(self, ip='localhost', port=DEFAULT_ECHO_PORT):
         """
@@ -167,37 +145,20 @@ class Guest(object):
         :param port: int
         :return:
         """
-        if port in self.echo_server_procs and self.echo_server_procs[port] is not None:
-            self.vm_host.LOG.debug('Stopping echo server on: ' + ip + ':' + str(port))
-            proc = self.echo_server_procs[port]
-            proc.process_array[0].poll()
-            terminate_process(proc.process, signal='TERM')
+        self.vm_host.stop_echo_server(ip, port)
 
-            timeout = time.time() + ECHO_SERVER_TIMEOUT
-            pid_file = '/run/zephyr_echo_server.' + str(port) + '.pid'
-            while self.vm_host.cli.exists(pid_file):
-                time.sleep(1)
-                if time.time() > timeout:
-                    terminate_process(proc.process, signal='KILL')
-                    break
-            self.vm_host.cli.rm(pid_file)
-            self.echo_server_procs[port] = None
-
-    def send_echo_request(self, dest_ip='localhost', dest_port=DEFAULT_ECHO_PORT, echo_request='ping'):
+    def send_echo_request(self, dest_ip='localhost', dest_port=DEFAULT_ECHO_PORT,
+                          echo_request='ping', protocol='tcp'):
         """
-        Create a TCP connection to send specified request string to dest_ip on dest_port
-        (defaults to localhost:80) and return the response.
+        Create a TCP connection to send specified request string over the specified protocol
+        to dest_ip on dest_port (defaults to localhost:80) and return the response.
         :param dest_ip: str
         :param dest_port: int
         :param echo_request: str
+        :param protocol: str
         :return: str
         """
-        self.vm_host.LOG.debug('Sending echo command to: nc ' + str(dest_ip) + ' ' + str(dest_port))
-        cmd0 = ['echo', '-n', echo_request]
-        cmd1 = ['nc', dest_ip, str(dest_port)]
-        ret = self.vm_host.cli.cmd_pipe(commands=[cmd0, cmd1]).stdout
-        self.vm_host.LOG.debug('Received echo response: ' + ret)
-        return ret
+        return self.vm_host.send_echo_request(dest_ip, dest_port, echo_request, protocol)
 
     def execute(self, cmd_line, timeout=None, blocking=True):
         """

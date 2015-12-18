@@ -73,8 +73,11 @@ class NeutronAPITest(unittest.TestCase):
                                    log)
 
             try:
-                (cls.main_network, cls.main_subnet, cls.pub_network, cls.pub_subnet) = \
-                    setup_neutron(cls.api, log=log)
+                btd = setup_neutron(cls.api, log=log)
+                cls.main_network = btd.main_net.network
+                cls.main_subnet = btd.main_net.subnet
+                cls.pub_network = btd.pub_net.network
+                cls.pub_subnet = btd.pub_net.subnet
             except Exception:
                 clean_neutron(cls.api, log=log)
                 raise

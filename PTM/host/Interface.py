@@ -74,6 +74,13 @@ class Interface(PTMObject):
         self.cli.cmd('ip addr add ' + str(new_ip) + ' dev ' + self.get_name())
         self.ip_list.append(new_ip)
 
+    def del_ip(self, new_ip):
+        """
+        :type new_ip: IP
+        """
+        self.cli.cmd('ip addr del ' + str(new_ip) + '/32 dev ' + self.get_name())
+        self.ip_list.append(new_ip)
+
     def start_vlans(self):
         if self.vlans is not None:
             for vlan_id, vlan_ips in self.vlans.iteritems():
