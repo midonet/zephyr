@@ -15,13 +15,14 @@ __author__ = 'micucci'
 
 from common.PCAPRules import *
 from common.PCAPPacket import *
-from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import NeutronTestCase, require_extension
 from VTM.Guest import Guest
 
 from collections import namedtuple
 from neutronclient.common.exceptions import *
 
 import unittest
+
 
 class TestAllowedAddressPairs(NeutronTestCase):
     def send_and_capture_spoof(self, sender, receiver, receiver_ip, spoof_ip, spoof_mac,
@@ -262,6 +263,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             if net2:
                 self.api.delete_network(net2['id'])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip(self):
         port1 = None
         port2 = None
@@ -305,6 +307,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip_round_trip(self):
         port1 = None
         port2 = None
@@ -367,6 +370,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
                 vm2.stop_echo_server()
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip_mac(self):
         port1 = None
         port2 = None
@@ -420,6 +424,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_multi_ip_and_mac(self):
         port1 = None
         port2 = None
@@ -480,6 +485,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_double_mac(self):
         port1 = None
         port2 = None
@@ -533,6 +539,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_subnet(self):
         port1 = None
         port2 = None
@@ -586,6 +593,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_mac_subnet(self):
         port1 = None
         port2 = None
@@ -636,6 +644,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_updates(self):
         port1 = None
         port2 = None
@@ -783,6 +792,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_subnet_with_specific_ip(self):
         port1 = None
         port2 = None
@@ -856,6 +866,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_subnet_with_mixed_ips_macs(self):
         port1 = None
         port2 = None
@@ -933,6 +944,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         finally:
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
+    @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_error(self):
         # Allowed address pair must have IP address
         try:

@@ -13,7 +13,7 @@ __author__ = 'micucci'
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import NeutronTestCase, require_extension
 from VTM.Guest import Guest
 
 from  collections import namedtuple
@@ -120,6 +120,8 @@ class TestExtraRoutes(NeutronTestCase):
         if td.net2 is not None:
             self.api.delete_network(td.net2['id'])
 
+    @require_extension("extraroute")
+    @require_extension("allowed-address-pairs")
     def test_extra_routes_1R2SN_multi_ip_interface_ping_same_hv(self):
         vm1 = None
         vm2 = None
@@ -173,6 +175,8 @@ class TestExtraRoutes(NeutronTestCase):
                 vm2.terminate()
             self.clear_neutron_topo(td)
 
+    @require_extension("extraroute")
+    @require_extension("allowed-address-pairs")
     def test_extra_routes_1R2SN_multi_ip_interface_ping_diff_hv(self):
         vm1 = None
         vm2 = None
@@ -226,6 +230,8 @@ class TestExtraRoutes(NeutronTestCase):
                 vm2.terminate()
             self.clear_neutron_topo(td)
 
+    @require_extension("extraroute")
+    @require_extension("allowed-address-pairs")
     def test_extra_routes_1R2SN_multi_ip_interface_ping_outside(self):
         # skip for now
         """
@@ -277,7 +283,8 @@ class TestExtraRoutes(NeutronTestCase):
                 vm2.terminate()
             self.clear_neutron_topo(td)
         """
-
+    @require_extension("extraroute")
+    @require_extension("allowed-address-pairs")
     def test_extra_routes_1R2SN_multi_ip_interface_multiple_routes(self):
         vm1 = None
         vm2 = None
@@ -295,6 +302,15 @@ class TestExtraRoutes(NeutronTestCase):
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
+
+            td.port1 = self.api.update_port(td.port1['id'],
+                                            {'port': {
+                                                'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
+                                                                          {"ip_address": "172.17.0.2"}]}})['port']
+
+            td.port2 = self.api.update_port(td.port2['id'],
+                                            {'port': {
+                                                'allowed_address_pairs': [{"ip_address": "172.18.0.2"}]}})['port']
 
             # Add two extra IP addrs to vm1's interface and one to vm2
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -344,6 +360,8 @@ class TestExtraRoutes(NeutronTestCase):
             self.cleanup_vms([(vm1, None), (vm2, None)])
             self.clear_neutron_topo(td)
 
+    @require_extension("extraroute")
+    @require_extension("allowed-address-pairs")
     def test_extra_routes_1R2SN_multi_ip_interface_ping_subnet_route(self):
         vm1 = None
         vm2 = None
@@ -361,6 +379,13 @@ class TestExtraRoutes(NeutronTestCase):
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
+
+
+            td.port1 = self.api.update_port(td.port1['id'],
+                                            {'port': {
+                                                'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
+                                                                          {"ip_address": "172.16.0.3"}]}})['port']
+
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -400,6 +425,8 @@ class TestExtraRoutes(NeutronTestCase):
             self.clear_neutron_topo(td)
 
     @unittest.expectedFailure
+    @require_extension("extraroute")
+    @require_extension("allowed-address-pairs")
     def test_extra_routes_2R21N_add_extra_route(self):
         vm1 = None
         vm2 = None
@@ -457,6 +484,15 @@ class TestExtraRoutes(NeutronTestCase):
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
+
+
+            td.port1 = self.api.update_port(td.port1['id'],
+                                            {'port': {
+                                                'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})['port']
+
+            td.port2 = self.api.update_port(td.port2['id'],
+                                            {'port': {
+                                                'allowed_address_pairs': [{"ip_address": "172.18.0.3"}]}})['port']
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
