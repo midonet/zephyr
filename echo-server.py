@@ -22,11 +22,12 @@ import threading
 
 import signal
 
-arg_map, _ = getopt.getopt(sys.argv[1:], 'i:p:d:')
+arg_map, _ = getopt.getopt(sys.argv[1:], 'i:p:d:r:')
 
 ip = 'localhost'
 port = DEFAULT_ECHO_PORT
 data = "pong"
+protocol = "tcp"
 
 for arg, value in arg_map:
     if arg in ('-i'):
@@ -35,13 +36,15 @@ for arg, value in arg_map:
         port = int(value)
     elif arg in ('-d'):
         data = value
+    elif arg in ('-r'):
+        protocol = value
 
 tmp_status_file_name = '/tmp/echo-server-status.' + str(port)
 
 stop_event = threading.Event()
 stop_event.clear()
 
-es = EchoServer(ip, port, data)
+es = EchoServer(ip, port, data, protocol)
 
 def term_handler(signum, frame):
     print "Exiting..."

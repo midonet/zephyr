@@ -14,10 +14,14 @@ __author__ = 'micucci'
 # limitations under the License.
 
 from common.CLI import LinuxCLI
-
+from collections import namedtuple
 import logging
-
 import neutronclient.v2_0.client as neutron_client
+
+NetData = namedtuple('NetData', 'network subnet')
+RouterData = namedtuple('RouterData', 'router if_list')
+BasicTopoData = namedtuple('BasicTopoData', 'main_net pub_net router')
+
 
 def create_neutron_client(api_version='2.0', endpoint_url='http://localhost:9696',
                           auth_strategy='noauth', tenant_name='admin', token='cat', **kwargs):
@@ -27,7 +31,87 @@ def create_neutron_client(api_version='2.0', endpoint_url='http://localhost:9696
                                                token=token, tenant_name=tenant_name, **kwargs)
 
 
-def setup_neutron(api, subnet_cidr='192.168.0.0/24', pubsubnet_cidr='200.200.0.0/24', log=None):
+def create_neutron_main_pub_networks(api,
+                                     main_name='main', main_subnet_cidr='192.168.0.0/24',
+                                     pub_name='public', pub_subnet_cidr='200.200.0.0/24',
+                                     tenant_id='admin', log=None):
+    if log is None:
+        log = logging.getLogger('neutron-api-null-logger')
+        log.addHandler(logging.NullHandler())
+
+    # Create main network
+    networks = api.list_networks(name=main_name)
+    if len(networks['networks']) == 0:
+        network_resp = api.create_network({'network': {'name': main_name, 'admin_state_up': True,
+                                                       'tenant_id': tenant_id}})
+        main_network = network_resp['network']
+    else:
+        main_network = networks['networks'][0]
+    log.debug('Using main network: ' + str(main_network))
+
+    # Create main network's subnet
+    subnets = api.list_subnets(name=main_name + '_sub', network_id=main_network['id'])
+    if len(subnets['subnets']) == 0:
+        subnet_resp = api.create_subnet({'subnet': {'name': main_name + '_sub',
+                                                    'network_id': main_network['id'],
+                                                    'ip_version': 4, 'cidr': main_subnet_cidr,
+                                                    'tenant_id': tenant_id}})
+        main_subnet = subnet_resp['subnet']
+    else:
+        main_subnet = subnets['subnets'][0]
+    log.debug('Using main subnet: ' + str(main_subnet))
+
+    # Create a public network for use with edge routing (if needed
+    pub_network = api.create_network({'network': {'name': pub_name,
+                                                  'admin_state_up': True,
+                                                  'router:external': True,
+                                                  'tenant_id': 'admin'}})['network']
+    log.debug('Using public network: ' + str(pub_network))
+
+    # Create public network's subnet
+    pub_subnet = api.create_subnet({'subnet': {'name': pub_name + '_sub',
+                                               'network_id': pub_network['id'],
+                                               'ip_version': 4,
+                                               'cidr': pub_subnet_cidr,
+                                               'tenant_id': 'admin'}})['subnet']
+    log.debug('Using public subnet: ' + str(pub_subnet))
+    public_router = api.create_router({'router': {'name': pub_name + '_to_' + main_name + '_router',
+                                                  'admin_state_up': True,
+                                                  'external_gateway_info': {
+                                                      "network_id": pub_network['id']
+                                                  },
+                                                  'tenant_id': 'admin'}})['router']
+
+    # Route traffic between main subnet and public gateway
+    if1 = api.add_interface_router(public_router['id'], {'subnet_id': main_subnet['id']})
+
+    return BasicTopoData(NetData(main_network, main_subnet),
+                         NetData(pub_network, pub_subnet),
+                         RouterData(public_router, [if1]))
+
+
+def delete_neutron_main_pub_networks(api, basic_topo_data):
+    if basic_topo_data:
+        if basic_topo_data.router:
+            api.update_router(basic_topo_data.router.router['id'], {'router': {'routes': None}})
+            if basic_topo_data.router.if_list:
+                for iface in basic_topo_data.router.if_list:
+                    api.remove_interface_router(basic_topo_data.router.router['id'], iface)
+            api.delete_router(basic_topo_data.router.router['id'])
+        if basic_topo_data.main_net.subnet:
+            api.delete_subnet(basic_topo_data.main_net.subnet['id'])
+        if basic_topo_data.main_net.network:
+            api.delete_network(basic_topo_data.main_net.network['id'])
+        if basic_topo_data.pub_net.subnet:
+            api.delete_subnet(basic_topo_data.pub_net.subnet['id'])
+        if basic_topo_data.pub_net.network:
+            api.delete_network(basic_topo_data.pub_net.network['id'])
+
+
+def setup_neutron(api,
+                  main_name='main', main_subnet_cidr='192.168.0.0/24',
+                  pub_name='public', pub_subnet_cidr='200.200.0.0/24',
+                  tenant_id='admin', log=None):
     """
     Creates a network named 'main' in the 'admin' tenant and creates a single subnet 'main_sub'
     with the given IP network.
@@ -39,53 +123,10 @@ def setup_neutron(api, subnet_cidr='192.168.0.0/24', pubsubnet_cidr='200.200.0.0
     if log is None:
         log = logging.getLogger('neutron-api-null-logger')
         log.addHandler(logging.NullHandler())
-
-    # Create main network
-    tenant_id = 'admin'
-    networks = api.list_networks(name='main')
-    if len(networks['networks']) == 0:
-        network_resp = api.create_network({'network': {'name': 'main', 'admin_state_up': True,
-                                                       'tenant_id': tenant_id}})
-        main_network = network_resp['network']
-    else:
-        main_network = networks['networks'][0]
-    log.debug('Using main network: ' + str(main_network))
-
-    # Create main network's subnet
-    subnets = api.list_subnets(name='main_sub', network_id=main_network['id'])
-    if len(subnets['subnets']) == 0:
-        subnet_resp = api.create_subnet({'subnet': {'name': 'main_sub',
-                                                    'network_id': main_network['id'],
-                                                    'ip_version': 4, 'cidr': subnet_cidr,
-                                                    'tenant_id': tenant_id}})
-        main_subnet = subnet_resp['subnet']
-    else:
-        main_subnet = subnets['subnets'][0]
-    log.debug('Using main subnet: ' + str(main_subnet))
-
-    # Create a public network for use with edge routing (if needed
-    pub_network = api.create_network({'network': {'name': 'public',
-                                                  'admin_state_up': True,
-                                                  'router:external': True,
-                                                  'tenant_id': 'admin'}})['network']
-    log.debug('Using public network: ' + str(pub_network))
-
-    # Create public network's subnet
-    pub_subnet = api.create_subnet({'subnet': {'name': 'pub_sub',
-                                               'network_id': pub_network['id'],
-                                               'ip_version': 4,
-                                               'cidr': pubsubnet_cidr,
-                                               'tenant_id': 'admin'}})['subnet']
-    log.debug('Using public subnet: ' + str(pub_subnet))
-    public_router = api.create_router({'router': {'name': 'pub_main_router',
-                                                  'admin_state_up': True,
-                                                  'external_gateway_info': {
-                                                      "network_id": pub_network['id']
-                                                  },
-                                                  'tenant_id': 'admin'}})['router']
-
-    # Route traffic between main subnet and public gateway
-    api.add_interface_router(public_router['id'], {'subnet_id': main_subnet['id']})
+    btd = create_neutron_main_pub_networks(api=api,
+                                           main_name=main_name, main_subnet_cidr=main_subnet_cidr,
+                                           pub_name=pub_name, pub_subnet_cidr=pub_subnet_cidr,
+                                           tenant_id=tenant_id, log=log)
 
     # Create default security group
     default_secgroups = api.list_security_groups(name='default')['security_groups']
@@ -114,7 +155,7 @@ def setup_neutron(api, subnet_cidr='192.168.0.0/24', pubsubnet_cidr='200.200.0.0
                                            'security_group': -1,
                                            'vip': -1}})
 
-    return main_network, main_subnet, pub_network, pub_subnet
+    return btd
 
 
 def clean_neutron(api, log=None):
@@ -146,3 +187,4 @@ def clean_neutron(api, log=None):
     log.debug('Restarting neutron')
     cli.cmd("service neutron-server restart")
     LinuxCLI(priv=False).cmd('for i in `ip netns | grep qdhcp`; do sudo ip netns del $i; done')
+

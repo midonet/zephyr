@@ -102,3 +102,22 @@ class TestCase(unittest.TestCase):
 
     def runTest(self):
         pass
+
+
+class expected_failure(object):
+    def __init__(self, issue_id):
+        self.issue_id = issue_id
+
+    def __call__(self, f):
+        def new_tester(slf, *args):
+            """
+            :param slf: TestCase
+            """
+            try:
+                f(slf, *args)
+                slf.fail('Expected failure (see issue: ' + str(self.issue_id) +
+                         ') did not fail!  Remove "expected_failure" annotation?')
+            except:
+                slf.skipTest('Expected failure (see issue: ' + str(self.issue_id) + ')')
+
+        return new_tester

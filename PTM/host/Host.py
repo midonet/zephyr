@@ -18,9 +18,11 @@ from common.PCAPRules import *
 from common.PCAPPacket import PCAPPacket
 from common.TCPDump import TCPDump
 from common.IP import IP
-from common.CLI import LinuxCLI
+from common.CLI import LinuxCLI, CommandStatus
 from common.LogManager import LogManager
 from common.Utils import get_class_from_fqn
+from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
+from common.Utils import terminate_process
 
 from PTM.ptm_constants import HOST_CONTROL_CMD_NAME, PTM_LOG_FILE_NAME
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
@@ -34,6 +36,10 @@ from PTM.application.Application import Application
 import logging
 import json
 import uuid
+import time
+import datetime
+
+ECHO_SERVER_TIMEOUT = 3
 
 
 # TODO: Extrapolate the host access from the host operations
@@ -76,6 +82,8 @@ class Host(PTMObject):
         self.debug = False
         """ :type bool"""
         self.log_level = logging.INFO
+        self.echo_server_procs = {}
+        """ :type: dict[int, CommandStatus]"""
 
     def do_extra_config_from_ptc_def(self, cfg, impl_cfg):
         """
@@ -89,16 +97,17 @@ class Host(PTMObject):
     def configure_logging(self, debug=False, log_file_name=PTM_LOG_FILE_NAME):
         self.log_level = logging.DEBUG if debug is True else logging.INFO
         self.debug = debug
-
+        msec = int(datetime.datetime.utcnow().microsecond / 1000)
+        logname = self.name + '.' + datetime.datetime.utcnow().strftime('%H%M%S') + '.' + str(msec)
         if debug is True:
             self.LOG = self.log_manager.add_tee_logger(file_name=log_file_name,
-                                                       name=self.name + '-debug',
+                                                       name=logname + '-debug',
                                                        file_log_level=self.log_level,
                                                        stdout_log_level=self.log_level)
             self.LOG.info("Turning on debug logs")
         else:
             self.LOG = self.log_manager.add_file_logger(file_name=log_file_name,
-                                                        name=self.name,
+                                                        name=logname,
                                                         log_level=self.log_level)
 
     def config_from_ptc_def(self, cfg, impl_cfg):
@@ -289,8 +298,9 @@ class Host(PTMObject):
             self.LOG.debug(stdout)
             self.LOG.debug("Host control process error output: ")
             self.LOG.debug(stderr)
-            #
-            # raise SubprocessFailedException('Host control start failed with: ' + str(start_process.returncode))
+
+    def wait_for_all_applications_to_start(self):
+        for app in self.applications:
             app.wait_for_process_start()
 
     def stop_applications(self):
@@ -304,6 +314,9 @@ class Host(PTMObject):
             self.LOG.debug(stdout)
             self.LOG.debug("Host control process error output: ")
             self.LOG.debug(stderr)
+
+    def wait_for_all_applications_to_stop(self):
+        for app in self.applications:
             app.wait_for_process_stop()
 
     def set_loopback(self, ip=IP('127.0.0.1', '8')):
@@ -357,6 +370,82 @@ class Host(PTMObject):
               ' '.join(arg_list) + '"'
 
         return LinuxCLI().cmd(cmd, blocking=False).process
+
+    def start_echo_server(self, ip='localhost', port=DEFAULT_ECHO_PORT, echo_data="echo-reply", protocol='tcp'):
+        """
+        Start an echo server listening on given ip/port (default to localhost:80)
+        which returns the echo_data on any TCP connection made to the port.
+        :param ip: str
+        :param port: int
+        :param echo_data: str
+        :return: CommandStatus
+        """
+        if port in self.echo_server_procs and self.echo_server_procs[port] is not None:
+            self.stop_echo_server(ip, port)
+        proc_name = self.ptm.root_dir + '/echo-server.py'
+        self.LOG.debug('Starting echo server: ' + proc_name + ' on: ' + ip + ':' + str(port))
+        cmd0 = [proc_name, '-i', ip, '-p', str(port), '-d', echo_data, '-r', protocol]
+        proc = self.cli.cmd_pipe(commands=[cmd0], blocking=False)
+        timeout = time.time() + ECHO_SERVER_TIMEOUT
+
+        conn_resp = ''
+        while conn_resp != 'connect-test:' + echo_data:
+            proc.process_array[0].poll()
+            if proc.process_array[0].returncode is not None:
+                out, err = proc.process.communicate()
+                self.LOG.error('Error starting echo server: ' + str(out) + '/' + str(err))
+                raise SubprocessFailedException('Error starting echo server: ' + str(out) + '/' + str(err))
+            if time.time() > timeout:
+                raise SubprocessTimeoutException('Echo server listener failed to bind to port within timeout')
+            conn_resp = self.send_echo_request(dest_ip=ip, dest_port=port,
+                                               echo_request='connect-test', protocol=protocol)
+
+        self.echo_server_procs[port] = proc
+        return proc
+
+    def stop_echo_server(self, ip='localhost', port=DEFAULT_ECHO_PORT):
+        """
+        Stop an echo server that has been started on given ip/port (defaults to
+        localhost:80).  If echo service has not been started, do nothing.
+        :param port: int
+        :return:
+        """
+        if port in self.echo_server_procs and self.echo_server_procs[port] is not None:
+            self.LOG.debug('Stopping echo server on: ' + ip + ':' + str(port))
+            proc = self.echo_server_procs[port]
+            proc.process_array[0].poll()
+            terminate_process(proc.process, signal='TERM')
+
+            timeout = time.time() + ECHO_SERVER_TIMEOUT
+            pid_file = '/run/zephyr_echo_server.' + str(port) + '.pid'
+            while self.cli.exists(pid_file):
+                time.sleep(1)
+                if time.time() > timeout:
+                    terminate_process(proc.process, signal='KILL')
+                    break
+            self.cli.rm(pid_file)
+            self.echo_server_procs[port] = None
+
+    def send_echo_request(self, dest_ip='localhost', dest_port=DEFAULT_ECHO_PORT,
+                          echo_request='ping', protocol='tcp'):
+        """
+        Create a TCP connection to send specified request string to dest_ip on dest_port
+        (defaults to localhost:80) and return the response.
+        :param dest_ip: str
+        :param dest_port: int
+        :param echo_request: str
+        :return: str
+        """
+        self.LOG.debug('Sending echo command ' + echo_request + ' to: ' + str(dest_ip) + ' ' + str(dest_port))
+        cmd0 = ['echo', '-n', echo_request]
+        cmd1 = ['nc']
+        if protocol == 'udp':
+            cmd1 += ['-u']
+        cmd1 += [dest_ip, str(dest_port)]
+        ret = self.cli.cmd_pipe(commands=[cmd0, cmd1])
+        self.LOG.debug('Sent echo command: ' + str(ret.command))
+        self.LOG.debug('Received echo response: ' + ret.stdout)
+        return ret.stdout
 
     def is_virtual_network_host(self):
         """

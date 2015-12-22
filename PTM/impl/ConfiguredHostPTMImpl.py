@@ -206,6 +206,10 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
             self.LOG.debug('PTM starting apps on host: ' + h.name)
             h.start_applications()
 
+        for h in self.host_by_start_order:
+            self.LOG.debug('PTM waiting for apps to start on host: ' + h.name)
+            h.wait_for_all_applications_to_start()
+
         self.LOG.debug('**PTM startup finished**')
 
     def shutdown(self):
@@ -222,6 +226,10 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
             except Exception as e:
                 self.LOG.fatal('Fatal error shutting down PTM host apps, trying to continue to next host: ' +
                                str(e))
+
+        for h in reversed(self.host_by_start_order):
+            self.LOG.debug('PTM waiting for apps to stop on host: ' + h.name)
+            h.wait_for_all_applications_to_stop()
 
         self.LOG.debug('PTM stopping networks')
         for h in reversed(self.host_by_start_order):

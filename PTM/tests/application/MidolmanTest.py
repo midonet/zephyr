@@ -139,6 +139,9 @@ class MidolmanTest(unittest.TestCase):
         for h in ptm_i.host_by_start_order:
             h.start_applications()
 
+        for h in ptm_i.host_by_start_order:
+            h.wait_for_all_applications_to_start()
+
         timeout = time.time() + 10
         while not LinuxCLI().exists('/run/midolman.1/pid'):
             if time.time() > timeout:
@@ -152,6 +155,9 @@ class MidolmanTest(unittest.TestCase):
         self.assertTrue(LinuxCLI().is_pid_running(pid))
         for h in ptm_i.host_by_start_order:
             h.stop_applications()
+
+        for h in ptm_i.host_by_start_order:
+            h.wait_for_all_applications_to_stop()
 
         for h in ptm_i.host_by_start_order:
             h.net_down()
