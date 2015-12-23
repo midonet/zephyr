@@ -354,8 +354,8 @@ class TestAllowedAddressPairs(NeutronTestCase):
             # Update with AAP
 
             port1 = self.api.update_port(port1['id'],
-                                         {'port': {'allowed_address_pairs': [{"ip_address": "192.168.99.99"}],
-                                                   'tenant_id': 'admin'}})['port']
+                                         {'port': {'allowed_address_pairs': [
+                                             {"ip_address": "192.168.99.99"}]}})['port']
             self.LOG.debug('Updated port1: ' + str(port1))
 
             # Echo request should work now

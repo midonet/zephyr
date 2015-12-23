@@ -1,4 +1,5 @@
-*.pyc
-.idea
-devstack
-logs
+**/*.pyc
+.idea/**
+devstack/
+logs/
+*.iml
