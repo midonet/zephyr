@@ -109,6 +109,7 @@ class NeutronComponentInstaller(ComponentInstaller):
                         "[oslo_concurrency]\n"
                         "lock_path = $state_path/lock\n")
 
+        cli.copy_file('/etc/neutron/neutron.conf', '/etc/neutron/neutron.conf.bak')
         cli.write_to_file('/etc/neutron/neutron.conf', cfg_file_str)
 
         dhcp_ini_str = ("[DEFAULT]\n"
@@ -125,12 +126,14 @@ class NeutronComponentInstaller(ComponentInstaller):
                                                         "project_id = admin\n"
                                                         "auth_url = http://localhost:5000/v2.0\n")
 
+        cli.copy_file('/etc/neutron/dhcp_agent.ini', '/etc/neutron/dhcp_agent.ini.bak')
         cli.write_to_file('/etc/neutron/dhcp_agent.ini', dhcp_ini_str)
 
         lbaas_cfg_str = ("[service_providers]\n"
                          "service_provider = LOADBALANCER:Midonet:"
                          "midonet.neutron.services.loadbalancer.driver.MidonetLoadbalancerDriver:default\n")
 
+        cli.copy_file('/etc/neutron/neutron_lbaas.conf', '/etc/neutron/neutron_lbaas.conf.bak')
         cli.write_to_file('/etc/neutron/neutron_lbaas.conf', lbaas_cfg_str)
 
         mn_plugin_str = ("[DATABASE]\n"
@@ -145,6 +148,8 @@ class NeutronComponentInstaller(ComponentInstaller):
                                                          "provider_router_id =\n")
 
         cli.mkdir('/etc/neutron/plugins/midonet')
+        cli.copy_file('/etc/neutron/plugins/midonet/midonet_plugin.ini',
+                 '/etc/neutron/plugins/midonet/midonet_plugin.ini.bak')
         cli.write_to_file('/etc/neutron/plugins/midonet/midonet_plugin.ini', mn_plugin_str)
         cli.rm('/etc/neutron/plugin.ini')
         cli.cmd('ln -s /etc/neutron/plugins/midonet/midonet_plugin.ini /etc/neutron/plugin.ini')
@@ -174,6 +179,7 @@ class NeutronComponentInstaller(ComponentInstaller):
                         "[oslo_concurrency]\n"
                         "lock_path = $state_path/lock\n")
 
+        cli.copy_file('/etc/neutron/neutron.conf', '/etc/neutron/neutron.conf.bak')
         cli.write_to_file('/etc/neutron/neutron.conf', cfg_file_str)
 
         dhcp_ini_str = ("[DEFAULT]\n"
@@ -190,12 +196,14 @@ class NeutronComponentInstaller(ComponentInstaller):
                                                         "project_id = admin\n"
                                                         "auth_url = http://localhost:5000/v2.0\n")
 
+        cli.copy_file('/etc/neutron/dhcp_agent.ini', '/etc/neutron/dhcp_agent.ini.bak')
         cli.write_to_file('/etc/neutron/dhcp_agent.ini', dhcp_ini_str)
 
         lbaas_cfg_str = ("[service_providers]\n"
                          "service_provider = LOADBALANCER:Midonet:"
                          "midonet.neutron.services.loadbalancer.driver.MidonetLoadbalancerDriver:default\n")
 
+        cli.copy_file('/etc/neutron/neutron_lbaas.conf', '/etc/neutron/neutron_lbaas.conf.bak')
         cli.write_to_file('/etc/neutron/neutron_lbaas.conf', lbaas_cfg_str)
 
         mn_plugin_str = ("[ML2]\n"
@@ -210,6 +218,7 @@ class NeutronComponentInstaller(ComponentInstaller):
                          "username = admin\n"
                          "midonet_uri = " + mn_api_url + "\n")
 
+        cli.copy_file('/etc/neutron/plugin.ini', '/etc/neutron/plugin.ini.bak')
         cli.write_to_file('/etc/neutron/plugin.ini', mn_plugin_str)
 
     def uninstall_packages(self, repo, exact_version=None):

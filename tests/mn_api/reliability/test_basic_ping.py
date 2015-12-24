@@ -34,9 +34,6 @@ class TestBasicPing(MidonetTestCase):
     @classmethod
     def setUpClass(cls):
         cls.api = cls.vtm.get_client()
-        if not isinstance(cls.api, MidonetApi):
-            raise ArgMismatchException('Need midonet client for this test')
-
         cls.main_bridge = setup_main_bridge(cls.api)
 
     def test_ping_two_vms_same_hv(self):

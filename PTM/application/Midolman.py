@@ -296,13 +296,11 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
 
         self.cli.write_to_file(mmconf,
                                '[zookeeper]\n'
-                               'zookeeper_hosts = ' + z_ip_str + '\n'
-                               'root_key = ' + midonet_key + '\n')
+                               'zookeeper_hosts = ' + z_ip_str + '\n')
 
         self.cli.write_to_file(mn_central_conf,
                                '[zookeeper]\n'
-                               'zookeeper_hosts = ' + z_ip_str + '\n'
-                               'root_key = ' + midonet_key + '\n')
+                               'zookeeper_hosts = ' + z_ip_str + '\n')
 
         # Allow connecting via debugger - MM 1 listens on 1411, MM 2 on 1412, MM 3 on 1413
         self.cli.regex_file(mmenv, '/runjdwp/s/^..//g')

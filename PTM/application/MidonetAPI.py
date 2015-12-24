@@ -180,7 +180,6 @@ class ClusterConfiguration(FileConfigurationHandler):
 
         zkcli = LinuxCLI()
         zkcli.add_environment_variable('MIDO_ZOOKEEPER_HOSTS', z_ip_str)
-        zkcli.add_environment_variable('MIDO_ZOOKEEPER_ROOT_KEY', midonet_key)
 
         self.cli.rm('/var/log/midonet-cluster/midonet-cluster.log')
         self.cli.rm('/etc/midonet_host_id.properties')
@@ -188,7 +187,6 @@ class ClusterConfiguration(FileConfigurationHandler):
         self.cli.write_to_file('/etc/midolman/host_uuid.properties', uuid_str)
 
         conf_str = "[zookeeper]\n" \
-                   "zookeeper_hosts = " + z_ip_str + "\n" \
-                   "root_key = /midonet/v2\n"
+                   "zookeeper_hosts = " + z_ip_str + "\n"
         self.cli.write_to_file('/etc/midonet/midonet.conf', conf_str)
         ret = zkcli.cmd('mn-conf set -t default "agent.cluster.enabled: true"').stdout
