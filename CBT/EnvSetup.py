@@ -41,7 +41,7 @@ install_config = {
     'midonet-mem':
         {
             'repo': 'mem',
-            'scheme': 'https',
+            'scheme': 'http',
             'installer': MidonetComponentInstaller,
             'deps': [],
         },
