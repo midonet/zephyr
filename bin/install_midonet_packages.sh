@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 SCRIPT_ROOT=$( cd `dirname ${BASH_SOURCE[0]}` ; pwd)
 ZEPHYR_ROOT=`dirname $SCRIPT_ROOT`
 
@@ -117,13 +119,10 @@ cd $ZEPHYR_ROOT
 
 ./cbt-ctl.py -i midonet-utils
 
-if [ ".$PRODUCT" == ".midonet-mem" ]; then
-  ./cbt-ctl.py -i midonet-mem -V $VERSION -D $ART_DIST -U $ART_USER -P $ART_PASS
-elif [ ".$PRODUCT" == ".midonet" ]; then
-  ./cbt-ctl.py -i midonet -V $VERSION -D $ART_DIST
+if [ ".$ART_USER" != "." ]; then
+  ./cbt-ctl.py -i $PRODUCT -V $VERSION -D $ART_DIST -U $ART_USER -P $ART_PASS
 else
-  echo "Product must be either 'midonet' or 'midonet-mem'"
-  exit 1
+  ./cbt-ctl.py -i $PRODUCT -V $VERSION -D $ART_DIST
 fi
 
 ./cbt-ctl.py -i plugin -V $OST_VERSION -D $PLUGIN_DIST
