@@ -241,12 +241,9 @@
     }
   ],
   "host_start_order": [
-    "root",
-    "router1",
-    "ext1",
-    "zoo1", "zoo2",
-    "cmp1", "cmp2", "cmp3",
-    "edge1", "edge2",
-    "net1"
+    ["root", "router1", "ext1"],
+    ["zoo1", "zoo2"],
+    ["cmp1", "cmp2", "cmp3", "edge1", "edge2"],
+    ["net1"]
   ]
 }

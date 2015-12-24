@@ -158,8 +158,8 @@
   ],
   "host_start_order": [
     "root",
-    "zoo1", "zoo2",
-    "cmp1", "cmp2", "cmp3",
+    ["zoo1", "zoo2"],
+    ["cmp1", "cmp2", "cmp3"],
     "net1"
   ]
 }

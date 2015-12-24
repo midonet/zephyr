@@ -303,7 +303,7 @@ class PhysicalTopologyConfig(object):
         :type hosts: dict[str, HostDef]
         :type wiring: dict[str, dict[str, HostInterfaceDef]]
         :type implementation: dict[str, ImplementationDef]
-        :type host_start_order: list[str]
+        :type host_start_order: list[str|list[str]]
         """
         self.hosts = hosts
         self.wiring = wiring

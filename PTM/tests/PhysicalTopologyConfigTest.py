@@ -258,11 +258,11 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
 
         self.assertTrue('root' in ptc.host_start_order)
         self.assertTrue('external1' in ptc.host_start_order)
-        self.assertTrue('test-host1' in ptc.host_start_order)
-        self.assertTrue('test-host2' in ptc.host_start_order)
+        self.assertTrue('test-host1' in ptc.host_start_order[2])
+        self.assertTrue('test-host2' in ptc.host_start_order[2])
         self.assertTrue('zoo1' in ptc.host_start_order)
         self.assertTrue('cmp1' in ptc.host_start_order)
-        self.assertTrue('edge1' in ptc.host_start_order)
+        self.assertTrue('edge1' in ptc.host_start_order[3])
 
 from CBT.UnitTestRunner import run_unit_test
 run_unit_test(PhysicalTopologyConfigTest)

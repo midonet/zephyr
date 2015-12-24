@@ -37,14 +37,14 @@ class ConfiguredHostPTMImplTest(unittest.TestCase):
         self.assertTrue('zoo1' in ptm_i.hosts_by_name)
         self.assertTrue('edge1' in ptm_i.hosts_by_name)
 
-        self.assertEqual(ptm_i.host_by_start_order[0].name, 'root')
-        self.assertEqual(ptm_i.host_by_start_order[1].name, 'external1')
-        self.assertEqual(ptm_i.host_by_start_order[2].name, 'test-host1')
-        self.assertEqual(ptm_i.host_by_start_order[3].name, 'test-host2')
-        self.assertEqual(ptm_i.host_by_start_order[4].name, 'edge1')
-        self.assertEqual(ptm_i.host_by_start_order[5].name, 'zoo1')
-        self.assertEqual(ptm_i.host_by_start_order[6].name, 'net1')
-        self.assertEqual(ptm_i.host_by_start_order[7].name, 'cmp1')
+        self.assertEqual(ptm_i.host_by_start_order[0][0].name, 'root')
+        self.assertEqual(ptm_i.host_by_start_order[1][0].name, 'external1')
+        self.assertEqual(ptm_i.host_by_start_order[2][0].name, 'test-host1')
+        self.assertEqual(ptm_i.host_by_start_order[2][1].name, 'test-host2')
+        self.assertEqual(ptm_i.host_by_start_order[3][0].name, 'edge1')
+        self.assertEqual(ptm_i.host_by_start_order[4][0].name, 'zoo1')
+        self.assertEqual(ptm_i.host_by_start_order[5][0].name, 'net1')
+        self.assertEqual(ptm_i.host_by_start_order[6][0].name, 'cmp1')
 
         zk_host = ptm_i.hosts_by_name['zoo1']
 
@@ -78,14 +78,18 @@ class ConfiguredHostPTMImplTest(unittest.TestCase):
 
         ptm.configure(dir_path + '/../test-config.json')
 
-        for h in ptm_i.host_by_start_order:
-            h.create()
-        for h in ptm_i.host_by_start_order:
-            h.boot()
-        for h in ptm_i.host_by_start_order:
-            h.net_up()
-        for h in ptm_i.host_by_start_order:
-            h.net_finalize()
+        for l in ptm_i.host_by_start_order:
+            for h in l:
+                h.create()
+        for l in ptm_i.host_by_start_order:
+            for h in l:
+                h.boot()
+        for l in ptm_i.host_by_start_order:
+            for h in l:
+                h.net_up()
+        for l in ptm_i.host_by_start_order:
+            for h in l:
+                h.net_finalize()
 
         self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
         self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
@@ -95,12 +99,15 @@ class ConfiguredHostPTMImplTest(unittest.TestCase):
         self.assertTrue(root_host.cli.grep_cmd('ip l', 'th1eth1'))
         self.assertTrue(test_host1.cli.grep_cmd('ip l', 'eth1'))
 
-        for h in reversed(ptm_i.host_by_start_order):
-            h.net_down()
-        for h in reversed(ptm_i.host_by_start_order):
-            h.shutdown()
-        for h in reversed(ptm_i.host_by_start_order):
-            h.remove()
+        for l in reversed(ptm_i.host_by_start_order):
+            for h in l:
+                h.net_down()
+        for l in reversed(ptm_i.host_by_start_order):
+            for h in l:
+                h.shutdown()
+        for l in reversed(ptm_i.host_by_start_order):
+            for h in l:
+                h.remove()
 
         self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
         self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test-host1'))

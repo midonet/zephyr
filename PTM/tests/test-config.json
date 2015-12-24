@@ -257,8 +257,8 @@
   "host_start_order": [
     "root",
     "external1",
-    "test-host1", "test-host2",
-    "edge1",
+    ["test-host1", "test-host2"],
+    ["edge1"],
     "zoo1",
     "net1",
     "cmp1"

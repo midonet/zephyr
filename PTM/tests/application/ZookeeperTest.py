@@ -45,8 +45,8 @@ class ZookeeperTest(unittest.TestCase):
 
         ptm_i.hosts_by_name['root'] = root
         ptm_i.hosts_by_name['zoo1'] = zoo_host1
-        ptm_i.host_by_start_order.append(root)
-        ptm_i.host_by_start_order.append(zoo_host1)
+        ptm_i.host_by_start_order.append([root])
+        ptm_i.host_by_start_order.append([zoo_host1])
 
         try:
             root.create()

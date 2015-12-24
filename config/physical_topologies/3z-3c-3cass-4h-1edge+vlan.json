@@ -416,10 +416,10 @@
   ],
   "host_start_order": [
     "root",
-    "v1.1", "v1.2", "v2.1", "v2.2",
-    "zoo1", "zoo2", "zoo3",
-    "cass1", "cass2", "cass3",
-    "cmp1", "cmp2", "cmp3",
+    ["v1.1", "v1.2", "v2.1", "v2.2"],
+    ["zoo1", "zoo2", "zoo3"],
+    ["cass1", "cass2", "cass3"],
+    ["cmp1", "cmp2", "cmp3"],
     "edge1",
     "net1"
   ]

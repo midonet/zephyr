@@ -295,8 +295,8 @@
     "router1",
     "ext1",
     "zoo1",
-    "cmp1", "cmp2",
-    "edge1", "edge2",
+    ["cmp1", "cmp2"],
+    ["edge1", "edge2"],
     "net1"
   ]
 }

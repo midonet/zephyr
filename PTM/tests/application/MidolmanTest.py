@@ -117,30 +117,10 @@ class MidolmanTest(unittest.TestCase):
         ptm_i.hosts_by_name['root'] = root
         ptm_i.hosts_by_name['zoo1'] = zoo1
         ptm_i.hosts_by_name['cmp1'] = cmp1
-        ptm_i.host_by_start_order.append(root)
-        ptm_i.host_by_start_order.append(zoo1)
-        ptm_i.host_by_start_order.append(cmp1)
-
-        for h in ptm_i.host_by_start_order:
-            h.create()
-
-        for h in ptm_i.host_by_start_order:
-            h.boot()
-
-        for h in ptm_i.host_by_start_order:
-            h.net_up()
-
-        for h in ptm_i.host_by_start_order:
-            h.net_finalize()
-
-        for h in ptm_i.host_by_start_order:
-            h.prepare_applications(lm)
-
-        for h in ptm_i.host_by_start_order:
-            h.start_applications()
-
-        for h in ptm_i.host_by_start_order:
-            h.wait_for_all_applications_to_start()
+        ptm_i.host_by_start_order.append([root])
+        ptm_i.host_by_start_order.append([zoo1])
+        ptm_i.host_by_start_order.append([cmp1])
+        ptm_i.startup()
 
         timeout = time.time() + 10
         while not LinuxCLI().exists('/run/midolman.1/pid'):
@@ -153,20 +133,8 @@ class MidolmanTest(unittest.TestCase):
         print "PS = " + LinuxCLI().cmd("ps -aef").stdout
 
         self.assertTrue(LinuxCLI().is_pid_running(pid))
-        for h in ptm_i.host_by_start_order:
-            h.stop_applications()
 
-        for h in ptm_i.host_by_start_order:
-            h.wait_for_all_applications_to_stop()
-
-        for h in ptm_i.host_by_start_order:
-            h.net_down()
-
-        for h in ptm_i.host_by_start_order:
-            h.shutdown()
-
-        for h in ptm_i.host_by_start_order:
-            h.remove()
+        ptm_i.shutdown()
 
         print LinuxCLI().cmd('ip netns').stdout
 

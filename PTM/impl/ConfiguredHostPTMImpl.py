@@ -16,6 +16,7 @@ __author__ = 'micucci'
 import json
 
 from PTM.impl.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
+from PTM.host.Host import Host
 from PTM.PhysicalTopologyConfig import PhysicalTopologyConfig
 from common.CLI import *
 from common.IP import IP
@@ -31,6 +32,7 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
         super(ConfiguredHostPTMImpl, self).__init__(root_dir, log_manager)
         self.hosts_by_name = {}
         self.host_by_start_order = []
+        """ :type: list[list[Host]]"""
         self.hypervisors = {}
         """ :type: dict[str, list[HypervisorService]]"""
         self.virtual_network_hosts = {}
@@ -160,16 +162,26 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
                     host.link_interface(near_iface, far_host, far_iface)
 
         for name in ptc.host_start_order:
-            self.LOG.debug('Adding host to start list: ' + name)
-            if name not in self.hosts_by_name:
-                raise ObjectNotFoundException('Cannot set start order: host ' + name + ' not found')
-            self.host_by_start_order.append(self.hosts_by_name[name])
+            self.LOG.debug('Adding host name or list to start list: ' + str(name))
+            if isinstance(name, list):
+                tier_list = []
+                for host in name:
+                    if host not in self.hosts_by_name:
+                        raise ObjectNotFoundException('Cannot set start order: host ' + host + ' not found')
+                    tier_list.append(self.hosts_by_name[host])
+                self.host_by_start_order.append(tier_list)
+                pass
+            else:
+                if name not in self.hosts_by_name:
+                    raise ObjectNotFoundException('Cannot set start order: host ' + name + ' not found')
+                self.host_by_start_order.append([self.hosts_by_name[name]])
         self.LOG.debug('**PTM configuration finished**')
 
     def print_config(self, indent=0, logger=None):
         print 'Hosts (in start-order):'
-        for h in self.host_by_start_order:
-            h.print_config(indent + 1)
+        for l in self.host_by_start_order:
+            for h in l:
+                h.print_config(indent + 1)
 
     def startup(self):
         """
@@ -180,35 +192,41 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
         self.LOG.debug('**PTM starting up**')
 
         self.LOG.debug('PTM starting hosts')
-        for h in self.host_by_start_order:
-            self.LOG.debug('PTM creating host: ' + h.name)
-            h.create()
+        for l in self.host_by_start_order:
+            for h in l:
+                self.LOG.debug('PTM creating host: ' + h.name)
+                h.create()
 
-        for h in self.host_by_start_order:
-            self.LOG.debug('PTM booting host: ' + h.name)
-            h.boot()
+        for l in self.host_by_start_order:
+            for h in l:
+                self.LOG.debug('PTM booting host: ' + h.name)
+                h.boot()
 
         self.LOG.debug('PTM starting host network')
-        for h in self.host_by_start_order:
-            self.LOG.debug('PTM starting networks on host: ' + h.name)
-            h.net_up()
+        for l in self.host_by_start_order:
+            for h in l:
+                self.LOG.debug('PTM starting networks on host: ' + h.name)
+                h.net_up()
 
-        for h in self.host_by_start_order:
-            self.LOG.debug('PTM finalizing networks on host: ' + h.name)
-            h.net_finalize()
+        for l in self.host_by_start_order:
+            for h in l:
+                self.LOG.debug('PTM finalizing networks on host: ' + h.name)
+                h.net_finalize()
 
         self.LOG.debug('PTM starting host applications')
-        for h in self.host_by_start_order:
-            self.LOG.debug('PTM preparing config files on host: ' + h.name)
-            h.prepare_applications(self.log_manager)
+        for l in self.host_by_start_order:
+            for h in l:
+                self.LOG.debug('PTM preparing config files on host: ' + h.name)
+                h.prepare_applications(self.log_manager)
 
-        for h in self.host_by_start_order:
-            self.LOG.debug('PTM starting apps on host: ' + h.name)
-            h.start_applications()
+        for l in self.host_by_start_order:
+            for h in l:
+                self.LOG.debug('PTM starting apps on host: ' + h.name)
+                h.start_applications()
 
-        for h in self.host_by_start_order:
-            self.LOG.debug('PTM waiting for apps to start on host: ' + h.name)
-            h.wait_for_all_applications_to_start()
+            for h in l:
+                self.LOG.debug('PTM waiting for apps to start on host: ' + h.name)
+                h.wait_for_all_applications_to_start()
 
         self.LOG.debug('**PTM startup finished**')
 
@@ -219,43 +237,48 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
         :return:
         """
         self.LOG.debug('**PTM shutting down**')
-        for h in reversed(self.host_by_start_order):
-            try:
-                self.LOG.debug('PTM stopping apps on host: ' + h.name)
-                h.stop_applications()
-            except Exception as e:
-                self.LOG.fatal('Fatal error shutting down PTM host apps, trying to continue to next host: ' +
-                               str(e))
+        for l in reversed(self.host_by_start_order):
+            for h in l:
+                try:
+                    self.LOG.debug('PTM stopping apps on host: ' + h.name)
+                    h.stop_applications()
+                except Exception as e:
+                    self.LOG.fatal('Fatal error shutting down PTM host apps, trying to continue to next host: ' +
+                                   str(e))
 
-        for h in reversed(self.host_by_start_order):
-            self.LOG.debug('PTM waiting for apps to stop on host: ' + h.name)
-            h.wait_for_all_applications_to_stop()
+        for l in reversed(self.host_by_start_order):
+            for h in l:
+                self.LOG.debug('PTM waiting for apps to stop on host: ' + h.name)
+                h.wait_for_all_applications_to_stop()
 
         self.LOG.debug('PTM stopping networks')
-        for h in reversed(self.host_by_start_order):
-            try:
-                self.LOG.debug('PTM bringing down network on host: ' + h.name)
-                h.net_down()
-            except Exception as e:
-                self.LOG.fatal('Fatal error shutting down PTM host networks, trying to continue to next host: ' +
-                               str(e))
+        for l in reversed(self.host_by_start_order):
+            for h in l:
+                try:
+                    self.LOG.debug('PTM bringing down network on host: ' + h.name)
+                    h.net_down()
+                except Exception as e:
+                    self.LOG.fatal('Fatal error shutting down PTM host networks, trying to continue to next host: ' +
+                                   str(e))
 
         self.LOG.debug('PTM stopping hosts')
-        for h in reversed(self.host_by_start_order):
-            try:
-                self.LOG.debug('PTM stopping host: ' + h.name)
-                h.shutdown()
-            except Exception as e:
-                self.LOG.fatal('Fatal error shutting down PTM hosts, trying to continue to next host: ' +
-                               str(e))
+        for l in reversed(self.host_by_start_order):
+            for h in l:
+                try:
+                    self.LOG.debug('PTM stopping host: ' + h.name)
+                    h.shutdown()
+                except Exception as e:
+                    self.LOG.fatal('Fatal error shutting down PTM hosts, trying to continue to next host: ' +
+                                   str(e))
 
-        for h in reversed(self.host_by_start_order):
-            try:
-                self.LOG.debug('PTM deleting host: ' + h.name)
-                h.remove()
-            except Exception as e:
-                self.LOG.fatal('Fatal error removing PTM hosts, trying to continue to next host: ' +
-                               str(e))
+        for l in reversed(self.host_by_start_order):
+            for h in l:
+                try:
+                    self.LOG.debug('PTM deleting host: ' + h.name)
+                    h.remove()
+                except Exception as e:
+                    self.LOG.fatal('Fatal error removing PTM hosts, trying to continue to next host: ' +
+                                   str(e))
 
         self.LOG.debug('**PTM shutdown finished**')
 

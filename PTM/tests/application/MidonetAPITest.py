@@ -65,55 +65,21 @@ class MidonetAPITest(unittest.TestCase):
         ptm_i.hosts_by_name['zoo1'] = zoo1
         ptm_i.hosts_by_name['cmp1'] = cmp1
         ptm_i.hosts_by_name['net'] = net
-        ptm_i.host_by_start_order.append(root)
-        ptm_i.host_by_start_order.append(zoo1)
-        ptm_i.host_by_start_order.append(cmp1)
-        ptm_i.host_by_start_order.append(net)
-
-        for h in ptm_i.host_by_start_order:
-            h.create()
-
-        for h in ptm_i.host_by_start_order:
-            h.boot()
-
-        for h in ptm_i.host_by_start_order:
-            h.net_up()
-
-        for h in ptm_i.host_by_start_order:
-            h.net_finalize()
-
-        for h in ptm_i.host_by_start_order:
-            h.prepare_applications(lm)
-
-        for h in ptm_i.host_by_start_order:
-            h.start_applications()
-
-        for h in ptm_i.host_by_start_order:
-            h.wait_for_all_applications_to_start()
+        ptm_i.host_by_start_order.append([root])
+        ptm_i.host_by_start_order.append([zoo1])
+        ptm_i.host_by_start_order.append([cmp1])
+        ptm_i.host_by_start_order.append([net])
+        ptm_i.startup()
 
         self.assertTrue(LinuxCLI().cmd('midonet-cli --midonet-url="' +
                                        version_config.ConfigMap.get_configured_parameter('param_midonet_api_url') +
                                        '" -A -e "host list"').ret_code == 0)
 
-        for h in reversed(ptm_i.host_by_start_order):
-            h.stop_applications()
+        ptm_i.shutdown()
 
-        for h in reversed(ptm_i.host_by_start_order):
-            h.wait_for_all_applications_to_stop()
-
-        time.sleep(1)
         self.assertFalse(LinuxCLI().cmd('midonet-cli '
                                         '--midonet-url="http://localhost:8080/midonet-api/" '
                                         '-A -e "hosts list"').ret_code == 0)
-
-        for h in reversed(ptm_i.host_by_start_order):
-            h.net_down()
-
-        for h in reversed(ptm_i.host_by_start_order):
-            h.shutdown()
-
-        for h in reversed(ptm_i.host_by_start_order):
-            h.remove()
 
     def tearDown(self):
         pass
