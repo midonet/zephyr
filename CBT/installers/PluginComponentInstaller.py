@@ -34,7 +34,11 @@ class PluginComponentInstaller(ComponentInstaller):
         :return:
         """
         #TODO: Plugin's exact version is a little different from the version in the repo
-        repo.install_packages(['python-neutron-plugin-midonet', 'python-neutron-lbaas',
+        plugin_pkg = 'python-networking-midonet'
+        if self.version.major in ['juno', 'kilo']:
+            plugin_pkg = 'python-neutron-plugin-midonet'
+
+        repo.install_packages([plugin_pkg, 'python-neutron-lbaas',
                                'python-oslo-log'])
 
     def uninstall_packages(self, repo, exact_version=None):
