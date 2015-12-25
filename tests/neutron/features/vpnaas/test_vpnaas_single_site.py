@@ -47,6 +47,7 @@ class TestVPNaaSSingleSite(NeutronTestCase):
                                                          }}})['router']
 
             routerL_if1 = self.api.add_interface_router(routerL['id'], {'subnet_id': privateLsub['id']})
+            self.LOG.debug("Created router: " + str(routerL))
 
             #Create the right side
             privateR = self.api.create_network({'network': {'name': 'privateL',
@@ -64,6 +65,7 @@ class TestVPNaaSSingleSite(NeutronTestCase):
                                                          }}})['router']
 
             routerR_if1 = self.api.add_interface_router(routerR['id'], {'subnet_id': privateRsub['id']})
+            self.LOG.debug("Created router: " + str(routerR))
 
 
             #Create the VPN connections
@@ -72,11 +74,13 @@ class TestVPNaaSSingleSite(NeutronTestCase):
                                                                }})['ikepolicy']
             ipsec_pol = self.api.create_ipsecpolicy({'ipsecpolicy': {'name': 'main_ipsec_policy',
                                                                      'tenant_id': 'admin',}})['ipsecpolicy']
+            self.LOG.debug("Created IKE/IPSEC policies: " + str(ike_pol) + '/' + str(ipsec_pol))
 
             # Left-side of VPN connection
             vpn_svcL = self.api.create_vpnservice(
                 {'vpnservice': {'name': 'myvpnL',
                                 'tenant_id': 'admin',
+                                'subnet_id': privateLsub['id'],
                                 'description': 'My VPN service (Left)',
                                 'router_id': routerL['id']}})['vpnservice']
 
@@ -85,15 +89,18 @@ class TestVPNaaSSingleSite(NeutronTestCase):
                                            'tenant_id': 'admin',
                                            'peer_address': gateway_ipR,
                                            'peer_id': gateway_ipR,
+                                           'peer_cidrs': [subnet_cidrR],
                                            'psk': 'secret',
                                            'ikepolicy_id': ike_pol['id'],
                                            'ipsecpolicy_id': ipsec_pol['id'],
                                            'vpnservice_id': vpn_svcL['id']}})['ipsec_site_connection']
+            self.LOG.debug("Created VPN Service: " + str(vpn_svcL) + '/' + str(ipsec_connL))
 
             # Right-side of VPN connection
             vpn_svcR = self.api.create_vpnservice(
                 {'vpnservice': {'name': 'myvpnR',
                                 'tenant_id': 'admin',
+                                'subnet_id': privateRsub['id'],
                                 'description': 'My VPN service (Right)',
                                 'router_id': routerR['id']}})['vpnservice']
 
@@ -102,10 +109,13 @@ class TestVPNaaSSingleSite(NeutronTestCase):
                                            'tenant_id': 'admin',
                                            'peer_address': gateway_ipL,
                                            'peer_id': gateway_ipL,
+                                           'peer_cidrs': [subnet_cidrL],
                                            'psk': 'secret',
                                            'ikepolicy_id': ike_pol['id'],
                                            'ipsecpolicy_id': ipsec_pol['id'],
                                            'vpnservice_id': vpn_svcR['id']}})['ipsec_site_connection']
+            self.LOG.debug("Created VPN Service: " + str(vpn_svcR) + '/' + str(ipsec_connR))
+
             lt_site = SiteData(privateL, privateLsub, routerL, routerL_if1)
             rt_site = SiteData(privateR, privateRsub, routerR, routerR_if1)
             vpn_data = VPNData(ike_pol, ipsec_pol, vpn_svcL, ipsec_connL, vpn_svcR, ipsec_connR)
