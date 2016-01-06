@@ -1,4 +1,3 @@
-__author__ = 'micucci'
 
 import unittest
 from common.TCPDump import *
