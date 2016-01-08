@@ -338,7 +338,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
             # Default IP and MAC should still work
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
-            new_ip = '.'.join(ip2.split('.')[0:3]) + '.155'
+            new_ip = '.'.join(ip2.split('.')[0:3]) + '.235'
             vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
 
             vm2.start_echo_server(ip=new_ip)
@@ -351,15 +351,14 @@ class TestAllowedAddressPairs(NeutronTestCase):
             self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0'))
 
             # Update with AAP
-
-            port1 = self.api.update_port(port1['id'],
+            port2 = self.api.update_port(port2['id'],
                                          {'port': {'allowed_address_pairs': [
-                                             {"ip_address": "192.168.99.99"}]}})['port']
-            self.LOG.debug('Updated port1: ' + str(port1))
+                                             {"ip_address": new_ip}]}})['port']
+            self.LOG.debug('Updated port2: ' + str(port2))
 
             # Echo request should work now
             echo_data = vm1.send_echo_request(dest_ip=new_ip)
-            self.assertEqual('ping:echo_reply', echo_data)
+            self.assertEqual('ping:echo-reply', echo_data)
 
             # Ping to spoofed IP should work now
             self.assertTrue(vm1.ping(target_ip=new_ip, on_iface='eth0'))

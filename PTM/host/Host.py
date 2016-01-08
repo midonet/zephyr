@@ -426,13 +426,15 @@ class Host(PTMObject):
             self.echo_server_procs[port] = None
 
     def send_echo_request(self, dest_ip='localhost', dest_port=DEFAULT_ECHO_PORT,
-                          echo_request='ping', protocol='tcp'):
+                          echo_request='ping', source_ip=None, protocol='tcp'):
         """
         Create a TCP connection to send specified request string to dest_ip on dest_port
         (defaults to localhost:80) and return the response.
         :param dest_ip: str
         :param dest_port: int
         :param echo_request: str
+        :param source_ip: str
+        :param protocol: str
         :return: str
         """
         self.LOG.debug('Sending echo command ' + echo_request + ' to: ' + str(dest_ip) + ' ' + str(dest_port))
@@ -440,6 +442,8 @@ class Host(PTMObject):
         cmd1 = ['nc']
         if protocol == 'udp':
             cmd1 += ['-u']
+        if source_ip:
+            cmd1 += ['-s', source_ip]
         cmd1 += [dest_ip, str(dest_port)]
         ret = self.cli.cmd_pipe(commands=[cmd0, cmd1])
         self.LOG.debug('Sent echo command: ' + str(ret.command))
@@ -549,11 +553,20 @@ class Host(PTMObject):
         """
         tcpd = self.packet_captures[interface] if interface in self.packet_captures else TCPDump()
 
+        self.LOG.debug('Starting tcpdump on host: ' + self.name)
+
+        old_log = self.cli.log_cmd
+        if self.debug:
+            self.cli.log_cmd = True
+
         tcpd.start_capture(cli=self.cli, interface=interface, count=count,
                            packet_type=type, pcap_filter=filter,
                            callback=callback, callback_args=callback_args,
                            save_dump_file=save_dump_file, save_dump_filename=save_dump_filename,
                            blocking=False)
+
+
+        self.cli.log_cmd = old_log
 
         self.packet_captures[interface] = tcpd
 

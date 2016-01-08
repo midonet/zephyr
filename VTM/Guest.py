@@ -148,17 +148,18 @@ class Guest(object):
         self.vm_host.stop_echo_server(ip, port)
 
     def send_echo_request(self, dest_ip='localhost', dest_port=DEFAULT_ECHO_PORT,
-                          echo_request='ping', protocol='tcp'):
+                          echo_request='ping', source_ip=None, protocol='tcp'):
         """
         Create a TCP connection to send specified request string over the specified protocol
         to dest_ip on dest_port (defaults to localhost:80) and return the response.
         :param dest_ip: str
         :param dest_port: int
         :param echo_request: str
+        :param source_ip: str
         :param protocol: str
         :return: str
         """
-        return self.vm_host.send_echo_request(dest_ip, dest_port, echo_request, protocol)
+        return self.vm_host.send_echo_request(dest_ip, dest_port, echo_request, source_ip, protocol)
 
     def execute(self, cmd_line, timeout=None, blocking=True):
         """

@@ -13,12 +13,14 @@
 # limitations under the License.
 
 from common.PCAPRules import *
+from common.IP import IP
 from common.PCAPPacket import *
 from TSM.NeutronTestCase import NeutronTestCase, require_extension
 from VTM.Guest import Guest
 
-from  collections import namedtuple
+from collections import namedtuple
 import unittest
+
 
 class TestPortSecurity(NeutronTestCase):
     def send_and_capture_spoof(self, sender, receiver, receiver_ip, with_mac=True,
@@ -55,6 +57,8 @@ class TestPortSecurity(NeutronTestCase):
         port2 = None
         vm1 = None
         vm2 = None
+        new_ip1 = '192.168.99.99'
+        new_ip2 = '192.168.99.235'
         try:
             port1 = self.api.create_port({'port': {'name': 'port1',
                                                    'network_id': self.main_network['id'],
@@ -85,26 +89,40 @@ class TestPortSecurity(NeutronTestCase):
             # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
             packets = []
             try:
-                packets = self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2)
+                packets = self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
+                                                      with_mac=False,
+                                                      spoof_ip=new_ip1)
                 self.fail('Spoofed packet should not have been received!')
             except SubprocessTimeoutException:
                 pass
 
-            # Next, add allowed address pair to the sender, but not receiver, so
-            #   we can check a returning packet still gets blocked.  Also add the
-            #   IP to the actual iface and the route so the return packet gets generated
+            # Next, add new IPs to the sender and receiver, and add an allowed address pair to
+            #   the sender for its spoofed IP, but do NOT add the new IP allowed pair to
+            #   the receiver, so we can check a returning packet still gets blocked.  Also add
+            #   the IP to the actual iface and the route so the return packet gets generated
             #   successfully (but still blocked at the neutron port)
-            self.api.update_port(port1['id'],
-                                 {'port': {'allowed_address_pairs': [{"ip_address": "192.168.99.99"}]}})
 
-            vm2.execute('ip a add eth0 192.168.99.99')
-            vm1.execute('ip r add 192.168.99.99/32 via ' + ip2)
+            vm2.vm_host.interfaces['eth0'].add_ip(IP.make_ip(new_ip2))
 
+            vm1.vm_host.add_route(route_ip=IP(new_ip2, '32'), gw_ip=IP.make_ip(ip2))
+            vm2.vm_host.add_route(route_ip=IP(new_ip1, '32'), gw_ip=IP.make_ip(ip1))
+
+            port1 = self.api.update_port(
+                    port1['id'],
+                    {'port': {'allowed_address_pairs': [{"ip_address": new_ip1}]}})['port']
+
+            vm2.start_echo_server(ip=new_ip2)
+
+            # Look for packets on the receiver from the spoofed new_ip1 address to the new_ip2
             vm2.start_capture(on_iface='eth0', count=1,
-                              filter=PCAP_And([PCAP_ICMPProto(),
-                                               PCAP_Host('192.168.99.99', proto='ip', source=False, dest=True)]))
+                              filter=PCAP_And([PCAP_TCPProto(),
+                                               PCAP_Host(ip1, proto='ip', source=True),
+                                               PCAP_Host(new_ip2, proto='ip', dest=True)]))
 
-            self.assertFalse(vm1.ping(target_ip=ip2, on_iface='eth0'))
+            reply = vm1.send_echo_request(dest_ip=new_ip2)
+
+            # No reply should make it all the way back
+            self.assertEqual('', reply)
 
             packets = vm2.capture_packets(on_iface='eth0', count=1, timeout=3)
             vm1.stop_capture(on_iface='eth0')
@@ -113,6 +131,7 @@ class TestPortSecurity(NeutronTestCase):
             self.assertEqual(1, len(packets))
 
         finally:
+            vm2.stop_echo_server(ip=new_ip2)
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
     @require_extension('port-security')
