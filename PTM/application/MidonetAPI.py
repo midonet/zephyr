@@ -68,6 +68,8 @@ class MidonetAPI(Application):
             log_dir = '/var/log/midonet-cluster'
             log_manager.add_external_log_file(FileLocation(log_dir + '/midonet-cluster.log'), '',
                                                        '%b %d, %Y %I:%M:%S %p')
+            LinuxCLI().replace_text_in_file('/etc/midonet-cluster/logback.xml',
+                                            'root level="INFO"', 'root level="DEBUG"')
         else:
             log_dir = '/var/log/tomcat7'
             log_manager.add_external_log_file(FileLocation(log_dir + '/catalina.out'), '',

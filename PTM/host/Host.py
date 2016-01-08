@@ -444,6 +444,7 @@ class Host(PTMObject):
             cmd1 += ['-u']
         if source_ip:
             cmd1 += ['-s', source_ip]
+        cmd1 += ['-w', '20']
         cmd1 += [dest_ip, str(dest_port)]
         ret = self.cli.cmd_pipe(commands=[cmd0, cmd1])
         self.LOG.debug('Sent echo command: ' + str(ret.command))

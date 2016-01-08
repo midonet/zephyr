@@ -131,11 +131,10 @@ class PCAPPacket(object):
         return iter(self.layer_data)
 
     def to_str(self):
-        ret_str = 'PACKET time[' + str(self.timestamp) + ']\n'
+        ret_str = 'PACKET { time[' + str(self.timestamp) + '] '
         for n, l in self.layer_data.iteritems():
-            ret_str += 'layer [' + n + ']\n'
-            ret_str += '    ' + l.to_str() + '\n'
-        ret_str += 'END PACKET time[' + str(self.timestamp) + ']\n'
+            ret_str += '<layer [' + n + '] ' + l.to_str() + '>'
+        ret_str += '}'
         return ret_str
 
     def get_data(self):
@@ -207,6 +206,11 @@ class PCAPPacket(object):
 
         return self.layer_data
 
+    def __str__(self):
+        return self.to_str()
+
+    def __repr__(self):
+        return self.to_str()
 
 class PCAPEncapsulatedLayer(object):
 

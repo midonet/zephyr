@@ -41,7 +41,7 @@ def echo_server_listener(ip, port, protocol, echo_data, running_event, stop_even
         _socket.setblocking(False)
         _socket.bind((ip, port))
         if protocol == 'tcp':
-            _socket.listen(1)
+            _socket.listen(2)
             LinuxCLI().cmd('echo "Listener Socket listening" >> ' + tmp_status_file_name)
         running_event.set()
         while not stop_event.is_set():

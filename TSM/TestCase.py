@@ -58,6 +58,7 @@ class TestCase(unittest.TestCase):
         cls.ptm = ptm
         """ :type: PhysicalTopologyManager"""
         cls.vtm = vtm
+        """ :type: VirtualTopologyManager"""
         cls.LOG = test_case_logger
         if cls.LOG is None:
             cls.LOG = logging.getLogger(cls._get_name())
@@ -74,24 +75,43 @@ class TestCase(unittest.TestCase):
 
     def run(self, result=None):
         self.start_time = datetime.datetime.utcnow()
+        self.LOG.info('==========================================================================')
         self.LOG.info('Running test case: ' + self._get_name() + ' - ' + self._testMethodName)
+        self.LOG.info('--------------------------------------------------------------------------')
         try:
             super(TestCase, self).run(result)
             self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
+        except Exception as e:
+            self.LOG.fatal('Test case exception: ' + self._get_name() + ' - ' +
+                           self._testMethodName + ": " + str(e))
+            raise e
+        except AssertionError as e:
+            self.LOG.fatal('Test case assertion error: ' + self._get_name() + ' - ' +
+                           self._testMethodName + ": " + str(e))
+            raise e
         finally:
+            self.LOG.info('--------------------------------------------------------------------------')
             self.stop_time = datetime.datetime.utcnow()
             self.run_time = (self.stop_time - self.start_time)
 
     def debug(self):
         self.start_time = datetime.datetime.utcnow()
+        self.LOG.info('==========================================================================')
         self.LOG.info('Running test case: ' + self._get_name() + ' - ' + self._testMethodName)
+        self.LOG.info('--------------------------------------------------------------------------')
         try:
             super(TestCase, self).debug()
             self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
         except Exception as e:
-            self.LOG.fatal('Test case error: ' + self._get_name() + ' - ' + self._testMethodName + ": " + str(e))
+            self.LOG.fatal('Test case exception: ' + self._get_name() + ' - ' +
+                           self._testMethodName + ": " + str(e))
+            raise e
+        except AssertionError as e:
+            self.LOG.fatal('Test case assertion error: ' + self._get_name() + ' - ' +
+                           self._testMethodName + ": " + str(e))
             raise e
         finally:
+            self.LOG.info('--------------------------------------------------------------------------')
             self.stop_time = datetime.datetime.utcnow()
             self.run_time = (self.stop_time - self.start_time)
 
@@ -101,6 +121,41 @@ class TestCase(unittest.TestCase):
 
     def runTest(self):
         pass
+
+    def ef_assertTrue(self, issue_id, condition, msg=None):
+        try:
+            self.assertTrue(condition, msg)
+            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
+        except AssertionError:
+            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+
+    def ef_assertFalse(self, issue_id, condition, msg=None):
+        try:
+            self.assertFalse(condition, msg)
+            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
+        except AssertionError:
+            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+
+    def ef_assertEqual(self, issue_id, a, b, msg=None):
+        try:
+            self.assertEqual(a, b, msg)
+            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
+        except AssertionError:
+            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+
+    def ef_assertIsNotNone(self, issue_id, condition, msg=None):
+        try:
+            self.assertIsNotNone(condition, msg)
+            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
+        except AssertionError:
+            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+
+    def ef_assertRaises(self, issue_id, excClass, callable=None, *args, **kwargs):
+        try:
+            self.assertRaises(excClass, callable, *args, **kwargs)
+            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
+        except AssertionError:
+            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
 
 
 class expected_failure(object):
@@ -114,8 +169,7 @@ class expected_failure(object):
             """
             try:
                 f(slf, *args)
-                slf.fail('Expected failure (see issue: ' + str(self.issue_id) +
-                         ') did not fail!  Remove "expected_failure" annotation?')
+                slf.fail('Expected failure passed (see issue: ' + str(self.issue_id) + ')')
             except:
                 slf.skipTest('Expected failure (see issue: ' + str(self.issue_id) + ')')
         return new_tester

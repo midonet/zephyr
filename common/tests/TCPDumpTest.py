@@ -210,7 +210,7 @@ class TCPDumpTest(unittest.TestCase):
             file_str = LinuxCLI().read_from_file('tmp.file')
             LinuxCLI().rm('tmp.file')
 
-            self.assertEquals(3, file_str.count('END PACKET time['))
+            self.assertEquals(3, file_str.count('PACKET { time'))
         finally:
             tcpd.stop_capture()
 

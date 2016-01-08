@@ -114,6 +114,10 @@ class PhysicalTopologyManager(object):
 
     def get_topology_feature(self, feature):
         """
+        Known topology features across all PTM types:
+
+        compute_hosts: Number of compute nodes in the topology
+
         :type feature: str
         :return: any
         """
