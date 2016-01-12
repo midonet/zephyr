@@ -187,7 +187,7 @@ class TestFloatingIP(NeutronTestCase):
 
     @expected_failure('MI-293')
     @require_extension('extraroute')
-    def test_fip_to_fip_connectivity_one_site(self):
+    def test_fip_to_fip_connectivity_one_site_source_has_fip(self):
         # Allowed address pair must have IP address
         port1 = None
         port2 = None
@@ -213,17 +213,93 @@ class TestFloatingIP(NeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             floating_ip1 = self.api.create_floatingip(
-                {'floatingip': {'tenant_id': 'admin',
-                                'port_id': port1['id'],
-                                'floating_network_id': self.pub_network['id']}})['floatingip']
+                    {'floatingip': {'tenant_id': 'admin',
+                                    'port_id': port1['id'],
+                                    'floating_network_id': self.pub_network['id']}})['floatingip']
+
+            fip1 = floating_ip1['floating_ip_address']
+            self.LOG.debug("Received floating IP1: " + str(fip1))
+
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            """ :type: Guest"""
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
+            """ :type: Guest"""
+
+            vm1.plugin_vm('eth0', port1['id'])
+            vm2.plugin_vm('eth0', port2['id'])
+
+            # Test that VM can reach via internal IP
+            # Ping
+            self.assertTrue(vm1.ping(target_ip=ip2))
+            self.assertTrue(vm2.ping(target_ip=ip1))
+
+            # Test that VM2 can reach VM1 via FIP
+            # Ping
+            self.assertTrue(vm2.ping(target_ip=fip1))
+
+            # TCP
+            vm1.start_echo_server(ip=ip1)
+            echo_response = vm2.send_echo_request(dest_ip=fip1)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+        finally:
+            if vm2 and ip2:
+                vm2.stop_echo_server(ip=ip2)
+
+            if vm1 and ip1:
+                vm1.stop_echo_server(ip=ip1)
+
+            if floating_ip1:
+                self.api.update_floatingip(floating_ip1['id'], {'floatingip': {'port_id': None}})
+                self.api.delete_floatingip(floating_ip1['id'])
+
+            if floating_ip2:
+                self.api.update_floatingip(floating_ip2['id'], {'floatingip': {'port_id': None}})
+                self.api.delete_floatingip(floating_ip2['id'])
+
+            self.cleanup_vms([(vm1, port1), (vm2, port2)])
+
+            self.delete_edge_router(ed)
+
+    @expected_failure('MI-293')
+    @require_extension('extraroute')
+    def test_fip_to_fip_connectivity_one_site_source_has_private_ip(self):
+        # Allowed address pair must have IP address
+        port1 = None
+        port2 = None
+        vm1 = None
+        vm2 = None
+        ip1 = None
+        ip2 = None
+        floating_ip1 = None
+        floating_ip2 = None
+        ed = None
+        try:
+            ed = self.create_edge_router()
+            port1 = self.api.create_port({'port': {'name': 'port1',
+                                                   'network_id': self.main_network['id'],
+                                                   'admin_state_up': True,
+                                                   'tenant_id': 'admin'}})['port']
+            ip1 = port1['fixed_ips'][0]['ip_address']
+
+            port2 = self.api.create_port({'port': {'name': 'port2',
+                                                   'network_id': self.main_network['id'],
+                                                   'admin_state_up': True,
+                                                   'tenant_id': 'admin'}})['port']
+            ip2 = port2['fixed_ips'][0]['ip_address']
+
+            floating_ip1 = self.api.create_floatingip(
+                    {'floatingip': {'tenant_id': 'admin',
+                                    'port_id': port1['id'],
+                                    'floating_network_id': self.pub_network['id']}})['floatingip']
 
             fip1 = floating_ip1['floating_ip_address']
             self.LOG.debug("Received floating IP1: " + str(fip1))
 
             floating_ip2 = self.api.create_floatingip(
-                {'floatingip': {'tenant_id': 'admin',
-                                'port_id': port2['id'],
-                                'floating_network_id': self.pub_network['id']}})['floatingip']
+                    {'floatingip': {'tenant_id': 'admin',
+                                    'port_id': port2['id'],
+                                    'floating_network_id': self.pub_network['id']}})['floatingip']
 
             fip2 = floating_ip2['floating_ip_address']
             self.LOG.debug("Received floating IP2: " + str(fip2))
@@ -244,19 +320,11 @@ class TestFloatingIP(NeutronTestCase):
             # Test that VM1 can reach VM2 via FIP
             # Ping
             self.assertTrue(vm1.ping(target_ip=fip2))
-            self.assertTrue(vm2.ping(target_ip=fip1))
 
             # TCP
             vm2.start_echo_server(ip=ip2)
             echo_response = vm1.send_echo_request(dest_ip=fip2)
             self.assertEqual('ping:echo-reply', echo_response)
-
-            # TODO: Fix UDP
-            # UDP
-            # ext_host.stop_echo_server(ip=ip2)
-            # ext_host.start_echo_server(ip=ip2, protocol='udp')
-            # echo_response = vm1.send_echo_request(dest_ip=fip2, protocol='udp')
-            # self.assertEqual('ping:echo-reply', echo_response)
 
             # Test that VM2 can reach VM1 via FIP
             # Ping
@@ -266,12 +334,6 @@ class TestFloatingIP(NeutronTestCase):
             vm1.start_echo_server(ip=ip1)
             echo_response = vm2.send_echo_request(dest_ip=fip1)
             self.assertEqual('ping:echo-reply', echo_response)
-
-            # UDP
-            # vm1.stop_echo_server(ip=ip1)
-            # vm1.start_echo_server(ip=ip1, protocol='udp')
-            # echo_response = vm2.send_echo_request(dest_ip=fip1, protocol='udp')
-            # self.assertEqual('ping:echo-reply', echo_response)
 
         finally:
             if vm2 and ip2:
