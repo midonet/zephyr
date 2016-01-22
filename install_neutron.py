@@ -1,10 +1,11 @@
+#!/usr/bin/env python
 # Copyright 2015 Midokura SARL
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-# http://www.apache.org/licenses/LICENSE-2.0
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,67 +13,66 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+import getopt
+
 from common.Exceptions import *
 from common.CLI import LinuxCLI
-from CBT.installers.ComponentInstaller import ComponentInstaller
-from CBT.repos.PackageRepo import PackageRepo
-import CBT.VersionConfig as version_config
 
-class NeutronComponentInstaller(ComponentInstaller):
+import traceback
+
+cli = LinuxCLI(log_cmd=True, print_cmd_out=True)
+cli.add_environment_variable("DEBIAN_FRONTEND", "noninteractive")
+
+
+def usage(except_obj):
+    print 'Usage: neutron-setup.py -v <OpenStack version>'
+    if except_obj is not None:
+        raise except_obj
+
+
+class NeutronComponentInstaller(object):
     def __init__(self, version):
-        super(NeutronComponentInstaller, self).__init__(version)
+        self.version = version
         self.config_funcs = {}
         self.config_funcs['kilo'] = self.kilo_config
         self.config_funcs['liberty'] = self.liberty_config
 
-    def create_repo_file(self, repo_obj, scheme, repo, username=None, password=None,
-                         version=None, distribution='stable'):
-        """
-        :type repo: PackageRepo
-        """
-        LinuxCLI().cmd("apt-get install -y python3-software-properties")
-        LinuxCLI().cmd("add-apt-repository -y cloud-archive:" + str(version))
-        LinuxCLI().cmd("apt-get update")
+    def install_packages(self):
 
-    def install_packages(self, repo, exact_version=None):
-        if repo.get_type() == "rpm":
-            raise ArgMismatchException("Not yet supported on Redhat!")
-            #neutron_dep_packages = ['mysql', 'rabbitmq-server']
-            #neutron_packages = ['openstack-neutron', 'python-neutronclient', 'openstack-neutron-ml2']
+        cli.cmd("apt-get install -y python3-software-properties")
+        cli.cmd("add-apt-repository -y cloud-archive:" + str(version))
+        cli.cmd("apt-get update")
 
-        cli = LinuxCLI(log_cmd=True)
-
-        cli.cmd("sudo debconf-set-selections <<< 'mysql-server-5.1 mysql-server/root_password password 'cat''")
-        cli.cmd("sudo debconf-set-selections <<< 'mysql-server-5.1 mysql-server/root_password_again password 'cat''")
-
-        if not repo.is_installed('mysql-server-5.5'):
-            repo.install_packages(['mysql-server-5.5', 'mysql-client-5.5', 'python-mysqldb'])
+        cli.cmd('apt-get install -y mysql-server mysql-client python-mysqldb')
 
         cli.cmd('mysqladmin -u root password cat')
+
         cli.regex_file('/etc/mysql/my.cnf', 's/.*bind-address.*/bind-address = 127.0.0.1/')
         cli.regex_file('/etc/mysql/my.cnf', 's/.*max_connections.*/max_connections = 1024/')
-        cli.cmd("service mysql start")
+        cli.cmd("service mysql restart")
 
-        if not repo.is_installed('rabbitmq-server'):
-            repo.install_packages(['rabbitmq-server'])
+        if not cli.grep_cmd('dpkg -l', 'rabbitmq-server'):
+            cli.cmd('apt-get install -y rabbitmq-server')
 
         cli.cmd("rabbitmqctl change_password guest cat")
         cli.cmd("service rabbitmq-server restart")
 
-        if not repo.is_installed('neutron-server'):
-            repo.install_packages(['neutron-server', 'neutron-dhcp-agent', 'python-neutronclient',
-                                   'python-neutron-lbaas', 'python-mysql.connector'])
+        print(cli.cmd('apt-get install -y neutron-server neutron-dhcp-agent python-neutronclient '
+                      'python-neutron-lbaas python-mysql.connector').stdout)
 
-            cli.cmd('mysql --user=root --password=cat -e "CREATE DATABASE IF NOT EXISTS neutron"')
-            cli.cmd('mysql --user=root --password=cat -e "CREATE USER neutron@localhost IDENTIFIED BY \'cat\'"')
-            cli.cmd('mysql --user=root --password=cat -e "CREATE USER neutron@\'%\' IDENTIFIED BY \'cat\'"')
-            cli.cmd('mysql --user=root --password=cat -e "GRANT ALL PRIVILEGES ON neutron.* TO neutron@localhost"')
-            cli.cmd('mysql --user=root --password=cat -e "GRANT ALL PRIVILEGES ON neutron.* TO neutron@\'%\'"')
+    def configure_for_midonet(self, mn_api_url):
+        cli.cmd('mysql --user=root --password=cat -e "DROP DATABASE neutron"')
+        cli.cmd('mysql --user=root --password=cat -e "CREATE DATABASE neutron"')
+        cli.cmd('mysql --user=root --password=cat -e "DROP USER neutron@localhost"')
+        cli.cmd('mysql --user=root --password=cat -e "DROP USER neutron@\'%\'"')
+        cli.cmd('mysql --user=root --password=cat -e "CREATE USER neutron@localhost IDENTIFIED BY \'cat\'"')
+        cli.cmd('mysql --user=root --password=cat -e "CREATE USER neutron@\'%\' IDENTIFIED BY \'cat\'"')
+        cli.cmd('mysql --user=root --password=cat -e "GRANT ALL PRIVILEGES ON neutron.* TO neutron@localhost"')
+        cli.cmd('mysql --user=root --password=cat -e "GRANT ALL PRIVILEGES ON neutron.* TO neutron@\'%\'"')
 
-        version_config.get_installed_midolman_version()
-
-        config_func = self.config_funcs[str(self.version.major)]
-        config_func(cli)
+        config_func = self.config_funcs[str(self.version)]
+        config_func(mn_api_url)
 
         cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
                 '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head')
@@ -83,8 +83,7 @@ class NeutronComponentInstaller(ComponentInstaller):
         cli.cmd("service neutron-server restart")
         cli.cmd("service neutron-dhcp-agent restart")
 
-    def kilo_config(self, cli):
-        mn_api_url = version_config.ConfigMap.get_configured_parameter('param_midonet_api_url')
+    def kilo_config(self, mn_api_url):
 
         cfg_file_str = ("[DEFAULT]\n"
                         "core_plugin = midonet.neutron.plugin_v2.MidonetPluginV2\n"
@@ -148,18 +147,17 @@ class NeutronComponentInstaller(ComponentInstaller):
 
         cli.mkdir('/etc/neutron/plugins/midonet')
         cli.copy_file('/etc/neutron/plugins/midonet/midonet_plugin.ini',
-                 '/etc/neutron/plugins/midonet/midonet_plugin.ini.bak')
+                      '/etc/neutron/plugins/midonet/midonet_plugin.ini.bak')
         cli.write_to_file('/etc/neutron/plugins/midonet/midonet_plugin.ini', mn_plugin_str)
         cli.rm('/etc/neutron/plugin.ini')
         cli.cmd('ln -s /etc/neutron/plugins/midonet/midonet_plugin.ini /etc/neutron/plugin.ini')
 
-    def liberty_config(self, cli):
-        mn_api_url = version_config.ConfigMap.get_configured_parameter('param_midonet_api_url')
+    def liberty_config(self, mn_api_url):
 
         cfg_file_str = ("[DEFAULT]\n"
                         "core_plugin = neutron.plugins.ml2.plugin.Ml2Plugin\n"
                         "service_plugins = midonet.neutron.services.l3.l3_midonet.MidonetL3ServicePlugin,"
-                                          "neutron_lbaas.services.loadbalancer.plugin.LoadBalancerPlugin\n"
+                        "neutron_lbaas.services.loadbalancer.plugin.LoadBalancerPlugin\n"
                         "auth_strategy = noauth\n"
                         "rpc_backend = neutron.openstack.common.rpc.impl_kombu\n"
                         "rabbit_host = localhost\n"
@@ -220,14 +218,52 @@ class NeutronComponentInstaller(ComponentInstaller):
         cli.copy_file('/etc/neutron/plugin.ini', '/etc/neutron/plugin.ini.bak')
         cli.write_to_file('/etc/neutron/plugin.ini', mn_plugin_str)
 
-    def uninstall_packages(self, repo, exact_version=None):
-        """
-        :type repo: PackageRepo
-        :type exact_version: str
-        :return:
-        """
-        pass
 
-    def is_installed(self, repo):
-        return repo.is_installed(['neutron-server'])
+try:
+    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdv:a:',
+                                        ['help', 'debug', 'version=', 'api-url='])
+
+    # Defaults
+    version = "liberty"
+    api_url = 'http://localhost:8181/midonet-api'
+
+    for arg, value in arg_map:
+        if arg in ('-h', '--help'):
+            usage(None)
+            sys.exit(0)
+        elif arg in ('-v', '--version'):
+            version = value
+        elif arg in ('-a', '--api-url'):
+            api_url = value
+        elif arg in ('-d', '--debug'):
+            debug = True
+        else:
+            raise ArgMismatchException('Invalid argument' + arg)
+
+    nc = NeutronComponentInstaller(version=version)
+    nc.install_packages()
+    nc.configure_for_midonet(mn_api_url=api_url)
+
+except getopt.GetoptError as e:
+    usage(None)
+    print "Invalid Command Line: " + e.msg
+    exit(1)
+except ExitCleanException:
+    exit(1)
+except ArgMismatchException as a:
+    usage(None)
+    print 'Argument mismatch: ' + str(a)
+    exit(2)
+except ObjectNotFoundException as e:
+    print 'Object not found: ' + str(e)
+    exit(2)
+except SubprocessFailedException as e:
+    print 'Subprocess failed to execute: ' + str(e)
+    traceback.print_tb(sys.exc_traceback)
+    exit(2)
+except TestException as e:
+    print 'Unknown exception: ' + str(e)
+    traceback.print_tb(sys.exc_traceback)
+    exit(2)
+
 

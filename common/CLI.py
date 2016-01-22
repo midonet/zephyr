@@ -51,7 +51,7 @@ class CommandStatus(object):
 
 
 class LinuxCLI(object):
-    def __init__(self, priv=True, debug=(DEBUG >= 2), log_cmd=(DEBUG >= 1), logger=None):
+    def __init__(self, priv=True, debug=(DEBUG >= 2), log_cmd=(DEBUG >= 1), print_cmd_out=(DEBUG >= 1), logger=None):
         self.env_map = None
         """ :type: dict[str, str]"""
         self.priv = priv
@@ -62,6 +62,8 @@ class LinuxCLI(object):
         """ :type: bool"""
         self.logger = logger
         """ :type: logging.Logger"""
+        self.print_cmd_out = print_cmd_out
+        """ :type: bool"""
 
     def add_environment_variable(self, name, val):
         if (self.env_map is None):
@@ -148,6 +150,9 @@ class LinuxCLI(object):
                                             str(p.returncode) + ', output was stdout[' +
                                             str(out) + ']/stderr[' + str(err) + ']')
 
+        if self.print_cmd_out:
+            print "stdout: " + str(out) + "/stderr: " + str(err)
+
         return CommandStatus(process=p, command=cmd_str, ret_code=p.returncode,
                              stdout=out, stderr=err, process_array=processes)
 
@@ -201,6 +206,9 @@ class LinuxCLI(object):
             raise SubprocessFailedException('Command: [' + str(cmd) + '] returned error: ' +
                                             str(p.returncode) + ', output was stdout[' +
                                             str(out) + ']/stderr[' + str(err) + ']')
+
+        if self.print_cmd_out:
+            print "stdout: " + str(out) + "/stderr: " + str(err)
 
         return CommandStatus(process=p, command=cmd, ret_code=p.returncode, stdout=out, stderr=err)
 
