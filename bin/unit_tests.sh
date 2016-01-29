@@ -21,6 +21,8 @@ for dir in $TEST_PACKAGES; do
   done
 done
 
+set -e
+
 $ZEPHYR_ROOT/tsm-run.py -d -l $ZEPHYR_ROOT/test-logs -r $ZEPHYR_TEST_JUNIT_OUTDIR \
     -c midonet \
     -t tests.mn_api.reliability.test_basic_ping
