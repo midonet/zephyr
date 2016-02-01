@@ -12,16 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
+import datetime
 import importlib
 import logging
-import datetime
+import sys
+import unittest
 
 from common.Exceptions import *
 
-
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+
+
+class EFException(unittest.case._ExpectedFailure):
+    def __init__(self, exc_info, issue_id):
+        super(EFException, self).__init__(exc_info)
+        self.issue_id = issue_id
 
 
 class TestCase(unittest.TestCase):
@@ -72,6 +78,8 @@ class TestCase(unittest.TestCase):
         """ :type: datetime.datetime"""
         self.run_time = None
         """ :type: datetime.timedelta"""
+        self.expected_failure_issue_id = None
+        """ :type: str"""
 
     def run(self, result=None):
         self.start_time = datetime.datetime.utcnow()
@@ -122,12 +130,17 @@ class TestCase(unittest.TestCase):
     def runTest(self):
         pass
 
+    def throw_expected_failure(self, issue_id):
+        self.expected_failure_issue_id = issue_id
+        raise unittest.case._ExpectedFailure(sys.exc_info())
+
     def ef_assertTrue(self, issue_id, condition, msg=None):
         try:
             self.assertTrue(condition, msg)
             self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError:
             self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+            self.throw_expected_failure(issue_id)
 
     def ef_assertFalse(self, issue_id, condition, msg=None):
         try:
@@ -135,6 +148,7 @@ class TestCase(unittest.TestCase):
             self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError:
             self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+            self.throw_expected_failure(issue_id)
 
     def ef_assertEqual(self, issue_id, a, b, msg=None):
         try:
@@ -142,6 +156,7 @@ class TestCase(unittest.TestCase):
             self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError:
             self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+            self.throw_expected_failure(issue_id)
 
     def ef_assertIsNotNone(self, issue_id, condition, msg=None):
         try:
@@ -149,13 +164,15 @@ class TestCase(unittest.TestCase):
             self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError:
             self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+            self.throw_expected_failure(issue_id)
 
     def ef_assertRaises(self, issue_id, excClass, callable=None, *args, **kwargs):
         try:
             self.assertRaises(excClass, callable, *args, **kwargs)
             self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
-        except AssertionError:
+        except AssertionError as e:
             self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
+            self.throw_expected_failure(issue_id)
 
 
 class expected_failure(object):
@@ -165,13 +182,14 @@ class expected_failure(object):
     def __call__(self, f):
         def new_tester(slf, *args):
             """
-            :param slf: TestCase
+            :type slf: TestCase
             """
             try:
                 f(slf, *args)
                 slf.fail('Expected failure passed (see issue: ' + str(self.issue_id) + ')')
             except:
-                slf.skipTest('Expected failure (see issue: ' + str(self.issue_id) + ')')
+                slf.LOG.info('Expected failure (see issue: ' + str(self.issue_id) + ')')
+                slf.throw_expected_failure(self.issue_id)
         return new_tester
 
 
