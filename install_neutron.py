@@ -41,7 +41,7 @@ class NeutronComponentInstaller(object):
     def install_packages(self):
 
         cli.cmd("apt-get install -y python3-software-properties")
-        cli.cmd("add-apt-repository -y cloud-archive:" + str(version))
+        cli.cmd("add-apt-repository -y cloud-archive:" + str(self.version))
         cli.cmd("apt-get update")
 
         cli.cmd('apt-get install -y mysql-server mysql-client python-mysqldb')
@@ -74,11 +74,10 @@ class NeutronComponentInstaller(object):
         config_func = self.config_funcs[str(self.version)]
         config_func(mn_api_url)
 
-        cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
-                '--config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head')
-        cli.cmd('midonet-db-manage upgrade head')
-
         cli.write_to_file('/etc/default/neutron-server', 'NEUTRON_PLUGIN_CONFIG="/etc/neutron/plugin.ini"\n')
+        cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
+                '--config-file /etc/neutron/plugin.ini upgrade head')
+        cli.cmd('midonet-db-manage upgrade head')
 
         cli.cmd("service neutron-server restart")
         cli.cmd("service neutron-dhcp-agent restart")
