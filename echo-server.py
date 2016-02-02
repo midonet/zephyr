@@ -46,6 +46,7 @@ stop_event.clear()
 
 es = EchoServer(ip, port, data, protocol)
 
+
 def term_handler(signum, frame):
     print "Exiting..."
     LinuxCLI().cmd("echo 'TERM: Stopping' >> " + tmp_status_file_name)

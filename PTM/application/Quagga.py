@@ -41,9 +41,9 @@ class Quagga(Application):
         self.configurator.configure(self.num_id)
         log_dir = '/var/log/quagga.' + self.num_id
         log_manager.add_external_log_file(FileLocation(log_dir + '/bgpd.log'), self.num_id,
-                                                   '%Y/%m/%d %H:%M:%S')
+                                          '%Y/%m/%d %H:%M:%S')
         log_manager.add_external_log_file(FileLocation(log_dir + '/zebra.log'), self.num_id,
-                                                   '%Y/%m/%d %H:%M:%S')
+                                          '%Y/%m/%d %H:%M:%S')
 
     def create_cfg_map(self):
         return {'num_id': self.num_id}
@@ -69,6 +69,7 @@ class Quagga(Application):
         self.host.run_app_command('/etc/init.d/quagga', self, 'stop')
         if self.cli.exists('/etc/rc.d/init.d/bgpd'):
             self.host.run_app_command('/etc/rc.d/init.d/bgpd', self, 'stop')
+
 
 class RouterFileConfiguration(FileConfigurationHandler):
     def __init__(self):

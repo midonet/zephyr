@@ -20,6 +20,7 @@ import logging.handlers
 import datetime
 import os
 
+
 #TODO:  CT-159: Clean up logging
 # Allow multiple logs to easily log to the same file with different names
 # The log should have <datetimestamp> [component] | LEVEL | Msg
@@ -261,7 +262,7 @@ class LogManager(object):
             self.collated_log_files.add((FileLocation(dest_path + '/' + new_file_name), date_format, date_pos))
 
     def slice_log_files_by_time(self, new_dir, start_time=None, stop_time=None, leeway=0, collated_only=True,
-                                ext = '.slice'):
+                                ext='.slice'):
         """
         Slice a log file using timestamps and copy the slice to a new file.  The default
         is to start at the beginning and slice all the way to the end.  The leeway parameter
@@ -297,7 +298,7 @@ class LogManager(object):
             if LinuxCLI(priv=False).exists(f.full_path()):
                 with open(f.full_path(), 'r') as cf:
                     for line in cf.readlines():
-                        dateline = ' '.join(line.split(' ')[dp:dp+2])
+                        dateline = ' '.join(line.split(' ')[dp:dp + 2])
                         try:
                             current_time = datetime.datetime.strptime(dateline, df)
                             if current_time < concrete_start_time:

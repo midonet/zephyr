@@ -23,6 +23,7 @@ PACKETS_TO_SEND_SHORT = 20
 PACKETS_TO_SEND_MEDIUM = 100
 PACKETS_TO_SEND_LONG = 3000
 
+
 class TestPacketStreams(NeutronTestCase):
     """
     Test large packet streams and flows between nodes with streams consisting of
@@ -60,13 +61,12 @@ class TestPacketStreams(NeutronTestCase):
             responses = 0
             vm2.start_echo_server(ip=ip2)
             self.LOG.debug("Sending" + str(num_packets) + " packets to " + str(ip2))
-            for i in range(0,num_packets):
+            for i in range(0, num_packets):
                 echo_response = vm1.send_echo_request(dest_ip=ip2)
                 if echo_response == 'ping:echo-reply':
                     responses += 1
 
             self.assertEqual(num_packets, responses)
-
 
         finally:
             if vm2 and ip2:

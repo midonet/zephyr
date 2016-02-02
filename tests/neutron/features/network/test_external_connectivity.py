@@ -64,7 +64,6 @@ class TestExternalConnectivity(NeutronTestCase):
             # echo_response = vm1.send_echo_request(dest_ip=ext_ip, protocol='udp')
             # self.assertEqual('ping:echo-reply', echo_response)
 
-
         finally:
             if vm1 is not None:
                 vm1.terminate()

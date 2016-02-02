@@ -88,7 +88,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             hm = self.api.show_health_monitor(hm['id'])['health_monitor']
             self.LOG.debug("Created Health Monitor and associated to pool: " + str(hm))
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
         finally:
             if hm:
@@ -171,7 +171,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             hm = self.api.show_health_monitor(hm['id'])['health_monitor']
             self.LOG.debug("Created Health Monitor and associated to pool: " + str(hm))
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             member1 = self.api.show_member(member1['id'])['member']
             member2 = self.api.show_member(member2['id'])['member']
@@ -194,7 +194,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             # Kill one member's TCP interface and make sure no more packets get sent there
             g1.vm.vm_host.interfaces['eth0'].down()
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             member1 = self.api.show_member(member1['id'])['member']
             member2 = self.api.show_member(member2['id'])['member']
@@ -312,7 +312,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             vipb = self.api.create_vip({'vip': {'name': 'poolb-vip1',
                                                 'subnet_id': self.pub_subnet['id'],
                                                 'protocol': 'TCP',
-                                                'protocol_port': DEFAULT_POOL_PORT+1,
+                                                'protocol_port': DEFAULT_POOL_PORT + 1,
                                                 'pool_id': poolb['id'],
                                                 'tenant_id': 'admin'}})['vip']
             self.LOG.debug('Created LBaaS VIP B: ' + str(vipb))
@@ -325,7 +325,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             self.LOG.debug('Created member1 for LBaaS Pool A: ' + str(member1a))
 
             member1b = self.api.create_member({'member': {'address': g1.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT+1,
+                                                          'protocol_port': DEFAULT_POOL_PORT + 1,
                                                           'pool_id': poolb['id'],
                                                           'tenant_id': 'admin'}})['member']
 
@@ -382,7 +382,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             print str(a)
             print str(b)
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             member1a = self.api.show_member(member1a['id'])['member']
             member1b = self.api.show_member(member1b['id'])['member']
@@ -399,7 +399,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             repliesa = send_packets_to_vip(self, [g1], g_pinger, vipa['address'],
                                            num_packets=PACKETS_TO_SEND, to_port=DEFAULT_POOL_PORT)
             repliesb = send_packets_to_vip(self, [g1], g_pinger, vipb['address'],
-                                           num_packets=PACKETS_TO_SEND, to_port=DEFAULT_POOL_PORT+1)
+                                           num_packets=PACKETS_TO_SEND, to_port=DEFAULT_POOL_PORT + 1)
             fail_str = ""
             try:
                 check_host_replies_against_rr_baseline(self, [g1], repliesa, identifier='poolA',
@@ -529,7 +529,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             hm = self.api.show_health_monitor(hm['id'])['health_monitor']
             self.LOG.debug("Created Health Monitor and associated to pool: " + str(hm))
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             replies = send_packets_to_vip(self, [g1, g2], g_pinger, vip1['address'],
                                           num_packets=PACKETS_TO_SEND)
@@ -540,7 +540,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             # Kill one member's TCP interface and make sure no more packets get sent there
             g1.vm.vm_host.interfaces['eth0'].down()
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             # g1 should now receive no packets, all should go to g2
             replies = send_packets_to_vip(self, [g2], g_pinger, vip1['address'],
@@ -552,7 +552,7 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             # Kill one member's TCP interface and make sure no more packets get sent there
             g1.vm.vm_host.interfaces['eth0'].up()
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             # g1 should now again receive packets
             replies = send_packets_to_vip(self, [g1, g2], g_pinger, vip1['address'],

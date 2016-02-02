@@ -21,6 +21,7 @@ from midonetclient.bridge import Bridge
 from common.Exceptions import *
 import CBT.VersionConfig as version_config
 
+
 def create_midonet_client(base_uri=version_config.ConfigMap.get_configured_parameter('param_midonet_api_url'),
                           username=None, password=None, project_id=None):
     return MidonetApi(base_uri, username, password, project_id)

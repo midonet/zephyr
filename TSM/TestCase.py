@@ -180,6 +180,7 @@ class require_topology_feature(object):
         self.feature = feature
         self.func = func
         self.value = value
+
     def __call__(self, f):
         def new_tester(slf, *args):
             """
@@ -193,9 +194,9 @@ class require_topology_feature(object):
             # If feature is set, func     set, value     set: Check func(feature, value) == True
             # The latter is useful for operator.* functions like operator.lt and operator.gt
             if feature_val and \
-                    ((self.func is     None and self.value is     None) or
-                     (self.func is     None and self.value is not None and feature_val == self.value) or
-                     (self.func is not None and self.value is     None and self.func(feature_val)) or
+                    ((self.func is None and self.value is None) or
+                     (self.func is None and self.value is not None and feature_val == self.value) or
+                     (self.func is not None and self.value is None and self.func(feature_val)) or
                      (self.func is not None and self.value is not None and self.func(feature_val, self.value))):
                 f(slf, *args)
             else:

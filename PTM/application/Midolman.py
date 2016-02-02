@@ -105,11 +105,11 @@ class Midolman(Application, HypervisorService):
         self.cli.rm('/etc/midonet_host_id.properties')
         log_dir = '/var/log/midolman.' + self.num_id
         log_manager.add_external_log_file(FileLocation(log_dir + '/midolman.log'), self.num_id,
-                                                   '%Y.%m.%d %H:%M:%S.%f')
+                                          '%Y.%m.%d %H:%M:%S.%f')
         log_manager.add_external_log_file(FileLocation(log_dir + '/midolman.event.log'), self.num_id,
-                                                   '%Y.%m.%d %H:%M:%S.%f')
+                                          '%Y.%m.%d %H:%M:%S.%f')
         log_manager.add_external_log_file(FileLocation(log_dir + '/mm-trace.log'), self.num_id,
-                                                   '%Y.%m.%d %H:%M:%S.%f')
+                                          '%Y.%m.%d %H:%M:%S.%f')
 
     def create_cfg_map(self):
         return {'num_id': self.num_id, 'uuid': str(self.unique_id), 'my_ip': self.my_ip,
@@ -352,6 +352,7 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
         self.cli.unmount('/var/lib/midolman')
         self.cli.unmount('/var/log/midolman')
         self.cli.unmount('/etc/midolman')
+
 
 class ComputeFileConfiguration(FileConfigurationHandler):
     def configure(self, num_id, unique_id, zookeeper_ips, cassandra_ips):

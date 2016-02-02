@@ -79,6 +79,7 @@ def echo_server_listener(ip, port, protocol, echo_data, running_event, stop_even
         LinuxCLI().cmd('echo "SOCKET-SETUP ERROR: ' + str(e) + '" >> ' + tmp_status_file_name)
         exit(2)
 
+
 class EchoServer(object):
     def __init__(self, ip='localhost', port=DEFAULT_ECHO_PORT, echo_data='pong', protocol='tcp'):
         super(EchoServer, self).__init__()

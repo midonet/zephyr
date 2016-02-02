@@ -8,6 +8,7 @@ from common.CLI import LinuxCLI
 
 import multiprocessing
 
+
 def packet_callback(packet, file_name):
     """
     :type packet: PCAPPacket
@@ -143,7 +144,6 @@ class TCPDumpTest(unittest.TestCase):
                                        ),
                                    ]
                                ))
-
 
             tcps.start_send(interface=iface, packet_type='tcp', count=1, source_ip='127.0.0.1',
                             dest_ip='127.0.0.1', dest_port=6055, source_port=6015)

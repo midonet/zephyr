@@ -16,6 +16,7 @@ from PTM.PTMObject import PTMObject
 from common.IP import IP
 from common.Exceptions import *
 
+
 class Interface(PTMObject):
 
     # State
@@ -111,9 +112,9 @@ class Interface(PTMObject):
     def print_config(self, indent=0):
         print ('    ' * indent) + self.name + ' with ips: ' + ', '.join(str(ip) for ip in self.ip_list)
         if self.linked_bridge is not None:
-            print ('    ' * (indent+1)) + 'Linked on bridge: ' + self.linked_bridge.name
+            print ('    ' * (indent + 1)) + 'Linked on bridge: ' + self.linked_bridge.name
         if self.vlans is not None and len(self.vlans) > 0:
-            print ('    ' * (indent+1)) + '[VLANS]'
+            print ('    ' * (indent + 1)) + '[VLANS]'
             for name, v in self.vlans.iteritems():
-                print ('    ' * (indent+2)) + 'ID: ' + name
-                print ('    ' * (indent+3)) + 'IPs: ' + ', '.join(str(ip) for ip in v)
+                print ('    ' * (indent + 2)) + 'ID: ' + name
+                print ('    ' * (indent + 3)) + 'IPs: ' + ', '.join(str(ip) for ip in v)

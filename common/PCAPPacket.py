@@ -38,7 +38,7 @@ TCP_PROTOCOL_FLAG_FINAL = 0x1
 ARP_PROTOCOL_OPERATION_REQUEST = 1
 ARP_PROTOCOL_OPERATION_REPLY = 2
 
-ICMP_PROTOCOL_TYPE_ECHO_REPLY= 0
+ICMP_PROTOCOL_TYPE_ECHO_REPLY = 0
 ICMP_PROTOCOL_TYPE_ECHO_REQUEST = 8
 ICMP_PROTOCOL_TYPE_DESTINATION_UNREACHABLE = 3
 
@@ -82,7 +82,7 @@ class PCAPPacket(object):
         :param char_lsbl: int Least significant byte
         :return: int
         """
-        ret =  (char_msbh * 0x1000000)
+        ret = (char_msbh * 0x1000000)
         ret += (char_msbl * 0x10000)
         ret += (char_lsbh * 0x100)
         ret += char_lsbl
@@ -211,6 +211,7 @@ class PCAPPacket(object):
 
     def __repr__(self):
         return self.to_str()
+
 
 class PCAPEncapsulatedLayer(object):
 

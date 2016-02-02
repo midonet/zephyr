@@ -22,6 +22,7 @@ from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
 
 PACKET_CAPTURE_TIMEOUT = 10
 
+
 class Guest(object):
     """
     A class to wrap a VM from the Physical Topology Manager

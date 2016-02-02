@@ -41,7 +41,7 @@ class NeutronTestCase(TestCase):
         self.main_network = None
         self.main_subnet = None
         self.pub_network = None
-        self.pub_subnet =None
+        self.pub_subnet = None
         self.api = None
         """ :type: neutron_client.Client """
         self.mn_api = None
@@ -124,11 +124,11 @@ class NeutronTestCase(TestCase):
         edge_gw = '.'.join(edge_subnet_cidr.split('.')[:-1]) + '.1'
 
         edge_subnet = self.api.create_subnet({'subnet': {'name': edge_host_name + '_sub',
-                                                              'network_id': edge_network['id'],
-                                                              'enable_dhcp': False,
-                                                              'ip_version': 4,
-                                                              'cidr': edge_subnet_cidr,
-                                                              'tenant_id': 'admin'}})['subnet']
+                                                         'network_id': edge_network['id'],
+                                                         'enable_dhcp': False,
+                                                         'ip_version': 4,
+                                                         'cidr': edge_subnet_cidr,
+                                                         'tenant_id': 'admin'}})['subnet']
         self.LOG.debug('Created edge subnet: ' + str(edge_subnet))
 
         # Create edge router

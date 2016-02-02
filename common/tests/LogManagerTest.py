@@ -23,6 +23,7 @@ from common.CLI import LinuxCLI
 from common.Exceptions import *
 from common.FileLocation import *
 
+
 class LogManagerTest(unittest.TestCase):
     def test_formats(self):
         lm = LogManager()
@@ -424,8 +425,8 @@ class LogManagerTest(unittest.TestCase):
                 LOG1.info('test-log-line: ' + str(i))
                 LOG2.info('test-log2-line: ' + str(i))
                 LinuxCLI(priv=False).write_to_file('./logs4/test3',
-                                                   datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f') +
-                                                        ' test-log4\n',
+                                                   (datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f') +
+                                                    ' test-log4\n'),
                                                    append=True)
                 time.sleep(2)
             LOG1.info('test-log-line: ' + str(5))

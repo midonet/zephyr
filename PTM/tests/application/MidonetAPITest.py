@@ -30,10 +30,10 @@ class MidonetAPITest(unittest.TestCase):
                            interfaces={'eth0': InterfaceDef('eth0', ip_addresses=[IP('10.0.0.8')])})
         net_cfg = HostDef('net')
 
-        zoo1_icfg= ImplementationDef('zoo1', 'PTM.host.IPNetNSHost',
+        zoo1_icfg = ImplementationDef('zoo1', 'PTM.host.IPNetNSHost',
                                      [ApplicationDef('PTM.application.Zookeeper', id='1',
                                                      zookeeper_ips=['10.0.0.2'])])
-        cmp1_icfg= ImplementationDef('cmp1', 'PTM.host.IPNetNSHost',
+        cmp1_icfg = ImplementationDef('cmp1', 'PTM.host.IPNetNSHost',
                                      [ApplicationDef('PTM.application.Midolman', id='1',
                                                      zookeeper_ips=['10.0.0.2'], cassandra_ips=[])])
         root_icfg = ImplementationDef('root', 'PTM.host.RootHost', [])

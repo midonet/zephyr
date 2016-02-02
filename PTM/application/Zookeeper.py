@@ -23,6 +23,7 @@ from PTM.PhysicalTopologyConfig import *
 from PTM.application.ConfigurationHandler import FileConfigurationHandler
 from PTM.ptm_constants import APPLICATION_START_TIMEOUT
 
+
 class Zookeeper(Application):
     @staticmethod
     def get_name():
@@ -116,14 +117,14 @@ class Zookeeper(Application):
         process = self.cli.cmd_pipe([['java',
                                       '-cp',
                                       '/etc/zookeeper/conf:'
-                                          '/usr/share/java/jline.jar:'
-                                          '/usr/share/java/log4j-1.2.jar:'
-                                          '/usr/share/java/xercesImpl.jar:'
-                                          '/usr/share/java/xmlParserAPIs.jar:'
-                                          '/usr/share/java/netty.jar:'
-                                          '/usr/share/java/slf4j-api.jar:'
-                                          '/usr/share/java/slf4j-log4j12.jar:'
-                                          '/usr/share/java/zookeeper.jar',
+                                      '/usr/share/java/jline.jar:'
+                                      '/usr/share/java/log4j-1.2.jar:'
+                                      '/usr/share/java/xercesImpl.jar:'
+                                      '/usr/share/java/xmlParserAPIs.jar:'
+                                      '/usr/share/java/netty.jar:'
+                                      '/usr/share/java/slf4j-api.jar:'
+                                      '/usr/share/java/slf4j-log4j12.jar:'
+                                      '/usr/share/java/zookeeper.jar',
                                       '-Dcom.sun.management.jmxremote',
                                       '-Dcom.sun.management.jmxremote.local.only=false',
                                       '-Dzookeeper.log.dir=/var/log/zookeeper',
@@ -144,6 +145,7 @@ class Zookeeper(Application):
             pid = self.cli.read_from_file('/run/zookeeper/pid')
             self.cli.cmd('kill ' + str(pid))
             self.cli.rm('/run/zookeeper/pid')
+
 
 class ZookeeperFileConfiguration(FileConfigurationHandler):
     def __init__(self):

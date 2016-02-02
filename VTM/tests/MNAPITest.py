@@ -44,14 +44,13 @@ class MNAPITest(unittest.TestCase):
             cls.vtm = VirtualTopologyManager(client_api_impl=create_midonet_client(),
                                              physical_topology_manager=cls.ptm)
 
-
             # Set up virtual topology
             api = cls.vtm.get_client()
             """ :type: MidonetApi"""
 
             logger = cls.ptm.log_manager.add_tee_logger('MNAPITest', 'mnapi-test-logger',
-                                                         file_log_level=logging.DEBUG,
-                                                         stdout_log_level=logging.DEBUG)
+                                                        file_log_level=logging.DEBUG,
+                                                        stdout_log_level=logging.DEBUG)
 
             tunnel_zone_host_map = {}
             for host_name, host in cls.ptm.impl_.hosts_by_name.iteritems():

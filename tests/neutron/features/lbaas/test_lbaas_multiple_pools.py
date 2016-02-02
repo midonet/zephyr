@@ -82,7 +82,6 @@ class TestLBaaSMultiplePools(NeutronTestCase):
                                                 'tenant_id': 'admin'}})['vip']
             self.LOG.debug('Created LBaaS VIP A: ' + str(vipa))
 
-
             poolb = self.api.create_pool({'pool': {'name': 'poolb',
                                                    'protocol': 'TCP',
                                                    'subnet_id': lbn_data.lbaas.subnet['id'],
@@ -98,7 +97,6 @@ class TestLBaaSMultiplePools(NeutronTestCase):
                                                 'pool_id': poolb['id'],
                                                 'tenant_id': 'admin'}})['vip']
             self.LOG.debug('Created LBaaS VIP B: ' + str(vipb))
-
 
             member1a = self.api.create_member({'member': {'address': g1a.ip,
                                                           'protocol_port': DEFAULT_POOL_PORT,
@@ -240,7 +238,7 @@ class TestLBaaSMultiplePools(NeutronTestCase):
             vipb = self.api.create_vip({'vip': {'name': 'poolb-vip',
                                                 'subnet_id': self.pub_subnet['id'],
                                                 'protocol': 'TCP',
-                                                'protocol_port': DEFAULT_POOL_PORT+1,
+                                                'protocol_port': DEFAULT_POOL_PORT + 1,
                                                 'pool_id': poolb['id'],
                                                 'tenant_id': 'admin'}})['vip']
             self.LOG.debug('Created LBaaS VIP B: ' + str(vipb))
@@ -258,11 +256,11 @@ class TestLBaaSMultiplePools(NeutronTestCase):
             self.LOG.debug('Created member2 for LBaaS Pool A: ' + str(member2a))
 
             member1b = self.api.create_member({'member': {'address': g1b.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT+1,
+                                                          'protocol_port': DEFAULT_POOL_PORT + 1,
                                                           'pool_id': poolb['id'],
                                                           'tenant_id': 'admin'}})['member']
             member2b = self.api.create_member({'member': {'address': g2b.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT+1,
+                                                          'protocol_port': DEFAULT_POOL_PORT + 1,
                                                           'pool_id': poolb['id'],
                                                           'tenant_id': 'admin'}})['member']
 
@@ -272,7 +270,7 @@ class TestLBaaSMultiplePools(NeutronTestCase):
             repliesa = send_packets_to_vip(self, [g1a, g2a], g_pingera, vipa['address'],
                                            num_packets=PACKETS_TO_SEND, to_port=DEFAULT_POOL_PORT)
             repliesb = send_packets_to_vip(self, [g1b, g2b], g_pingerb, vipb['address'],
-                                           num_packets=PACKETS_TO_SEND, to_port=DEFAULT_POOL_PORT+1)
+                                           num_packets=PACKETS_TO_SEND, to_port=DEFAULT_POOL_PORT + 1)
 
             check_host_replies_against_rr_baseline(self, [g1a, g2a], repliesa,
                                                    total_expected=PACKETS_TO_SEND,

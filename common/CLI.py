@@ -24,6 +24,7 @@ CREATENSCMD = lambda name: LinuxCLI().cmd('ip netns add ' + name)
 REMOVENSCMD = lambda name: LinuxCLI().cmd('ip netns del ' + name)
 DEBUG = 0
 
+
 class CommandStatus(object):
     def __init__(self, process=None, command='', ret_code=0, stdout='', stderr='', process_array=None):
         """
@@ -117,9 +118,9 @@ class LinuxCLI(object):
         # The last process (whether one or many) needs to have the user-set stdout, stderr
         for i in range(0, len(cmd_array)):
             p = subprocess.Popen(cmd_array[i], shell=False,
-                                 stdin=stdin if i == 0 else processes[i-1].stdout,
-                                 stdout=stdout if i == len(cmd_array)-1 else subprocess.PIPE,
-                                 stderr=stderr if i == len(cmd_array)-1 else subprocess.PIPE,
+                                 stdin=stdin if i == 0 else processes[i - 1].stdout,
+                                 stdout=stdout if i == len(cmd_array) - 1 else subprocess.PIPE,
+                                 stderr=stderr if i == len(cmd_array) - 1 else subprocess.PIPE,
                                  env=self.env_map,
                                  preexec_fn=os.setsid)
             processes.append(p)
@@ -170,8 +171,8 @@ class LinuxCLI(object):
         :param stderr: int File descriptor for std in (PIPE by default)
         :return CommandStatus:
         """
-        cmd = ('timeout ' + str(timeout) + ' ' if timeout is not None else '') + \
-              self.priv_prefix() + self.cmd_prefix() + cmd_line
+        cmd = (('timeout ' + str(timeout) + ' ' if timeout is not None else '')
+               + self.priv_prefix() + self.cmd_prefix() + cmd_line)
 
         if self.log_cmd is True:
             if self.logger is not None:

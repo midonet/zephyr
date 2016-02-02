@@ -98,7 +98,6 @@ class VirtualInterfaceTest(unittest.TestCase):
 
         h2.remove()
 
-
     def tearDown(self):
         LinuxCLI().cmd('ip l del testi')
         LinuxCLI().cmd('ip netns del test2')

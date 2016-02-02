@@ -17,8 +17,10 @@ from common.Exceptions import *
 
 import multiprocessing
 
+
 def send_packet(tcp_event, **kwargs):
     TCPSender.send_packet(tcp_ready=tcp_event, **kwargs)
+
 
 class TCPSender(object):
 
@@ -50,11 +52,10 @@ class TCPSender(object):
             self.process.join()
         self.process = None
 
-
     @staticmethod
     def send_packet(cli=LinuxCLI(), tcp_ready=None, interface='any', packet_type=None,
                     source_port=None, dest_port=None,
-                    source_ip=None, dest_ip=None,  source_mac=None,
+                    source_ip=None, dest_ip=None, source_mac=None,
                     dest_mac=None, packet_options=None, count=None,
                     delay=None, byte_data=None, payload=None, timeout=None):
         """
@@ -117,7 +118,7 @@ class TCPSender(object):
             cmd_str = ','.join((source_port_str, dest_port_str))
         else:
             cmd_str = ', '.join('%s=%s' % (k, v)
-                                 for k, v in packet_options.iteritems()) if packet_options is not None else ''
+                                for k, v in packet_options.iteritems()) if packet_options is not None else ''
 
         full_cmd_str = 'mz %(iface)s %(arglist)s %(extra_args)s %(pkttype)s "%(cmd)s"' % \
                        {'iface': interface,

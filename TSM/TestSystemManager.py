@@ -34,8 +34,8 @@ from TSM.TestResult import TestResult
 
 TSM_LOG_FILE_NAME = 'tsm-output.log'
 
-DEFAULT_TEST_LOADER = {'unittest': unittest.defaultTestLoader }
-DEFAULT_TEST_SUITE_TYPE = {'unittest': unittest.TestSuite }
+DEFAULT_TEST_LOADER = {'unittest': unittest.defaultTestLoader}
+DEFAULT_TEST_SUITE_TYPE = {'unittest': unittest.TestSuite}
 DEFAULT_TEST_RUNNER = 'unittest'
 
 
@@ -164,9 +164,9 @@ class TestSystemManager(object):
         for i in range(0, 3):
             if len(fqn_split) > i:
                 try:
-                    mod_package_part = fqn_split[:len(fqn_split)-i]
+                    mod_package_part = fqn_split[:len(fqn_split) - i]
                     current_context = '.'.join(mod_package_part)
-                    remainder_part = fqn_split[len(fqn_split)-i:]
+                    remainder_part = fqn_split[len(fqn_split) - i:]
 
                     # Get the base part of the FQN that we'll use as the package/module
                     current_module = importlib.import_module(current_context)
@@ -181,7 +181,7 @@ class TestSystemManager(object):
                     current_module = None
                 except AttributeError as e:
                     # Bad.  This means the module was imported fine, but the class wasn't in there!
-                    raise ObjectNotFoundException('Malformed name: class: ' + fqn_split[len(fqn_split)-i:][0] +
+                    raise ObjectNotFoundException('Malformed name: class: ' + fqn_split[len(fqn_split) - i:][0] +
                                                   ', not in module: ' + current_module.__name__)
 
         if current_module is None:
@@ -274,7 +274,7 @@ class TestSystemManager(object):
                     self.LOG.debug("Couldn't load test module: " + current_context + " because: " + str(e))
 
     def set_test_debug(self, debug_flag=True):
-        self.test_debug=debug_flag
+        self.test_debug = debug_flag
 
     def test_suite_to_flat_list(self, test_suite):
         """
@@ -364,12 +364,12 @@ class TestSystemManager(object):
 
             result.start_time = datetime.datetime.utcnow()
             self.LOG.debug('Starting suite [' + suite_name + '] at timestamp[' +
-                               str(result.start_time) + ']')
+                           str(result.start_time) + ']')
             if self.test_system == 'unittest':
                 running_suite.run(result, debug=self.test_debug)
             result.stop_time = datetime.datetime.utcnow()
             self.LOG.debug('Finished suite [' + suite_name + '] at timestamp[' +
-                               str(result.stop_time) + ']')
+                           str(result.stop_time) + ']')
             result.run_time = (result.stop_time - result.start_time)
         finally:
             self.LOG.debug('Stopping topology from config file: ' + topology)

@@ -290,8 +290,8 @@ def check_host_replies_against_rr_baseline(tc, member_list, host_replies,
                                   str(total_packet_count) + ", expected: " + str(total_expected))
 
     # Acceptable delta is +/-50% of the expected average
-    baseline_average = float(float(total_expected)/float(len(member_list)))
-    acceptable_delta = float(float(total_expected)/float(2 * len(member_list)))
+    baseline_average = float(float(total_expected) / float(len(member_list)))
+    acceptable_delta = float(float(total_expected) / float(2 * len(member_list)))
 
     for h in member_list:
         name = h.vm.vm_host.name

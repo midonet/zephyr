@@ -134,7 +134,6 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm = TestSystemManager(None, None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
-
         tsm.load_tests(["TSM.tests.sample.TestSampleCases.SampleTestCase",
                         "TSM.tests.sample.TestSampleCases.SampleOtherTestCase"])
 

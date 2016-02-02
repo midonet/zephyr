@@ -16,7 +16,7 @@ import unittest
 import re
 import CBT.VersionConfig as version_config
 
-CFG_FILE='../../config/midonet_version_configuration.json'
+CFG_FILE = '../../config/midonet_version_configuration.json'
 
 
 class VersionConfigTest(unittest.TestCase):

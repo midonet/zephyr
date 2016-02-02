@@ -46,7 +46,7 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
 
     def test_read_interface(self):
         cfg = {'name': 'eth0', 'ip_addresses': [{'ip': '1.1.1.1'}],
-               'mac_address': '00:00:00:aa:bb:cc', 'vlans': [{ 'id': '1', 'ip_addresses': [{'ip': '10.0.0.2'}]}],
+               'mac_address': '00:00:00:aa:bb:cc', 'vlans': [{'id': '1', 'ip_addresses': [{'ip': '10.0.0.2'}]}],
                'linked_bridge': 'br0'}
         iface = InterfaceDef.make_interface(cfg)
         self.assertEquals(iface.name, 'eth0')
@@ -170,7 +170,7 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
 
     def test_read_wiring(self):
         cfg = {'near': {'host': 'host1', 'interface': 'eth0'},
-               'far':  {'host': 'host2', 'interface': 'eth0'}}
+               'far': {'host': 'host2', 'interface': 'eth0'}}
 
         w = WiringDef.make_wiring(cfg)
         self.assertEquals(w.near.host, 'host1')
@@ -178,7 +178,7 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
         self.assertEquals(w.far.host, 'host2')
         self.assertEquals(w.far.interface, 'eth0')
 
-        cfg3 = {'far':  {'host': 'host2', 'interface': 'eth0'}}
+        cfg3 = {'far': {'host': 'host2', 'interface': 'eth0'}}
         try:
             w3 = WiringDef.make_wiring(cfg3)
         except ObjectNotFoundException:

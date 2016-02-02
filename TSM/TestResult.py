@@ -60,7 +60,7 @@ class TestResult(unittest.TestResult):
         runtime = '{0:d}.{1:d}'.format(self.run_time.seconds, self.run_time.microseconds) \
             if self.run_time is not None else '0.0'
         ts_str = '<testsuite errors="{errors:d}" failures="{failures:d}" name="{name}" ' \
-                            'tests="{tests:d}" timestamp="{starttime}" time="{runtime}">\n'
+                 'tests="{tests:d}" timestamp="{starttime}" time="{runtime}">\n'
         ret_xml = ts_str.format(errors=len(self.errors),
                                 failures=len(self.failures) + len(self.unexpectedSuccesses),
                                 name=self.suite_name,

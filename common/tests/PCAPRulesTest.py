@@ -3,6 +3,7 @@ __author__ = 'vagrant'
 import unittest
 from common.PCAPRules import *
 
+
 class PCAPRulesTest(unittest.TestCase):
     def test_host_rules(self):
         simple_rule = PCAP_Host('foo')

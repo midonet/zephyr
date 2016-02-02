@@ -23,6 +23,7 @@ class ConfigurationHandler(object):
     def configure(self, **kwargs):
         pass
 
+
 class FileConfigurationHandler(ConfigurationHandler):
     def __init__(self):
         super(FileConfigurationHandler, self).__init__()

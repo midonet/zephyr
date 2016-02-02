@@ -267,6 +267,7 @@ class _PCAP_PrimitiveSimpleProto(PCAP_Rule):
     def to_str(self):
         return self.proto
 
+
 class PCAP_ICMPProto(_PCAP_PrimitiveSimpleProto):
     def __init__(self):
         """
