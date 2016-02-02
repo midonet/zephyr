@@ -180,6 +180,7 @@ class require_topology_feature(object):
         self.feature = feature
         self.func = func
         self.value = value
+
     def __call__(self, f):
         def new_tester(slf, *args):
             """
