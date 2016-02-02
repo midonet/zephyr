@@ -46,7 +46,7 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
 
     def test_read_interface(self):
         cfg = {'name': 'eth0', 'ip_addresses': [{'ip': '1.1.1.1'}],
-               'mac_address': '00:00:00:aa:bb:cc', 'vlans': [{ 'id': '1', 'ip_addresses': [{'ip': '10.0.0.2'}]}],
+               'mac_address': '00:00:00:aa:bb:cc', 'vlans': [{'id': '1', 'ip_addresses': [{'ip': '10.0.0.2'}]}],
                'linked_bridge': 'br0'}
         iface = InterfaceDef.make_interface(cfg)
         self.assertEquals(iface.name, 'eth0')
