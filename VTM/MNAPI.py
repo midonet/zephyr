@@ -23,7 +23,7 @@ import CBT.VersionConfig as version_config
 
 def create_midonet_client(base_uri=version_config.ConfigMap.get_configured_parameter('param_midonet_api_url'),
                           username=None, password=None, project_id=None):
-   return MidonetApi(base_uri, username, password, project_id)
+    return MidonetApi(base_uri, username, password, project_id)
 
 
 def setup_main_tunnel_zone(api, host_ip_map, logger=None):
@@ -47,8 +47,8 @@ def setup_main_tunnel_zone(api, host_ip_map, logger=None):
 
     # If main tunnel zone already found, don't re-add
     for tz in tzs:
-       if tz.get_name() == "main":
-           return
+        if tz.get_name() == "main":
+            return
 
     logger.info('Setting up VTM main tunnel zone')
     tz = api.add_gre_tunnel_zone().name('main').create()
