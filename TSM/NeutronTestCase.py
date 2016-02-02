@@ -41,7 +41,7 @@ class NeutronTestCase(TestCase):
         self.main_network = None
         self.main_subnet = None
         self.pub_network = None
-        self.pub_subnet =None
+        self.pub_subnet = None
         self.api = None
         """ :type: neutron_client.Client """
         self.mn_api = None

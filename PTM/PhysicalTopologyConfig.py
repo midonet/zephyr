@@ -185,8 +185,8 @@ class HostDef(object):
     def make_host(host_cfg):
         if 'name' not in host_cfg: raise ObjectNotFoundException('"name" field required for host definition')
         name = host_cfg['name']
-        bridges={}
-        interfaces={}
+        bridges = {}
+        interfaces = {}
         ip_forward_rules = []
         route_rules = []
 

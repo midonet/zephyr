@@ -274,7 +274,7 @@ class TestSystemManager(object):
                     self.LOG.debug("Couldn't load test module: " + current_context + " because: " + str(e))
 
     def set_test_debug(self, debug_flag=True):
-        self.test_debug=debug_flag
+        self.test_debug = debug_flag
 
     def test_suite_to_flat_list(self, test_suite):
         """

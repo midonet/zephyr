@@ -31,7 +31,7 @@ class TestResultsProcessing(TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.testlog = cls.ptm.log_manager.add_file_logger(file_name='test-' + cls.__name__ +'.log',
+        cls.testlog = cls.ptm.log_manager.add_file_logger(file_name='test-' + cls.__name__ + '.log',
                                                           name='tester',
                                                           file_overwrite=True, log_level=logging.DEBUG)
 
