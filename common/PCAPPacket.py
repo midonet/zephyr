@@ -82,7 +82,7 @@ class PCAPPacket(object):
         :param char_lsbl: int Least significant byte
         :return: int
         """
-        ret =  (char_msbh * 0x1000000)
+        ret = (char_msbh * 0x1000000)
         ret += (char_msbl * 0x10000)
         ret += (char_lsbh * 0x100)
         ret += char_lsbl
