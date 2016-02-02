@@ -261,7 +261,7 @@ class LogManager(object):
             self.collated_log_files.add((FileLocation(dest_path + '/' + new_file_name), date_format, date_pos))
 
     def slice_log_files_by_time(self, new_dir, start_time=None, stop_time=None, leeway=0, collated_only=True,
-                                ext = '.slice'):
+                                ext='.slice'):
         """
         Slice a log file using timestamps and copy the slice to a new file.  The default
         is to start at the beginning and slice all the way to the end.  The leeway parameter
