@@ -34,8 +34,8 @@ from TSM.TestResult import TestResult
 
 TSM_LOG_FILE_NAME = 'tsm-output.log'
 
-DEFAULT_TEST_LOADER = {'unittest': unittest.defaultTestLoader }
-DEFAULT_TEST_SUITE_TYPE = {'unittest': unittest.TestSuite }
+DEFAULT_TEST_LOADER = {'unittest': unittest.defaultTestLoader}
+DEFAULT_TEST_SUITE_TYPE = {'unittest': unittest.TestSuite}
 DEFAULT_TEST_RUNNER = 'unittest'
 
 
