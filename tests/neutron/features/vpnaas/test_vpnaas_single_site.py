@@ -72,7 +72,7 @@ class TestVPNaaSSingleSite(NeutronTestCase):
                                                                'tenant_id': 'admin',
                                                                }})['ikepolicy']
             ipsec_pol = self.api.create_ipsecpolicy({'ipsecpolicy': {'name': 'main_ipsec_policy',
-                                                                     'tenant_id': 'admin',}})['ipsecpolicy']
+                                                                     'tenant_id': 'admin'}})['ipsecpolicy']
             self.LOG.debug("Created IKE/IPSEC policies: " + str(ike_pol) + '/' + str(ipsec_pol))
 
             # Left-side of VPN connection

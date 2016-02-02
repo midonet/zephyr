@@ -60,7 +60,7 @@ class TestPacketStreams(NeutronTestCase):
             responses = 0
             vm2.start_echo_server(ip=ip2)
             self.LOG.debug("Sending" + str(num_packets) + " packets to " + str(ip2))
-            for i in range(0,num_packets):
+            for i in range(0, num_packets):
                 echo_response = vm1.send_echo_request(dest_ip=ip2)
                 if echo_response == 'ping:echo-reply':
                     responses += 1

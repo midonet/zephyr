@@ -370,7 +370,7 @@ class TestFloatingIP(NeutronTestCase):
         new_topo = None
         try:
             new_topo = create_neutron_main_pub_networks(self.api,
-                                                        main_name='main_2',main_subnet_cidr='192.168.10.0/24',
+                                                        main_name='main_2', main_subnet_cidr='192.168.10.0/24',
                                                         pub_name='pub_2', pub_subnet_cidr='200.200.10.0/24',
                                                         log=self.LOG)
             ed1 = self.create_edge_router(pub_subnet=self.pub_subnet, router_host_name='router1',
