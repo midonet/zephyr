@@ -566,7 +566,6 @@ class Host(PTMObject):
                            save_dump_file=save_dump_file, save_dump_filename=save_dump_filename,
                            blocking=False)
 
-
         self.cli.log_cmd = old_log
 
         self.packet_captures[interface] = tcpd

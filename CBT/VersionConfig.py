@@ -118,7 +118,6 @@ class ConfigMap(object):
                        config_json=(os.path.dirname(os.path.realpath(__file__)) +
                                    '/../config/midonet_version_configuration.json')):
 
-
         with open(config_json, "r") as f:
             cls.major_version_config_map = json.load(f)
         return cls.major_version_config_map

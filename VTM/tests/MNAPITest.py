@@ -44,7 +44,6 @@ class MNAPITest(unittest.TestCase):
             cls.vtm = VirtualTopologyManager(client_api_impl=create_midonet_client(),
                                              physical_topology_manager=cls.ptm)
 
-
             # Set up virtual topology
             api = cls.vtm.get_client()
             """ :type: MidonetApi"""

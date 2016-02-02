@@ -387,12 +387,10 @@ class TestExtraRoutes(NeutronTestCase):
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
 
-
             self.api.update_port(td.port1['id'],
                                  {'port': {
                                      'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
                                                                {"ip_address": "172.16.0.3"}]}})
-
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -491,7 +489,6 @@ class TestExtraRoutes(NeutronTestCase):
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
-
 
             self.api.update_port(td.port1['id'],
                                  {'port': {

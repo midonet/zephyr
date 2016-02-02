@@ -82,7 +82,6 @@ class TestLBaaSMultiplePools(NeutronTestCase):
                                                 'tenant_id': 'admin'}})['vip']
             self.LOG.debug('Created LBaaS VIP A: ' + str(vipa))
 
-
             poolb = self.api.create_pool({'pool': {'name': 'poolb',
                                                    'protocol': 'TCP',
                                                    'subnet_id': lbn_data.lbaas.subnet['id'],
@@ -98,7 +97,6 @@ class TestLBaaSMultiplePools(NeutronTestCase):
                                                 'pool_id': poolb['id'],
                                                 'tenant_id': 'admin'}})['vip']
             self.LOG.debug('Created LBaaS VIP B: ' + str(vipb))
-
 
             member1a = self.api.create_member({'member': {'address': g1a.ip,
                                                           'protocol_port': DEFAULT_POOL_PORT,

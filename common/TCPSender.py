@@ -52,7 +52,6 @@ class TCPSender(object):
             self.process.join()
         self.process = None
 
-
     @staticmethod
     def send_packet(cli=LinuxCLI(), tcp_ready=None, interface='any', packet_type=None,
                     source_port=None, dest_port=None,

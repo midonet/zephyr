@@ -123,7 +123,6 @@ class TestLBaaSPools(NeutronTestCase):
                                                 'tenant_id': 'admin'}})['vip']
             self.LOG.debug('Created LBaaS VIP A: ' + str(vipa))
 
-
             member1a = self.api.create_member({'member': {'address': g1.ip,
                                                           'protocol_port': DEFAULT_POOL_PORT,
                                                           'pool_id': poola['id'],
@@ -199,7 +198,6 @@ class TestLBaaSPools(NeutronTestCase):
                                                 'pool_id': poola['id'],
                                                 'tenant_id': 'admin'}})['vip']
             self.LOG.debug('Created LBaaS VIP A: ' + str(vipa))
-
 
             member1a = self.api.create_member({'member': {'address': g1.ip,
                                                           'protocol_port': DEFAULT_POOL_PORT,

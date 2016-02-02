@@ -68,7 +68,6 @@ class TestPacketStreams(NeutronTestCase):
 
             self.assertEqual(num_packets, responses)
 
-
         finally:
             if vm2 and ip2:
                 vm2.stop_echo_server(ip=ip2)

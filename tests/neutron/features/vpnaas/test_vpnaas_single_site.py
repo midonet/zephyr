@@ -66,7 +66,6 @@ class TestVPNaaSSingleSite(NeutronTestCase):
             routerR_if1 = self.api.add_interface_router(routerR['id'], {'subnet_id': privateRsub['id']})
             self.LOG.debug("Created router: " + str(routerR))
 
-
             #Create the VPN connections
             ike_pol = self.api.create_ikepolicy({'ikepolicy': {'name': 'main_ike_policy',
                                                                'tenant_id': 'admin',
