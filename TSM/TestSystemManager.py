@@ -164,9 +164,9 @@ class TestSystemManager(object):
         for i in range(0, 3):
             if len(fqn_split) > i:
                 try:
-                    mod_package_part = fqn_split[:len(fqn_split)-i]
+                    mod_package_part = fqn_split[:len(fqn_split) - i]
                     current_context = '.'.join(mod_package_part)
-                    remainder_part = fqn_split[len(fqn_split)-i:]
+                    remainder_part = fqn_split[len(fqn_split) - i:]
 
                     # Get the base part of the FQN that we'll use as the package/module
                     current_module = importlib.import_module(current_context)
@@ -181,7 +181,7 @@ class TestSystemManager(object):
                     current_module = None
                 except AttributeError as e:
                     # Bad.  This means the module was imported fine, but the class wasn't in there!
-                    raise ObjectNotFoundException('Malformed name: class: ' + fqn_split[len(fqn_split)-i:][0] +
+                    raise ObjectNotFoundException('Malformed name: class: ' + fqn_split[len(fqn_split) - i:][0] +
                                                   ', not in module: ' + current_module.__name__)
 
         if current_module is None:

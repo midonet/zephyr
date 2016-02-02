@@ -297,7 +297,7 @@ class LogManager(object):
             if LinuxCLI(priv=False).exists(f.full_path()):
                 with open(f.full_path(), 'r') as cf:
                     for line in cf.readlines():
-                        dateline = ' '.join(line.split(' ')[dp:dp+2])
+                        dateline = ' '.join(line.split(' ')[dp:dp + 2])
                         try:
                             current_time = datetime.datetime.strptime(dateline, df)
                             if current_time < concrete_start_time:

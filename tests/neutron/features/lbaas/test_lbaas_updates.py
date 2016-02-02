@@ -498,7 +498,7 @@ class TestLBaaSUpdates(NeutronTestCase):
             hm = self.api.show_health_monitor(hm['id'])['health_monitor']
             self.LOG.debug("Created Health Monitor and associated to pool: " + str(hm))
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             replies = send_packets_to_vip(self, [g1, g2], g_pinger, vip1['address'],
                                           num_packets=PACKETS_TO_SEND)
@@ -511,7 +511,7 @@ class TestLBaaSUpdates(NeutronTestCase):
             # Kill one member's TCP interface and make sure no more packets get sent there
             g1.vm.vm_host.interfaces['eth0'].down()
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             # Without HM, it should try (and fail) to send some to g1
             replies = send_packets_to_vip(self, [g1, g2], g_pinger, vip1['address'],
@@ -525,7 +525,7 @@ class TestLBaaSUpdates(NeutronTestCase):
             self.api.associate_health_monitor(pool1['id'], {'health_monitor': {'tenant_id': 'admin',
                                                                                'id': hm['id']}})
 
-            time.sleep(delay*3)
+            time.sleep(delay * 3)
 
             # g1 should now receive no packets, all should go to g2
             replies = send_packets_to_vip(self, [g2], g_pinger, vip1['address'],

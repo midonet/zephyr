@@ -337,7 +337,7 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
                     else:
                         lastmask = 0
                         for i in range(0, current_mask):
-                            lastmask += pow(2, 8-(i+1))
+                            lastmask += pow(2, 8 - (i + 1))
                         subnet_mask.append(lastmask)
                     current_mask -= 8
 

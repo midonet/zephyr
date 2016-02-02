@@ -117,9 +117,9 @@ class LinuxCLI(object):
         # The last process (whether one or many) needs to have the user-set stdout, stderr
         for i in range(0, len(cmd_array)):
             p = subprocess.Popen(cmd_array[i], shell=False,
-                                 stdin=stdin if i == 0 else processes[i-1].stdout,
-                                 stdout=stdout if i == len(cmd_array)-1 else subprocess.PIPE,
-                                 stderr=stderr if i == len(cmd_array)-1 else subprocess.PIPE,
+                                 stdin=stdin if i == 0 else processes[i - 1].stdout,
+                                 stdout=stdout if i == len(cmd_array) - 1 else subprocess.PIPE,
+                                 stderr=stderr if i == len(cmd_array) - 1 else subprocess.PIPE,
                                  env=self.env_map,
                                  preexec_fn=os.setsid)
             processes.append(p)

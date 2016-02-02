@@ -344,19 +344,19 @@ class Host(PTMObject):
     def print_config(self, indent=0):
         print ('    ' * indent) + self.name + ": Impl class " + self.__class__.__name__
         if self.bridges is not None and len(self.bridges) > 0:
-            print ('    ' * (indent+1)) + '[bridges]'
+            print ('    ' * (indent + 1)) + '[bridges]'
             for b in self.bridges.itervalues():
                 b.print_config(indent + 2)
         if self.route_rules is not None and len(self.route_rules) > 0:
-            print ('    ' * (indent+1)) + '[routes]'
+            print ('    ' * (indent + 1)) + '[routes]'
             for dest, gw, dev in self.route_rules:
-                print ('    ' * (indent+2)) + 'to ' + str(dest) + ' via ' + str(gw) + ' on ' + dev
+                print ('    ' * (indent + 2)) + 'to ' + str(dest) + ' via ' + str(gw) + ' on ' + dev
         if self.interfaces is not None and len(self.interfaces) > 0:
-            print ('    ' * (indent+1)) + '[interfaces]'
+            print ('    ' * (indent + 1)) + '[interfaces]'
             for i in self.interfaces.itervalues():
                 i.print_config(indent + 2)
         if self.interfaces is not None and len(self.interfaces) > 0:
-            print ('    ' * (indent+1)) + '[applications]'
+            print ('    ' * (indent + 1)) + '[applications]'
             for i in self.applications:
                 i.print_config(indent + 2)
 
