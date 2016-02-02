@@ -141,7 +141,7 @@ class TCPDumpTest(unittest.TestCase):
                                                PCAP_LessThanEqual('len', 1500)
                                            ]
                                        ),
-                                       ]
+                                   ]
                                ))
 
 

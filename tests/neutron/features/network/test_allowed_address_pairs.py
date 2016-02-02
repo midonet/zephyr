@@ -549,7 +549,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
                                                    'admin_state_up': True,
                                                    'allowed_address_pairs': [
                                                        {"ip_address": "192.168.99.0/24"},
-                                                       ],
+                                                   ],
                                                    'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port1: ' + str(port1))
 
@@ -604,7 +604,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
                                                    'allowed_address_pairs': [
                                                        {"ip_address": "192.168.99.0/24",
                                                         "mac_address": "AA:AA:AA:AA:AA:AA"}
-                                                       ],
+                                                   ],
                                                    'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port1: ' + str(port1))
 
@@ -804,7 +804,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
                                                    'allowed_address_pairs': [
                                                        {"ip_address": "192.168.99.0/24"},
                                                        {"ip_address": "192.168.99.98"},
-                                                       ],
+                                                   ],
                                                    'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port1: ' + str(port1))
 
@@ -882,7 +882,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
                                                        {"ip_address": "192.168.98.0/24",
                                                         "mac_address": "AA:AA:AA:AA:AA:CC"},
                                                        {"ip_address": "192.168.98.5"},
-                                                       ],
+                                                   ],
                                                    'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port1: ' + str(port1))
 
