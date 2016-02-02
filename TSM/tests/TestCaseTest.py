@@ -18,6 +18,7 @@ from TSM.TestCase import TestCase, require_topology_feature
 from PTM.impl.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
+
 class SamplePTM(PhysicalTopologyManagerImpl):
     def get_topology_features(self):
         return {'test_feature': True, 'test_number': 2}

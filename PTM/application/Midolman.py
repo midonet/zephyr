@@ -353,6 +353,7 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
         self.cli.unmount('/var/log/midolman')
         self.cli.unmount('/etc/midolman')
 
+
 class ComputeFileConfiguration(FileConfigurationHandler):
     def configure(self, num_id, unique_id, zookeeper_ips, cassandra_ips):
 

@@ -21,6 +21,7 @@ import unittest
 import time
 import logging
 
+
 class TestResultsProcessing(TestCase):
     api = None
     """ :type: MidonetApi """

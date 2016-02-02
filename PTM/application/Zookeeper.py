@@ -23,6 +23,7 @@ from PTM.PhysicalTopologyConfig import *
 from PTM.application.ConfigurationHandler import FileConfigurationHandler
 from PTM.ptm_constants import APPLICATION_START_TIMEOUT
 
+
 class Zookeeper(Application):
     @staticmethod
     def get_name():
@@ -144,6 +145,7 @@ class Zookeeper(Application):
             pid = self.cli.read_from_file('/run/zookeeper/pid')
             self.cli.cmd('kill ' + str(pid))
             self.cli.rm('/run/zookeeper/pid')
+
 
 class ZookeeperFileConfiguration(FileConfigurationHandler):
     def __init__(self):

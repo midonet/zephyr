@@ -70,6 +70,7 @@ class Quagga(Application):
         if self.cli.exists('/etc/rc.d/init.d/bgpd'):
             self.host.run_app_command('/etc/rc.d/init.d/bgpd', self, 'stop')
 
+
 class RouterFileConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(RouterFileConfiguration, self).__init__()

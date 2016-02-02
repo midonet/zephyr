@@ -24,6 +24,7 @@ CREATENSCMD = lambda name: LinuxCLI().cmd('ip netns add ' + name)
 REMOVENSCMD = lambda name: LinuxCLI().cmd('ip netns del ' + name)
 DEBUG = 0
 
+
 class CommandStatus(object):
     def __init__(self, process=None, command='', ret_code=0, stdout='', stderr='', process_array=None):
         """

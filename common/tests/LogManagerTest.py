@@ -23,6 +23,7 @@ from common.CLI import LinuxCLI
 from common.Exceptions import *
 from common.FileLocation import *
 
+
 class LogManagerTest(unittest.TestCase):
     def test_formats(self):
         lm = LogManager()

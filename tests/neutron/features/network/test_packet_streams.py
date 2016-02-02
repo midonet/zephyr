@@ -23,6 +23,7 @@ PACKETS_TO_SEND_SHORT = 20
 PACKETS_TO_SEND_MEDIUM = 100
 PACKETS_TO_SEND_LONG = 3000
 
+
 class TestPacketStreams(NeutronTestCase):
     """
     Test large packet streams and flows between nodes with streams consisting of

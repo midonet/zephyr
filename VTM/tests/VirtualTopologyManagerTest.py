@@ -2,6 +2,7 @@
 import unittest
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 
+
 class MockClient(object):
     def __init__(self, *args, **kwargs):
         super(MockClient, self).__init__()

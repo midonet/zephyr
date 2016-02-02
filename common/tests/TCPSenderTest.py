@@ -4,6 +4,7 @@ import unittest
 from common.CLI import LinuxCLI
 from common.TCPSender import *
 
+
 class TCPSenderTest(unittest.TestCase):
     def test_send_packet_default(self):
         cli = LinuxCLI(debug=True)

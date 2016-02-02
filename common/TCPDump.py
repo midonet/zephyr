@@ -30,6 +30,7 @@ import time
 
 TCPDUMP_LISTEN_START_TIMEOUT = 10
 
+
 def sig_handler():
     with open('tcpdump.out', 'a') as f:
         f.write("in signal handler")

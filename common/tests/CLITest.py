@@ -3,6 +3,7 @@ import unittest
 import os
 from common.CLI import *
 
+
 class CLITest(unittest.TestCase):
     def test_write_file(self):
         LinuxCLI().rm('tmp-test')

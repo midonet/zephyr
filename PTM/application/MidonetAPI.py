@@ -167,6 +167,7 @@ class TomcatFileConfiguration(FileConfigurationHandler):
                                  's/example.com/'
                                  '$public:8443/g'))
 
+
 class ClusterConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(ClusterConfiguration, self).__init__()

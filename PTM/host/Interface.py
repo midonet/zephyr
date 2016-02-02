@@ -16,6 +16,7 @@ from PTM.PTMObject import PTMObject
 from common.IP import IP
 from common.Exceptions import *
 
+
 class Interface(PTMObject):
 
     # State

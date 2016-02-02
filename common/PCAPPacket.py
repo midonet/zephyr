@@ -212,6 +212,7 @@ class PCAPPacket(object):
     def __repr__(self):
         return self.to_str()
 
+
 class PCAPEncapsulatedLayer(object):
 
     @staticmethod

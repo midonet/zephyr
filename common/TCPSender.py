@@ -17,8 +17,10 @@ from common.Exceptions import *
 
 import multiprocessing
 
+
 def send_packet(tcp_event, **kwargs):
     TCPSender.send_packet(tcp_ready=tcp_event, **kwargs)
+
 
 class TCPSender(object):
 

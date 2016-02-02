@@ -15,6 +15,7 @@
 from common.CLI import LinuxCLI
 import os.path
 
+
 class FileAccessor(object):
     def __init__(self):
         super(FileAccessor, self).__init__()
