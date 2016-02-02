@@ -170,7 +170,7 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
 
     def test_read_wiring(self):
         cfg = {'near': {'host': 'host1', 'interface': 'eth0'},
-               'far':  {'host': 'host2', 'interface': 'eth0'}}
+               'far': {'host': 'host2', 'interface': 'eth0'}}
 
         w = WiringDef.make_wiring(cfg)
         self.assertEquals(w.near.host, 'host1')
@@ -178,7 +178,7 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
         self.assertEquals(w.far.host, 'host2')
         self.assertEquals(w.far.interface, 'eth0')
 
-        cfg3 = {'far':  {'host': 'host2', 'interface': 'eth0'}}
+        cfg3 = {'far': {'host': 'host2', 'interface': 'eth0'}}
         try:
             w3 = WiringDef.make_wiring(cfg3)
         except ObjectNotFoundException:

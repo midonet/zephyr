@@ -54,7 +54,7 @@ class TCPSender(object):
     @staticmethod
     def send_packet(cli=LinuxCLI(), tcp_ready=None, interface='any', packet_type=None,
                     source_port=None, dest_port=None,
-                    source_ip=None, dest_ip=None,  source_mac=None,
+                    source_ip=None, dest_ip=None, source_mac=None,
                     dest_mac=None, packet_options=None, count=None,
                     delay=None, byte_data=None, payload=None, timeout=None):
         """
