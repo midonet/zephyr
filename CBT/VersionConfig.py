@@ -115,8 +115,8 @@ class ConfigMap(object):
 
     @classmethod
     def get_config_map(cls,
-                       config_json=os.path.dirname(os.path.realpath(__file__)) +
-                                   '/../config/midonet_version_configuration.json'):
+                       config_json=(os.path.dirname(os.path.realpath(__file__)) +
+                                   '/../config/midonet_version_configuration.json')):
 
 
         with open(config_json, "r") as f:
@@ -125,8 +125,8 @@ class ConfigMap(object):
 
     @classmethod
     def get_configured_parameter(cls, param, version=None,
-                                 config_json=os.path.dirname(os.path.realpath(__file__)) +
-                                             '/../config/midonet_version_configuration.json'):
+                                 config_json=(os.path.dirname(os.path.realpath(__file__)) +
+                                              '/../config/midonet_version_configuration.json')):
         """
         Retrieve a parameter based on the actively installed verison of Midolman.  If Midolman
         is not installed, do not use this function as it will throw an exception.  Instead, get

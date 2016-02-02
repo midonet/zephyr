@@ -684,10 +684,9 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
             # Now update allowed pair list to ADD a new IP and make sure that works
             port1 = self.api.update_port(port1['id'], {'port':
-                                                           {'allowed_address_pairs': [
-                                                               {"ip_address": "192.168.99.0/24"},
-                                                               {"ip_address": "192.168.98.96",
-                                                                "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
+                {'allowed_address_pairs': [{"ip_address": "192.168.99.0/24"},
+                                           {"ip_address": "192.168.98.96",
+                                           "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
             self.LOG.debug('Updated port1: ' + str(port1))
 
             # Send to new IP and new MAC
@@ -705,13 +704,12 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
             # Now update allowed address pairs to CHANGE to a straight-IP format (not subnet)
             port1 = self.api.update_port(port1['id'], {'port':
-                                                           {'allowed_address_pairs': [
-                                                               {"ip_address": "192.168.99.99",
-                                                                "mac_address": "AA:AA:AA:AA:AA:AA"},
-                                                               {"ip_address": "192.168.99.98",
-                                                                "mac_address": "AA:AA:AA:AA:AA:BB"},
-                                                               {"ip_address": "192.168.98.96",
-                                                                "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
+                {'allowed_address_pairs': [{"ip_address": "192.168.99.99",
+                                            "mac_address": "AA:AA:AA:AA:AA:AA"},
+                                           {"ip_address": "192.168.99.98",
+                                            "mac_address": "AA:AA:AA:AA:AA:BB"},
+                                           {"ip_address": "192.168.98.96",
+                                            "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
             self.LOG.debug('Updated port1: ' + str(port1))
 
             # Send to old specific IP with old mac
@@ -734,13 +732,12 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
             # Now update allowed address pairs to CHANGE one of the IP's mac addresses
             port1 = self.api.update_port(port1['id'], {'port':
-                                                           {'allowed_address_pairs': [
-                                                               {"ip_address": "192.168.99.99",
-                                                                "mac_address": "AA:AA:AA:AA:AA:AA"},
-                                                               {"ip_address": "192.168.99.98",
-                                                                "mac_address": "AA:AA:AA:AA:AA:99"},
-                                                               {"ip_address": "192.168.98.96",
-                                                                "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
+                {'allowed_address_pairs': [{"ip_address": "192.168.99.99",
+                                            "mac_address": "AA:AA:AA:AA:AA:AA"},
+                                           {"ip_address": "192.168.99.98",
+                                            "mac_address": "AA:AA:AA:AA:AA:99"},
+                                           {"ip_address": "192.168.98.96",
+                                            "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
             self.LOG.debug('Updated port1: ' + str(port1))
 
             # Send to IP2 and new mac2
@@ -754,11 +751,10 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
             # Next update the allowed address pairs to REMOVE an entry
             port1 = self.api.update_port(port1['id'], {'port':
-                                                           {'allowed_address_pairs': [
-                                                               {"ip_address": "192.168.99.99",
-                                                                "mac_address": "AA:AA:AA:AA:AA:AA"},
-                                                               {"ip_address": "192.168.98.96",
-                                                                "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
+                {'allowed_address_pairs': [{"ip_address": "192.168.99.99",
+                                            "mac_address": "AA:AA:AA:AA:AA:AA"},
+                                           {"ip_address": "192.168.98.96",
+                                            "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
             self.LOG.debug('Updated port1: ' + str(port1))
 
             # Send to IP2 and mac2
@@ -775,8 +771,8 @@ class TestAllowedAddressPairs(NeutronTestCase):
                                         should_fail=True)
 
             # Last, CLEAR all entries
-            port1 = self.api.update_port(port1['id'], {'port':
-                                                           {'allowed_address_pairs': []}})['port']
+            port1 = self.api.update_port(port1['id'],
+                                         {'port': {'allowed_address_pairs': []}})['port']
             self.LOG.debug('Updated port1: ' + str(port1))
 
             # Default IP/MAC should still work

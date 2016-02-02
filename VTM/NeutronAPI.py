@@ -169,11 +169,11 @@ def clean_neutron(api, log=None):
     log.debug('Clearing neutron database')
     cli = LinuxCLI(log_cmd=True)
     cmdout = cli.cmd(r"neutron-db-manage current 2>&1 | grep '(.*)' | "
-                                 r"awk '{ print $2 }' | sed 's/(\(.*\))/\1/g'")
+                     r"awk '{ print $2 }' | sed 's/(\(.*\))/\1/g'")
     log.debug('neutron-db-manage-current out: ' + cmdout.stdout + '/' + cmdout.stderr)
     current_neutron_db = cmdout.stdout.strip().split()[0]
     cmdout = cli.cmd(r"midonet-db-manage current 2>&1 | grep '(.*)' | "
-                                 r"awk '{ print $2 }' | sed 's/(\(.*\))/\1/g'")
+                     r"awk '{ print $2 }' | sed 's/(\(.*\))/\1/g'")
     log.debug('midoent-db-manage-current out: ' + cmdout.stdout + '/' + cmdout.stderr)
     current_midonet_db = cmdout.stdout.strip()
     cli.cmd('mysql -u root --password=cat neutron -e "DROP DATABASE neutron"')

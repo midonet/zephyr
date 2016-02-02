@@ -170,8 +170,8 @@ class LinuxCLI(object):
         :param stderr: int File descriptor for std in (PIPE by default)
         :return CommandStatus:
         """
-        cmd = ('timeout ' + str(timeout) + ' ' if timeout is not None else '') + \
-              self.priv_prefix() + self.cmd_prefix() + cmd_line
+        cmd = (('timeout ' + str(timeout) + ' ' if timeout is not None else '')
+               + self.priv_prefix() + self.cmd_prefix() + cmd_line)
 
         if self.log_cmd is True:
             if self.logger is not None:

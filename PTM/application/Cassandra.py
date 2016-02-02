@@ -61,7 +61,7 @@ class Cassandra(Application):
         self.configurator.configure(self.num_id, self.cassandra_ips, self.init_token, self.ip)
         log_dir = '/var/log/cassandra.' + self.num_id
         log_manager.add_external_log_file(FileLocation(log_dir + '/system.log'), self.num_id,
-                                               '%Y-%m-%d %H:%M:%S,%f', 2)
+                                          '%Y-%m-%d %H:%M:%S,%f', 2)
 
     def print_config(self, indent=0):
         super(Cassandra, self).print_config(indent)

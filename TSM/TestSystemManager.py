@@ -364,12 +364,12 @@ class TestSystemManager(object):
 
             result.start_time = datetime.datetime.utcnow()
             self.LOG.debug('Starting suite [' + suite_name + '] at timestamp[' +
-                               str(result.start_time) + ']')
+                           str(result.start_time) + ']')
             if self.test_system == 'unittest':
                 running_suite.run(result, debug=self.test_debug)
             result.stop_time = datetime.datetime.utcnow()
             self.LOG.debug('Finished suite [' + suite_name + '] at timestamp[' +
-                               str(result.stop_time) + ']')
+                           str(result.stop_time) + ']')
             result.run_time = (result.stop_time - result.start_time)
         finally:
             self.LOG.debug('Stopping topology from config file: ' + topology)

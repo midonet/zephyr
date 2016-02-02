@@ -67,15 +67,15 @@ class MidonetAPI(Application):
         if self.use_cluster:
             log_dir = '/var/log/midonet-cluster'
             log_manager.add_external_log_file(FileLocation(log_dir + '/midonet-cluster.log'), '',
-                                                       '%b %d, %Y %I:%M:%S %p')
+                                              '%b %d, %Y %I:%M:%S %p')
             LinuxCLI().replace_text_in_file('/etc/midonet-cluster/logback.xml',
                                             'root level="INFO"', 'root level="DEBUG"')
         else:
             log_dir = '/var/log/tomcat7'
             log_manager.add_external_log_file(FileLocation(log_dir + '/catalina.out'), '',
-                                                       '%b %d, %Y %I:%M:%S %p')
+                                              '%b %d, %Y %I:%M:%S %p')
             log_manager.add_external_log_file(FileLocation(log_dir + '/midonet-api.log'), '',
-                                                       '%Y.%m.%d %H:%M:%S.%f')
+                                              '%Y.%m.%d %H:%M:%S.%f')
 
     def print_config(self, indent=0):
         super(MidonetAPI, self).print_config(indent)

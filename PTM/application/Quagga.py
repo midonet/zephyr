@@ -41,9 +41,9 @@ class Quagga(Application):
         self.configurator.configure(self.num_id)
         log_dir = '/var/log/quagga.' + self.num_id
         log_manager.add_external_log_file(FileLocation(log_dir + '/bgpd.log'), self.num_id,
-                                                   '%Y/%m/%d %H:%M:%S')
+                                          '%Y/%m/%d %H:%M:%S')
         log_manager.add_external_log_file(FileLocation(log_dir + '/zebra.log'), self.num_id,
-                                                   '%Y/%m/%d %H:%M:%S')
+                                          '%Y/%m/%d %H:%M:%S')
 
     def create_cfg_map(self):
         return {'num_id': self.num_id}

@@ -50,8 +50,8 @@ class MNAPITest(unittest.TestCase):
             """ :type: MidonetApi"""
 
             logger = cls.ptm.log_manager.add_tee_logger('MNAPITest', 'mnapi-test-logger',
-                                                         file_log_level=logging.DEBUG,
-                                                         stdout_log_level=logging.DEBUG)
+                                                        file_log_level=logging.DEBUG,
+                                                        stdout_log_level=logging.DEBUG)
 
             tunnel_zone_host_map = {}
             for host_name, host in cls.ptm.impl_.hosts_by_name.iteritems():

@@ -117,7 +117,7 @@ class TCPSender(object):
             cmd_str = ','.join((source_port_str, dest_port_str))
         else:
             cmd_str = ', '.join('%s=%s' % (k, v)
-                                 for k, v in packet_options.iteritems()) if packet_options is not None else ''
+                                for k, v in packet_options.iteritems()) if packet_options is not None else ''
 
         full_cmd_str = 'mz %(iface)s %(arglist)s %(extra_args)s %(pkttype)s "%(cmd)s"' % \
                        {'iface': interface,
