@@ -185,12 +185,20 @@ try:
             print '========================================'
             print 'Suite [' + suite + ']'
             print 'Passed [{0}/{1}]'.format(len(result.successes), result.testsRun)
+            print 'Expected Failures [{0}/{1}]'.format(len(result.expectedFailures), result.testsRun)
             print 'Failed [{0}/{1}]'.format(len(result.failures), result.testsRun)
             print 'Error [{0}/{1}]'.format(len(result.errors), result.testsRun)
             print ''
             for tc, err in result.failures:
                 print '------------------------------'
                 print 'Test Case FAILED: [' + tc._get_name() + ']'
+                print 'Failure Message:'
+                print err
+
+            for tc, err in result.expectedFailures:
+                print '------------------------------'
+                print 'Test Case passed with EXPECTED FAILURE: [' + tc._get_name() + \
+                      '], see issue [' + tc.expected_failure_issue_id + ']'
                 print 'Failure Message:'
                 print err
 

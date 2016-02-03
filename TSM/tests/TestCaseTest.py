@@ -14,7 +14,7 @@
 
 import unittest
 import operator
-from TSM.TestCase import TestCase, require_topology_feature
+from TSM.TestCase import TestCase, require_topology_feature, expected_failure
 from PTM.impl.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 
@@ -30,6 +30,13 @@ class SampleTestCase(TestCase):
 
     def test_a_failure(self):
         self.assertFalse(True)
+
+    @expected_failure('FOO')
+    def test_expected_failure(self):
+        self.assertFalse(True)
+
+    def test_expected_failure_func(self):
+        self.ef_assertFalse('BAR', True)
 
 
 class SampleTopoFeatureTestCase(TestCase):
@@ -93,6 +100,27 @@ class TestCaseTest(unittest.TestCase):
         tc.run(tr)
         self.assertEquals(0, len(tr.errors))
         self.assertEquals(1, len(tr.failures))
+
+    def test_expected_failures(self):
+        tc = SampleTestCase('test_expected_failure')
+        tc._prepare_class(None, None, None)
+        tr = unittest.TestResult()
+        tc.run(tr)
+        self.assertEquals(0, len(tr.errors))
+        self.assertEquals(0, len(tr.failures))
+        self.assertEquals(1, len(tr.expectedFailures))
+        res_tc, err = tr.expectedFailures[0]
+        self.assertEquals('FOO', res_tc.expected_failure_issue_id)
+
+        tc = SampleTestCase('test_expected_failure_func')
+        tc._prepare_class(None, None, None)
+        tr2 = unittest.TestResult()
+        tc.run(tr2)
+        self.assertEquals(0, len(tr2.errors))
+        self.assertEquals(0, len(tr2.failures))
+        self.assertEquals(1, len(tr2.expectedFailures))
+        res_tc2, err = tr2.expectedFailures[0]
+        self.assertEquals('BAR', res_tc2.expected_failure_issue_id)
 
     def test_required_topology_feature(self):
 
