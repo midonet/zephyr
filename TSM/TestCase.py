@@ -49,10 +49,12 @@ class TestCase(unittest.TestCase):
         class_name = fqn.split('.')[-1]
         module_name = '.'.join(fqn.split('.')[0:-1])
 
-        module = importlib.import_module(module_name if module_name != '' else class_name)
+        module = importlib.import_module(module_name
+                                         if module_name != '' else class_name)
         impl_class = getattr(module, class_name)
         if not issubclass(impl_class, TestCase):
-            raise ArgMismatchException('Class: ' + fqn + ' is not a subclass of TSM.TestCase')
+            raise ArgMismatchException('Class: ' + fqn +
+                                       ' is not a subclass of TSM.TestCase')
         return impl_class
 
     @classmethod
@@ -78,48 +80,63 @@ class TestCase(unittest.TestCase):
         """ :type: datetime.datetime"""
         self.run_time = None
         """ :type: datetime.timedelta"""
-        self.expected_failure_issue_id = None
-        """ :type: str"""
+        self.expected_failure_issue_ids = []
+        """ :type: list[str]"""
+        self.current_result = None
+        """ :type: unittest.TestResult"""
 
     def run(self, result=None):
         self.start_time = datetime.datetime.utcnow()
-        self.LOG.info('==========================================================================')
-        self.LOG.info('Running test case: ' + self._get_name() + ' - ' + self._testMethodName)
-        self.LOG.info('--------------------------------------------------------------------------')
+        self.LOG.info('==================================================='
+                      '=======================')
+        self.LOG.info('Running test case: ' + self._get_name() + ' - ' +
+                      self._testMethodName)
+        self.LOG.info('---------------------------------------------------'
+                      '-----------------------')
         try:
+            self.current_result = result
             super(TestCase, self).run(result)
-            self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
+            self.LOG.info('Test case finished: ' + self._get_name() + ' - ' +
+                          self._testMethodName)
         except Exception as e:
             self.LOG.fatal('Test case exception: ' + self._get_name() + ' - ' +
                            self._testMethodName + ": " + str(e))
             raise e
         except AssertionError as e:
-            self.LOG.fatal('Test case assertion error: ' + self._get_name() + ' - ' +
+            self.LOG.fatal('Test case assertion error: ' +
+                           self._get_name() + ' - ' +
                            self._testMethodName + ": " + str(e))
             raise e
         finally:
-            self.LOG.info('--------------------------------------------------------------------------')
+            self.LOG.info('-----------------------------------------------'
+                          '---------------------------')
             self.stop_time = datetime.datetime.utcnow()
             self.run_time = (self.stop_time - self.start_time)
 
     def debug(self):
         self.start_time = datetime.datetime.utcnow()
-        self.LOG.info('==========================================================================')
-        self.LOG.info('Running test case: ' + self._get_name() + ' - ' + self._testMethodName)
-        self.LOG.info('--------------------------------------------------------------------------')
+        self.LOG.info('==================================================='
+                      '=======================')
+        self.LOG.info('Running test case: ' + self._get_name() + ' - ' +
+                      self._testMethodName)
+        self.LOG.info('---------------------------------------------------'
+                      '-----------------------')
         try:
             super(TestCase, self).debug()
-            self.LOG.info('Test case finished: ' + self._get_name() + ' - ' + self._testMethodName)
+            self.LOG.info('Test case finished: ' + self._get_name() + ' - ' +
+                          self._testMethodName)
         except Exception as e:
             self.LOG.fatal('Test case exception: ' + self._get_name() + ' - ' +
                            self._testMethodName + ": " + str(e))
             raise e
         except AssertionError as e:
-            self.LOG.fatal('Test case assertion error: ' + self._get_name() + ' - ' +
+            self.LOG.fatal('Test case assertion error: ' +
+                           self._get_name() + ' - ' +
                            self._testMethodName + ": " + str(e))
             raise e
         finally:
-            self.LOG.info('--------------------------------------------------------------------------')
+            self.LOG.info('-----------------------------------------------'
+                          '---------------------------')
             self.stop_time = datetime.datetime.utcnow()
             self.run_time = (self.stop_time - self.start_time)
 
@@ -130,49 +147,78 @@ class TestCase(unittest.TestCase):
     def runTest(self):
         pass
 
-    def throw_expected_failure(self, issue_id):
-        self.expected_failure_issue_id = issue_id
-        raise unittest.case._ExpectedFailure(sys.exc_info())
+    def add_expected_failure(self, issue_id, stop_on_fail=False):
+        """
+        Add an expected failure to the TestResult and also add the
+        issue_id to the expected_failure_issue list so we can keep
+        track.
+        """
+        self.expected_failure_issue_ids.append(issue_id)
 
-    def ef_assertTrue(self, issue_id, condition, msg=None):
+        if stop_on_fail:
+            raise unittest.case._ExpectedFailure(sys.exc_info())
+
+        add_expected_failure = getattr(self._resultForDoCleanups,
+                                     'addExpectedFailure', None)
+        if add_expected_failure is not None:
+            add_expected_failure(self, sys.exc_info())
+
+    def ef_assertTrue(self, issue_id, condition, msg=None, stop_on_fail=False):
         try:
             self.assertTrue(condition, msg)
-            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError:
-            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
-            self.throw_expected_failure(issue_id)
+            self.LOG.info('Expected failure (see issue: ' +
+                          str(issue_id) + ')')
+            self.add_expected_failure(issue_id, stop_on_fail)
+        else:
+            self.fail('Expected failure passed (see issue: ' +
+                      str(issue_id) + ')')
 
-    def ef_assertFalse(self, issue_id, condition, msg=None):
+    def ef_assertFalse(self, issue_id, condition, msg=None, stop_on_fail=False):
         try:
             self.assertFalse(condition, msg)
-            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError:
-            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
-            self.throw_expected_failure(issue_id)
+            self.LOG.info('Expected failure (see issue: ' +
+                          str(issue_id) + ')')
+            self.add_expected_failure(issue_id, stop_on_fail)
+        else:
+            self.fail('Expected failure passed (see issue: ' +
+                      str(issue_id) + ')')
 
-    def ef_assertEqual(self, issue_id, a, b, msg=None):
+    def ef_assertEqual(self, issue_id, a, b, msg=None, stop_on_fail=False):
         try:
             self.assertEqual(a, b, msg)
-            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError:
-            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
-            self.throw_expected_failure(issue_id)
+            self.LOG.info('Expected failure (see issue: ' +
+                          str(issue_id) + ')')
+            self.add_expected_failure(issue_id, stop_on_fail)
+        else:
+            self.fail('Expected failure passed (see issue: ' +
+                      str(issue_id) + ')')
 
-    def ef_assertIsNotNone(self, issue_id, condition, msg=None):
+    def ef_assertIsNotNone(self, issue_id, condition, msg=None,
+                           stop_on_fail=False):
         try:
             self.assertIsNotNone(condition, msg)
-            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError:
-            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
-            self.throw_expected_failure(issue_id)
+            self.LOG.info('Expected failure (see issue: ' +
+                          str(issue_id) + ')')
+            self.add_expected_failure(issue_id, stop_on_fail)
+        else:
+            self.fail('Expected failure passed (see issue: ' +
+                      str(issue_id) + ')')
 
-    def ef_assertRaises(self, issue_id, excClass, callable=None, *args, **kwargs):
+    def ef_assertRaises(self, issue_id, excClass, callable=None,
+                        stop_on_fail=False, *args, **kwargs):
         try:
             self.assertRaises(excClass, callable, *args, **kwargs)
-            self.fail('Expected failure passed (see issue: ' + str(issue_id) + ')')
         except AssertionError as e:
-            self.LOG.info('Expected failure (see issue: ' + str(issue_id) + ')')
-            self.throw_expected_failure(issue_id)
+            self.LOG.info('Expected failure (see issue: ' +
+                          str(issue_id) + ')')
+            self.add_expected_failure(issue_id, stop_on_fail)
+        else:
+            self.fail('Expected failure passed (see issue: ' +
+                      str(issue_id) + ')')
 
 
 class expected_failure(object):
@@ -186,10 +232,14 @@ class expected_failure(object):
             """
             try:
                 f(slf, *args)
-                slf.fail('Expected failure passed (see issue: ' + str(self.issue_id) + ')')
             except:
-                slf.LOG.info('Expected failure (see issue: ' + str(self.issue_id) + ')')
-                slf.throw_expected_failure(self.issue_id)
+                slf.LOG.info('Expected failure (see issue: ' +
+                             str(self.issue_id) + ')')
+                slf.add_expected_failure(self.issue_id, stop_on_fail=True)
+            else:
+                slf.fail('Expected failure passed (see issue: ' +
+                         str(self.issue_id) + ')')
+
         return new_tester
 
 
@@ -206,17 +256,26 @@ class require_topology_feature(object):
             """
             feature_val = slf.ptm.get_topology_feature(self.feature)
 
-            # If feature is set, func not set, value not set: Check for feature existence
-            # If feature is set, func not set, value     set: Check feature == value
-            # If feature is set, func     set, value not set: Check func(feature) == True
-            # If feature is set, func     set, value     set: Check func(feature, value) == True
-            # The latter is useful for operator.* functions like operator.lt and operator.gt
+            # If feature is set, func not set, value not set:
+            # Check for feature existence
+            # If feature is set, func not set, value     set:
+            # Check feature == value
+            # If feature is set, func     set, value not set:
+            # Check func(feature) == True
+            # If feature is set, func     set, value     set:
+            # Check func(feature, value) == True
+            # The latter is useful for operator.* functions like
+            # operator.lt and operator.gt
             if feature_val and \
                     ((self.func is None and self.value is None) or
-                     (self.func is None and self.value is not None and feature_val == self.value) or
-                     (self.func is not None and self.value is None and self.func(feature_val)) or
-                     (self.func is not None and self.value is not None and self.func(feature_val, self.value))):
+                     (self.func is None and self.value is not None and
+                      feature_val == self.value) or
+                     (self.func is not None and self.value is None and
+                      self.func(feature_val)) or
+                     (self.func is not None and self.value is not None and
+                      self.func(feature_val, self.value))):
                 f(slf, *args)
             else:
-                slf.skipTest('Skipping because feature is not supported by the topology')
+                slf.skipTest('Skipping because feature is not supported '
+                             'by the topology')
         return new_tester

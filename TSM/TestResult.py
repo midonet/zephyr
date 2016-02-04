@@ -32,7 +32,6 @@ class TestResult(unittest.TestResult):
         self.stop_time = None
         self.run_time = None
 
-
     def addSuccess(self, test):
         super(TestResult, self).addSuccess(test)
         self.successes.append(test)

@@ -17,6 +17,7 @@ import operator
 from TSM.TestCase import TestCase, require_topology_feature, expected_failure
 from PTM.impl.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from CBT.UnitTestRunner import run_unit_test
 
 
 class SamplePTM(PhysicalTopologyManagerImpl):
@@ -34,9 +35,23 @@ class SampleTestCase(TestCase):
     @expected_failure('FOO')
     def test_expected_failure(self):
         self.assertFalse(True)
+        self.assertFalse(True)
 
     def test_expected_failure_func(self):
         self.ef_assertFalse('BAR', True)
+
+    def test_expected_failure_func_multi(self):
+        self.ef_assertFalse('BAR', True)
+        self.ef_assertFalse('BAZ', True)
+        self.ef_assertFalse('BAMF', True)
+
+    def test_expected_failure_func_with_fail(self):
+        self.ef_assertFalse('BAR', True)
+        self.assertTrue(False)
+
+    def test_expected_failure_func_stop_on_fail(self):
+        self.ef_assertFalse('BAR', True, stop_on_fail=True)
+        self.assertTrue(False)
 
 
 class SampleTopoFeatureTestCase(TestCase):
@@ -87,53 +102,88 @@ class TestCaseTest(unittest.TestCase):
         self.assertEquals('SampleTestCase', tc._get_name())
 
     def test_test_case_run(self):
-        tc = SampleTestCase('test_basic')
-        tc._prepare_class(None, None, None)
+        tc1 = SampleTestCase('test_basic')
+        tc1._prepare_class(None, None, None)
         tr = unittest.TestResult()
-        tc.run(tr)
+        tc1.run(tr)
         self.assertEquals(0, len(tr.errors))
         self.assertEquals(0, len(tr.failures))
 
-        tc = SampleTestCase('test_a_failure')
-        tc._prepare_class(None, None, None)
+        tc2 = SampleTestCase('test_a_failure')
+        tc2._prepare_class(None, None, None)
         tr = unittest.TestResult()
-        tc.run(tr)
+        tc2.run(tr)
         self.assertEquals(0, len(tr.errors))
         self.assertEquals(1, len(tr.failures))
 
     def test_expected_failures(self):
-        tc = SampleTestCase('test_expected_failure')
-        tc._prepare_class(None, None, None)
-        tr = unittest.TestResult()
-        tc.run(tr)
-        self.assertEquals(0, len(tr.errors))
-        self.assertEquals(0, len(tr.failures))
-        self.assertEquals(1, len(tr.expectedFailures))
-        res_tc, err = tr.expectedFailures[0]
-        self.assertEquals('FOO', res_tc.expected_failure_issue_id)
+        tc1 = SampleTestCase('test_expected_failure')
+        tc1._prepare_class(None, None, None)
+        tr1 = unittest.TestResult()
+        tc1.run(tr1)
+        self.assertEquals(0, len(tr1.errors))
+        self.assertEquals(0, len(tr1.failures))
+        self.assertEquals(1, len(tr1.expectedFailures))
+        res_tc, err = tr1.expectedFailures[0]
+        self.assertEquals(1, len(res_tc.expected_failure_issue_ids))
+        self.assertEquals('FOO', res_tc.expected_failure_issue_ids[0])
 
-        tc = SampleTestCase('test_expected_failure_func')
-        tc._prepare_class(None, None, None)
+        tc2 = SampleTestCase('test_expected_failure_func')
+        tc2._prepare_class(None, None, None)
         tr2 = unittest.TestResult()
-        tc.run(tr2)
+        tc2.run(tr2)
         self.assertEquals(0, len(tr2.errors))
         self.assertEquals(0, len(tr2.failures))
         self.assertEquals(1, len(tr2.expectedFailures))
         res_tc2, err = tr2.expectedFailures[0]
-        self.assertEquals('BAR', res_tc2.expected_failure_issue_id)
+        self.assertEquals(1, len(res_tc.expected_failure_issue_ids))
+        self.assertEquals('BAR', res_tc2.expected_failure_issue_ids[0])
+
+        tc3 = SampleTestCase('test_expected_failure_func_multi')
+        tc3._prepare_class(None, None, None)
+        tr3 = unittest.TestResult()
+        tc3.run(tr3)
+        self.assertEquals(0, len(tr3.errors))
+        self.assertEquals(0, len(tr3.failures))
+        self.assertEquals(3, len(tr3.expectedFailures))
+        self.assertEquals(3, len(tc3.expected_failure_issue_ids))
+        self.assertEquals('BAR', tc3.expected_failure_issue_ids[0])
+        self.assertEquals('BAZ', tc3.expected_failure_issue_ids[1])
+        self.assertEquals('BAMF', tc3.expected_failure_issue_ids[2])
+
+        tc4 = SampleTestCase('test_expected_failure_func_with_fail')
+        tc4._prepare_class(None, None, None)
+        tr4 = unittest.TestResult()
+        tc4.run(tr4)
+        self.assertEquals(0, len(tr4.errors))
+        self.assertEquals(1, len(tr4.failures))
+        self.assertEquals(1, len(tr4.expectedFailures))
+        self.assertEquals(1, len(tc4.expected_failure_issue_ids))
+        self.assertEquals('BAR', tc4.expected_failure_issue_ids[0])
+
+        tc4 = SampleTestCase('test_expected_failure_func_stop_on_fail')
+        tc4._prepare_class(None, None, None)
+        tr4 = unittest.TestResult()
+        tc4.run(tr4)
+        self.assertEquals(0, len(tr4.errors))
+        self.assertEquals(0, len(tr4.failures))
+        self.assertEquals(1, len(tr4.expectedFailures))
+        self.assertEquals(1, len(tc4.expected_failure_issue_ids))
+        self.assertEquals('BAR', tc4.expected_failure_issue_ids[0])
 
     def test_required_topology_feature(self):
 
-        test_list = [SampleTopoFeatureTestCase('test_topology_feature_present'),
-                     SampleTopoFeatureTestCase('test_topology_feature_with_bool_value'),
-                     SampleTopoFeatureTestCase('test_topology_feature_with_int_value'),
-                     SampleTopoFeatureTestCase('test_topology_feature_with_func_bool'),
-                     SampleTopoFeatureTestCase('test_topology_feature_with_func_int'),
-                     SampleTopoFeatureTestCase('test_topology_feature_not_present'),
-                     SampleTopoFeatureTestCase('test_topology_feature_not_equal_bool'),
-                     SampleTopoFeatureTestCase('test_topology_feature_not_equal_int'),
-                     SampleTopoFeatureTestCase('test_topology_feature_func_fails_bool'),
-                     SampleTopoFeatureTestCase('test_topology_feature_func_fails_int')]
+        test_list = \
+            [SampleTopoFeatureTestCase('test_topology_feature_present'),
+             SampleTopoFeatureTestCase('test_topology_feature_with_bool_value'),
+             SampleTopoFeatureTestCase('test_topology_feature_with_int_value'),
+             SampleTopoFeatureTestCase('test_topology_feature_with_func_bool'),
+             SampleTopoFeatureTestCase('test_topology_feature_with_func_int'),
+             SampleTopoFeatureTestCase('test_topology_feature_not_present'),
+             SampleTopoFeatureTestCase('test_topology_feature_not_equal_bool'),
+             SampleTopoFeatureTestCase('test_topology_feature_not_equal_int'),
+             SampleTopoFeatureTestCase('test_topology_feature_func_fails_bool'),
+             SampleTopoFeatureTestCase('test_topology_feature_func_fails_int')]
 
         for t in test_list:
             t._prepare_class(PhysicalTopologyManager(SamplePTM()), None, None)
@@ -149,7 +199,4 @@ class TestCaseTest(unittest.TestCase):
         self.assertEquals(5, len(tr.skipped))
 
 
-from CBT.UnitTestRunner import run_unit_test
 run_unit_test(TestCaseTest)
-
-
