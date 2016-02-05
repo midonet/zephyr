@@ -23,7 +23,7 @@ from common.Utils import get_class_from_fqn
 from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
 from common.Utils import terminate_process
 
-from PTM.ptm_constants import HOST_CONTROL_CMD_NAME, PTM_LOG_FILE_NAME
+from PTM.ptm_constants import HOST_CONTROL_CMD_NAME, ZEPHYR_LOG_FILE_NAME
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from PTM.PTMObject import PTMObject
 from PTM.host.VirtualInterface import VirtualInterface
@@ -93,7 +93,7 @@ class Host(PTMObject):
         """
         pass
 
-    def configure_logging(self, debug=False, log_file_name=PTM_LOG_FILE_NAME):
+    def configure_logging(self, debug=False, log_file_name=ZEPHYR_LOG_FILE_NAME):
         self.log_level = logging.DEBUG if debug is True else logging.INFO
         self.debug = debug
         msec = int(datetime.datetime.utcnow().microsecond / 1000)

@@ -17,7 +17,7 @@ import logging
 from common.Exceptions import *
 from common.LogManager import LogManager
 from VTM.Guest import Guest
-from PTM.ptm_constants import PTM_LOG_FILE_NAME
+from PTM.ptm_constants import ZEPHYR_LOG_FILE_NAME
 
 
 class VirtualTopologyManager(object):
@@ -34,7 +34,7 @@ class VirtualTopologyManager(object):
         self.LOG = logging.getLogger('vtm-null-root')
         self.LOG.addHandler(logging.NullHandler())
 
-    def configure_logging(self, log_name='vtm-root', debug=False, log_file_name=PTM_LOG_FILE_NAME):
+    def configure_logging(self, log_name='vtm-root', debug=False, log_file_name=ZEPHYR_LOG_FILE_NAME):
         self.log_level = logging.DEBUG if debug is True else logging.INFO
         self.debug = debug
 

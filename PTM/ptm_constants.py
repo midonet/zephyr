@@ -14,7 +14,7 @@
 
 
 CONTROL_CMD_NAME = 'ptm-ctl.py'
-PTM_LOG_FILE_NAME = 'ptm-output.log'
+ZEPHYR_LOG_FILE_NAME = 'zephyr-output.log'
 HOST_CONTROL_CMD_NAME = 'ptm-host-ctl.py'
 
 APPLICATION_START_TIMEOUT = 45

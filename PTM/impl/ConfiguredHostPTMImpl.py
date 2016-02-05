@@ -20,7 +20,7 @@ from PTM.PhysicalTopologyConfig import PhysicalTopologyConfig
 from common.CLI import *
 from common.IP import IP
 from common.Utils import get_class_from_fqn
-from PTM.ptm_constants import PTM_LOG_FILE_NAME
+from PTM.ptm_constants import ZEPHYR_LOG_FILE_NAME
 from PTM.application.HypervisorService import HypervisorService
 
 
@@ -36,7 +36,7 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
         """ :type: dict[str, list[HypervisorService]]"""
         self.virtual_network_hosts = {}
 
-    def configure_logging(self, log_name='ptm-root', debug=False, log_file_name=PTM_LOG_FILE_NAME):
+    def configure_logging(self, log_name='ptm-root', debug=False, log_file_name=ZEPHYR_LOG_FILE_NAME):
         super(ConfiguredHostPTMImpl, self).configure_logging(log_name, debug, log_file_name)
 
         # Update all loggers for all configured hosts

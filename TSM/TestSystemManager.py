@@ -27,12 +27,12 @@ from common.LogManager import LogManager
 from common.CLI import LinuxCLI
 
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
+from PTM.ptm_constants import ZEPHYR_LOG_FILE_NAME
+
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 
 from TSM.TestCase import TestCase
 from TSM.TestResult import TestResult
-
-TSM_LOG_FILE_NAME = 'tsm-output.log'
 
 DEFAULT_TEST_LOADER = {'unittest': unittest.defaultTestLoader}
 DEFAULT_TEST_SUITE_TYPE = {'unittest': unittest.TestSuite}
@@ -71,7 +71,7 @@ class TestSystemManager(object):
         if self.ptm is None:
             self.ptm = PhysicalTopologyManager()
 
-    def configure_logging(self, log_name='tsm-root', debug=False, log_file_name=TSM_LOG_FILE_NAME):
+    def configure_logging(self, log_name='tsm-root', debug=False, log_file_name=ZEPHYR_LOG_FILE_NAME):
         self.debug = debug
         level = logging.INFO
         if debug is True:
