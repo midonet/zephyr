@@ -424,7 +424,8 @@ class TestFloatingIP(NeutronTestCase):
 
             # Test that VM1 can reach VM2 via FIP
             # Ping
-            self.assertTrue(vm1.ping(target_ip=fip2))
+            self.ef_assertTrue("MI-519", vm1.ping(target_ip=fip2),
+                               stop_on_fail=True)
             self.assertTrue(vm2.ping(target_ip=fip1))
 
             # TCP
