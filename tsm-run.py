@@ -198,7 +198,7 @@ try:
             for tc, err in result.expectedFailures:
                 print '------------------------------'
                 print 'Test Case passed with EXPECTED FAILURE: [' + tc._get_name() + \
-                      '], see issue [' + tc.expected_failure_issue_id + ']'
+                      '], see issue(s) [' + ','.join(tc.expected_failure_issue_ids) + ']'
                 print 'Failure Message:'
                 print err
 
