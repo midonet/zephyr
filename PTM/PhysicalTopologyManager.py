@@ -29,6 +29,7 @@ class PhysicalTopologyManager(object):
         self.root_dir = self.impl_.root_dir if self.impl_ and hasattr(self.impl_, "root_dir") else '.'
         self.fixtures = {}
         """ :type: dict[str, ServiceFixture]"""
+        self.config_file = None
 
     def configure(self, config_file, file_type='json'):
         """
@@ -37,6 +38,7 @@ class PhysicalTopologyManager(object):
         :type file_name: str
         :return:
         """
+        self.config_file = config_file
         if self.impl_:
             self.impl_.configure(config_file, file_type)
 
@@ -50,17 +52,13 @@ class PhysicalTopologyManager(object):
         max_str_size = map(len, header_list)
         if self.impl_:
             #max_str_size = map(max, max_str_size, self.impl_.get_topology_features())
-            for feat, val in self.impl_.get_topology_features().iteritems():
+            for feat, val in self.get_topology_features().iteritems():
                 print_list.append((str(feat), str(val)))
                 max_str_size[0] = len(str(feat)) if len(str(feat)) > max_str_size[0] else max_str_size[0]
                 max_str_size[1] = len(str(val)) if len(str(val)) > max_str_size[1] else max_str_size[1]
         print "Supported features of this PTM:"
-        print '+' + '-' * (max_str_size[0] + 2) + '+' + '-' * (max_str_size[1] + 2) + '+'
-        print '| ' + ' | '.join(header_list) + ' |'
-        print '+' + '-' * (max_str_size[0] + 2) + '+' + '-' * (max_str_size[1] + 2) + '+'
         for feat, val in print_list:
-            print '| ' + ' | '.join((feat, val)) + ' |'
-        print '+' + '-' * (max_str_size[0] + 2) + '+' + '-' * (max_str_size[1] + 2) + '+'
+            print feat + ' = ' + str(val)
 
     def startup(self):
         if self.impl_:
@@ -110,7 +108,10 @@ class PhysicalTopologyManager(object):
         :return: dict[str, any]
         """
         if self.impl_:
-            self.impl_.get_topology_features()
+            ret_map = self.impl_.get_topology_features()
+            """ :type: dict[str,str]"""
+            ret_map.update({'config_file': self.config_file})
+        return ret_map
 
     def get_topology_feature(self, feature):
         """
@@ -121,6 +122,8 @@ class PhysicalTopologyManager(object):
         :type feature: str
         :return: any
         """
+        if feature == 'config_file':
+            return self.config_file
         if self.impl_:
             feat_map = self.impl_.get_topology_features()
             if feature in feat_map:

@@ -235,6 +235,10 @@ class Host(PTMObject):
         for bridge in self.bridges.itervalues():
             bridge.remove()
 
+    def reboot(self):
+        self.shutdown()
+        self.boot()
+
     def net_up(self):
         # Configure and bring up all network 'devices'
         for interface in self.interfaces.itervalues():

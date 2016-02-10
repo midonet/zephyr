@@ -30,6 +30,7 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
     def __init__(self, root_dir='.', log_manager=None, log=None, console=None):
         super(ConfiguredHostPTMImpl, self).__init__(root_dir, log_manager)
         self.hosts_by_name = {}
+        """ :type: dict[str, Host]"""
         self.host_by_start_order = []
         """ :type: list[list[Host]]"""
         self.hypervisors = {}
@@ -398,4 +399,6 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
         self.LOG.debug("ptm-host-ctl finished")
 
     def get_topology_features(self):
-        return {'compute_hosts': len(self.hypervisors)}
+        return {'compute_hosts': len(self.hypervisors),
+                'edge_hosts': len([h for h in self.hosts_by_name.iterkeys() if h.startswith('edge')]),
+                'host_names': [h for h in self.hosts_by_name.iterkeys()]}

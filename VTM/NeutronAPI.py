@@ -25,9 +25,11 @@ BasicTopoData = namedtuple('BasicTopoData', 'main_net pub_net router')
 def create_neutron_client(api_version='2.0', endpoint_url='http://localhost:9696',
                           auth_strategy='noauth', tenant_name='admin', token='cat', **kwargs):
     import neutronclient.neutron.client
-    return neutronclient.neutron.client.Client(api_version, endpoint_url=endpoint_url,
-                                               auth_strategy=auth_strategy,
-                                               token=token, tenant_name=tenant_name, **kwargs)
+    client = neutronclient.neutron.client.Client(api_version, endpoint_url=endpoint_url,
+                                                 auth_strategy=auth_strategy,
+                                                 token=token, tenant_name=tenant_name, **kwargs)
+    """ :type: neutronclient.v2_0.client.Client"""
+    return client
 
 
 def create_neutron_main_pub_networks(api,
@@ -115,7 +117,11 @@ def setup_neutron(api,
     Creates a network named 'main' in the 'admin' tenant and creates a single subnet 'main_sub'
     with the given IP network.
     :type api: neutron_client.Client
-    :type subnet_cidr: str
+    :type main_name: str
+    :type main_subnet_cidr: str
+    :type pub_name: str
+    :type pub_subnet_cidr: str
+    :type tenant_id: str
     :type log: logging.Logger
     :return:
     """
@@ -186,4 +192,12 @@ def clean_neutron(api, log=None):
     log.debug('Restarting neutron')
     cli.cmd("service neutron-server restart")
     LinuxCLI(priv=False).cmd('for i in `ip netns | grep qdhcp`; do sudo ip netns del $i; done')
+
+
+def get_neutron_api_url(api):
+    """
+    :type api: neutronclient.v2_0.client.Client
+    """
+    return api.httpclient.endpoint_url + '/v' + str(api.version)
+
 
