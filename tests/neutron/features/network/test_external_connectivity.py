@@ -50,8 +50,7 @@ class TestExternalConnectivity(NeutronTestCase):
 
             # Test Ping
             self.LOG.info('Pinging from VM1 to external')
-            self.ef_assertTrue("MI-519", vm1.ping(target_ip=ext_ip),
-                               stop_on_fail=True)
+            self.assertTrue(vm1.ping(target_ip=ext_ip))
 
             # Test TCP
             ext_host.start_echo_server(ip=ext_ip)
