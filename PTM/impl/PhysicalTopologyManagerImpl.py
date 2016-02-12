@@ -15,7 +15,7 @@
 import logging
 
 from common.LogManager import LogManager
-from PTM.ptm_constants import PTM_LOG_FILE_NAME
+from PTM.ptm_constants import ZEPHYR_LOG_FILE_NAME
 
 
 class PhysicalTopologyManagerImpl(object):
@@ -36,7 +36,7 @@ class PhysicalTopologyManagerImpl(object):
         self.log_level = logging.INFO
         self.debug = False
 
-    def configure_logging(self, log_name='ptm-root', debug=False, log_file_name=PTM_LOG_FILE_NAME):
+    def configure_logging(self, log_name='ptm-root', debug=False, log_file_name=ZEPHYR_LOG_FILE_NAME):
         self.log_level = logging.DEBUG if debug is True else logging.INFO
         self.debug = debug
 

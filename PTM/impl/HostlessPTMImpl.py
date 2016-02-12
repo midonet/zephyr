@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from PTM.impl.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
-from PTM.ptm_constants import PTM_LOG_FILE_NAME
+from PTM.ptm_constants import ZEPHYR_LOG_FILE_NAME
 
 
 class HostlessPTMImpl(PhysicalTopologyManagerImpl):
@@ -26,7 +26,7 @@ class HostlessPTMImpl(PhysicalTopologyManagerImpl):
     def __init__(self, root_dir='.', log_manager=None, log=None, console=None, log_level=logging.INFO):
         super(HostlessPTMImpl, self).__init__(root_dir, log_manager, log, console, log_level)
 
-    def configure_logging(self, log_name='ptm-root', debug=False, log_file_name=PTM_LOG_FILE_NAME):
+    def configure_logging(self, log_name='ptm-root', debug=False, log_file_name=ZEPHYR_LOG_FILE_NAME):
         super(HostlessPTMImpl, self).configure_logging(log_name, debug, log_file_name)
 
     def configure(self, config_file, file_type='json'):

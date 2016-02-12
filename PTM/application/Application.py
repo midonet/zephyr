@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from common.CLI import LinuxCLI
-from PTM.ptm_constants import PTM_LOG_FILE_NAME
+from PTM.ptm_constants import ZEPHYR_LOG_FILE_NAME
 import logging
 import datetime
 
@@ -46,7 +46,7 @@ class Application(object):
     def configure(self, host_cfg, app_config):
         pass
 
-    def configure_logging(self, debug=False, log_file_name=PTM_LOG_FILE_NAME):
+    def configure_logging(self, debug=False, log_file_name=ZEPHYR_LOG_FILE_NAME):
         self.log_level = logging.DEBUG if debug is True else logging.INFO
         self.debug = debug
         msec = int(datetime.datetime.utcnow().microsecond / 1000)
