@@ -70,6 +70,22 @@ def curl_post(url, json_data=None, filename=None):
     return body
 
 
+def curl_put(url, json_data=None, filename=None):
+    buffer = StringIO()
+    c = pycurl.Curl()
+    c.setopt(c.URL, url)
+    c.setopt(c.WRITEDATA, buffer)
+    c.setopt(pycurl.CUSTOMREQUEST, "PUT")
+    if json_data:
+        c.setopt(c.POSTFIELDS, json.dumps(json_data))
+    if filename:
+        c.setopt(c.HTTPPOST, [('fileupload', (c.FORM_FILE, file))])
+    c.perform()
+    c.close()
+    body = buffer.getvalue()
+    return body
+
+
 def curl_delete(url):
     buffer = StringIO()
     c = pycurl.Curl()
