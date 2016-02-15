@@ -179,6 +179,10 @@ class L2GWNeutronTestCase(NeutronTestCase):
         rmac = json.loads(rmac_json_far_ret)
         return rmac['remote_mac_entry']
 
+    def delete_l2_gw_conn(self, l2gwconn_id):
+        curl_url = get_neutron_api_url(self.api)
+        curl_delete(curl_url + "/l2-gateway-connections/" + l2gwconn_id)
+
     def setup_peer_l2gw(self, tun_cidr, tun_ip, tun_gw, tun_host, tun_iface,
                         az_cidr, az_gw, segment_id, peer_router, peer_name):
 
