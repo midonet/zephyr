@@ -47,23 +47,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         west_l2gw_topo = None
 
         peered_topo = None
-        east_side_l2gw_data = L2GWSiteData(
-                tunnel_cidr="1.1.1.0/24",
-                tunnel_ip="1.1.1.2",
-                tunnel_gw="1.1.1.3",
-                tunnel_uplink_host="tun2",
-                tunnel_uplink_iface="eth1",
-                az_cidr="192.168.200.0/24",
-                az_gw="192.168.200.2")
-
-        west_side_l2gw_data = L2GWSiteData(
-                tunnel_cidr="2.2.2.0/24",
-                tunnel_ip="2.2.2.2",
-                tunnel_gw="2.2.2.3",
-                tunnel_uplink_host="tun1",
-                tunnel_uplink_iface="eth1",
-                az_cidr="192.168.200.0/24",
-                az_gw="192.168.200.3")
 
         segment_id = '100'
 
@@ -122,17 +105,19 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             self.assertFalse(vm2.ping(target_ip=ip1))
 
             # Peer the routers!
-            east_l2gw_topo = self.setup_peer_l2gw(
-                    l2gw_site_data=east_side_l2gw_data,
-                    segment_id=segment_id,
-                    peer_router=east_topo.router.router,
-                    peer_name='East')
+            east_l2gw_topo = self.setup_peer_l2gw("1.1.1.0/24", "1.1.1.2",
+                                                  "1.1.1.3", "tun2", "eth1",
+                                                  "192.168.200.0/24",
+                                                  "192.168.200.2", segment_id,
+                                                  east_topo.router.router,
+                                                  "EAST")
             self.assertIsNotNone(east_l2gw_topo)
-            west_l2gw_topo = self.setup_peer_l2gw(
-                    l2gw_site_data=west_side_l2gw_data,
-                    segment_id=segment_id,
-                    peer_router=west_topo.router.router,
-                    peer_name='West')
+            west_l2gw_topo = self.setup_peer_l2gw("2.2.2.0/24", "2.2.2.2",
+                                                  "2.2.2.3", "tun1", "eth1",
+                                                  "192.168.200.0/24",
+                                                  "192.168.200.3", segment_id,
+                                                  west_topo.router.router,
+                                                  "WEST")
             self.assertIsNotNone(west_l2gw_topo)
 
             peered_topo = self.peer_sites(
@@ -177,7 +162,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
                               'admin_state_up': True,
                               'fixed_ips': [{
                                   'subnet_id': east_l2gw_topo.az.subnet['id'],
-                                  'ip_address': east_side_l2gw_data.az_gw}],
+                                  'ip_address': "192.168.200.2"}],
                               'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created replacement port for peer router '
                            'on AZ East network: ' +
@@ -300,21 +285,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         west_l2gw_topo = None
 
         peered_topo = None
-        east_side_l2gw_data = L2GWSiteData(tunnel_cidr="1.1.1.0/24",
-                                           tunnel_ip="1.1.1.2",
-                                           tunnel_gw="1.1.1.3",
-                                           tunnel_uplink_host="tun2",
-                                           tunnel_uplink_iface="eth1",
-                                           az_cidr="192.168.200.0/24",
-                                           az_gw="192.168.200.2")
-
-        west_side_l2gw_data = L2GWSiteData(tunnel_cidr="2.2.2.0/24",
-                                           tunnel_ip="2.2.2.2",
-                                           tunnel_gw="2.2.2.3",
-                                           tunnel_uplink_host="tun1",
-                                           tunnel_uplink_iface="eth1",
-                                           az_cidr="192.168.200.0/24",
-                                           az_gw="192.168.200.3")
 
         segment_id = '100'
 
@@ -372,17 +342,19 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             self.assertFalse(vm2.ping(target_ip=ip1))
 
             # Peer the routers!
-            east_l2gw_topo = self.setup_peer_l2gw(
-                    l2gw_site_data=east_side_l2gw_data,
-                    segment_id=segment_id,
-                    peer_router=east_topo.router.router,
-                    peer_name='East')
+            east_l2gw_topo = self.setup_peer_l2gw("1.1.1.0/24", "1.1.1.2",
+                                                  "1.1.1.3", "tun2", "eth1",
+                                                  "192.168.200.0/24",
+                                                  "192.168.200.2", segment_id,
+                                                  east_topo.router.router,
+                                                  "EAST")
             self.assertIsNotNone(east_l2gw_topo)
-            west_l2gw_topo = self.setup_peer_l2gw(
-                    l2gw_site_data=west_side_l2gw_data,
-                    segment_id=segment_id,
-                    peer_router=west_topo.router.router,
-                    peer_name='West')
+            west_l2gw_topo = self.setup_peer_l2gw("2.2.2.0/24", "2.2.2.2",
+                                                  "2.2.2.3", "tun1", "eth1",
+                                                  "192.168.200.0/24",
+                                                  "192.168.200.3", segment_id,
+                                                  west_topo.router.router,
+                                                  "WEST")
             self.assertIsNotNone(west_l2gw_topo)
 
             peered_topo = self.peer_sites(
@@ -480,23 +452,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         west_l2gw_topo = None
 
         peered_topo = None
-        east_side_l2gw_data = L2GWSiteData(
-                tunnel_cidr="1.1.1.0/24",
-                tunnel_ip="1.1.1.2",
-                tunnel_gw="1.1.1.3",
-                tunnel_uplink_host="tun2",
-                tunnel_uplink_iface="eth1",
-                az_cidr="192.168.200.0/24",
-                az_gw="192.168.200.2")
-
-        west_side_l2gw_data = L2GWSiteData(
-                tunnel_cidr="2.2.2.0/24",
-                tunnel_ip="2.2.2.2",
-                tunnel_gw="2.2.2.3",
-                tunnel_uplink_host="tun1",
-                tunnel_uplink_iface="eth1",
-                az_cidr="192.168.200.0/24",
-                az_gw="192.168.200.3")
 
         segment_id = '100'
 
@@ -550,17 +505,19 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'])
 
             # Peer the routers!
-            east_l2gw_topo = self.setup_peer_l2gw(
-                    l2gw_site_data=east_side_l2gw_data,
-                    segment_id=segment_id,
-                    peer_router=east_topo.router.router,
-                    peer_name='East')
+            east_l2gw_topo = self.setup_peer_l2gw("1.1.1.0/24", "1.1.1.2",
+                                                  "1.1.1.3", "tun2", "eth1",
+                                                  "192.168.200.0/24",
+                                                  "192.168.200.2", segment_id,
+                                                  east_topo.router.router,
+                                                  "EAST")
             self.assertIsNotNone(east_l2gw_topo)
-            west_l2gw_topo = self.setup_peer_l2gw(
-                    l2gw_site_data=west_side_l2gw_data,
-                    segment_id=segment_id,
-                    peer_router=west_topo.router.router,
-                    peer_name='West')
+            west_l2gw_topo = self.setup_peer_l2gw("2.2.2.0/24", "2.2.2.2",
+                                                  "2.2.2.3", "tun1", "eth1",
+                                                  "192.168.200.0/24",
+                                                  "192.168.200.3", segment_id,
+                                                  west_topo.router.router,
+                                                  "WEST")
             self.assertIsNotNone(west_l2gw_topo)
 
             peered_topo = self.peer_sites(
@@ -687,23 +644,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         west_l2gw_topo = None
 
         peered_topo = None
-        east_side_l2gw_data = L2GWSiteData(
-                tunnel_cidr="1.1.1.0/24",
-                tunnel_ip="1.1.1.2",
-                tunnel_gw="1.1.1.3",
-                tunnel_uplink_host="tun2",
-                tunnel_uplink_iface="eth1",
-                az_cidr="192.168.200.0/24",
-                az_gw="192.168.200.2")
-
-        west_side_l2gw_data = L2GWSiteData(
-                tunnel_cidr="2.2.2.0/24",
-                tunnel_ip="2.2.2.2",
-                tunnel_gw="2.2.2.3",
-                tunnel_uplink_host="tun1",
-                tunnel_uplink_iface="eth1",
-                az_cidr="192.168.200.0/24",
-                az_gw="192.168.200.3")
 
         segment_id = '100'
 
@@ -757,17 +697,19 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             vm2.plugin_vm('eth0', port2['id'])
 
             # Peer the routers!
-            east_l2gw_topo = self.setup_peer_l2gw(
-                    l2gw_site_data=east_side_l2gw_data,
-                    segment_id=segment_id,
-                    peer_router=east_topo.router.router,
-                    peer_name='East')
+            east_l2gw_topo = self.setup_peer_l2gw("1.1.1.0/24", "1.1.1.2",
+                                                  "1.1.1.3", "tun2", "eth1",
+                                                  "192.168.200.0/24",
+                                                  "192.168.200.2", segment_id,
+                                                  east_topo.router.router,
+                                                  "EAST")
             self.assertIsNotNone(east_l2gw_topo)
-            west_l2gw_topo = self.setup_peer_l2gw(
-                    l2gw_site_data=west_side_l2gw_data,
-                    segment_id=segment_id,
-                    peer_router=west_topo.router.router,
-                    peer_name='West')
+            west_l2gw_topo = self.setup_peer_l2gw("2.2.2.0/24", "2.2.2.2",
+                                                  "2.2.2.3", "tun1", "eth1",
+                                                  "192.168.200.0/24",
+                                                  "192.168.200.3", segment_id,
+                                                  west_topo.router.router,
+                                                  "WEST")
             self.assertIsNotNone(west_l2gw_topo)
 
             peered_topo = self.peer_sites(
