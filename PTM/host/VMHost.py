@@ -67,4 +67,3 @@ class VMHost(IPNetNSHost):
 
     def unplug_iface(self, port_id):
         self.hypervisor_app.disconnect_port(port_id)
-

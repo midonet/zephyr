@@ -25,4 +25,3 @@ class IPNetNSHost(Host):
         :type cli: LinuxCLI
         """
         super(IPNetNSHost, self).__init__(name, ptm, NetNSCLI(name), CREATENSCMD, REMOVENSCMD)
-

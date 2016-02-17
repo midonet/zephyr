@@ -158,4 +158,3 @@ class CassandraFileConfiguration(FileConfigurationHandler):
         self.cli.unmount('/var/lib/cassandra')
         self.cli.unmount('/var/log/cassandra')
         self.cli.unmount('/etc/cassandra')
-

@@ -575,4 +575,3 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             if g_pinger:
                 self.cleanup_vms([(g_pinger.vm, g_pinger.port)])
             clear_lbaas_data(self, lbn_data)
-

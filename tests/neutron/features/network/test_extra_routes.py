@@ -549,4 +549,3 @@ class TestExtraRoutes(NeutronTestCase):
                 self.api.delete_router(router1extra['id'])
             self.cleanup_vms([(vm1, None), (vm2, None)])
             self.clear_neutron_topo(td)
-

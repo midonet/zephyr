@@ -335,4 +335,3 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
             delete_neutron_main_pub_networks(self.api, west_left_topo)
             delete_neutron_main_pub_networks(self.api, east_right_topo)
             delete_neutron_main_pub_networks(self.api, west_right_topo)
-

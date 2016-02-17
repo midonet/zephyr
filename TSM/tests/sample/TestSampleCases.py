@@ -32,4 +32,3 @@ class SampleOtherTestCase(TestCase):
     def test_a_failure(self):
         self.assertFalse(True)
         pass
-

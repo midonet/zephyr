@@ -96,4 +96,3 @@ def curl_delete(url):
     c.close()
     body = buffer.getvalue()
     return body
-

@@ -97,4 +97,3 @@ class Application(object):
 
     def cleanup_environment(self):
         pass
-

@@ -315,4 +315,3 @@ def check_host_replies_against_rr_baseline(tc, member_list, host_replies,
         fail_str = "Failed packet check" + (" for [" + identifier + "]" if identifier else "")
         fail_str += " because:\n* " + "\n* ".join(failure_conditions)
         tc.fail(fail_str)
-

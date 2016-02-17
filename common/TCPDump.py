@@ -354,4 +354,3 @@ class TCPDump(object):
 
         # FLAG STATE: ready[set], stop[set], finished[set]
         return packet_queue
-

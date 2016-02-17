@@ -65,5 +65,3 @@ class NeutronTestCaseTest(unittest.TestCase):
 
 from CBT.UnitTestRunner import run_unit_test
 run_unit_test(NeutronTestCaseTest)
-
-

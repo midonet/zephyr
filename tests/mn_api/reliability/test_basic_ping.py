@@ -77,5 +77,3 @@ class TestBasicPing(MidonetTestCase):
         finally:
             vm1.terminate()
             vm2.terminate()
-
-

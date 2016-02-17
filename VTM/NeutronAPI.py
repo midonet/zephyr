@@ -199,5 +199,3 @@ def get_neutron_api_url(api):
     :type api: neutronclient.v2_0.client.Client
     """
     return api.httpclient.endpoint_url + '/v' + str(api.version)
-
-

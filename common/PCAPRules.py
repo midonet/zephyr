@@ -320,5 +320,3 @@ class PCAP_Broadcast(_PCAP_PrimitiveCast):
         :param proto: str Either 'ip' or 'ether' (default)
         """
         super(PCAP_Broadcast, self).__init__('broadcast', proto)
-
-

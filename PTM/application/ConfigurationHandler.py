@@ -40,4 +40,3 @@ class ProgramConfigurationHandler(ConfigurationHandler):
     def __init__(self):
         super(ProgramConfigurationHandler, self).__init__()
         self.cli = LinuxCLI()
-

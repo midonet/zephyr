@@ -71,5 +71,3 @@ class FileLocation(object):
 
     def full_path(self):
         return self.path + '/' + self.filename
-
-

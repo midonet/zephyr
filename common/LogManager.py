@@ -381,6 +381,3 @@ class LogManager(object):
                     new_handler = logging.FileHandler(filename=file_loc.full_path(), mode='w')
                     l.addHandler(new_handler)
                     logger_list.append((l, new_handler, df, dp))
-
-
-

@@ -82,4 +82,3 @@ def setup_main_bridge(api):
             return br
 
     return api.add_bridge().name('bridge_0').tenant_id('test1').create()
-

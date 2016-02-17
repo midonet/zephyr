@@ -72,4 +72,3 @@ class TestExternalConnectivity(NeutronTestCase):
                 self.api.delete_port(port1['id'])
 
             self.delete_edge_router(edge_data)
-

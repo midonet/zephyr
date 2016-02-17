@@ -189,5 +189,3 @@ class TestSystemManagerTest(unittest.TestCase):
 
 from CBT.UnitTestRunner import run_unit_test
 run_unit_test(TestSystemManagerTest)
-
-

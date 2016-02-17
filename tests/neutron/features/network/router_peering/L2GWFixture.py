@@ -25,8 +25,3 @@ class L2GWFixture(ServiceFixture):
 
     def teardown(self):
         pass
-
-
-
-
-

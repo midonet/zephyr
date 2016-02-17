@@ -264,5 +264,3 @@ except TestException as e:
     print 'Unknown exception: ' + str(e)
     traceback.print_tb(sys.exc_traceback)
     exit(2)
-
-
