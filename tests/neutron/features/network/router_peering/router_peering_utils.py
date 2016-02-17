@@ -14,7 +14,9 @@
 
 from L2GWFixture import L2GWFixture
 
-from common.Utils import curl_post, curl_delete, curl_put
+from common.Utils import curl_delete
+from common.Utils import curl_post
+from common.Utils import curl_put
 from common.Exceptions import *
 from TSM.NeutronTestCase import NeutronTestCase
 from VTM.NeutronAPI import *

@@ -20,7 +20,8 @@ from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from VTM.VirtualTopologyManager import VirtualTopologyManager
 from VTM.NeutronAPI import *
-from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
+from VTM.MNAPI import create_midonet_client
+from VTM.MNAPI import setup_main_tunnel_zone
 from PTM.application.Midolman import Midolman
 
 

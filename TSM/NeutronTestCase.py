@@ -16,7 +16,8 @@ import logging
 from collections import namedtuple
 
 from TSM.TestCase import TestCase
-from VTM.NeutronAPI import RouterData, NetData
+from VTM.NeutronAPI import NetData
+from VTM.NeutronAPI import RouterData
 from PTM.fixtures.MidonetHostSetupFixture import MidonetHostSetupFixture
 from PTM.fixtures.NeutronDatabaseFixture import NeutronDatabaseFixture
 from PTM.host.Host import Host

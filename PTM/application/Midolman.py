@@ -24,10 +24,12 @@ from common.IP import IP
 from common.CLI import LinuxCLI
 from common.FileLocation import *
 
-from PTM.application.ConfigurationHandler import FileConfigurationHandler, ProgramConfigurationHandler
+from PTM.application.ConfigurationHandler import FileConfigurationHandler
+from PTM.application.ConfigurationHandler import ProgramConfigurationHandler
 from PTM.application.Application import Application
 from PTM.host.VMHost import VMHost
-from PTM.PhysicalTopologyConfig import InterfaceDef, HostDef
+from PTM.PhysicalTopologyConfig import HostDef
+from PTM.PhysicalTopologyConfig import InterfaceDef
 from PTM.host.Interface import Interface
 from PTM.host.VirtualInterface import VirtualInterface
 from PTM.application.HypervisorService import HypervisorService

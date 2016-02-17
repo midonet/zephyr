@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.Utils import curl_post, curl_delete
+from common.Utils import curl_delete
+from common.Utils import curl_post
 
 from TSM.NeutronTestCase import require_extension
-from TSM.TestCase import expected_failure, require_topology_feature
+from TSM.TestCase import expected_failure
+from TSM.TestCase import require_topology_feature
 from VTM.NeutronAPI import *
 from VTM.Guest import Guest
 
-from router_peering_utils import L2GWNeutronTestCase, L2GWSiteData
+from router_peering_utils import L2GWNeutronTestCase
+from router_peering_utils import L2GWSiteData
 
 import operator
 

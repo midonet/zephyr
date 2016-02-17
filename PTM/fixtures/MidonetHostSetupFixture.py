@@ -14,7 +14,8 @@
 
 from PTM.fixtures.ServiceFixture import ServiceFixture
 
-from VTM.MNAPI import create_midonet_client, setup_main_tunnel_zone
+from VTM.MNAPI import create_midonet_client
+from VTM.MNAPI import setup_main_tunnel_zone
 from PTM.application.Midolman import Midolman
 
 

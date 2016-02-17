@@ -14,7 +14,9 @@
 
 import time
 
-from TSM.NeutronTestCase import NeutronTestCase, GuestData, require_extension
+from TSM.NeutronTestCase import GuestData
+from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import require_extension
 
 from tests.neutron.features.lbaas.lbaas_test_utils import *
 

@@ -18,7 +18,9 @@ from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from common.CLI import LinuxCLI
 from common.FileLocation import FileLocation
 
-from VTM.NeutronAPI import setup_neutron, clean_neutron, BasicTopoData
+from VTM.NeutronAPI import BasicTopoData
+from VTM.NeutronAPI import clean_neutron
+from VTM.NeutronAPI import setup_neutron
 
 
 class NeutronDatabaseFixture(ServiceFixture):

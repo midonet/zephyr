@@ -23,7 +23,9 @@ import subprocess
 import threading
 import os
 import Queue
-from fcntl import fcntl, F_GETFL, F_SETFL
+from fcntl import F_GETFL
+from fcntl import F_SETFL
+from fcntl import fcntl
 import signal
 
 import time

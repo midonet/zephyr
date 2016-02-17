@@ -17,7 +17,8 @@ __author__ = 'tomoe'
 import time
 
 from common.Exceptions import *
-from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
+from common.EchoServer import DEFAULT_ECHO_PORT
+from common.EchoServer import EchoServer
 
 
 PACKET_CAPTURE_TIMEOUT = 10

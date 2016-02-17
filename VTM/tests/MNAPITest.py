@@ -23,7 +23,9 @@ from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from PTM.application.Midolman import Midolman
 from VTM.VirtualTopologyManager import VirtualTopologyManager
-from VTM.MNAPI import create_midonet_client, setup_main_bridge, setup_main_tunnel_zone
+from VTM.MNAPI import create_midonet_client
+from VTM.MNAPI import setup_main_bridge
+from VTM.MNAPI import setup_main_tunnel_zone
 
 
 class MNAPITest(unittest.TestCase):

@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import NeutronTestCase, require_extension
+from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import require_extension
 from collections import namedtuple
 from common.Exceptions import *
 from common.IP import IP

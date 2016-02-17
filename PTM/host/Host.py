@@ -17,13 +17,16 @@ from common.PCAPRules import *
 from common.PCAPPacket import PCAPPacket
 from common.TCPDump import TCPDump
 from common.IP import IP
-from common.CLI import LinuxCLI, CommandStatus
+from common.CLI import CommandStatus
+from common.CLI import LinuxCLI
 from common.LogManager import LogManager
 from common.Utils import get_class_from_fqn
-from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
+from common.EchoServer import DEFAULT_ECHO_PORT
+from common.EchoServer import EchoServer
 from common.Utils import terminate_process
 
-from PTM.ptm_constants import HOST_CONTROL_CMD_NAME, ZEPHYR_LOG_FILE_NAME
+from PTM.ptm_constants import HOST_CONTROL_CMD_NAME
+from PTM.ptm_constants import ZEPHYR_LOG_FILE_NAME
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from PTM.PTMObject import PTMObject
 from PTM.host.VirtualInterface import VirtualInterface

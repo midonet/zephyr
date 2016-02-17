@@ -14,7 +14,8 @@
 
 import unittest
 
-from TSM.NeutronTestCase import NeutronTestCase, require_extension
+from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import require_extension
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from PTM.fixtures.NeutronDatabaseFixture import NeutronDatabaseFixture
 from VTM.VirtualTopologyManager import VirtualTopologyManager
