@@ -35,7 +35,7 @@ class Guest(object):
         """ :type: set[str]"""
 
     def plugin_vm(self, iface, port):
-        """ Links an interface on this VM to a virtual network port
+        """Links an interface on this VM to a virtual network port
             * bind interface to MidoNet with mm-ctl
             * set iface to the indicated mac address (if provided)
         :type iface: str
@@ -47,7 +47,7 @@ class Guest(object):
         self.open_ports_by_id.add(port)
 
     def unplug_vm(self, port):
-        """ Unlinks a port on this VM from the virtual network
+        """Unlinks a port on this VM from the virtual network
         :type port: str
         """
         self.vm_host.LOG.debug("Unplugging VM port: " + str(port))
