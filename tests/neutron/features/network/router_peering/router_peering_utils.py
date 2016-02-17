@@ -34,6 +34,9 @@ L2GWPeeredTopo = namedtuple("L2GWPeeredTopo", "east west")
 
 
 class L2GWNeutronTestCase(NeutronTestCase):
+
+    rmacs = set()
+
     @classmethod
     def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
         """
@@ -49,11 +52,34 @@ class L2GWNeutronTestCase(NeutronTestCase):
             test_case_logger.debug('Adding l2gw-setup fixture')
             ptm.add_fixture('l2gw-setup', L2GWFixture())
 
-    def delete_remote_mac_entry(self, gwdev_id, rme_id):
+    def create_vm_server(self, net_id, gw_ip):
+        port = self.api.create_port({'port': {'name': 'port_vm1',
+                                              'network_id': net_id,
+                                              'admin_state_up': True,
+                                              'tenant_id': 'admin'}})['port']
+        ip = port['fixed_ips'][0]['ip_address']
+
+        vm = self.vtm.create_vm(ip=ip, mac=port['mac_address'], gw_ip=gw_ip)
+
+        vm.plugin_vm('eth0', port['id'])
+
+        return (port, vm, ip)
+
+    def clean_topo(self):
+        self.clean_remote_mac_entrys()
+
+    def clean_remote_mac_entrys(self):
+        while self.rmacs:
+            (gwid, rmid) = self.rmacs.pop()
+            self.delete_remote_mac_entry(gwid, rmid, clean=False)
+
+    def delete_remote_mac_entry(self, gwdev_id, rme_id, clean=True):
         curl_url = get_neutron_api_url(self.api)
         curl_delete(curl_url +
                     "/gw/gateway_devices/" + str(gwdev_id) +
                     "/remote_mac_entries/" + str(rme_id))
+        if clean:
+            self.rmacs.discard((gwdev_id, rme_id))
 
     def create_gateway_device(self, tunnel_ip, name, vtep_router_id):
         curl_url = get_neutron_api_url(self.api) + '/gw/gateway_devices'
@@ -177,6 +203,7 @@ class L2GWNeutronTestCase(NeutronTestCase):
                       json_data=mac_add_data_far)
         self.LOG.debug("RMAC : " + str(rmac_json_far_ret))
         rmac = json.loads(rmac_json_far_ret)
+        self.rmacs.add((gwdev_id, rmac['remote_mac_entry']['id']))
         return rmac['remote_mac_entry']
 
     def delete_l2_gw_conn(self, l2gwconn_id):
@@ -407,13 +434,9 @@ class L2GWNeutronTestCase(NeutronTestCase):
         try:
             if peer_site:
                 if peer_site.rmac_entry:
-                    curl_url = (get_neutron_api_url(self.api) +
-                                "/gw/gateway_devices/" +
-                                str(peer_site.gwdev_id) +
-                                "/remote_mac_entries/" +
-                                str(peer_site.rmac_entry))
+                    self.delete_remote_mac_entry(peer_site.gwid,
+                                                 peer_site.rmac_entry)
                     self.LOG.debug("Cleaning RMAC entry: " + curl_url)
-                    curl_delete(curl_url)
                 if peer_site.fake_peer_port:
                     self.LOG.debug("Clearing ghost port: " +
                                    peer_site.fake_peer_port['id'])
