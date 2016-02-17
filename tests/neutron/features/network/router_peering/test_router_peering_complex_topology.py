@@ -251,8 +251,6 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
 
             # Test that VM1 can reach VM2 via internal IP
             # Ping
-            import pdb
-            pdb.set_trace()
             self.assertTrue(vm1.ping(target_ip=ip2))
             self.assertTrue(vm2.ping(target_ip=ip1))
 
@@ -335,3 +333,220 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
             delete_neutron_main_pub_networks(self.api, west_left_topo)
             delete_neutron_main_pub_networks(self.api, east_right_topo)
             delete_neutron_main_pub_networks(self.api, west_right_topo)
+
+    @require_extension('extraroute')
+    @require_extension('gateway-device')
+    @require_extension('l2-gateway')
+    @require_topology_feature('config_file', lambda a, b: a in b,
+                              ['config/physical_topologies/2z-3c-3tun.json'])
+    def test_peered_routers_same_tenant(self):
+        vm1 = None
+        vm2 = None
+        ip1 = None
+        ip2 = None
+        port1 = None
+        port2 = None
+
+        east_topo = None
+        east_l2gw_topo = None
+        west_topo = None
+        west_l2gw_topo = None
+
+        peered_topo = None
+
+        segment_id = '100'
+
+        east_main_cidr = "192.168.20.0/24"
+        west_main_cidr = "192.168.30.0/24"
+        nort_main_cidr = "192.168.40.0/24"
+
+        try:
+
+            east_topo = create_neutron_main_pub_networks(
+                    self.api,
+                    main_name='main_east',
+                    main_subnet_cidr=east_main_cidr,
+                    pub_name='pub_east',
+                    pub_subnet_cidr="200.200.120.0/24",
+                    log=self.LOG)
+            west_topo = create_neutron_main_pub_networks(
+                    self.api,
+                    main_name='main_west',
+                    main_subnet_cidr=west_main_cidr,
+                    pub_name='pub_west',
+                    pub_subnet_cidr="200.200.130.0/24",
+                    log=self.LOG)
+            nort_topo = create_neutron_main_pub_networks(
+                    self.api,
+                    main_name='main_nort',
+                    main_subnet_cidr=nort_main_cidr,
+                    pub_name='pub_nort',
+                    pub_subnet_cidr="200.200.140.0/24",
+                    log=self.LOG)
+
+            port1 = self.api.create_port({
+                'port': {'name': 'port_vm1',
+                         'network_id': east_topo.main_net.network['id'],
+                         'admin_state_up': True,
+                         'tenant_id': 'admin'}})['port']
+            ip1 = port1['fixed_ips'][0]['ip_address']
+
+            vm1 = self.vtm.create_vm(
+                    ip=ip1,
+                    mac=port1['mac_address'],
+                    gw_ip=east_topo.main_net.subnet['gateway_ip'])
+            """ :type: Guest"""
+
+            vm1.plugin_vm('eth0', port1['id'])
+
+            port2 = self.api.create_port({
+                'port': {'name': 'port_vm2',
+                         'network_id': west_topo.main_net.network['id'],
+                         'admin_state_up': True,
+                         'tenant_id': 'admin'}})['port']
+            ip2 = port2['fixed_ips'][0]['ip_address']
+
+            vm2 = self.vtm.create_vm(
+                    ip=ip2,
+                    mac=port2['mac_address'],
+                    gw_ip=west_topo.main_net.subnet['gateway_ip'])
+            """ :type: Guest"""
+
+            vm2.plugin_vm('eth0', port2['id'])
+
+            port3 = self.api.create_port({
+                'port': {'name': 'port_vm3',
+                         'network_id': nort_topo.main_net.network['id'],
+                         'admin_state_up': True,
+                         'tenant_id': 'admin'}})['port']
+            ip3 = port3['fixed_ips'][0]['ip_address']
+
+            vm3 = self.vtm.create_vm(
+                    ip=ip3,
+                    mac=port3['mac_address'],
+                    gw_ip=nort_topo.main_net.subnet['gateway_ip'])
+            """ :type: Guest"""
+
+            vm3.plugin_vm('eth0', port3['id'])
+
+            east_l2gw_topo = self.setup_peer_l2gw(
+                "1.1.1.0/24", "1.1.1.2", "1.1.1.3", "tun2", "eth1",
+                "192.168.200.0/24", "192.168.200.2", segment_id,
+                east_topo.router.router, "EAST")
+            self.assertIsNotNone(east_l2gw_topo)
+            west_l2gw_topo = self.setup_peer_l2gw(
+                "2.2.2.0/24", "2.2.2.2", "2.2.2.3", "tun1", "eth1",
+                "192.168.200.0/24", "192.168.200.3", segment_id,
+                west_topo.router.router, "WEST")
+            nort_l2gw_topo = self.setup_peer_l2gw(
+                "3.3.3.0/24", "3.3.3.2", "3.3.3.3", "tun3", "eth1",
+                "192.168.200.0/24", "192.168.200.4", segment_id,
+                nort_topo.router.router, "NORT")
+            self.assertIsNotNone(nort_l2gw_topo)
+
+            peered_topo = self.peer_sites(east=east_l2gw_topo,
+                                          east_private_cidr=east_main_cidr,
+                                          west=west_l2gw_topo,
+                                          west_private_cidr=west_main_cidr,
+                                          segment_id=segment_id)
+            self.assertIsNotNone(peered_topo)
+
+            az_net_east = east_l2gw_topo.az.network
+            az_net_nort = nort_l2gw_topo.az.network
+            nort_peer_router_port = nort_l2gw_topo.peer_router_port
+            east_peer_router_port = east_l2gw_topo.peer_router_port
+
+            self.api.update_router(
+                east_topo.router.router['id'],
+                {'router': {'routes': [{'nexthop': "192.168.200.4",
+                                        'destination': nort_main_cidr},
+                                       {'nexthop': "192.168.200.3",
+                                        'destination': west_main_cidr}]}})
+            east_ghost_port = self.create_ghost_port(
+                    az_net_east['id'], "192.168.200.4",
+                    nort_peer_router_port['mac_address'],
+                    nort_peer_router_port['id'])
+            east_rmac = self.create_remote_mac_entry("3.3.3.2",
+                    nort_peer_router_port['mac_address'], segment_id,
+                    east_l2gw_topo.l2dev.gwdev)
+
+            self.api.update_router(
+                nort_topo.router.router['id'],
+                {'router': {'routes': [{'nexthop': "192.168.200.2",
+                                        'destination': east_main_cidr}]}})
+            nort_ghost_port = self.create_ghost_port(
+                    az_net_nort['id'], "192.168.200.2",
+                    east_peer_router_port['mac_address'],
+                    east_peer_router_port['id'])
+            # Test that VM1 can reach VM2 via internal IP
+            # Ping
+            self.assertTrue(vm1.ping(target_ip=ip2))
+            self.assertTrue(vm2.ping(target_ip=ip1))
+
+            # TCP
+            vm2.start_echo_server(ip=ip2)
+            echo_response = vm1.send_echo_request(dest_ip=ip2)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+            # Send second packet
+            echo_response = vm1.send_echo_request(dest_ip=ip2)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+            # TCP
+            vm1.start_echo_server(ip=ip1)
+            echo_response = vm2.send_echo_request(dest_ip=ip1)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+            # Send second packet
+            echo_response = vm2.send_echo_request(dest_ip=ip1)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+            self.delete_remote_mac_entry(
+                peered_topo.east.gwdev_id, peered_topo.east.rmac_entry)
+
+            nort_rmac = self.create_remote_mac_entry("1.1.1.2",
+                    east_peer_router_port['mac_address'], segment_id,
+                    nort_l2gw_topo.l2dev.gwdev)
+
+            self.assertTrue(vm1.ping(target_ip=ip3))
+            self.assertTrue(vm3.ping(target_ip=ip1))
+
+            # TCP
+            vm3.start_echo_server(ip=ip3)
+            echo_response = vm1.send_echo_request(dest_ip=ip3)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+            # Send second packet
+            echo_response = vm1.send_echo_request(dest_ip=ip3)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+            # TCP
+            echo_response = vm3.send_echo_request(dest_ip=ip1)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+            # Send second packet
+            echo_response = vm3.send_echo_request(dest_ip=ip1)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+        finally:
+            self.clean_topo()
+
+            if vm2 and ip2:
+                vm2.stop_echo_server(ip=ip2)
+
+            if vm2 and ip2:
+                vm2.stop_echo_server(ip=ip2)
+
+            if vm1 and ip1:
+                vm1.stop_echo_server(ip=ip1)
+
+            self.cleanup_vms([(vm1, port1), (vm2, port2), (vm3, port3)])
+
+            self.clean_peered_site(peered_topo)
+            self.clean_peer(east_l2gw_topo)
+            self.clean_peer(west_l2gw_topo)
+
+            delete_neutron_main_pub_networks(self.api, east_topo)
+            delete_neutron_main_pub_networks(self.api, west_topo)
+            #TODO: Fix cleanup
+            #delete_neutron_main_pub_networks(self.api, nort_topo)
