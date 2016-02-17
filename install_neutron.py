@@ -92,7 +92,6 @@ class NeutronComponentInstaller(object):
                         "rabbit_host = localhost\n"
                         "rabbit_userid = guest\n"
                         "rabbit_password = cat\n"
-                        "service_plugins = lbaas\n"
                         "allow_overlapping_ips = True\n"
                         "router_scheduler_driver =\n"
                         "debug = True\n"
