@@ -183,7 +183,8 @@ class HostDef(object):
 
     @staticmethod
     def make_host(host_cfg):
-        if 'name' not in host_cfg: raise ObjectNotFoundException('"name" field required for host definition')
+        if 'name' not in host_cfg:
+            raise ObjectNotFoundException('"name" field required for host definition')
         name = host_cfg['name']
         bridges = {}
         interfaces = {}
@@ -235,8 +236,10 @@ class WiringDef(object):
 
     @staticmethod
     def make_wiring(wire_cfg):
-        if 'near' not in wire_cfg: raise ObjectNotFoundException('"near" field required for wiring definition')
-        if 'far' not in wire_cfg: raise ObjectNotFoundException('"far" field required for wiring definition')
+        if 'near' not in wire_cfg:
+            raise ObjectNotFoundException('"near" field required for wiring definition')
+        if 'far' not in wire_cfg:
+            raise ObjectNotFoundException('"far" field required for wiring definition')
 
         near = HostInterfaceDef.make_host_interface(wire_cfg['near'])
         far = HostInterfaceDef.make_host_interface(wire_cfg['far'])
