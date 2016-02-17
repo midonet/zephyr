@@ -187,8 +187,9 @@ class L2GWNeutronTestCase(NeutronTestCase):
                     'port_security_enabled': False,
                     'device_owner': 'network:remote_site',
                     'device_id': other_port_id}})
-        self.LOG.debug("Created ghost port on east network mimicking "
-                       "west-side router port: " + str(ghost_port))
+        self.LOG.debug("Created ghost port on " + str(az_net_id) +
+                       "network mimicking far-side router port: " +
+                       str(ghost_port))
         return ghost_port['port']
 
     def create_remote_mac_entry(self, ip, mac, segment_id, gwdev_id):
@@ -409,9 +410,9 @@ class L2GWNeutronTestCase(NeutronTestCase):
                     far_port['mac_address'], far_port['id'])
 
             # Add MAC addresses into each site to tunnel to far end
-            rmac = self.create_remote_mac_entry(near_side.tunnel_ip,
-                    near_side.peer_router_port['mac_address'], segment_id,
-                    far_side.l2dev.gwdev)
+            rmac = self.create_remote_mac_entry(far_side.tunnel_ip,
+                    far_side.peer_router_port['mac_address'], segment_id,
+                    near_side.l2dev.gwdev)
             rmac_entry = rmac['id']
 
             return L2GWPeer(rmac_entry,

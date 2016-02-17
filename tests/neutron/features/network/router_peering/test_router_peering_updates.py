@@ -47,6 +47,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
 
         east_topo = None
         east_l2gw_topo = None
+        new_east_l2gw_topo = None
         west_topo = None
         west_l2gw_topo = None
 
@@ -147,7 +148,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
                 if east_l2gw_topo.peer_router.if_list:
                     for i in east_l2gw_topo.peer_router.if_list:
                         self.api.remove_interface_router(
-                                east_l2gw_topo.peer_router.router['id'], i)
+                            east_l2gw_topo.peer_router.router['id'], i)
 
             # remove ghost port and remote mac on west side
             self.clean_peered_site_data(peered_topo.west)
@@ -177,8 +178,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
                     east_l2gw_topo.peer_router.router['id'],
                     {'port_id': peer_router_port['id']})
 
-            east_l2gw_topo = L2GWSiteTopo(
-                    tunnel_port=west_l2gw_topo.tunnel_port,
+            new_east_l2gw_topo = L2GWSiteTopo(
+                    tunnel_port=east_l2gw_topo.tunnel,
                     tunnel=east_l2gw_topo.tunnel,
                     tunnel_ip=east_l2gw_topo.tunnel_ip,
                     vtep_router=east_l2gw_topo.vtep_router,
@@ -188,15 +189,16 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
                             router=east_l2gw_topo.peer_router.router,
                             if_list=[new_if]),
                     peer_router_port=peer_router_port)
+            east_l2gw_topo = None
 
             west_port = west_l2gw_topo.peer_router_port
             west_port_ip_list = west_port['fixed_ips']
             west_port_main_ip_struct = west_port_ip_list[0]
             west_port_main_ip = west_port_main_ip_struct['ip_address']
             self.api.update_router(
-                east_l2gw_topo.peer_router.router['id'],
-                {'router': {'routes': [{'nexthop': west_port_main_ip,
-                                        'destination': west_main_cidr}]}})
+                    new_east_l2gw_topo.peer_router.router['id'],
+                    {'router': {'routes': [{'nexthop': west_port_main_ip,
+                                            'destination': west_main_cidr}]}})
 
             east_port_ip_list = peer_router_port['fixed_ips']
             east_port_main_ip_struct = east_port_ip_list[0]
@@ -221,11 +223,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             mac_add_data_west = \
                 {"remote_mac_entry": {
                     "tenant_id": "admin",
-                    "vtep_address":
-                        east_l2gw_topo.tunnel_ip,
-                    "mac_address":
-                        peer_router_port['mac_address'],
+                    "vtep_address": new_east_l2gw_topo.tunnel_ip,
+                    "mac_address": peer_router_port['mac_address'],
                     "segmentation_id": segment_id}}
+
+            self.LOG.debug("Adding new RMAC entry to west-side VTEP: " +
+                           str(mac_add_data_west))
 
             rmac_json_ret = \
                 curl_post(
@@ -252,20 +255,24 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             self.assertEqual('ping:echo-reply', echo_response)
 
         finally:
-            if vm2 and ip2:
-                vm2.stop_echo_server(ip=ip2)
+            try:
+                if vm2 and ip2:
+                    vm2.stop_echo_server(ip=ip2)
 
-            if vm1 and ip1:
-                vm1.stop_echo_server(ip=ip1)
+                if vm1 and ip1:
+                    vm1.stop_echo_server(ip=ip1)
 
-            self.cleanup_vms([(vm1, port1), (vm2, port2)])
+                self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
-            self.clean_peered_site(peered_topo)
-            self.clean_peer(east_l2gw_topo)
-            self.clean_peer(west_l2gw_topo)
+                self.clean_peered_site(peered_topo)
+                self.clean_peer(new_east_l2gw_topo)
+                self.clean_peer(east_l2gw_topo)
+                self.clean_peer(west_l2gw_topo)
 
-            delete_neutron_main_pub_networks(self.api, east_topo)
-            delete_neutron_main_pub_networks(self.api, west_topo)
+                delete_neutron_main_pub_networks(self.api, east_topo)
+                delete_neutron_main_pub_networks(self.api, west_topo)
+            except Exception as e:
+                self.LOG.fatal("Error cleaning topology: " + str(e))
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
