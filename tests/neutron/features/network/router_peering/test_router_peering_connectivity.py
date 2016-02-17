@@ -416,9 +416,9 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             floating_ip_west = self.api.create_floatingip(
                     {'floatingip': {
                         'tenant_id': 'admin',
-                        'port_id': port1['id'],
+                        'port_id': port2['id'],
                         'floating_network_id':
-                            east_topo.pub_net.network['id']}})['floatingip']
+                            west_topo.pub_net.network['id']}})['floatingip']
 
             fip_e = floating_ip_east['floating_ip_address']
             self.LOG.debug("Received floating IP E: " + str(fip_e))
@@ -428,26 +428,36 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             self.assertTrue(vm1.ping(target_ip=fip_w))
             self.assertTrue(vm2.ping(target_ip=fip_e))
 
-            vm1.start_echo_server(ip=fip_e, echo_data='pong_e')
-            vm2.start_echo_server(ip=fip_w, echo_data='pong_w')
+            vm1.start_echo_server(ip=ip1, echo_data='pong_e')
+            vm2.start_echo_server(ip=ip2, echo_data='pong_w')
 
             reply_e = vm1.send_echo_request(dest_ip=fip_w,
+                                            echo_request='ping_e')
+            self.assertEqual('ping_e:pong_w', reply_e)
+            reply_e = vm1.send_echo_request(dest_ip=ip2,
                                             echo_request='ping_e')
             self.assertEqual('ping_e:pong_w', reply_e)
 
             reply_w = vm2.send_echo_request(dest_ip=fip_e,
                                             echo_request='ping_w')
             self.assertEqual('ping_w:pong_e', reply_w)
+            reply_e = vm2.send_echo_request(dest_ip=ip2,
+                                            echo_request='ping_e')
+            self.assertEqual('ping_e:pong_w', reply_e)
 
-            reply_e2 = vm1.send_echo_request(dest_ip=fip_w,
-                                             source_ip=fip_e,
-                                             echo_request='ping_e')
-            self.assertEqual('ping_e:pong_w', reply_e2)
+            reply_e = vm1.send_echo_request(dest_ip=fip_w,
+                                            echo_request='ping_e')
+            self.assertEqual('ping_e:pong_w', reply_e)
+            reply_e = vm1.send_echo_request(dest_ip=ip2,
+                                            echo_request='ping_e')
+            self.assertEqual('ping_e:pong_w', reply_e)
 
-            reply_w2 = vm2.send_echo_request(dest_ip=fip_e,
-                                             source_ip=fip_w,
-                                             echo_request='ping_w')
-            self.assertEqual('ping_w:pong_e', reply_w2)
+            reply_w = vm2.send_echo_request(dest_ip=fip_e,
+                                            echo_request='ping_w')
+            self.assertEqual('ping_w:pong_e', reply_w)
+            reply_e = vm2.send_echo_request(dest_ip=ip2,
+                                            echo_request='ping_e')
+            self.assertEqual('ping_e:pong_w', reply_e)
 
         finally:
 
