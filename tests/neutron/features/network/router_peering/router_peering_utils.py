@@ -433,10 +433,11 @@ class L2GWNeutronTestCase(NeutronTestCase):
             self.clean_peered_site_data(topo.west)
 
     def clean_peered_site_data(self, peer_site):
+        curl_url = get_neutron_api_url(self.api)
         try:
             if peer_site:
                 if peer_site.rmac_entry:
-                    self.delete_remote_mac_entry(peer_site.gwid,
+                    self.delete_remote_mac_entry(peer_site.gwdev_id,
                                                  peer_site.rmac_entry)
                     self.LOG.debug("Cleaning RMAC entry: " + curl_url)
                 if peer_site.fake_peer_port:
