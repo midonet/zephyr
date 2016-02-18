@@ -41,9 +41,9 @@ class IP(object):
 
     @staticmethod
     def from_map(map):
-        if not 'ip' in map:
+        if 'ip' not in map:
             raise ArgMismatchException('Expected "ip" member in IP map')
-        if not 'subnet' in map:
+        if 'subnet' not in map:
             raise ArgMismatchException('Expected "subnet" member in IP map')
 
         return IP(map['ip'], map['subnet'])
