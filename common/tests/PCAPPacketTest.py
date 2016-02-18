@@ -46,7 +46,7 @@ class PCAPPacketTest(unittest.TestCase):
 
         packet = PCAPEthernet()
         new_data = packet.parse_layer(eii_packet_data)
-        
+
         self.assertEqual('08:00:27:c6:25:01', packet.source_mac)
         self.assertEqual('52:54:00:12:35:02', packet.dest_mac)
         self.assertEqual([0xDE, 0xAD, 0xBE, 0xEF], new_data)
