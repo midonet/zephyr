@@ -31,5 +31,4 @@ def run_unit_test(test_case_name):
         except Exception as e:
             print('Exception: ' + e.message + ', ' + str(e.args))
     else:
-        import xmlrunner
         xmlrunner.XMLTestRunner(output=xml_output_dir).run(suite)
