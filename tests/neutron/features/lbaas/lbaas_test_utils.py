@@ -16,7 +16,10 @@ import logging
 import math
 import time
 
-from TSM.NeutronTestCase import NeutronTestCase, GuestData, NetData, RouterData
+from TSM.NeutronTestCase import GuestData
+from TSM.NeutronTestCase import NetData
+from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import RouterData
 from common.EchoServer import DEFAULT_ECHO_PORT
 
 from collections import namedtuple

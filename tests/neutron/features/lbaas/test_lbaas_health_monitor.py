@@ -15,8 +15,13 @@
 import operator
 import time
 
-from TSM.NeutronTestCase import NeutronTestCase, GuestData, NetData, RouterData, require_extension
-from TSM.TestCase import require_topology_feature, expected_failure
+from TSM.NeutronTestCase import GuestData
+from TSM.NeutronTestCase import NetData
+from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import require_extension
+from TSM.NeutronTestCase import RouterData
+from TSM.TestCase import expected_failure
+from TSM.TestCase import require_topology_feature
 from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
 from PTM.host.Host import Host
 

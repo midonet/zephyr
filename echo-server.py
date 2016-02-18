@@ -13,7 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.EchoServer import EchoServer, DEFAULT_ECHO_PORT
+from common.EchoServer import EchoServer
+from common.EchoServer import DEFAULT_ECHO_PORT
 from common.CLI import LinuxCLI
 
 import getopt

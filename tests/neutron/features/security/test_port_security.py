@@ -15,7 +15,8 @@
 from common.PCAPRules import *
 from common.IP import IP
 from common.PCAPPacket import *
-from TSM.NeutronTestCase import NeutronTestCase, require_extension
+from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import require_extension
 from VTM.Guest import Guest
 
 from collections import namedtuple

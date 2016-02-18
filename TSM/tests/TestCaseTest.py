@@ -14,7 +14,9 @@
 
 import unittest
 import operator
-from TSM.TestCase import TestCase, require_topology_feature, expected_failure
+from TSM.TestCase import expected_failure
+from TSM.TestCase import require_topology_feature
+from TSM.TestCase import TestCase
 from PTM.impl.PhysicalTopologyManagerImpl import PhysicalTopologyManagerImpl
 from PTM.PhysicalTopologyManager import PhysicalTopologyManager
 from CBT.UnitTestRunner import run_unit_test

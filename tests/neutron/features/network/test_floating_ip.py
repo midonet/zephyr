@@ -14,9 +14,11 @@
 
 from PTM.host.Host import Host
 
-from TSM.NeutronTestCase import NeutronTestCase, require_extension
+from TSM.NeutronTestCase import NeutronTestCase
+from TSM.NeutronTestCase import require_extension
 from TSM.TestCase import expected_failure
-from VTM.NeutronAPI import create_neutron_main_pub_networks, delete_neutron_main_pub_networks
+from VTM.NeutronAPI import create_neutron_main_pub_networks
+from VTM.NeutronAPI import delete_neutron_main_pub_networks
 from VTM.Guest import Guest
 
 
