@@ -99,7 +99,7 @@ class VMHostTest(unittest.TestCase):
             vm_host1.stop_capture('lo')
 
             self.assertTrue(ping_ret)
-            self.assertEquals(1, len(ret1))
+            self.assertEqual(1, len(ret1))
 
         finally:
             vm_host1.shutdown()

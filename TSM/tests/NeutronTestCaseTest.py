@@ -52,15 +52,15 @@ class NeutronTestCaseTest(unittest.TestCase):
         tc = SampleTestCase('test_needs_agent')
         tr = unittest.TestResult()
         tc.run(tr)
-        self.assertEquals(0, len(tr.errors))
-        self.assertEquals(0, len(tr.failures))
-        self.assertEquals(0, len(tr.failures))
+        self.assertEqual(0, len(tr.errors))
+        self.assertEqual(0, len(tr.failures))
+        self.assertEqual(0, len(tr.failures))
 
         tc = SampleTestCase('test_needs_asdf')
         tr = unittest.TestResult()
         tc.run(tr)
-        self.assertEquals(0, len(tr.errors))
-        self.assertEquals(1, len(tr.skipped))
+        self.assertEqual(0, len(tr.errors))
+        self.assertEqual(1, len(tr.skipped))
         self.assertNotEqual(-1, str(tr.skipped[0][1]).find('Skipping because extension'))
 
 

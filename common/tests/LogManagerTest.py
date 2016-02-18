@@ -61,7 +61,7 @@ class LogManagerTest(unittest.TestCase):
         logger.debug("Test3")
         with open('log_file.txt', 'r') as f:
             line = f.readlines()
-            self.assertEquals(len(line), 2)
+            self.assertEqual(len(line), 2)
             self.assertTrue(line[0].find("TEST - ERROR - Test1") != -1)
             self.assertTrue(line[1].find("TEST - WARNING - Test2") != -1)
 
@@ -76,7 +76,7 @@ class LogManagerTest(unittest.TestCase):
         logger.debug("Test3")
         with open('log_file2.txt', 'r') as f:
             line = f.readlines()
-            self.assertEquals(len(line), 2)
+            self.assertEqual(len(line), 2)
             self.assertTrue(line[0].find("TEST2 - " + str(current_year) + " - ERROR - Test1") != -1)
             self.assertTrue(line[1].find("TEST2 - " + str(current_year) + " - WARNING - Test2") != -1)
 
@@ -89,7 +89,7 @@ class LogManagerTest(unittest.TestCase):
         logger.debug("Test3")
         with open('log_levels.txt', 'r') as f:
             line = f.readlines()
-            self.assertEquals(len(line), 3)
+            self.assertEqual(len(line), 3)
             self.assertTrue(line[0].find("TEST - ERROR - Test1") != -1)
             self.assertTrue(line[1].find("TEST - WARNING - Test2") != -1)
             self.assertTrue(line[2].find("TEST - DEBUG - Test3") != -1)
@@ -120,13 +120,13 @@ class LogManagerTest(unittest.TestCase):
 
         with open('log_multiple.txt', 'r') as f:
             line = f.readlines()
-            self.assertEquals(len(line), 2)
+            self.assertEqual(len(line), 2)
             self.assertTrue(line[0].find("TEST - ERROR - Test1") != -1)
             self.assertTrue(line[1].find("TEST - WARNING - Test2") != -1)
 
         with open('log_multiple2.txt', 'r') as f:
             line = f.readlines()
-            self.assertEquals(len(line), 3)
+            self.assertEqual(len(line), 3)
             self.assertTrue(line[0].find("TEST - ERROR - Test1b") != -1)
             self.assertTrue(line[1].find("TEST - WARNING - Test2b") != -1)
             self.assertTrue(line[2].find("TEST - DEBUG - Test3b") != -1)
@@ -142,7 +142,7 @@ class LogManagerTest(unittest.TestCase):
         logger.debug("Test3")
         with open('log_tee.txt', 'r') as f:
             line = f.readlines()
-            self.assertEquals(len(line), 3)
+            self.assertEqual(len(line), 3)
             self.assertTrue(line[0].find("TEST - ERROR - Test1") != -1)
             self.assertTrue(line[1].find("TEST - WARNING - Test2") != -1)
             self.assertTrue(line[2].find("TEST - DEBUG - Test3") != -1)

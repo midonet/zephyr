@@ -85,7 +85,7 @@ class TCPDumpTest(unittest.TestCase):
 
             ret = tcpd.wait_for_packets(count=1, timeout=3)
 
-            self.assertEquals(1, len(ret))
+            self.assertEqual(1, len(ret))
 
             self.assertTrue('ethernet' in ret[0].parse())
 
@@ -149,7 +149,7 @@ class TCPDumpTest(unittest.TestCase):
                             dest_ip='127.0.0.1', dest_port=6055, source_port=6015)
 
             ret = tcpd.wait_for_packets(count=1, timeout=3)
-            self.assertEquals(1, len(ret))
+            self.assertEqual(1, len(ret))
         finally:
             tcpd.stop_capture()
 
@@ -204,13 +204,13 @@ class TCPDumpTest(unittest.TestCase):
             tcpd.stop_capture()
             time.sleep(2)
 
-            self.assertEquals(3, len(ret))
+            self.assertEqual(3, len(ret))
 
             self.assertTrue(LinuxCLI().exists('tmp.file'))
             file_str = LinuxCLI().read_from_file('tmp.file')
             LinuxCLI().rm('tmp.file')
 
-            self.assertEquals(3, file_str.count('PACKET { time'))
+            self.assertEqual(3, file_str.count('PACKET { time'))
         finally:
             tcpd.stop_capture()
 
