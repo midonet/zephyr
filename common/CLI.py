@@ -152,7 +152,7 @@ class LinuxCLI(object):
                                             str(out) + ']/stderr[' + str(err) + ']')
 
         if self.print_cmd_out:
-            print "stdout: " + str(out) + "/stderr: " + str(err)
+            print("stdout: " + str(out) + "/stderr: " + str(err))
 
         return CommandStatus(process=p, command=cmd_str, ret_code=p.returncode,
                              stdout=out, stderr=err, process_array=processes)
@@ -209,7 +209,7 @@ class LinuxCLI(object):
                                             str(out) + ']/stderr[' + str(err) + ']')
 
         if self.print_cmd_out:
-            print "stdout: " + str(out) + "/stderr: " + str(err)
+            print("stdout: " + str(out) + "/stderr: " + str(err))
 
         return CommandStatus(process=p, command=cmd, ret_code=p.returncode, stdout=out, stderr=err)
 
@@ -343,7 +343,7 @@ class LinuxCLI(object):
         ret = self.copy_file('./.tmp.file', wfile)
         self.rm("./.tmp.file")
         if self.debug:
-            print 'Would have written: ' + data
+            print('Would have written: ' + data)
 
         return ret
 

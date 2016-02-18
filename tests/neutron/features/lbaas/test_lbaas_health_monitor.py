@@ -359,12 +359,12 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
             hma_if_id = poola['id'][0:8] + '_hm_dp'
             hmb_if_id = poolb['id'][0:8] + '_hm_dp'
 
-            print "HM A interface: " + str(hma_if_id)
-            print "HM B interface: " + str(hmb_if_id)
+            print("HM A interface: " + str(hma_if_id))
+            print("HM B interface: " + str(hmb_if_id))
 
             cmp1_id = LinuxCLI().cmd("midonet-cli -A -e host list | grep 'cmp1' | awk '{print $2}'")
 
-            print str(cmp1_id)
+            print(str(cmp1_id))
             hma_port_id = LinuxCLI().cmd("midonet-cli -A -e host " + str(cmp1_id.stdout.strip()) +
                                          " list binding | grep '" + hma_if_id +
                                          "' | awk '{print $6}'")
@@ -372,8 +372,8 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
                                          " list binding | grep '" + hmb_if_id +
                                          "' | awk '{print $6}'")
 
-            print str(hma_port_id)
-            print str(hmb_port_id)
+            print(str(hma_port_id))
+            print(str(hmb_port_id))
 
             a = LinuxCLI().cmd("midonet-cli -A -e chain name OS_PRE_ROUTING_" +
                                lbn_data.router.router['id'] +
@@ -384,8 +384,8 @@ class TestLBaaSHealthMonitor(NeutronTestCase):
                                " add rule src-port 5081 in-ports " + hmb_port_id.stdout.strip() +
                                " pos 0 type drop")
 
-            print str(a)
-            print str(b)
+            print(str(a))
+            print(str(b))
 
             time.sleep(delay * 3)
 

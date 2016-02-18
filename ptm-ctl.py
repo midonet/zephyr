@@ -26,7 +26,7 @@ from common.LogManager import LogManager
 
 
 def usage(exceptObj):
-    print 'Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print|--features} [--config-file <JSON file>]'
+    print('Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print|--features} [--config-file <JSON file>]')
     if exceptObj is not None:
         raise exceptObj
 
@@ -93,18 +93,18 @@ try:
 except ExitCleanException:
     exit(1)
 except ArgMismatchException as a:
-    print 'Argument mismatch: ' + str(a)
+    print('Argument mismatch: ' + str(a))
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except ObjectNotFoundException as e:
-    print 'Object not found: ' + str(e)
+    print('Object not found: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except SubprocessFailedException as e:
-    print 'Subprocess failed to execute: ' + str(e)
+    print('Subprocess failed to execute: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except TestException as e:
-    print 'Unknown exception: ' + str(e)
+    print('Unknown exception: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)

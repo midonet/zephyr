@@ -56,9 +56,9 @@ class PhysicalTopologyManager(object):
                 print_list.append((str(feat), str(val)))
                 max_str_size[0] = len(str(feat)) if len(str(feat)) > max_str_size[0] else max_str_size[0]
                 max_str_size[1] = len(str(val)) if len(str(val)) > max_str_size[1] else max_str_size[1]
-        print "Supported features of this PTM:"
+        print("Supported features of this PTM:")
         for feat, val in print_list:
-            print feat + ' = ' + str(val)
+            print(feat + ' = ' + str(val))
 
     def startup(self):
         if self.impl_:

@@ -168,23 +168,23 @@ class TestSystemManagerTest(unittest.TestCase):
         self.assertEqual(0, len(results['test2'].errors))
 
         for s, r in results.iteritems():
-            print "========================================"
-            print "Scenario [" + s + "]"
-            print "Passed [{0}/{1}]".format(len(r.successes), r.testsRun)
-            print "Failed [{0}/{1}]".format(len(r.failures), r.testsRun)
-            print "Error [{0}/{1}]".format(len(r.errors), r.testsRun)
-            print ""
+            print("========================================")
+            print("Scenario [" + s + "]")
+            print("Passed [{0}/{1}]".format(len(r.successes), r.testsRun))
+            print("Failed [{0}/{1}]".format(len(r.failures), r.testsRun))
+            print("Error [{0}/{1}]".format(len(r.errors), r.testsRun))
+            print("")
             for tc, err in r.failures:
-                print "------------------------------"
-                print "Test Case FAILED: [" + tc._get_name() + "]"
-                print "Failure Message:"
-                print err
+                print("------------------------------")
+                print("Test Case FAILED: [" + tc._get_name() + "]")
+                print("Failure Message:")
+                print(err)
 
             for tc, err in r.errors:
-                print "------------------------------"
-                print "Test Case ERROR: [" + tc._get_name() + "]"
-                print "Error Message:"
-                print err
+                print("------------------------------")
+                print("Test Case ERROR: [" + tc._get_name() + "]")
+                print("Error Message:")
+                print(err)
 
 
 from CBT.UnitTestRunner import run_unit_test

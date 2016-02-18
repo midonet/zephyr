@@ -26,7 +26,7 @@ cli.add_environment_variable("DEBIAN_FRONTEND", "noninteractive")
 
 
 def usage(except_obj):
-    print 'Usage: neutron-setup.py -v <OpenStack version>'
+    print('Usage: neutron-setup.py -v <OpenStack version>')
     if except_obj is not None:
         raise except_obj
 
@@ -244,22 +244,22 @@ try:
 
 except getopt.GetoptError as e:
     usage(None)
-    print "Invalid Command Line: " + e.msg
+    print("Invalid Command Line: " + e.msg)
     exit(1)
 except ExitCleanException:
     exit(1)
 except ArgMismatchException as a:
     usage(None)
-    print 'Argument mismatch: ' + str(a)
+    print('Argument mismatch: ' + str(a))
     exit(2)
 except ObjectNotFoundException as e:
-    print 'Object not found: ' + str(e)
+    print('Object not found: ' + str(e))
     exit(2)
 except SubprocessFailedException as e:
-    print 'Subprocess failed to execute: ' + str(e)
+    print('Subprocess failed to execute: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except TestException as e:
-    print 'Unknown exception: ' + str(e)
+    print('Unknown exception: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)

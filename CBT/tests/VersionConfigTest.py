@@ -85,11 +85,11 @@ class VersionConfigTest(unittest.TestCase):
             self.assertEqual(expected, str(mn_version))
 
     def test_vars(self):
-        print version_config.ConfigMap.get_configured_parameter('mn_version', config_json=CFG_FILE)
-        print version_config.ConfigMap.get_configured_parameter('cmd_list_datapath', config_json=CFG_FILE)
-        print version_config.ConfigMap.get_configured_parameter('option_config_mnconf', config_json=CFG_FILE)
-        print version_config.ConfigMap.get_configured_parameter('option_use_v2_stack', config_json=CFG_FILE)
-        print version_config.get_linux_dist()
+        print(version_config.ConfigMap.get_configured_parameter('mn_version', config_json=CFG_FILE))
+        print(version_config.ConfigMap.get_configured_parameter('cmd_list_datapath', config_json=CFG_FILE))
+        print(version_config.ConfigMap.get_configured_parameter('option_config_mnconf', config_json=CFG_FILE))
+        print(version_config.ConfigMap.get_configured_parameter('option_use_v2_stack', config_json=CFG_FILE))
+        print(version_config.get_linux_dist())
 
 from CBT.UnitTestRunner import run_unit_test
 run_unit_test(VersionConfigTest)

@@ -33,36 +33,36 @@ from TSM.TestCase import TestCase
 
 
 def usage(exceptObj):
-    print 'Usage: tsm-run.py -t <tests> [-t <topology>] [-n <name>] [-p <file>] [-d] '
-    print '                             [-c <neutron|midonet> --client-args="<arg=value,...>"]'
-    print '                             [-p <ptm_class>] [extra_options]'
-    print ''
-    print '   Test Execution Options:'
-    print '     -t, --tests <tests>          List of fully-qualified names of tests to run, separated by '
-    print '                                  commas with no spaces.'
-    print '     -n, --name <name>            Name this test run (timestamp by default).'
-    print '   Client API Options:'
-    print '     -c, --client <client>        OpenStack Network client to use.  Currently can be either '
-    print '                                  "neutron" (default) or "midonet".'
-    print '     -a, --client-auth <auth>     Authentication scheme to use for Openstack authentication. Can be'
-    print '                                  "noauth" or "keystone" ("noauth" is default).'
-    print '                                  "neutron" (default) or "midonet".'
-    print '     --client-args <args>         List of arguments to give the selected client.  These should be'
-    print '                                  key=value pairs, separated by commas, with no spaces.'
-    print '   Physical Topology Management Options:'
-    print '     -p, --ptm <ptm-class>        Use the specified PTM implementation class'
-    print '                                  (ConfiguredHostPTMImpl is the default).'
-    print '   ConfiguredHostPTMImpl Specific Options:'
-    print '     -o, --topology <topo>        State which physical topologys to configure and run.  Topologies are'
-    print '                                  defined in config/physical_topologies.  By default, tests will run '
-    print '                                  against a 2NSDB + 3Compute + 2Edge topology. Only one topology can '
-    print '                                  be run per execution of this command.'
-    print '   Debug Options:'
-    print '     -d, --debug                  Turn on DEBUG logging (and split log output to stdout).'
-    print '   Output File Options:'
-    print '     -l, --log-dir <dir>          Log file directory (default: /tmp/zephyr/results)'
-    print '     -r, --results-dir <dir>      Results file directory (default: /tmp/zephyr/logs) Timestamp'
-    print '                                  will be appended to prevent overwriting results.'
+    print('Usage: tsm-run.py -t <tests> [-t <topology>] [-n <name>] [-p <file>] [-d] ')
+    print('                             [-c <neutron|midonet> --client-args="<arg=value,...>"]')
+    print('                             [-p <ptm_class>] [extra_options]')
+    print('')
+    print('   Test Execution Options:')
+    print('     -t, --tests <tests>          List of fully-qualified names of tests to run, separated by ')
+    print('                                  commas with no spaces.')
+    print('     -n, --name <name>            Name this test run (timestamp by default).')
+    print('   Client API Options:')
+    print('     -c, --client <client>        OpenStack Network client to use.  Currently can be either ')
+    print('                                  "neutron" (default) or "midonet".')
+    print('     -a, --client-auth <auth>     Authentication scheme to use for Openstack authentication. Can be')
+    print('                                  "noauth" or "keystone" ("noauth" is default).')
+    print('                                  "neutron" (default) or "midonet".')
+    print('     --client-args <args>         List of arguments to give the selected client.  These should be')
+    print('                                  key=value pairs, separated by commas, with no spaces.')
+    print('   Physical Topology Management Options:')
+    print('     -p, --ptm <ptm-class>        Use the specified PTM implementation class')
+    print('                                  (ConfiguredHostPTMImpl is the default).')
+    print('   ConfiguredHostPTMImpl Specific Options:')
+    print('     -o, --topology <topo>        State which physical topologys to configure and run.  Topologies are')
+    print('                                  defined in config/physical_topologies.  By default, tests will run ')
+    print('                                  against a 2NSDB + 3Compute + 2Edge topology. Only one topology can ')
+    print('                                  be run per execution of this command.')
+    print('   Debug Options:')
+    print('     -d, --debug                  Turn on DEBUG logging (and split log output to stdout).')
+    print('   Output File Options:')
+    print('     -l, --log-dir <dir>          Log file directory (default: /tmp/zephyr/results)')
+    print('     -r, --results-dir <dir>      Results file directory (default: /tmp/zephyr/logs) Timestamp')
+    print('                                  will be appended to prevent overwriting results.')
 
     if exceptObj is not None:
         raise exceptObj
@@ -131,7 +131,7 @@ try:
         usage(ArgMismatchException('Must specify at least one test with the -t or --tests option'))
 
     root_dir = LinuxCLI().cmd('pwd').stdout.strip()
-    print 'Setting root dir to: ' + root_dir
+    print('Setting root dir to: ' + root_dir)
 
     client_impl = None
     base_client_args = dict()
@@ -149,7 +149,7 @@ try:
     else:
         raise ArgMismatchException('Invalid client API implementation:' + client_impl_type)
 
-    print 'Setting up log manager with debug=' + str(debug)
+    print('Setting up log manager with debug=' + str(debug))
     log_manager = LogManager(root_dir=log_dir)
     console_log = log_manager.add_stdout_logger(name='tsm-run-console',
                                                 log_level=logging.DEBUG if debug is True else logging.INFO)
@@ -182,43 +182,43 @@ try:
         results = tsm.run_all_tests(name, topology)
 
         for suite, result in tsm.result_map.iteritems():
-            print '========================================'
-            print 'Suite [' + suite + ']'
-            print 'Passed [{0}/{1}]'.format(len(result.successes), result.testsRun)
-            print 'Expected Failures [{0}/{1}]'.format(len(result.expectedFailures), result.testsRun)
-            print 'Failed [{0}/{1}]'.format(len(result.failures), result.testsRun)
-            print 'Error [{0}/{1}]'.format(len(result.errors), result.testsRun)
-            print ''
+            print('========================================')
+            print('Suite [' + suite + ']')
+            print('Passed [{0}/{1}]'.format(len(result.successes), result.testsRun))
+            print('Expected Failures [{0}/{1}]'.format(len(result.expectedFailures), result.testsRun))
+            print('Failed [{0}/{1}]'.format(len(result.failures), result.testsRun))
+            print('Error [{0}/{1}]'.format(len(result.errors), result.testsRun))
+            print('')
             for tc, err in result.failures:
-                print '------------------------------'
-                print 'Test Case FAILED: [' + tc._get_name() + ']'
-                print 'Failure Message:'
-                print err
+                print('------------------------------')
+                print('Test Case FAILED: [' + tc._get_name() + ']')
+                print('Failure Message:')
+                print(err)
 
             for tc, err in result.expectedFailures:
-                print '------------------------------'
-                print 'Test Case passed with EXPECTED FAILURE: [' + tc._get_name() + \
-                      '], see issue(s) [' + ','.join(tc.expected_failure_issue_ids) + ']'
-                print 'Failure Message:'
-                print err
+                print('------------------------------')
+                print('Test Case passed with EXPECTED FAILURE: [' + tc._get_name() +
+                      '], see issue(s) [' + ','.join(tc.expected_failure_issue_ids) + ']')
+                print('Failure Message:')
+                print(err)
 
             for tc, err in result.errors:
                 if isinstance(tc, TestCase):
-                    print '------------------------------'
-                    print 'Test Case ERROR: [' + tc._get_name() + ']'
-                    print 'Error Message:'
-                    print err
+                    print('------------------------------')
+                    print('Test Case ERROR: [' + tc._get_name() + ']')
+                    print('Error Message:')
+                    print(err)
                 else:
-                    print '------------------------------'
-                    print 'Test Framework ERROR'
-                    print 'Error Message:'
-                    print err
+                    print('------------------------------')
+                    print('Test Framework ERROR')
+                    print('Error Message:')
+                    print(err)
 
             for tc, err in result.skipped:
-                print '------------------------------'
-                print 'Test Case SKIPPED: [' + tc._get_name() + ']'
-                print 'Reason:'
-                print err
+                print('------------------------------')
+                print('Test Case SKIPPED: [' + tc._get_name() + ']')
+                print('Reason:')
+                print(err)
 
     finally:
         rdir = results_dir + '/' + name
@@ -227,16 +227,16 @@ try:
 except ExitCleanException:
     exit(1)
 except ArgMismatchException as a:
-    print 'Argument mismatch: ' + str(a)
+    print('Argument mismatch: ' + str(a))
     exit(2)
 except ObjectNotFoundException as e:
-    print 'Object not found: ' + str(e)
+    print('Object not found: ' + str(e))
     exit(2)
 except SubprocessFailedException as e:
-    print 'Subprocess failed to execute: ' + str(e)
+    print('Subprocess failed to execute: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except TestException as e:
-    print 'Unknown exception: ' + str(e)
+    print('Unknown exception: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)

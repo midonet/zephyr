@@ -56,7 +56,7 @@ def tcpdump_start(kwarg_map):
     try:
         return TCPDump._read_packet(**kwarg_map)
     except Exception as e:
-        print 'Exception occured in subprocess: ' + e.message
+        print('Exception occured in subprocess: ' + e.message)
         return 1
 
 

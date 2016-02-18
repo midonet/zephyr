@@ -51,7 +51,7 @@ class LogManager(object):
                         '%Y-%m-%d %H:%M:%S,%f', 0)
 
         if not LinuxCLI().exists(self.root_dir):
-            print "Creating dir: " + self.root_dir
+            print("Creating dir: " + self.root_dir)
             LinuxCLI(priv=False).mkdir(self.root_dir)
             LinuxCLI(priv=False).chown(self.root_dir, LinuxCLI(priv=False).whoami(), LinuxCLI(priv=False).whoami())
 

@@ -25,7 +25,7 @@ from PTM.ptm_constants import HOST_CONTROL_CMD_NAME
 
 
 def usage(exceptClass):
-    print 'Usage: ' + HOST_CONTROL_CMD_NAME + ' [-h] [-d] [-l <log_dir>] -c <command> -j <host_json>'
+    print('Usage: ' + HOST_CONTROL_CMD_NAME + ' [-h] [-d] [-l <log_dir>] -c <command> -j <host_json>')
     if exceptClass is not None:
         raise exceptClass
 
@@ -80,19 +80,19 @@ try:
 except ExitCleanException:
     exit(1)
 except ArgMismatchException as a:
-    print 'Argument mismatch: ' + str(a)
+    print('Argument mismatch: ' + str(a))
     usage(None)
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except ObjectNotFoundException as e:
-    print 'Object not found: ' + str(e)
+    print('Object not found: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except SubprocessFailedException as e:
-    print 'Subprocess failed to execute: ' + str(e)
+    print('Subprocess failed to execute: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)
 except TestException as e:
-    print 'Unknown exception: ' + str(e)
+    print('Unknown exception: ' + str(e))
     traceback.print_tb(sys.exc_traceback)
     exit(2)

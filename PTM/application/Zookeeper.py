@@ -70,9 +70,9 @@ class Zookeeper(Application):
 
     def print_config(self, indent=0):
         super(Zookeeper, self).print_config(indent)
-        print ('    ' * (indent + 1)) + 'Num-id: ' + self.num_id
-        print ('    ' * (indent + 1)) + 'Self-IP: ' + str(self.ip)
-        print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(str(ip) for ip in self.zookeeper_ips)
+        print(('    ' * (indent + 1)) + 'Num-id: ' + self.num_id)
+        print(('    ' * (indent + 1)) + 'Self-IP: ' + str(self.ip))
+        print(('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(str(ip) for ip in self.zookeeper_ips))
 
     # TODO(micucci): Add a wait_for_process_stop here (and to all hosts)
     def wait_for_process_start(self):
@@ -132,7 +132,7 @@ class Zookeeper(Application):
                                       'org.apache.zookeeper.server.quorum.QuorumPeerMain',
                                       '/etc/zookeeper/conf/zoo.cfg']], blocking=False)
 
-        print process.stderr
+        print(process.stderr)
 
         if process.process.pid == -1:
             raise SubprocessFailedException('java-zookeeper')

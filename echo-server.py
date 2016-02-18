@@ -49,7 +49,7 @@ es = EchoServer(ip, port, data, protocol)
 
 
 def term_handler(signum, frame):
-    print "Exiting..."
+    print("Exiting...")
     LinuxCLI().cmd("echo 'TERM: Stopping' >> " + tmp_status_file_name)
     stop_event.set()
     LinuxCLI().cmd("echo 'TERM: Exiting' >> " + tmp_status_file_name)
@@ -67,7 +67,7 @@ try:
     es.stop()
     LinuxCLI().cmd("echo 'Exiting' >> " + tmp_status_file_name)
 except Exception as e:
-    print "ERROR: " + str(e)
+    print("ERROR: " + str(e))
     LinuxCLI().cmd("echo 'ERROR: " + str(e) + "' >> " + tmp_status_file_name)
     exit(2)
 

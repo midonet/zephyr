@@ -128,14 +128,14 @@ class MidolmanTest(unittest.TestCase):
             time.sleep(1)
 
         pid = LinuxCLI().read_from_file('/run/midolman.1/pid').rstrip()
-        print "PID = " + pid
-        print "PS = " + LinuxCLI().cmd("ps -aef").stdout
+        print("PID = " + pid)
+        print("PS = " + LinuxCLI().cmd("ps -aef").stdout)
 
         self.assertTrue(LinuxCLI().is_pid_running(pid))
 
         ptm_i.shutdown()
 
-        print LinuxCLI().cmd('ip netns').stdout
+        print(LinuxCLI().cmd('ip netns').stdout)
 
     def tearDown(self):
         pass

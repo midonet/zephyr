@@ -29,7 +29,7 @@ def run_unit_test(test_case_name):
         try:
             unittest.TextTestRunner(verbosity=2).run(suite)
         except Exception as e:
-            print 'Exception: ' + e.message + ', ' + str(e.args)
+            print('Exception: ' + e.message + ', ' + str(e.args))
     else:
         import xmlrunner
         xmlrunner.XMLTestRunner(output=xml_output_dir).run(suite)

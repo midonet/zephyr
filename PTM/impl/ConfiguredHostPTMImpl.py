@@ -178,7 +178,7 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
         self.LOG.debug('**PTM configuration finished**')
 
     def print_config(self, indent=0, logger=None):
-        print 'Hosts (in start-order):'
+        print('Hosts (in start-order):')
         for l in self.host_by_start_order:
             for h in l:
                 h.print_config(indent + 1)
