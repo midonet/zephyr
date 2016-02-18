@@ -135,7 +135,7 @@ class ConfiguredHostPTMImplTest(unittest.TestCase):
 
             self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'zoo1'))
             self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test-host1'))
-        except:
+        except Exception:
             cmp_host = ptm_i.hosts_by_name['cmp1']
             """ :type: Midolman"""
             LinuxCLI().copy_file('/var/log/midolman.1/midolman.log',

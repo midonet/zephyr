@@ -232,7 +232,7 @@ class expected_failure(object):
             """
             try:
                 f(slf, *args)
-            except:
+            except Exception:
                 slf.LOG.info('Expected failure (see issue: ' +
                              str(self.issue_id) + ')')
                 slf.add_expected_failure(self.issue_id, stop_on_fail=True)

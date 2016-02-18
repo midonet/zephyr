@@ -465,7 +465,7 @@ class TestExtraRoutes(NeutronTestCase):
             try:
                 if1 = self.api.add_interface_router(router1extra['id'], {'port_id': port1extra['id']})
                 self.LOG.debug('Added port1extra port to router router1extra: ' + str(if1))
-            except:
+            except Exception:
                 self.LOG.fatal('Exception raised trying to add interface for port1extra')
                 ports = [i for i in self.api.list_ports(port_id=port1extra['id'])['ports']
                          if i['id'] == port1extra['id']]
