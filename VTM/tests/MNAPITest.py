@@ -70,7 +70,7 @@ class MNAPITest(unittest.TestCase):
             cls.main_bridge = setup_main_bridge(api)
             """ :type: Bridge"""
 
-        except:
+        except (KeyboardInterrupt, Exception):
             cls.ptm.shutdown()
             raise
 

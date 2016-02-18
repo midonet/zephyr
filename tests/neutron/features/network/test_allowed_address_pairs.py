@@ -953,5 +953,5 @@ class TestAllowedAddressPairs(NeutronTestCase):
             self.fail("Should have thrown BadRequest when IP Address is missing.")
         except BadRequest:
             pass
-        except:
+        except Exception:
             self.fail("Should have thrown BadRequest when IP Address is missing.")

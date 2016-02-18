@@ -81,7 +81,7 @@ class NeutronAPITest(unittest.TestCase):
             except Exception:
                 clean_neutron(cls.api, log=log)
                 raise
-        except:
+        except (KeyboardInterrupt, Exception):
             cls.ptm.shutdown()
             LinuxCLI().cmd('ip netns del vm1')
             raise
