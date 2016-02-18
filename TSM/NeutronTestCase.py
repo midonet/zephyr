@@ -89,7 +89,7 @@ class NeutronTestCase(TestCase):
         self.mn_api = self.neutron_fixture.mn_api
         super(NeutronTestCase, self).run(result)
 
-    #TODO: Change this to use the GuestData namedtuple
+    #TODO(micucci): Change this to use the GuestData namedtuple
     def cleanup_vms(self, vm_port_list):
         """
         :type vm_port_list: list[(Guest, port)]

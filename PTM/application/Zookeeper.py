@@ -74,7 +74,7 @@ class Zookeeper(Application):
         print ('    ' * (indent + 1)) + 'Self-IP: ' + str(self.ip)
         print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(str(ip) for ip in self.zookeeper_ips)
 
-    # TODO: Add a wait_for_process_stop here (and to all hosts)
+    # TODO(micucci): Add a wait_for_process_stop here (and to all hosts)
     def wait_for_process_start(self):
         # Checking Zookeeper status
         retries = 0
@@ -98,7 +98,7 @@ class Zookeeper(Application):
                         raise SubprocessFailedException('Zookeeper host ' + self.num_id + ' timed out while starting')
                     time.sleep(1)
 
-        # TODO: Look into why this works everywhere BUT Jenkins gates
+        # TODO(micucci): Look into why this works everywhere BUT Jenkins gates
         # retries = 0
         # while not LinuxCLI().exists('/run/zookeeper.' + str(self.num_id) + '/pid'):
         #     if retries > max_retries:

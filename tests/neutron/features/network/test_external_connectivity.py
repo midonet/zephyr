@@ -60,7 +60,7 @@ class TestExternalConnectivity(NeutronTestCase):
             ext_host.stop_echo_server(ip=ext_ip)
 
             # Test UDP
-            # TODO: Fix UDP
+            # TODO(micucci): Fix UDP
             # ext_host.start_echo_server(ip=ext_ip, protocol='udp')
             # echo_response = vm1.send_echo_request(dest_ip=ext_ip, protocol='udp')
             # self.assertEqual('ping:echo-reply', echo_response)

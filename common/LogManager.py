@@ -21,7 +21,7 @@ import datetime
 import os
 
 
-#TODO:  CT-159: Clean up logging
+#TODO(micucci):  CT-159: Clean up logging
 # Allow multiple logs to easily log to the same file with different names
 # The log should have <datetimestamp> [component] | LEVEL | Msg
 # where component can be multiple loggers all logging to the same file, to make it easy to see
@@ -333,7 +333,7 @@ class LogManager(object):
         if zip_file:
             cli.cmd('gzip -9 ' + dest_filename)
 
-    # TODO: Make sure logging can have subdirs under root dir to help organize logs!
+    # TODO(micucci): Make sure logging can have subdirs under root dir to help organize logs!
     def rollover_logs_fresh(self, backup_dir=None,
                       date_pattern='%Y%m%d%H%M%S', zip_file=True, file_filter='*.log'):
         """

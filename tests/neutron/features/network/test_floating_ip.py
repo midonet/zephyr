@@ -70,7 +70,7 @@ class TestFloatingIP(NeutronTestCase):
             echo_response = vm1.send_echo_request(dest_ip=ext_ip)
             self.assertEqual('ping:echo-reply', echo_response)
 
-            # TODO: Fix UDP
+            # TODO(micucci): Fix UDP
             # UDP
             # ext_host.stop_echo_server(ip=ext_ip)
             # ext_host.start_echo_server(ip=ext_ip, protocol='udp')
@@ -150,7 +150,7 @@ class TestFloatingIP(NeutronTestCase):
             echo_response = vm1.send_echo_request(dest_ip=ext_ip)
             self.assertEqual('ping:echo-reply', echo_response)
 
-            # TODO: Fix UDP
+            # TODO(micucci): Fix UDP
             # UDP
             # ext_host.stop_echo_server(ip=ext_ip)
             # ext_host.start_echo_server(ip=ext_ip, protocol='udp')
@@ -434,7 +434,7 @@ class TestFloatingIP(NeutronTestCase):
             echo_response = vm1.send_echo_request(dest_ip=fip2)
             self.assertEqual('ping:echo-reply', echo_response)
 
-            # TODO: Fix UDP
+            # TODO(micucci): Fix UDP
             # UDP
             # ext_host.stop_echo_server(ip=ip2)
             # ext_host.start_echo_server(ip=ip2, protocol='udp')

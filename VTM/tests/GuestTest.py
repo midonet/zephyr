@@ -177,7 +177,7 @@ class GuestTest(unittest.TestCase):
             vm1.shutdown()
             vm1.remove()
 
-    # TODO: Fix UDP
+    # TODO(micucci): Fix UDP
     # def test_echo_server_udp(self):
     #     vtm = VirtualTopologyManager(client_api_impl=MockClient,
     #                                  physical_topology_manager=self.ptm)

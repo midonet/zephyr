@@ -103,7 +103,7 @@ class RouterFileConfiguration(FileConfigurationHandler):
         if num_id == '1':
             self.cli.copy_dir(this_dir + '/scripts/quagga.1', etc_dir)
         else:
-            #TODO: Make Quagga configure quagga correctly for multiple routers
+            #TODO(micucci): Make Quagga configure quagga correctly for multiple routers
             """mmconf_file = mmetc_dir + '/midolman.conf'
             self.cli.copy_dir(this_dir + '/scripts/quagga.2+', etc_dir)
             self.cli.regex_file(mmconf_file, 's/^\[midolman\]/\[midolman\]\\nbgp_keepalive=1/')

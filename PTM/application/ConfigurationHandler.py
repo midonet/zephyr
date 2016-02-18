@@ -15,7 +15,7 @@
 from common.CLI import LinuxCLI
 
 
-#TODO: Clean up how the configs are created and transformed
+#TODO(micucci): Clean up how the configs are created and transformed
 class ConfigurationHandler(object):
     def __init__(self):
         super(ConfigurationHandler, self).__init__()

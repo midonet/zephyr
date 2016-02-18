@@ -33,7 +33,7 @@ def echo_server_listener(ip, port, protocol, echo_data, running_event, stop_even
         if protocol == 'tcp':
             _socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             _socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        # TODO: Get UDP working
+        # TODO(micucci): Get UDP working
         # elif protocol == 'udp':
         #     _socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         else:
@@ -56,7 +56,7 @@ def echo_server_listener(ip, port, protocol, echo_data, running_event, stop_even
                     debug and LinuxCLI().cmd('echo "Listener Socket sent appended data: ' +
                                              echo_data + '" >> ' + tmp_status_file_name)
                     conn.close()
-                # TODO: Get UDP working
+                # TODO(micucci): Get UDP working
                 # elif protocol == 'udp':
                 #     LinuxCLI().cmd('echo "Listener Socket waiting for UDP" >> ' + tmp_status_file_name)
                 #     data, addr = _socket.recvfrom(1024)

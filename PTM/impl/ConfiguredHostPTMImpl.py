@@ -57,7 +57,7 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
         """
         self.LOG.debug('**PTM configuration started**')
         self.LOG.debug('Configuring PTM with file: ' + config_file)
-        #TODO: Enable multiple config files to define roots across several Linux hosts
+        #TODO(micucci): Enable multiple config files to define roots across several Linux hosts
         config_obj = None
         with open(config_file, 'r') as f:
             if file_type == 'json':

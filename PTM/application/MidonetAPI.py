@@ -26,7 +26,7 @@ from common.IP import IP
 from common.FileLocation import *
 
 
-# TODO: This is really the controller and should be refactored in case it's not on root or same host as a Compute
+# TODO(micucci): This is really the controller and should be refactored in case it's not on root or same host as a Compute
 class MidonetAPI(Application):
 
     @staticmethod

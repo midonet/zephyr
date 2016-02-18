@@ -65,7 +65,7 @@ class ZookeeperTest(unittest.TestCase):
 
             self.assertEqual('imok', zoo_host1.cli.cmd_pipe([['echo', 'ruok'], ['nc', 'localhost', '2181']]).stdout)
 
-            # TODO: Look into why this works everywhere BUT jenkins gates
+            # TODO(micucci): Look into why this works everywhere BUT jenkins gates
             # timeout = time.time() + 30
             # while not LinuxCLI().exists('/run/zookeeper.1/pid'):
             #     if time.time() > timeout:

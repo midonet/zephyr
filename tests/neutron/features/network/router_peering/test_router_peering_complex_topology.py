@@ -549,5 +549,5 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
 
             delete_neutron_main_pub_networks(self.api, east_topo)
             delete_neutron_main_pub_networks(self.api, west_topo)
-            #TODO: Fix cleanup
+            #TODO(joe): Fix cleanup
             #delete_neutron_main_pub_networks(self.api, nort_topo)

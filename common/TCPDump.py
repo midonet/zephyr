@@ -247,7 +247,7 @@ class TCPDump(object):
                 try:
                     line = os.read(tcp_actual_process.stderr.fileno(), 256)
                     if line.find('listening on') != -1:
-                        # TODO: Replace sleep after TCPDump starts with a real check
+                        # TODO(micucci): Replace sleep after TCPDump starts with a real check
                         # This is dangerous, and might not actually be enough to signal the
                         # tcpdump is actually running.  Instead, let's create a Cython module that
                         # passes calls through to libpcap (there are 0 good libpcap implementations

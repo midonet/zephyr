@@ -44,12 +44,12 @@ import datetime
 ECHO_SERVER_TIMEOUT = 3
 
 
-# TODO: Extrapolate the host access from the host operations
+# TODO(micucci): Extrapolate the host access from the host operations
 # So we can have IPNetNSHost and "VMSSHHost", etc. and also have
 # Cassandra, etc. which supports Cassandra functionality but using
 # a flexible accessor so it can run on IPNetNS or VMSSH, etc. without
 # having to do multiple inheritance.
-# TODO: [PRIORITY] Furthermore, we should extrapolate all process control
+# TODO(micucci): [PRIORITY] Furthermore, we should extrapolate all process control
 # completely, as the boot and network characterization of a host
 # is only superficially linked to the process and its attendant
 # configuration which will be running on it.  We should really only
