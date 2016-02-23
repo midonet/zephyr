@@ -37,8 +37,6 @@ L2GWPeeredTopo = namedtuple("L2GWPeeredTopo", "east west")
 
 class L2GWNeutronTestCase(NeutronTestCase):
 
-    rmacs = set()
-
     @classmethod
     def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
         """
@@ -54,164 +52,65 @@ class L2GWNeutronTestCase(NeutronTestCase):
             test_case_logger.debug('Adding l2gw-setup fixture')
             ptm.add_fixture('l2gw-setup', L2GWFixture())
 
-    def create_vm_server(self, net_id, gw_ip):
-        port = self.api.create_port({'port': {'name': 'port_vm1',
-                                              'network_id': net_id,
-                                              'admin_state_up': True,
-                                              'tenant_id': 'admin'}})['port']
-        ip = port['fixed_ips'][0]['ip_address']
-
-        vm = self.vtm.create_vm(ip=ip, mac=port['mac_address'], gw_ip=gw_ip)
-
-        vm.plugin_vm('eth0', port['id'])
-
-        return (port, vm, ip)
-
-    def clean_topo(self):
-        self.clean_remote_mac_entrys()
-
-    def clean_remote_mac_entrys(self):
-        while self.rmacs:
-            (gwid, rmid) = self.rmacs.pop()
-            self.delete_remote_mac_entry(gwid, rmid, clean=False)
-
-    def delete_remote_mac_entry(self, gwdev_id, rme_id, clean=True):
-        curl_url = get_neutron_api_url(self.api)
-        curl_delete(curl_url +
-                    "/gw/gateway_devices/" + str(gwdev_id) +
-                    "/remote_mac_entries/" + str(rme_id))
-        if clean:
-            self.rmacs.discard((gwdev_id, rme_id))
-
-    def create_gateway_device(self, tunnel_ip, name, vtep_router_id):
-        curl_url = get_neutron_api_url(self.api) + '/gw/gateway_devices'
-        gw_dev_dict = {"gateway_device": {"name": 'vtep_router_' + name,
-                                          "type": 'router_vtep',
-                                          "resource_id": vtep_router_id,
-                                          "tunnel_ips": [tunnel_ip],
-                                          "tenant_id": 'admin'}}
-        post_ret = curl_post(curl_url, gw_dev_dict)
-        gw = json.loads(post_ret)
-        self.LOG.debug('create gateway device: ' + str(gw))
-        return gw['gateway_device']
-
-    def update_gw_device(self, gwdev_id, tunnel_ip=None, name=None):
-        # Convert it to a VxLAN endpoint (VTEP)
-        gwdict = {}
-        if name:
-            gwdict['name'] = 'vtep_router_' + name
-        if tunnel_ip:
-            gwdict['tunnel_ips'] = [tunnel_ip]
-        curl_req = {"gateway_device": gwdict}
-
-        curl_url = get_neutron_api_url(self.api)
-        # Set up GW device
-        device_json_ret = curl_put(curl_url + '/gw/gateway_devices/' + gwdev_id, curl_req)
-        self.LOG.debug("Update gateway device" + device_json_ret)
-
-    def create_uplink_port(self, name, tun_net_id, tun_host, uplink_iface, tun_sub_id, tunnel_ip):
-        tun_port = self.api.create_port(
-            {'port': {'name': 'tun_port_' + name,
-                      'network_id': tun_net_id,
-                      'binding:host_id': tun_host,
-                      'binding:profile':
-                          {'interface_name': uplink_iface},
-                      'fixed_ips': [{'subnet_id': tun_sub_id,
-                                     'ip_address': tunnel_ip}],
-                      'tenant_id': 'admin'}})
-        self.LOG.info('Created ' + name +
-                      ' tunnel port: ' + str(tun_port))
-        return tun_port['port']
-
-    def create_vtep_network(self, name):
-        tun_network = self.api.create_network(
-            {'network': {'name': 'tun_' + name,
-                         'provider:network_type': 'uplink',
-                         'tenant_id': 'admin'}})
-        return tun_network['network']
-
-    def create_vtep_subnet(self, name, net_id, cidr):
-        tun_subnet = self.api.create_subnet(
-            {'subnet': {'name': 'tun_sub_' + name,
-                        'network_id': net_id,
-                        'enable_dhcp': False,
-                        'ip_version': 4,
-                        'cidr': cidr,
-                        'tenant_id': 'admin'}})
-        self.LOG.debug('Created ' + name +
-                       ' tunnel subnet: ' + str(tun_subnet))
-        return tun_subnet['subnet']
-
-    def create_vtep_router(self, name):
-        vtep_router = self.api.create_router(
-            {'router': {'name': 'vtep_router_' + name,
-                        'tenant_id': 'admin'}})
-        self.LOG.debug('Created ' + name +
-                       ' VTEP router: ' + str(vtep_router))
-        return vtep_router['router']
-
-    def create_l2_gateway(self, name, gwdev_id):
-        curl_url = get_neutron_api_url(self.api) + '/l2-gateways'
-        l2gw_data = {"l2_gateway": {"name": 'vtep_router_gw_' + name,
-                                    "devices": [{"device_id": gwdev_id}],
-                                    "tenant_id": "admin"}}
-
-        l2_json_ret = curl_post(curl_url, l2gw_data)
-        self.LOG.debug('L2GW ' + name + ': ' + str(l2_json_ret))
-        l2gw = json.loads(l2_json_ret)
-        return l2gw['l2_gateway']
-
-    def create_l2_gateway_connection(self, az_net_id, segment_id, l2gw_id):
-        curl_url = get_neutron_api_url(self.api) + '/l2-gateway-connections'
-        l2gw_conn_curl = {"l2_gateway_connection": {
-                             "network_id": az_net_id,
-                             "segmentation_id": segment_id,
-                             "l2_gateway_id": l2gw_id,
-                             "tenant_id": "admin"}}
-
-        l2_conn_json_ret = curl_post(curl_url, l2gw_conn_curl)
-
-        self.LOG.debug('L2 Conn: ' + str(l2_conn_json_ret))
-
-        l2_conn = json.loads(l2_conn_json_ret)
-        return l2_conn['l2_gateway_connection']
-
     def create_ghost_port(self, az_net_id, ip, mac, other_port_id):
-        ghost_port = self.api.create_port(
-                {'port': {
-                    'tenant_id': 'admin',
-                    'fixed_ips': [{'ip_address': ip}],
-                    'name': 'ghost_port_for_west_router',
-                    'mac_address': mac,
-                    'network_id': az_net_id,
-                    'port_security_enabled': False,
-                    'device_owner': 'network:remote_site',
-                    'device_id': other_port_id}})
-        self.LOG.debug("Created ghost port on " + str(az_net_id) +
-                       "network mimicking far-side router port: " +
-                       str(ghost_port))
-        return ghost_port['port']
+        ghost_port = self.create_port("ghost_port", az_net_id, ip=ip, mac=mac,
+            device_owner="network:remote_site", port_security_enabled=False,
+            device_id=other_port_id)
+        self.LOG.debug("Created ghost port on east network mimicking "
+                       "west-side router port: " + str(ghost_port))
+        return ghost_port
 
-    def create_remote_mac_entry(self, ip, mac, segment_id, gwdev_id):
-        curl_url = get_neutron_api_url(self.api)
-        mac_add_data_far = \
-            {"remote_mac_entry": {
-                "tenant_id": "admin",
-                "vtep_address": ip,
-                "mac_address": mac,
-                "segmentation_id": segment_id}}
-        rmac_json_far_ret = \
-            curl_post(curl_url + '/gw/gateway_devices/' +
-                      str(gwdev_id) + "/remote_mac_entries",
-                      json_data=mac_add_data_far)
-        self.LOG.debug("RMAC : " + str(rmac_json_far_ret))
-        rmac = json.loads(rmac_json_far_ret)
-        self.rmacs.add((gwdev_id, rmac['remote_mac_entry']['id']))
-        return rmac['remote_mac_entry']
+    def hook_tenant_router_to_az_net(self, name, tenant_router_id, az_net_id,
+                                     az_sub_id, az_gw):
+        iface_port = self.create_port(name, az_net_id, ip=az_gw,
+                                      sub_id=az_sub_id)
+        iface = self.create_router_interface(tenant_router_id,
+                                             iface_port['id'])
+        return (iface_port, iface)
 
-    def delete_l2_gw_conn(self, l2gwconn_id):
-        curl_url = get_neutron_api_url(self.api)
-        curl_delete(curl_url + "/l2-gateway-connections/" + l2gwconn_id)
+    def hook_vtep_to_uplink_net(self, name, vtep_router_id, vtep_net_id,
+                                tun_host, tun_iface, vtep_sub_id, tun_ip,
+                                tun_gw):
+        tun_port = self.create_port(name, vtep_net_id, host=tun_host,
+            host_iface=tun_iface, sub_id=vtep_sub_id, ip=tun_ip)
+        vtep_tun_if = self.create_router_interface(vtep_router_id,
+                                                   tun_port['id'])
+        route = {'nexthop': tun_gw, 'destination': '0.0.0.0/0'}
+        self.api.update_router(vtep_router_id, {'router': {'routes': [route]}})
+        return (tun_port, vtep_tun_if)
+
+    def create_router_peering_topo(self, name, az_cidr, az_gw, tun_cidr,
+                                   tun_ip, tun_gw, tun_host, tun_iface,
+                                   tenant_router_id, segment_id):
+        vtep_net = self.create_network(name + "_VTEP_UPLINK", uplink=True)
+        vtep_sub = self.create_subnet(name + "_VTEP_UPLINK", vtep_net['id'],
+                                      tun_cidr, enable_dhcp=False)
+        vtep_router = self.create_router(name + "_VTEP")
+        (tun_port, vtep_tun_if) = self.hook_vtep_to_uplink_net(
+            name, vtep_router['id'], vtep_net['id'], tun_host, tun_iface,
+            vtep_sub['id'], tun_ip, tun_gw)
+
+        gw = self.create_gateway_device(tun_ip, name, vtep_router['id'])
+        l2gw = self.create_l2_gateway(name, gw['id'])
+        az_net = self.create_network(name + "_AZ")
+        az_sub = self.create_subnet(name + "_AZ", az_net['id'], az_cidr,
+                                    enable_dhcp=False)
+        l2gw_conn = self.create_l2_gateway_connection(
+            az_net['id'], segment_id, l2gw['id'])
+        (iface_port, iface) = self.hook_tenant_router_to_az_net(
+            name, tenant_router_id, az_net['id'], az_sub['id'], az_gw)
+        return {'vtep_net': vtep_net,
+                'vtep_sub': vtep_sub,
+                'vtep_router': vtep_router,
+                'tun_port': tun_port,
+                'vtep_tun_if': vtep_tun_if,
+                'gateway_device': gw,
+                'l2_gateway': l2gw,
+                'l2_gateway_conn': l2gw_conn,
+                'az_net': az_net,
+                'az_sub': az_sub,
+                'az_iface_port': iface_port,
+                'az_iface': iface}
 
     def setup_peer_l2gw(self, tun_cidr, tun_ip, tun_gw, tun_host, tun_iface,
                         az_cidr, az_gw, segment_id, peer_router, peer_name):
@@ -240,11 +139,12 @@ class L2GWNeutronTestCase(NeutronTestCase):
             # Create the Neutron router that will be peered
             # Create an uplink network (Midonet-specific extension used for
             # provider:network_type)
-            tun_network = self.create_vtep_network(peer_name)
-            tun_subnet = self.create_vtep_subnet(peer_name, tun_network['id'], tun_cidr)
+            tun_network = self.create_network(peer_name, uplink=True)
+            tun_subnet = self.create_subnet(peer_name, tun_network['id'],
+                                            tun_cidr, enable_dhcp=False)
 
             # Create VTEP router
-            vtep_router = self.create_vtep_router(peer_name)
+            vtep_router = self.create_router(peer_name)
 
             # Create "port" on router by creating a port on the
             # special uplink network bound to the physical interface on
@@ -371,6 +271,22 @@ class L2GWNeutronTestCase(NeutronTestCase):
                 self.clean_peered_site_data(west_peer)
             self.LOG.fatal("Error peering L2GW topologies: " + str(e))
             return None
+
+    def add_peer(self, topo, tenant_router_id, segment_id, rmt_router_ip,
+                 rmt_router_mac, rmt_private_cidr, dev_id, rmt_tunnel_ip):
+        route = {'nexthop': rmt_router_ip, 'destination': rmt_private_cidr}
+        self.api.update_router(tenant_router_id,
+                               {'router': {'routes': [route]}})
+        ghost_port = self.create_ghost_port(
+            topo['az_net']['id'], rmt_router_ip, rmt_router_mac,
+            dev_id)
+        rmac = self.create_remote_mac_entry(rmt_tunnel_ip,
+            rmt_router_mac, segment_id,
+            topo['gateway_device']['id'])
+        topo = dict()
+        topo['ghost_port'] = ghost_port
+        topo['remote_mac_entry'] = rmac
+        return topo
 
     def peer_sites_side(self, near_side, far_side,
                         far_private_cidr, segment_id):

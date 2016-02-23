@@ -14,8 +14,12 @@
 
 import logging
 from collections import namedtuple
-
+from common.Utils import curl_delete
+from common.Utils import curl_post
+from common.Utils import curl_put
+import json
 from TSM.TestCase import TestCase
+from VTM.NeutronAPI import get_neutron_api_url
 from VTM.NeutronAPI import NetData
 from VTM.NeutronAPI import RouterData
 from PTM.fixtures.MidonetHostSetupFixture import MidonetHostSetupFixture
@@ -32,6 +36,303 @@ EdgeData = namedtuple('EdgeData', "edge_net router")
 
 
 class NeutronTestCase(TestCase):
+
+    servers = list()
+    rmacs = set()
+    l2gws = set()
+    l2gw_conns = set()
+    gws = set()
+    fips = set()
+    nports = set()
+    nnets = set()
+    nsubs = set()
+    nrouters = set()
+    nr_ifaces = list()
+
+    def clean_topo(self):
+        self.clean_remote_mac_entrys()
+        self.clean_l2_gateway_conns()
+        self.clean_l2_gateway()
+        self.clean_fips()
+        self.clean_router_routes()
+        self.clean_router_ifaces()
+        self.clean_gateways()
+        self.clean_ports()
+        self.clean_routers()
+        self.clean_subs()
+        self.clean_nets()
+
+    def create_remote_mac_entry(self, ip, mac, segment_id, gwdev_id):
+        curl_url = get_neutron_api_url(self.api)
+        mac_add_data_far = \
+            {"remote_mac_entry": {
+                "tenant_id": "admin",
+                "vtep_address": ip,
+                "mac_address": mac,
+                "segmentation_id": segment_id}}
+        rmac_json_far_ret = \
+            curl_post(curl_url + '/gw/gateway_devices/' +
+                      str(gwdev_id) + "/remote_mac_entries",
+                      json_data=mac_add_data_far)
+        self.LOG.debug("RMAC : " + str(rmac_json_far_ret))
+        rmac = json.loads(rmac_json_far_ret)
+        self.rmacs.add((gwdev_id, rmac['remote_mac_entry']['id']))
+        return rmac['remote_mac_entry']
+
+    def delete_l2_gw_conn(self, l2gwconn_id, clean=True):
+        curl_url = get_neutron_api_url(self.api)
+        curl_delete(curl_url + "/l2-gateway-connections/" + l2gwconn_id)
+        if clean:
+            self.l2gw_conns.discard(l2gwconn_id)
+
+    def delete_remote_mac_entry(self, gwdev_id, rme_id, clean=True):
+        curl_url = get_neutron_api_url(self.api)
+        curl_delete(curl_url +
+                    "/gw/gateway_devices/" + str(gwdev_id) +
+                    "/remote_mac_entries/" + str(rme_id))
+        if clean:
+            self.rmacs.discard((gwdev_id, rme_id))
+
+    def create_gateway_device(self, tunnel_ip, name, vtep_router_id):
+        curl_url = get_neutron_api_url(self.api) + '/gw/gateway_devices'
+        gw_dev_dict = {"gateway_device": {"name": 'vtep_router_' + name,
+                                          "type": 'router_vtep',
+                                          "resource_id": vtep_router_id,
+                                          "tunnel_ips": [tunnel_ip],
+                                          "tenant_id": 'admin'}}
+        post_ret = curl_post(curl_url, gw_dev_dict)
+        gw = json.loads(post_ret)
+        self.LOG.debug('create gateway device: ' + str(gw))
+        self.gws.add(gw['gateway_device']['id'])
+        return gw['gateway_device']
+
+    def update_gw_device(self, gwdev_id, tunnel_ip=None, name=None):
+        gwdict = {}
+        if name:
+            gwdict['name'] = 'vtep_router_' + name
+        if tunnel_ip:
+            gwdict['tunnel_ips'] = [tunnel_ip]
+        curl_req = {"gateway_device": gwdict}
+
+        curl_url = get_neutron_api_url(self.api)
+        device_json_ret = curl_put(curl_url + '/gw/gateway_devices/' + gwdev_id, curl_req)
+        self.LOG.debug("Update gateway device" + device_json_ret)
+
+    def delete_gateway_device(self, gwdev_id, clean=True):
+        curl_url = get_neutron_api_url(self.api) + '/gw/gateway_devices/'
+        curl_delete(curl_url + gwdev_id)
+        if clean:
+            self.gws.discard(gwdev_id)
+
+    def create_uplink_port(self, name, tun_net_id, tun_host, uplink_iface,
+                           tun_sub_id, tunnel_ip):
+        return self.create_port(name, tun_net_id, host=tun_host,
+                                host_iface=uplink_iface, sub_id=tun_sub_id,
+                                ip=tunnel_ip)
+
+    def create_l2_gateway(self, name, gwdev_id):
+        curl_url = get_neutron_api_url(self.api) + '/l2-gateways'
+        l2gw_data = {"l2_gateway": {"name": 'vtep_router_gw_' + name,
+                                    "devices": [{"device_id": gwdev_id}],
+                                    "tenant_id": "admin"}}
+
+        l2_json_ret = curl_post(curl_url, l2gw_data)
+        self.LOG.debug('L2GW ' + name + ': ' + str(l2_json_ret))
+        l2gw = json.loads(l2_json_ret)
+        self.l2gws.add(l2gw['l2_gateway']['id'])
+        return l2gw['l2_gateway']
+
+    def delete_l2_gateway(self, l2gw_id, clean=True):
+        curl_url = get_neutron_api_url(self.api)
+        curl_delete(curl_url + "/l2-gateway-connections/" + str(l2gw_id))
+        if clean:
+            self.l2gws.discard(l2gw_id)
+
+    def create_l2_gateway_connection(self, az_net_id, segment_id, l2gw_id):
+        curl_url = get_neutron_api_url(self.api) + '/l2-gateway-connections'
+        l2gw_conn_curl = {"l2_gateway_connection": {
+                             "network_id": az_net_id,
+                             "segmentation_id": segment_id,
+                             "l2_gateway_id": l2gw_id,
+                             "tenant_id": "admin"}}
+
+        l2_conn_json_ret = curl_post(curl_url, l2gw_conn_curl)
+
+        self.LOG.debug('L2 Conn: ' + str(l2_conn_json_ret))
+
+        l2_conn = json.loads(l2_conn_json_ret)
+        self.l2gw_conns.add(l2_conn['l2_gateway_connection']['id'])
+        return l2_conn['l2_gateway_connection']
+
+    def verify_connectivity(self, vm, dest_ip):
+        self.assertTrue(vm.ping(target_ip=dest_ip))
+
+        echo_response = vm.send_echo_request(dest_ip=dest_ip)
+        self.assertEqual('ping:echo-reply', echo_response)
+
+        echo_response = vm.send_echo_request(dest_ip=dest_ip)
+        self.assertEqual('ping:echo-reply', echo_response)
+
+    def create_vm_server(self, name, net_id, gw_ip):
+        port_data = {'name': name,
+                     'network_id': net_id,
+                     'admin_state_up': True,
+                     'tenant_id': 'admin'}
+        port = self.api.create_port({'port': port_data})['port']
+        ip = port['fixed_ips'][0]['ip_address']
+        vm = self.vtm.create_vm(ip=ip, mac=port['mac_address'], gw_ip=gw_ip)
+        vm.plugin_vm('eth0', port['id'])
+        self.servers.append((vm, ip, port))
+        return (port, vm, ip)
+
+    def clean_vm_servers(self):
+        while self.servers:
+            (vm, ip, port) = self.servers.pop()
+            vm.stop_echo_server(ip=ip)
+            self.cleanup_vms([(vm, port)])
+
+    def clean_remote_mac_entrys(self):
+        while self.rmacs:
+            (gwid, rmid) = self.rmacs.pop()
+            self.delete_remote_mac_entry(gwid, rmid, clean=False)
+
+    def clean_l2_gateway_conns(self):
+        while self.l2gw_conns:
+            l2gw_conn_id = self.l2gw_conns.pop()
+            self.delete_l2_gw_conn(l2gw_conn_id, clean=False)
+
+    def clean_l2_gateway(self):
+        while self.l2gws:
+            l2gw_id = self.l2gws.pop()
+            self.delete_l2_gateway(l2gw_id, clean=False)
+
+    def clean_gateways(self):
+        while self.gws:
+            gw_id = self.gws.pop()
+            self.delete_gateway_device(gw_id, clean=False)
+
+    def clean_fips(self):
+        while self.fips:
+            fip_id = self.fips.pop()
+            self.api.delete_floatingip(fip_id)
+
+    def clean_router_routes(self):
+        for rid in self.nrouters:
+            self.api.update_router(rid, {'router': {'routes': None}})
+
+    def clean_router_ifaces(self):
+        while self.nr_ifaces:
+            (rid, iface) = self.nr_ifaces.pop()
+            self.nports.discard(iface['port_id'])
+            self.api.remove_interface_router(rid, iface)
+
+    def clean_ports(self):
+        while self.nports:
+            port_id = self.nports.pop()
+            self.api.delete_port(port_id)
+
+    def clean_routers(self):
+        while self.nrouters:
+            rid = self.nrouters.pop()
+            self.api.delete_router(rid)
+
+    def clean_nets(self):
+        while self.nnets:
+            nid = self.nnets.pop()
+            self.api.delete_network(nid)
+
+    def clean_subs(self):
+        while self.nsubs:
+            sid = self.nsubs.pop()
+            self.api.delete_subnet(sid)
+
+    def create_floating_ip(self, port_id, pub_net_id, tenant_id='admin'):
+        fip_data = {'port_id': port_id,
+                    'tenant_id': tenant_id,
+                    'floating_network_id': pub_net_id}
+        fip = self.api.create_floatingip({'floatingip': fip_data})
+        self.fips.add(fip['floatingip']['id'])
+        return fip['floatingip']
+
+    def delete_floating_ip(self, fip_id):
+        self.fips.discard(fip_id)
+        self.api.delete_floatingip(fip_id)
+
+    def create_port(self, name, net_id, tenant_id='admin', host=None,
+                    host_iface=None, sub_id=None, ip=None, mac=None,
+                    port_security_enabled=True, device_owner=None,
+                    device_id=None):
+        port_data = {'name': name,
+                     'network_id': net_id,
+                     'port_security_enabled': port_security_enabled,
+                     'tenant_id': tenant_id}
+        if host:
+            port_data['binding:host_id'] = host
+        if host_iface:
+            port_data['binding:profile'] = {'interface_name': host_iface}
+        if ip and sub_id:
+            port_data['fixed_ips'] = [{'subnet_id': sub_id, 'ip_address': ip}]
+        elif ip:
+            port_data['fixed_ips'] = [{'ip_address': ip}]
+        if device_owner:
+            port_data['device_owner'] = device_owner
+        if device_id:
+            port_data['device_id'] = device_id
+        if mac:
+            port_data['mac_address'] = mac
+
+        port = self.api.create_port({'port': port_data})
+        self.nports.add(port['port']['id'])
+        return port['port']
+
+    def create_network(self, name, admin_state_up=True, tenant_id='admin',
+                       external=False, uplink=False):
+        net_data = {'name': 'net_' + name,
+                    'admin_state_up': admin_state_up,
+                    'tenant_id': tenant_id}
+        if external:
+            net_data['router:external'] = True
+        if uplink:
+            net_data['provider:network_type'] = 'uplink'
+
+        net = self.api.create_network({'network': net_data})
+        self.nnets.add(net['network']['id'])
+        return net['network']
+
+    def create_subnet(self, name, net_id, cidr, tenant_id='admin',
+                      enable_dhcp=True):
+        sub_data = {'name': 'sub_' + name,
+                    'network_id': net_id,
+                    'ip_version': 4,
+                    'enable_dhcp': enable_dhcp,
+                    'cidr': cidr,
+                    'tenant_id': tenant_id}
+        sub = self.api.create_subnet({'subnet': sub_data})
+        self.nsubs.add(sub['subnet']['id'])
+        return sub['subnet']
+
+    def create_router_interface(self, router_id, port_id=None, sub_id=None):
+        data = {}
+        if port_id:
+            data = {'port_id': port_id}
+        elif sub_id:
+            data = {'subnet_id': sub_id}
+        iface = self.api.add_interface_router(router_id, data)
+        self.nr_ifaces.append((router_id, iface))
+        return iface
+
+    def create_router(self, name, tenant_id='admin', pub_net_id=None,
+                      admin_state_up=True, priv_sub_ids=[]):
+        router_data = {'name': name,
+                       'admin_state_up': admin_state_up,
+                       'tenant_id': tenant_id}
+        if pub_net_id:
+            router_data['external_gateway_info'] = {'network_id': pub_net_id}
+        router = self.api.create_router({'router': router_data})['router']
+        for sub_id in priv_sub_ids:
+            self.create_router_interface(router['id'], sub_id=sub_id)
+        self.nrouters.add(router['id'])
+        return router
 
     def __init__(self, methodName='runTest'):
         super(NeutronTestCase, self).__init__(methodName)
@@ -114,49 +415,37 @@ class NeutronTestCase(TestCase):
             pub_subnet = self.pub_subnet
 
         # Create an uplink network (Midonet-specific extension used for provider:network_type)
-        edge_network = self.api.create_network({'network': {'name': edge_host_name,
-                                                            'admin_state_up': True,
-                                                            'provider:network_type': 'uplink',
-                                                            'tenant_id': 'admin'}})['network']
+        edge_network = self.create_network(edge_host_name, uplink=True)
         self.LOG.debug('Created edge network: ' + str(edge_network))
 
         # Create uplink network's subnet
         edge_ip = '.'.join(edge_subnet_cidr.split('.')[:-1]) + '.2'
         edge_gw = '.'.join(edge_subnet_cidr.split('.')[:-1]) + '.1'
 
-        edge_subnet = self.api.create_subnet({'subnet': {'name': edge_host_name + '_sub',
-                                                         'network_id': edge_network['id'],
-                                                         'enable_dhcp': False,
-                                                         'ip_version': 4,
-                                                         'cidr': edge_subnet_cidr,
-                                                         'tenant_id': 'admin'}})['subnet']
+        edge_subnet = self.create_subnet(edge_host_name, edge_network['id'],
+                                         edge_subnet_cidr, enable_dhcp=False)
         self.LOG.debug('Created edge subnet: ' + str(edge_subnet))
 
         # Create edge router
-        edge_router = self.api.create_router({'router': {'name': 'edge_router1',
-                                                         'admin_state_up': True,
-                                                         'tenant_id': 'admin'}})['router']
+        edge_router = self.create_router('edge_router')
         self.LOG.debug('Created edge router: ' + str(edge_router))
 
         # Create "port" on router by creating a port on the special uplink network
         # bound to the physical interface on the physical host, and then linking
         # that network port to the router's interface.
-        edge_port1 = self.api.create_port({'port': {'name': edge_host_name + '_port',
-                                                    'network_id': edge_network['id'],
-                                                    'admin_state_up': True,
-                                                    'binding:host_id': edge_host_name,
-                                                    'binding:profile': {'interface_name': edge_iface_name},
-                                                    'fixed_ips': [{'subnet_id': edge_subnet['id'],
-                                                                   'ip_address': edge_ip}],
-                                                    'tenant_id': 'admin'}})['port']
+        edge_port1 = self.create_port(edge_host_name, edge_network['id'],
+                                      host=edge_host_name,
+                                      host_iface=edge_iface_name,
+                                      sub_id=edge_subnet['id'],
+                                      ip=edge_ip)
         self.LOG.info('Created physical-bound, edge port: ' + str(edge_port1))
         # Bind port to edge router
-        if1 = self.api.add_interface_router(edge_router['id'], {'port_id': edge_port1['id']})
+        if1 = self.create_router_interface(edge_router['id'], port_id=edge_port1['id'])
 
         self.LOG.info('Added interface to edge router: ' + str(if1))
 
         # Bind public network to edge router
-        if2 = self.api.add_interface_router(edge_router['id'], {'subnet_id': pub_subnet['id']})
+        if2 = self.create_router_interface(edge_router['id'], sub_id=pub_subnet['id'])
 
         self.LOG.info('Added interface to edge router: ' + str(if2))
 
