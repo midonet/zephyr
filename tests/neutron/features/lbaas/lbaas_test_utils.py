@@ -138,7 +138,7 @@ def create_lb_member_net(tc,
         broken_router_data = RouterData(router, router_ifs)
         clear_lbaas_member_net(tc,
                                lbaas_data, member_data, pinger_data, broken_router_data,
-                               members)
+                               members, throw_on_fail=False)
         tc.LOG.fatal('Error setting up topology: ' + str(e))
         raise e
 
@@ -158,7 +158,7 @@ def clear_lbaas_data(tc, lbn_data, throw_on_fail=False):
 
 def clear_lbaas_member_net(tc,
                            lbaas_data, member_data, pinger_data,
-                           router_data, members, throw_on_fail):
+                           router_data, members, throw_on_fail=False):
     """
     :type tc: NeutronTestCase
     :type lbaas_data: NetworkData
