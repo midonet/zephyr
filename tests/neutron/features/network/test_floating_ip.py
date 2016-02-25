@@ -187,9 +187,9 @@ class TestFloatingIP(NeutronTestCase):
 
             self.delete_edge_router(ed)
 
-    @expected_failure('MI-293')
+    @expected_failure('MI-115')
     @require_extension('extraroute')
-    def test_fip_to_fip_connectivity_one_site_source_has_fip(self):
+    def test_fip_to_fip_connectivity_one_site_source_has_private_ip(self):
         # Allowed address pair must have IP address
         port1 = None
         port2 = None
@@ -198,7 +198,6 @@ class TestFloatingIP(NeutronTestCase):
         ip1 = None
         ip2 = None
         floating_ip1 = None
-        floating_ip2 = None
         ed = None
         try:
             ed = self.create_edge_router()
@@ -255,17 +254,12 @@ class TestFloatingIP(NeutronTestCase):
                 self.api.update_floatingip(floating_ip1['id'], {'floatingip': {'port_id': None}})
                 self.api.delete_floatingip(floating_ip1['id'])
 
-            if floating_ip2:
-                self.api.update_floatingip(floating_ip2['id'], {'floatingip': {'port_id': None}})
-                self.api.delete_floatingip(floating_ip2['id'])
-
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
             self.delete_edge_router(ed)
 
-    @expected_failure('MI-293')
     @require_extension('extraroute')
-    def test_fip_to_fip_connectivity_one_site_source_has_private_ip(self):
+    def test_fip_to_fip_connectivity_one_site_source_has_fip(self):
         # Allowed address pair must have IP address
         port1 = None
         port2 = None
