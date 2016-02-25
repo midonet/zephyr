@@ -25,7 +25,6 @@ from router_peering_utils import L2GWDevice
 from router_peering_utils import L2GWNeutronTestCase
 from router_peering_utils import L2GWPeer
 from router_peering_utils import L2GWPeeredTopo
-from router_peering_utils import L2GWSiteData
 from router_peering_utils import L2GWSiteTopo
 
 
@@ -807,6 +806,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             delete_neutron_main_pub_networks(self.api, east_topo)
             delete_neutron_main_pub_networks(self.api, west_topo)
 
+    @require_extension('extraroute')
+    @require_extension('gateway-device')
+    @require_extension('l2-gateway')
+    @require_topology_feature('config_file',
+                              lambda a, b: a in b,
+                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_update_tunnel_ip(self):
         vm1 = None
         vm2 = None
@@ -848,44 +853,52 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
                 pub_subnet_cidr="200.200.130.0/24",
                 log=self.LOG)
 
-            port1 = self.api.create_port({'port': {'name': 'port_vm1',
-                                                   'network_id': east_left_topo.main_net.network['id'],
-                                                   'admin_state_up': True,
-                                                   'tenant_id': 'admin'}})['port']
+            port1 = self.api.create_port(
+                {'port': {'name': 'port_vm1',
+                          'network_id': east_left_topo.main_net.network['id'],
+                          'admin_state_up': True,
+                          'tenant_id': 'admin'}})['port']
             ip1 = port1['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'],
-                                     gw_ip=east_left_topo.main_net.subnet['gateway_ip'])
+            vm1 = self.vtm.create_vm(
+                ip=ip1,
+                mac=port1['mac_address'],
+                gw_ip=east_left_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
 
-            port2 = self.api.create_port({'port': {'name': 'port_vm2',
-                                                   'network_id': west_left_topo.main_net.network['id'],
-                                                   'admin_state_up': True,
-                                                   'tenant_id': 'admin'}})['port']
+            port2 = self.api.create_port(
+                {'port': {'name': 'port_vm2',
+                          'network_id': west_left_topo.main_net.network['id'],
+                          'admin_state_up': True,
+                          'tenant_id': 'admin'}})['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'],
-                                     gw_ip=west_left_topo.main_net.subnet['gateway_ip'])
+            vm2 = self.vtm.create_vm(
+                ip=ip2,
+                mac=port2['mac_address'],
+                gw_ip=west_left_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm2.plugin_vm('eth0', port2['id'])
 
             # Peer the routers!
-            east_left_l2gw_topo = self.setup_peer_l2gw("1.1.1.0/24", "1.1.1.2",
-                                                  "1.1.1.3", "tun2", "eth1",
-                                                  "192.168.200.0/24",
-                                                  "192.168.200.2", left_segment_id,
-                                                  east_left_topo.router.router,
-                                                  "EAST")
+            east_left_l2gw_topo = self.setup_peer_l2gw(
+                "1.1.1.0/24", "1.1.1.2",
+                "1.1.1.3", "tun2", "eth1",
+                "192.168.200.0/24",
+                "192.168.200.2", left_segment_id,
+                east_left_topo.router.router,
+                "EAST")
             self.assertIsNotNone(east_left_l2gw_topo)
-            west_left_l2gw_topo = self.setup_peer_l2gw("2.2.2.0/24", "2.2.2.2",
-                                                  "2.2.2.3", "tun1", "eth1",
-                                                  "192.168.200.0/24",
-                                                  "192.168.200.3", left_segment_id,
-                                                  west_left_topo.router.router,
-                                                  "WEST")
+            west_left_l2gw_topo = self.setup_peer_l2gw(
+                "2.2.2.0/24", "2.2.2.2",
+                "2.2.2.3", "tun1", "eth1",
+                "192.168.200.0/24",
+                "192.168.200.3", left_segment_id,
+                west_left_topo.router.router,
+                "WEST")
             self.assertIsNotNone(west_left_l2gw_topo)
 
             peered_topo = self.peer_sites(east=east_left_l2gw_topo,
@@ -919,7 +932,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
 
             west_uplink_net = west_left_l2gw_topo.tunnel.network
             west_uplink_sub = west_left_l2gw_topo.tunnel.subnet
-            west_tunnel_port = west_left_l2gw_topo.tunnel_port
 
             gwdev_id_west = west_left_l2gw_topo.l2dev.gwdev
             gwdev_id_east = east_left_l2gw_topo.l2dev.gwdev
