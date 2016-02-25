@@ -181,14 +181,25 @@ class NeutronTestCase(TestCase):
         # Create a public network
         if edge_data:
             if edge_data.router:
+                self.LOG.debug("Removing routes from router: " +
+                               str(edge_data.router.router))
                 self.api.update_router(edge_data.router.router['id'], {'router': {'routes': None}})
                 if edge_data.router.if_list:
                     for iface in edge_data.router.if_list:
+                        self.LOG.debug("Removing interface: " +
+                                       str(iface) + " from router: " +
+                                       str(edge_data.router.router))
                         self.api.remove_interface_router(edge_data.router.router['id'], iface)
+                self.LOG.debug("Deleting router: " +
+                               str(edge_data.router.router))
                 self.api.delete_router(edge_data.router.router['id'])
             if edge_data.edge_net.subnet:
+                self.LOG.debug("Deleting subnet: " +
+                               str(edge_data.edge_net.subnet))
                 self.api.delete_subnet(edge_data.edge_net.subnet['id'])
             if edge_data.edge_net.network:
+                self.LOG.debug("Deleting network: " +
+                               str(edge_data.edge_net.network))
                 self.api.delete_network(edge_data.edge_net.network['id'])
 
 
