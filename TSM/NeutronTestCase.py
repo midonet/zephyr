@@ -37,11 +37,16 @@ EdgeData = namedtuple('EdgeData', "edge_net router")
 
 class NeutronTestCase(TestCase):
 
+    #TODO(Joe): Split the cleanup into a per-test-group set of files
     servers = list()
     rmacs = set()
     l2gws = set()
     l2gw_conns = set()
     gws = set()
+    fws = set()
+    fwps = set()
+    fwprs = set()
+    fw_ras = set()
     fips = set()
     nports = set()
     nnets = set()
@@ -50,6 +55,10 @@ class NeutronTestCase(TestCase):
     nr_ifaces = list()
 
     def clean_topo(self):
+        self.clean_firewall_policy_rules()
+        self.clean_firewall_rules()
+        self.clean_firewalls()
+        self.clean_firewall_policies()
         self.clean_remote_mac_entrys()
         self.clean_l2_gateway_conns()
         self.clean_l2_gateway()
@@ -164,6 +173,66 @@ class NeutronTestCase(TestCase):
         self.l2gw_conns.add(l2_conn['l2_gateway_connection']['id'])
         return l2_conn['l2_gateway_connection']
 
+    #TODO(Joe): Move to firewall specific helper file
+    def create_firewall(self, fw_policy_id, tenant_id="admin", router_ids=[]):
+        fw_data = {'firewall_policy_id': fw_policy_id,
+                   'tenant_id': tenant_id,
+                   'router_ids': router_ids}
+        fw = self.api.create_firewall({'firewall': fw_data})['firewall']
+        self.fws.add(fw['id'])
+        return fw
+
+    #TODO(Joe): Move to firewall specific helper file
+    def delete_firewall(self, fw_id):
+        self.fws.discard(fw_id)
+        self.api.delete_firewall(fw_id)
+
+    #TODO(Joe): Move to firewall specific helper file
+    def create_firewall_policy(self, name, tenant_id='admin'):
+        fwp_data = {'name': name,
+                    'tenant_id': tenant_id}
+        fwp = self.api.create_firewall_policy({'firewall_policy': fwp_data})
+        self.fwps.add(fwp['firewall_policy']['id'])
+        return fwp['firewall_policy']
+
+    #TODO(Joe): Move to firewall specific helper file
+    def delete_firewall_policy(self, fw_id):
+        self.fwps.discard(fw_id)
+        self.api.delete_firewall_policy(fw_id)
+
+    #TODO(Joe): Move to firewall specific helper file
+    def create_firewall_rule(self, source_ip=None, dest_ip=None,
+                             action='allow', protocol='tcp',
+                             tenant_id='admin'):
+
+        fwpr_data = {'action': action,
+                     'protocol': protocol,
+                     'ip_version': 4,
+                     'shared': False,
+                     'source_ip_address': source_ip,
+                     'destination_ip_address': dest_ip,
+                     'tenant_id': tenant_id}
+        fwpr = self.api.create_firewall_rule({'firewall_rule': fwpr_data})
+        self.fwprs.add(fwpr['firewall_rule']['id'])
+        return fwpr['firewall_rule']
+
+    #TODO(Joe): Move to firewall specific helper file
+    def delete_firewall_rule(self, fwpr_id):
+        self.fwprs.discard(fwpr_id)
+        self.api.delete_firewall_rule(fwpr_id)
+
+    #TODO(Joe): Move to firewall specific helper file
+    def insert_firewall_rule(self, fw_policy_id, fw_rule_id):
+        data = {"firewall_rule_id": fw_rule_id}
+        self.fw_ras.add((fw_policy_id, fw_rule_id))
+        self.api.firewall_policy_insert_rule(fw_policy_id, data)
+
+    #TODO(Joe): Move to firewall specific helper file
+    def remove_firewall_rule(self, fw_policy_id, fw_rule_id):
+        data = {"firewall_rule_id": fw_rule_id}
+        self.fw_ras.discard((fw_policy_id, fw_rule_id))
+        self.api.firewall_policy_remove_rule(fw_policy_id, data)
+
     def verify_connectivity(self, vm, dest_ip):
         self.assertTrue(vm.ping(target_ip=dest_ip))
 
@@ -184,6 +253,26 @@ class NeutronTestCase(TestCase):
         vm.plugin_vm('eth0', port['id'])
         self.servers.append((vm, ip, port))
         return (port, vm, ip)
+
+    def clean_firewall_policy_rules(self):
+        while self.fw_ras:
+            (fw_policy_id, fw_rule_id) = self.fw_ras.pop()
+            self.remove_firewall_rule(fw_policy_id, fw_rule_id)
+
+    def clean_firewall_rules(self):
+        while self.fwprs:
+            fwr_id = self.fwprs.pop()
+            self.api.delete_firewall_rule(fwr_id)
+
+    def clean_firewall_policies(self):
+        while self.fwps:
+            fw_policy_id = self.fwps.pop()
+            self.api.delete_firewall_policy(fw_policy_id)
+
+    def clean_firewalls(self):
+        while self.fws:
+            fw_id = self.fws.pop()
+            self.api.delete_firewall(fw_id)
 
     def clean_vm_servers(self):
         while self.servers:
