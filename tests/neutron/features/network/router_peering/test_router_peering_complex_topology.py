@@ -76,6 +76,11 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
         left_segment_id = '100'
         right_segment_id = '200'
 
+        east_ghost_port = None
+        west_ghost_port = None
+        west_peer_router_port = None
+        east_peer_router_port = None
+
         east_left_cidr = "192.168.20.0/24"
         west_left_cidr = "192.168.30.0/24"
 
@@ -340,7 +345,7 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
     @require_extension('l2-gateway')
     @require_topology_feature('config_file', lambda a, b: a in b,
                               ['config/physical_topologies/2z-3c-3tun.json'])
-    def test_peered_routers_same_tenant(self):
+    def test_peered_routers_multiple_peers(self):
         vm1 = None
         vm2 = None
         ip1 = None

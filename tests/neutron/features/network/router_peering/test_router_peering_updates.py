@@ -960,7 +960,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
                 vtep_router['id'],
                 {'router': {'routes': [route]}})
 
-            rmac_entry_east = peered_topo.west.rmac_entry
+            rmac_entry_east = peered_topo.east.rmac_entry
             self.delete_remote_mac_entry(gwdev_id_east, rmac_entry_east)
 
             west_mac_addr = west_left_l2gw_topo.peer_router_port['mac_address']
