@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import errno
 import multiprocessing
 import socket
@@ -60,6 +61,10 @@ def echo_server_listener(ip, port, protocol, echo_data,
                     conn.setblocking(0)
 
                 data = ''
+                socket_timeout = datetime.datetime.now() + \
+                    datetime.timedelta(seconds=10)
+                socket_data_received = False
+                addr = None
                 while True:
                     try:
                         if protocol == 'tcp':
@@ -71,6 +76,11 @@ def echo_server_listener(ip, port, protocol, echo_data,
                     except socket.error as e:
                         if e.args[0] == errno.EAGAIN or \
                            e.args[0] == errno.EWOULDBLOCK:
+                            if not socket_data_received \
+                                and datetime.datetime.now() < \
+                                    socket_timeout:
+                                continue
+
                             debug and LinuxCLI().cmd(
                                 'echo "No TCP data" >> ' +
                                 tmp_status_file_name)
@@ -82,6 +92,7 @@ def echo_server_listener(ip, port, protocol, echo_data,
                         tmp_status_file_name)
                     if not new_data:
                         break
+                    socket_data_received = True
                     data += new_data
 
                 debug and LinuxCLI().cmd(
