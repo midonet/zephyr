@@ -71,8 +71,8 @@ class TestCase(unittest.TestCase):
         if cls.LOG is None:
             cls.LOG = logging.getLogger(cls._get_name())
 
-    def __init__(self, methodName='runTest'):
-        super(TestCase, self).__init__(methodName)
+    def __init__(self, method_name='runTest'):
+        super(TestCase, self).__init__(methodName=method_name)
 
         self.start_time = None
         """ :type: datetime.datetime"""

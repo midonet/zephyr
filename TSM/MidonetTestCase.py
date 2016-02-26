@@ -20,8 +20,8 @@ from PTM.fixtures.MidonetHostSetupFixture import MidonetHostSetupFixture
 
 class MidonetTestCase(TestCase):
 
-    def __init__(self, methodName='runTest'):
-        super(MidonetTestCase, self).__init__(methodName)
+    def __init__(self, method_name='runTest'):
+        super(MidonetTestCase, self).__init__(method_name=method_name)
         self.midonet_fixture = None
         """:type: MidonetHostSetupFixture"""
         self.api = None
