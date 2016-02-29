@@ -445,8 +445,8 @@ class Host(PTMObject):
         :param protocol: str
         :return: str
         """
-        echo_request += TERMINATION_STRING
         self.LOG.debug('Sending echo command ' + echo_request + ' to: ' + str(dest_ip) + ' ' + str(dest_port))
+        echo_request += TERMINATION_STRING
         cmd0 = ['echo', '-n', echo_request]
         cmd1 = ['nc']
         if protocol == 'udp':
@@ -457,7 +457,6 @@ class Host(PTMObject):
         cmd1 += [dest_ip, str(dest_port)]
         ret = self.cli.cmd_pipe(commands=[cmd0, cmd1])
         out_str = ret.stdout
-        self.LOG.debug('Sent echo command: ' + str(ret.command))
         pos = out_str.find(TERMINATION_STRING)
         if pos != -1:
             out_str = out_str[0:pos]
