@@ -23,6 +23,7 @@ from common.CLI import LinuxCLI
 
 DEFAULT_ECHO_PORT = 5080
 TIMEOUT = 2
+TERMINATION_STRING = chr(0x03) + chr(0x04)
 
 
 def echo_server_listener(ip, port, protocol, echo_data,
@@ -61,9 +62,6 @@ def echo_server_listener(ip, port, protocol, echo_data,
                     conn.setblocking(0)
 
                 data = ''
-                socket_timeout = datetime.datetime.now() + \
-                    datetime.timedelta(seconds=10)
-                socket_data_received = False
                 addr = None
                 while True:
                     try:
@@ -76,38 +74,32 @@ def echo_server_listener(ip, port, protocol, echo_data,
                     except socket.error as e:
                         if e.args[0] == errno.EAGAIN or \
                            e.args[0] == errno.EWOULDBLOCK:
-                            if not socket_data_received \
-                                and datetime.datetime.now() < \
-                                    socket_timeout:
-                                continue
-
-                            debug and LinuxCLI().cmd(
-                                'echo "No TCP data" >> ' +
-                                tmp_status_file_name)
-                            break
-
+                            continue
                     debug and LinuxCLI().cmd(
-                        'echo "Listener Socket received ' +
+                        'echo "Listener Socket read some ' +
                         protocol + ' data: ' + new_data + '" >> ' +
                         tmp_status_file_name)
-                    if not new_data:
+                    pos = new_data.find(TERMINATION_STRING)
+                    if pos != -1:
+                        data += new_data[0:pos]
                         break
-                    socket_data_received = True
-                    data += new_data
+                    else:
+                        data += new_data
 
                 debug and LinuxCLI().cmd(
                     'echo "Listener Socket received all  ' +
                     protocol + ' data: ' + data + '" >> ' +
                     tmp_status_file_name)
 
+                send_data = echo_data + TERMINATION_STRING
                 if protocol == 'tcp':
-                    conn.sendall(data + ':' + echo_data)
+                    conn.sendall(data + ':' + send_data)
                 elif protocol == 'udp':
-                    _socket.sendto(data + ':' + echo_data, addr)
+                    _socket.sendto(data + ':' + send_data, addr)
 
                 debug and LinuxCLI().cmd(
                     'echo "Listener Socket sent appended ' +
-                    protocol + ' data: ' + echo_data + '" >> ' +
+                    protocol + ' data: ' + send_data + '" >> ' +
                     tmp_status_file_name)
 
                 if protocol == 'tcp':
@@ -199,22 +191,27 @@ class EchoServer(object):
         :param protocol: str
         :return:
         """
+        req = echo_request + TERMINATION_STRING
         if protocol == 'tcp':
             new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             new_socket.connect((ip, port))
-            new_socket.sendall(echo_request)
+            new_socket.sendall(req)
         elif protocol == 'udp':
             new_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            new_socket.sendto(echo_request, (ip, port))
+            new_socket.sendto(req, (ip, port))
         else:
             raise ArgMismatchException('Unsupported protocol: ' + protocol)
         data = ''
         if protocol == 'tcp':
-            while 1:
+            while True:
                 new_data = new_socket.recv(2048)
-                if not new_data:
+                """ :type: str"""
+                pos = new_data.find(TERMINATION_STRING)
+                if pos != -1:
+                    data += new_data[0:pos]
                     break
-                data += new_data
+                else:
+                    data += new_data
 
         elif protocol == 'udp':
                 data, addr = new_socket.recvfrom(2048)

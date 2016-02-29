@@ -23,6 +23,7 @@ from common.LogManager import LogManager
 from common.Utils import get_class_from_fqn
 from common.EchoServer import DEFAULT_ECHO_PORT
 from common.EchoServer import EchoServer
+from common.EchoServer import TERMINATION_STRING
 from common.Utils import terminate_process
 
 from PTM.ptm_constants import HOST_CONTROL_CMD_NAME
@@ -444,6 +445,7 @@ class Host(PTMObject):
         :param protocol: str
         :return: str
         """
+        echo_request += TERMINATION_STRING
         self.LOG.debug('Sending echo command ' + echo_request + ' to: ' + str(dest_ip) + ' ' + str(dest_port))
         cmd0 = ['echo', '-n', echo_request]
         cmd1 = ['nc']
@@ -454,9 +456,13 @@ class Host(PTMObject):
         cmd1 += ['-w', '20']
         cmd1 += [dest_ip, str(dest_port)]
         ret = self.cli.cmd_pipe(commands=[cmd0, cmd1])
+        out_str = ret.stdout
         self.LOG.debug('Sent echo command: ' + str(ret.command))
-        self.LOG.debug('Received echo response: ' + ret.stdout)
-        return ret.stdout
+        pos = out_str.find(TERMINATION_STRING)
+        if pos != -1:
+            out_str = out_str[0:pos]
+        self.LOG.debug('Received echo response: ' + out_str)
+        return out_str
 
     def is_virtual_network_host(self):
         """

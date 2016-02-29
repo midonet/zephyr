@@ -605,23 +605,23 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             # TCP with exactly MTU-sized data
             # (MTU=1500 - (TCP + IP header size = 80)) - len(':pong')=5
             long_data = "O" * (1500 - 80 - 5)
-            echo_response = vm1.send_echo_request(dest_ip=ip1,
+            echo_response = vm1.send_echo_request(dest_ip=ip2,
                                                   echo_request=long_data)
             self.assertEqual(long_data + ':pong', echo_response)
 
             # Send second long packet
-            echo_response = vm1.send_echo_request(dest_ip=ip1,
+            echo_response = vm1.send_echo_request(dest_ip=ip2,
                                                   echo_request=long_data)
             self.assertEqual(long_data + ':pong', echo_response)
 
             # TCP with many times MTU-sized data
             long_data = "O" * 4500
-            echo_response = vm1.send_echo_request(dest_ip=ip1,
+            echo_response = vm1.send_echo_request(dest_ip=ip2,
                                                   echo_request=long_data)
             self.assertEqual(long_data + ':pong', echo_response)
 
             # Send second long packet
-            echo_response = vm1.send_echo_request(dest_ip=ip1,
+            echo_response = vm1.send_echo_request(dest_ip=ip2,
                                                   echo_request=long_data)
             self.assertEqual(long_data + ':pong', echo_response)
 
