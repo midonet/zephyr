@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import time
-from os import path
 import uuid
 
 import CBT.VersionConfig as version_config
@@ -26,7 +25,8 @@ from common.IP import IP
 from common.FileLocation import *
 
 
-# TODO(micucci): This is really the controller and should be refactored in case it's not on root or same host as a Compute
+# TODO(micucci): This is really the controller and should be refactored in
+# case it's not on root or same host as a Compute
 class MidonetAPI(Application):
 
     @staticmethod
@@ -38,9 +38,14 @@ class MidonetAPI(Application):
         self.zookeeper_ips = []
         self.cassandra_ips = []
         self.unique_id = uuid.uuid4()
-        self.use_cluster = version_config.ConfigMap.get_configured_parameter('option_api_uses_cluster')
-        self.configurator = ClusterConfiguration() if self.use_cluster else TomcatFileConfiguration()
-        self.url = version_config.ConfigMap.get_configured_parameter('param_midonet_api_url')
+        self.use_cluster = version_config.ConfigMap.get_configured_parameter(
+            'option_api_uses_cluster')
+        self.configurator = ClusterConfiguration() \
+            if self.use_cluster \
+            else TomcatFileConfiguration()
+        self.url = version_config.ConfigMap.get_configured_parameter(
+            'param_midonet_api_url')
+        self.ip = None
 
     def configure(self, host_cfg, app_cfg):
         """
@@ -66,21 +71,30 @@ class MidonetAPI(Application):
 
         if self.use_cluster:
             log_dir = '/var/log/midonet-cluster'
-            log_manager.add_external_log_file(FileLocation(log_dir + '/midonet-cluster.log'), '',
-                                              '%b %d, %Y %I:%M:%S %p')
-            LinuxCLI().replace_text_in_file('/etc/midonet-cluster/logback.xml',
-                                            'root level="INFO"', 'root level="DEBUG"')
+            log_manager.add_external_log_file(
+                FileLocation(log_dir + '/midonet-cluster.log'), '',
+                '%b %d, %Y %I:%M:%S %p')
+            LinuxCLI().replace_text_in_file(
+                '/etc/midonet-cluster/logback.xml',
+                'root level="INFO"', 'root level="DEBUG"')
         else:
+            LinuxCLI().replace_text_in_file(
+                '/usr/share/midonet-api/WEB-INF/classes/logback.xml',
+                'root level="INFO"', 'root level="DEBUG"')
             log_dir = '/var/log/tomcat7'
-            log_manager.add_external_log_file(FileLocation(log_dir + '/catalina.out'), '',
-                                              '%b %d, %Y %I:%M:%S %p')
-            log_manager.add_external_log_file(FileLocation(log_dir + '/midonet-api.log'), '',
-                                              '%Y.%m.%d %H:%M:%S.%f')
+            log_manager.add_external_log_file(
+                FileLocation(log_dir + '/catalina.out'), '',
+                '%b %d, %Y %I:%M:%S %p')
+            log_manager.add_external_log_file(
+                FileLocation(log_dir + '/midonet-api.log'), '',
+                '%Y.%m.%d %H:%M:%S.%f')
 
     def print_config(self, indent=0):
         super(MidonetAPI, self).print_config(indent)
-        print ('    ' * (indent + 1)) + 'Zookeeper-IPs: ' + ', '.join(str(ip) for ip in self.zookeeper_ips)
-        print ('    ' * (indent + 1)) + 'Cassandra-IPs: ' + ', '.join(str(ip) for ip in self.cassandra_ips)
+        print(('    ' * (indent + 1)) + 'Zookeeper-IPs: ' +
+              ', '.join(str(ip) for ip in self.zookeeper_ips))
+        print(('    ' * (indent + 1)) + 'Cassandra-IPs: ' +
+              ', '.join(str(ip) for ip in self.cassandra_ips))
 
     def wait_for_process_start(self):
         # Checking MN-API status
@@ -88,15 +102,19 @@ class MidonetAPI(Application):
         deadline = time.time() + APPLICATION_START_TIMEOUT
         while not connected:
             if self.use_cluster:
-                if self.cli.grep_cmd('tac /var/log/midonet-cluster/midonet-cluster.log', "MidoNet Cluster is up",
-                                     options='-m1'):
+                if self.cli.grep_cmd(
+                        'tac /var/log/midonet-cluster/midonet-cluster.log',
+                        "MidoNet Cluster is up",
+                        options='-m1'):
                     connected = True
             else:
-                if self.cli.cmd('midonet-cli --midonet-url="' + self.url + '" -A -e "host list"').ret_code == 0:
+                if self.cli.cmd('midonet-cli --midonet-url="' + self.url +
+                                '" -A -e "host list"').ret_code == 0:
                     connected = True
                 else:
                     if time.time() > deadline:
-                        raise SubprocessFailedException('Network host timed out while starting')
+                        raise SubprocessFailedException(
+                            'Network host timed out while starting')
                     time.sleep(1)
 
     def control_start(self):
@@ -124,35 +142,48 @@ class TomcatFileConfiguration(FileConfigurationHandler):
         else:
             ip_str = ''
 
-        if not self.cli.exists('/usr/share/midonet-api/WEB-INF/web.xml.original'):
-            self.cli.copy_file('/usr/share/midonet-api/WEB-INF/web.xml',
-                               '/usr/share/midonet-api/WEB-INF/web.xml.original')
+        if not self.cli.exists(
+                '/usr/share/midonet-api/WEB-INF/web.xml.original'):
+            self.cli.copy_file(
+                '/usr/share/midonet-api/WEB-INF/web.xml',
+                '/usr/share/midonet-api/WEB-INF/web.xml.original')
 
-        self.cli.cmd('perl -0777 -i.old -pe '
-                     '"s/(<param-name>zookeeper-zookeeper_hosts<\\/param-name>.*?<param-value>)[^<]*(<\\/param-value>)/'
-                     '\\${1}' + ip_str + '\\${2}/s" '
-                     '/usr/share/midonet-api/WEB-INF/web.xml')
+        self.cli.cmd(
+            'perl -0777 -i.old -pe '
+            '"s/(<param-name>zookeeper-zookeeper_hosts<\\/param-name>.*?'
+            '<param-value>)[^<]*(<\\/param-value>)/'
+            '\\${1}' + ip_str + '\\${2}/s" '
+            '/usr/share/midonet-api/WEB-INF/web.xml')
 
-        if not self.cli.grep_file('/usr/share/midonet-api/WEB-INF/web.xml', 'zookeeper-curator_enabled'):
-            self.cli.regex_file('/usr/share/midonet-api/WEB-INF/web.xml',
-                                (r's/'
-                                 r'    <param-name>zookeeper-zookeeper_hosts<\/param-name>/'  # -->
-                                 r'    <param-name>zookeeper-curator_enabled<\/param-name>\n'
-                                 r'    <param-value>true<\/param-value>\n'
-                                 r'  <\/context-param>\n'
-                                 r'  <context-param>\n'
-                                 r'    <param-name>zookeeper-zookeeper_hosts<\/param-name>/'))
+        if not self.cli.grep_file(
+                '/usr/share/midonet-api/WEB-INF/web.xml',
+                'zookeeper-curator_enabled'):
+            self.cli.regex_file(
+                '/usr/share/midonet-api/WEB-INF/web.xml',
+                (r's/'
+                 r'    <param-name>zookeeper-zookeeper_hosts<\/param-name>/'
+                 r'    <param-name>zookeeper-curator_enabled<\/param-name>\n'
+                 r'    <param-value>true<\/param-value>\n'
+                 r'  <\/context-param>\n'
+                 r'  <context-param>\n'
+                 r'    <param-name>zookeeper-zookeeper_hosts<\/param-name>/'))
 
-        self.cli.regex_file('/usr/share/midonet-api/WEB-INF/web.xml',
-                            ('s/org.midonet.api.auth.keystone.v2_0.KeystoneService/org.midonet.api.auth.MockAuthService/g'))
+        self.cli.regex_file(
+            '/usr/share/midonet-api/WEB-INF/web.xml',
+            ('s/org.midonet.api.auth.keystone.v2_0.KeystoneService/'
+             'org.midonet.cluster.auth.MockAuthService/g'))
 
-        tcatcfg = ('<Context path="/midonet-api" docBase="/usr/share/midonet-api"\n'
-                   '         antiResourceLocking="false" privileged="true" />')
-        self.cli.write_to_file('/etc/tomcat7/Catalina/localhost/midonet-api.xml', tcatcfg)
+        tcatcfg = (
+            '<Context path="/midonet-api" docBase="/usr/share/midonet-api"\n'
+            '         antiResourceLocking="false" privileged="true" />')
+        self.cli.write_to_file(
+            '/etc/tomcat7/Catalina/localhost/midonet-api.xml', tcatcfg)
 
         if not self.cli.grep_file("/etc/default/tomcat7", "java.security.egd"):
-            self.cli.regex_file('/etc/default/tomcat7',
-                                '$aJAVA_OPTS="$JAVA_OPTS -Djava.security.egd=file:/dev/./urandom"')
+            self.cli.regex_file(
+                '/etc/default/tomcat7',
+                '$aJAVA_OPTS="$JAVA_OPTS -Djava.security.egd='
+                'file:/dev/./urandom"')
 
         if self.cli.exists('/var/www/html/midonet-cp/config.js'):
             self.cli.regex_file('/var/www/html/midonet-cp/config.js',
@@ -178,8 +209,6 @@ class ClusterConfiguration(FileConfigurationHandler):
         else:
             z_ip_str = ''
 
-        midonet_key = version_config.ConfigMap.get_configured_parameter('param_midonet_conf_key')
-
         zkcli = LinuxCLI()
         zkcli.add_environment_variable('MIDO_ZOOKEEPER_HOSTS', z_ip_str)
 
@@ -191,4 +220,4 @@ class ClusterConfiguration(FileConfigurationHandler):
         conf_str = "[zookeeper]\n" \
                    "zookeeper_hosts = " + z_ip_str + "\n"
         self.cli.write_to_file('/etc/midonet/midonet.conf', conf_str)
-        ret = zkcli.cmd('mn-conf set -t default "agent.cluster.enabled: true"').stdout
+        zkcli.cmd('mn-conf set -t default "agent.cluster.enabled: true"')
