@@ -22,6 +22,7 @@ class L2GWFixture(ServiceFixture):
 
     def setup(self):
         LinuxCLI().cmd("neutron-l2gw-db-manage --config-file /etc/neutron/neutron.conf upgrade head")
+        LinuxCLI().cmd("neutron-db-manage --service fwaas upgrade head")
 
     def teardown(self):
         pass
