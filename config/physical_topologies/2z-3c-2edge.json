@@ -175,14 +175,14 @@
   "implementation": [
     {
       "host": "root",
-      "impl": "PTM.host.RootHost"
+      "impl": "zephyr.ptm.host.root_host.RootHost"
     },
     {
       "host": "zoo1",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Zookeeper",
+          "class": "zephyr.ptm.application.zookeeper.Zookeeper",
           "id": "1",
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"]
         }
@@ -190,10 +190,10 @@
     },
     {
       "host": "zoo2",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Zookeeper",
+          "class": "zephyr.ptm.application.zookeeper.Zookeeper",
           "id": "2",
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"]
         }
@@ -201,10 +201,10 @@
     },
     {
       "host": "cmp1",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Midolman",
+          "class": "zephyr.ptm.application.midolman.Midolman",
           "id": "1",
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
           "cassandra_ips": []
@@ -213,10 +213,10 @@
     },
     {
       "host": "cmp2",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Midolman",
+          "class": "zephyr.ptm.application.midolman.Midolman",
           "id": "2",
           "zookeeper_ips": [ "10.0.0.2", "10.0.0.3"],
           "cassandra_ips": []
@@ -225,10 +225,10 @@
     },
     {
       "host": "cmp3",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Midolman",
+          "class": "zephyr.ptm.application.midolman.Midolman",
           "id": "3",
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
           "cassandra_ips": []
@@ -237,20 +237,20 @@
     },
     {
       "host": "net1",
-      "impl": "PTM.host.RootHost",
+      "impl": "zephyr.ptm.host.root_host.RootHost",
       "apps": [
         {
-          "class": "PTM.application.MidonetAPI",
+          "class": "zephyr.ptm.application.midonet_api.MidonetAPI",
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"]
         }
       ]
     },
     {
       "host": "edge1",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Midolman",
+          "class": "zephyr.ptm.application.midolman.Midolman",
           "id": "4",
           "hypervisor": false,
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
@@ -260,10 +260,10 @@
     },
     {
       "host": "edge2",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Midolman",
+          "class": "zephyr.ptm.application.midolman.Midolman",
           "id": "5",
           "hypervisor": false,
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
@@ -272,10 +272,10 @@
       ]
     },
     { "host": "tun1",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Midolman",
+          "class": "zephyr.ptm.application.midolman.Midolman",
           "id": "6",
           "hypervisor": false,
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
@@ -284,10 +284,10 @@
       ]
     },
     { "host": "tun2",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         {
-          "class": "PTM.application.Midolman",
+          "class": "zephyr.ptm.application.midolman.Midolman",
           "id": "7",
           "hypervisor": false,
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
@@ -296,11 +296,11 @@
       ]
     },
     { "host": "ext1",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": []
     },
     { "host": "router1",
-      "impl": "PTM.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": []
     }
   ],

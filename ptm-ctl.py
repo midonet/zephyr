@@ -13,28 +13,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import getopt
+import sys
 import traceback
 
-from common.Exceptions import *
-from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-from PTM.ptm_constants import CONTROL_CMD_NAME
-from common.CLI import LinuxCLI
-from common.LogManager import LogManager
+from zephyr.common.cli import LinuxCLI
+from zephyr.common.exceptions import ArgMismatchException
+from zephyr.common.exceptions import ExitCleanException
+from zephyr.common.exceptions import ObjectNotFoundException
+from zephyr.common.exceptions import SubprocessFailedException
+from zephyr.common.exceptions import TestException
+from zephyr.common.log_manager import LogManager
+from zephyr.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
+from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
+from zephyr.ptm.ptm_constants import CONTROL_CMD_NAME
 
 
-def usage(exceptObj):
-    print('Usage: ' + CONTROL_CMD_NAME + ' {--startup|--shutdown|--print|--features} [--config-file <JSON file>]')
-    if exceptObj is not None:
-        raise exceptObj
+# noinspection PyUnresolvedReferences
+def usage(except_obj):
+    print('Usage: ' + CONTROL_CMD_NAME +
+          ' {--startup|--shutdown|--print|--features} '
+          '[--config-file <JSON file>]')
+    if except_obj is not None:
+        raise except_obj
 
 try:
 
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdpc:l:f',
-                                        ['help', 'debug', 'startup', 'shutdown', 'print', 'features', 'config-file=',
-                                         'log-dir='])
+    arg_map, extra_args = getopt.getopt(
+        sys.argv[1:], 'hdpc:l:f',
+        ['help', 'debug', 'startup', 'shutdown',
+         'print', 'features', 'config-file=',
+         'log-dir='])
 
     # Defaults
     command = ''
@@ -49,9 +58,9 @@ try:
             sys.exit(0)
         elif arg in ('-d', '--debug'):
             debug = True
-        elif arg in ('--startup'):
+        elif arg in '--startup':
             command = 'startup'
-        elif arg in ('--shutdown'):
+        elif arg in '--shutdown':
             command = 'shutdown'
         elif arg in ('-c', '--config-file'):
             ptm_config_file = value
@@ -65,7 +74,8 @@ try:
             usage(ArgMismatchException('Invalid argument' + arg))
 
     if command == '':
-        usage(ArgMismatchException('Must specify at least one command option'))
+        usage(ArgMismatchException(
+            'Must specify at least one command option'))
 
     root_dir = LinuxCLI().cmd('pwd').stdout.strip()
 
@@ -73,7 +83,8 @@ try:
     if command == 'startup':
         log_manager.rollover_logs_fresh(file_filter='ptm*.log')
 
-    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir, log_manager=log_manager)
+    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir,
+                                     log_manager=log_manager)
     ptm_impl.configure_logging(debug=debug)
 
     ptm = PhysicalTopologyManager(ptm_impl)
@@ -88,7 +99,8 @@ try:
     elif command == 'features':
         ptm.print_features()
     else:
-        usage(ArgMismatchException('Command option not recognized: ' + command))
+        usage(ArgMismatchException('Command option not recognized: ' +
+                                   command))
 
 except ExitCleanException:
     exit(1)

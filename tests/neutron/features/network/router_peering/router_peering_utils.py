@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from L2GWFixture import L2GWFixture
-
-from common.Utils import curl_delete
-from common.Utils import curl_post
-from common.Utils import curl_put
-from common.Exceptions import *
-from TSM.NeutronTestCase import NeutronTestCase
-from VTM.NeutronAPI import *
-
 from collections import namedtuple
-import json
+from L2GWFixture import L2GWFixture
+import logging
+from zephyr.common.utils import curl_delete
+from zephyr.common.exceptions import ObjectNotFoundException
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.vtm.neutron_api import get_neutron_api_url
+from zephyr.vtm.neutron_api import NetData
+from zephyr.vtm.neutron_api import RouterData
+
 
 L2GWDevice = namedtuple("L2GWDevice", "gwdev l2gw l2conn")
 L2GWSiteData = namedtuple("L2GWSiteData",

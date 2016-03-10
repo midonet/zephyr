@@ -13,15 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.EchoServer import EchoServer
-from common.EchoServer import DEFAULT_ECHO_PORT
-from common.CLI import LinuxCLI
-
 import getopt
+import signal
 import sys
 import threading
 
-import signal
+from zephyr.common.cli import LinuxCLI
+from zephyr.common.echo_server import DEFAULT_ECHO_PORT
+from zephyr.common.echo_server import EchoServer
 
 arg_map, _ = getopt.getopt(sys.argv[1:], 'i:p:d:r:')
 
@@ -31,13 +30,13 @@ data = "pong"
 protocol = "tcp"
 
 for arg, value in arg_map:
-    if arg in ('-i'):
+    if arg in '-i':
         ip = value
-    elif arg in ('-p'):
+    elif arg in '-p':
         port = int(value)
-    elif arg in ('-d'):
+    elif arg in '-d':
         data = value
-    elif arg in ('-r'):
+    elif arg in '-r':
         protocol = value
 
 tmp_status_file_name = '/tmp/echo-server-status.' + str(port)
@@ -48,7 +47,7 @@ stop_event.clear()
 es = EchoServer(ip, port, data, protocol)
 
 
-def term_handler(signum, frame):
+def term_handler(_, __):
     print("Exiting...")
     LinuxCLI().cmd("echo 'TERM: Stopping' >> " + tmp_status_file_name)
     stop_event.set()

@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.Exceptions import *
-from common.FileLocation import *
-
-from TSM.TestCase import TestCase
-
-import unittest
-import time
 import logging
+import time
+import unittest
+
+from zephyr.common.exceptions import *
+from zephyr.tsm import test_case
 
 
-class TestResultsProcessing(TestCase):
+class TestResultsProcessing(test_case):
     api = None
     """ :type: MidonetApi """
     main_bridge = None

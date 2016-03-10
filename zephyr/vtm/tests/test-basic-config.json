@@ -1,0 +1,166 @@
+{
+  "root_server_host": "local",
+  "hosts": [
+    {
+      "name": "root",
+      "bridges": [
+        {
+          "name": "br0",
+          "ip_addresses": [
+            {
+              "ip": "10.0.0.240",
+              "subnet": "24"
+            }
+          ]
+        }
+      ],
+      "interfaces": [
+        {
+          "name": "zoo1eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "zoo2eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "cmp1eth0",
+          "linked_bridge": "br0"
+        },
+        {
+          "name": "cmp2eth0",
+          "linked_bridge": "br0"
+        }
+      ]
+    },
+    {
+      "name": "zoo1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.2"}]
+        }
+      ]
+    },
+    {
+      "name": "zoo2",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.3"}]
+        }
+      ]
+    },
+    {
+      "name": "cmp1",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.8"}]
+        }
+      ]
+    },
+    {
+      "name": "cmp2",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "ip_addresses": [{"ip": "10.0.0.9"}]
+        }
+      ]
+    },
+    {
+      "name": "net1"
+    }
+  ],
+  "wiring": [
+    {
+      "near": {
+        "host": "root",
+        "interface": "zoo1eth0"
+      },
+      "far": {
+        "host": "zoo1",
+        "interface": "eth0"
+      }
+    },
+    {
+      "near": {
+        "host": "root",
+        "interface": "zoo2eth0"
+      },
+      "far": {
+        "host": "zoo2",
+        "interface": "eth0"
+      }
+    },
+    {
+      "near": {
+        "host": "root",
+        "interface": "cmp1eth0"
+      },
+      "far": {
+        "host": "cmp1",
+        "interface": "eth0"
+      }
+    },
+    {
+      "near": {
+        "host": "root",
+        "interface": "cmp2eth0"
+      },
+      "far": {
+        "host": "cmp2",
+        "interface": "eth0"
+      }
+    }
+  ],
+  "implementation": [
+    { "host": "root",
+      "impl": "zephyr.ptm.host.root_host.RootHost"},
+    { "host": "zoo1",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
+      "apps": [
+        { "class": "zephyr.ptm.application.zookeeper.Zookeeper",
+          "id": "1",
+          "zookeeper_ips": ["10.0.0.2", "10.0.0.3"]}
+        ]},
+    { "host": "zoo2",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
+      "apps": [
+        { "class": "zephyr.ptm.application.zookeeper.Zookeeper",
+          "id": "2",
+          "zookeeper_ips": ["10.0.0.2", "10.0.0.3"]}
+      ]},
+    { "host": "cmp1",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
+      "apps": [
+        { "class": "zephyr.ptm.application.midolman.Midolman",
+          "id": "1",
+          "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
+          "cassandra_ips": []}
+      ]},
+    { "host": "cmp2",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
+      "apps": [
+        { "class": "zephyr.ptm.application.midolman.Midolman",
+          "id": "2",
+          "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
+          "cassandra_ips": []}
+      ]},
+    { "host": "net1",
+      "impl": "zephyr.ptm.host.root_host.RootHost",
+      "apps": [
+        { "class": "zephyr.ptm.application.midonet_api.MidonetAPI",
+          "zookeeper_ips": ["10.0.0.2", "10.0.0.3"]}
+      ]}
+  ],
+  "host_start_order": [
+    "root",
+    "zoo1",
+    "zoo2",
+    "cmp1",
+    "cmp2",
+    "net1"
+  ]
+}

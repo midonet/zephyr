@@ -12,17 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import namedtuple
 import logging
 import math
 import time
 
-from TSM.NeutronTestCase import GuestData
-from TSM.NeutronTestCase import NetData
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.NeutronTestCase import RouterData
-from common.EchoServer import DEFAULT_ECHO_PORT
-
-from collections import namedtuple
+from zephyr.common.echo_server import DEFAULT_ECHO_PORT
+from zephyr.tsm.neutron_test_case import GuestData
+from zephyr.tsm.neutron_test_case import NetData
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.neutron_test_case import RouterData
 
 LBNetData = namedtuple('LBNetData', 'lbaas member pinger router member_vms')
 

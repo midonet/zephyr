@@ -10,7 +10,7 @@
   "wiring": [],
   "implementation": [
     { "host": "root",
-      "impl": "PTM.RootHost"}
+      "impl": "ptm.RootHost"}
   ],
   "host_start_order": [
     "root"

@@ -12,15 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.PCAPRules import *
-from common.IP import IP
-from common.PCAPPacket import *
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.NeutronTestCase import require_extension
-from VTM.Guest import Guest
-
-from collections import namedtuple
-import unittest
+from zephyr.common.exceptions import SubprocessTimeoutException
+from zephyr.common.ip import IP
+from zephyr.common import pcap
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.neutron_test_case import require_extension
 
 
 class TestPortSecurity(NeutronTestCase):
@@ -32,12 +28,12 @@ class TestPortSecurity(NeutronTestCase):
         :param receiver_ip: str
         :return: list[PCAPPacket]
         """
-        pcap_filter_list = [PCAP_ICMPProto(),
-                            PCAP_Host(spoof_ip, proto='ip', source=True, dest=False)]
+        pcap_filter_list = [pcap.ICMPProto(),
+                            pcap.Host(spoof_ip, proto='ip', source=True, dest=False)]
         if with_mac:
-            pcap_filter_list.append(PCAP_Host(spoof_mac, proto='ether', source=True, dest=False))
-        receiver.start_capture(on_iface='eth0', count=1,
-                               filter=PCAP_And(pcap_filter_list))
+            pcap_filter_list.append(pcap.Host(spoof_mac, proto='ether', source=True, dest=False))
+        receiver.start_capture(interface='eth0', count=1,
+                               pfilter=pcap.And(pcap_filter_list))
 
         send_args = {'source_ip': spoof_ip, 'dest_ip': receiver_ip}
         if with_mac:
@@ -115,10 +111,12 @@ class TestPortSecurity(NeutronTestCase):
             vm2.start_echo_server(ip=new_ip2)
 
             # Look for packets on the receiver from the spoofed new_ip1 address to the new_ip2
-            vm2.start_capture(on_iface='eth0', count=1,
-                              filter=PCAP_And([PCAP_TCPProto(),
-                                               PCAP_Host(ip1, proto='ip', source=True),
-                                               PCAP_Host(new_ip2, proto='ip', dest=True)]))
+            vm2.start_capture(interface='eth0', count=1,
+                              pfilter=pcap.And([pcap.TCPProto(),
+                                                pcap.Host(ip1, proto='ip',
+                                                          source=True),
+                                                pcap.Host(new_ip2, proto='ip',
+                                                          dest=True)]))
 
             reply = vm1.send_echo_request(dest_ip=new_ip2)
 

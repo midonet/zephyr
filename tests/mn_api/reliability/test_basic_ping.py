@@ -12,16 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from midonetclient.api import MidonetApi
-from midonetclient.bridge import Bridge
-from midonetclient.tunnel_zone import TunnelZone
+from zephyr.vtm.mn_api import setup_main_bridge
 
-from common.Exceptions import *
-
-from VTM.Guest import Guest
-from VTM.MNAPI import setup_main_bridge
-
-from TSM.MidonetTestCase import MidonetTestCase
+from zephyr.tsm.midonet_test_case import MidonetTestCase
 
 
 class TestBasicPing(MidonetTestCase):

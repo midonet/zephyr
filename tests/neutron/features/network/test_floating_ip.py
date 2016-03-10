@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from PTM.host.Host import Host
+from zephyr.tsm.test_case import expected_failure
+from zephyr.vtm.neutron_api import create_neutron_main_pub_networks
+from zephyr.vtm.neutron_api import delete_neutron_main_pub_networks
 
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.NeutronTestCase import require_extension
-from TSM.TestCase import expected_failure
-from VTM.NeutronAPI import create_neutron_main_pub_networks
-from VTM.NeutronAPI import delete_neutron_main_pub_networks
-from VTM.Guest import Guest
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.neutron_test_case import require_extension
 
 
 class TestFloatingIP(NeutronTestCase):

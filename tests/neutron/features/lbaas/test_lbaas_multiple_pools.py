@@ -12,17 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import GuestData
-from TSM.NeutronTestCase import NetData
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.NeutronTestCase import require_extension
-from TSM.NeutronTestCase import RouterData
-from TSM.TestCase import expected_failure
-from collections import namedtuple
-from VTM.Guest import Guest
-from common.EchoServer import DEFAULT_ECHO_PORT
-
 from tests.neutron.features.lbaas.lbaas_test_utils import *
+from zephyr.tsm.neutron_test_case import require_extension
 
 PACKETS_TO_SEND = 40
 

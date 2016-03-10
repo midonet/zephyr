@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import *
-from TSM.TestCase import expected_failure
-from collections import namedtuple
-from VTM.Guest import Guest
-from common.EchoServer import DEFAULT_ECHO_PORT
 
 from tests.neutron.features.lbaas.lbaas_test_utils import *
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm.test_case import expected_failure
 
 PACKETS_TO_SEND = 30
 

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.NeutronTestCase import require_extension
-from VTM.Guest import Guest
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.vtm.guest import Guest
 
 from collections import namedtuple
 

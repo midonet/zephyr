@@ -12,16 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.PCAPRules import *
-from common.PCAPPacket import *
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.NeutronTestCase import require_extension
-from VTM.Guest import Guest
-
-from collections import namedtuple
-from neutronclient.common.exceptions import *
-
-import unittest
+from neutronclient.common.exceptions import BadRequest
+from zephyr.common.exceptions import *
+from zephyr.common import pcap
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.neutron_test_case import require_extension
 
 
 class TestAllowedAddressPairs(NeutronTestCase):
@@ -34,13 +29,13 @@ class TestAllowedAddressPairs(NeutronTestCase):
         :return:
         """
 
-        pcap_filter_list = [PCAP_ICMPProto()]
+        pcap_filter_list = [pcap.ICMPProto()]
         if with_ip:
-            pcap_filter_list.append(PCAP_Host(spoof_ip, proto='ip', source=True, dest=False))
+            pcap_filter_list.append(pcap.Host(spoof_ip, proto='ip', source=True, dest=False))
         if with_mac:
-            pcap_filter_list.append(PCAP_Host(spoof_mac, proto='ether', source=True, dest=False))
-        receiver.start_capture(on_iface='eth0', count=1,
-                               filter=PCAP_And(pcap_filter_list))
+            pcap_filter_list.append(pcap.Host(spoof_mac, proto='ether', source=True, dest=False))
+        receiver.start_capture(interface='eth0', count=1,
+                               pfilter=pcap.And(pcap_filter_list))
 
         send_args = {'dest_ip': receiver_ip}
         if with_ip:

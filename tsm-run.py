@@ -13,65 +13,107 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
+import getopt
+import logging
 import os
 import sys
-import getopt
 import traceback
-import datetime
-import logging
 
-from common.Exceptions import *
-from common.CLI import LinuxCLI
-from common.LogManager import LogManager
-from common.Utils import get_class_from_fqn
-from PTM.PhysicalTopologyManager import PhysicalTopologyManager
-from VTM.VirtualTopologyManager import VirtualTopologyManager
-from VTM.MNAPI import create_midonet_client
-from VTM.NeutronAPI import create_neutron_client
-from TSM.TestSystemManager import TestSystemManager
-from TSM.TestCase import TestCase
+from zephyr.common.cli import LinuxCLI
+from zephyr.common.exceptions import ArgMismatchException
+from zephyr.common.exceptions import ExitCleanException
+from zephyr.common.exceptions import ObjectNotFoundException
+from zephyr.common.exceptions import SubprocessFailedException
+from zephyr.common.exceptions import TestException
+from zephyr.common.log_manager import LogManager
+from zephyr.common.utils import get_class_from_fqn
+from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
+from zephyr.tsm.test_case import TestCase
+from zephyr.tsm.test_system_manager import TestSystemManager
+from zephyr.vtm.neutron_api import create_neutron_client
+from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 
 
-def usage(exceptObj):
-    print('Usage: tsm-run.py -t <tests> [-t <topology>] [-n <name>] [-p <file>] [-d] ')
-    print('                             [-c <neutron|midonet> --client-args="<arg=value,...>"]')
-    print('                             [-p <ptm_class>] [extra_options]')
+def usage(except_obj):
+    print('Usage: tsm-run.py -t <tests> [-t <topology>] [-n <name>] ')
+    print('         [-p <file>] [-d] [-p <ptm_class>]')
+    print('         [-c <neutron|midonet> --client-args="<arg=value,...>"]')
+    print('         [extra_options]')
     print('')
     print('   Test Execution Options:')
-    print('     -t, --tests <tests>          List of fully-qualified names of tests to run, separated by ')
-    print('                                  commas with no spaces.')
-    print('     -n, --name <name>            Name this test run (timestamp by default).')
+    print('     -t, --tests <tests>')
+    print('         List of fully-qualified names of tests to run,')
+    print('         separated by commas with no spaces.')
+    print('     -n, --name <name>')
+    print('         Name this test run (timestamp by default).')
     print('   Client API Options:')
-    print('     -c, --client <client>        OpenStack Network client to use.  Currently can be either ')
-    print('                                  "neutron" (default) or "midonet".')
-    print('     -a, --client-auth <auth>     Authentication scheme to use for Openstack authentication. Can be')
-    print('                                  "noauth" or "keystone" ("noauth" is default).')
-    print('                                  "neutron" (default) or "midonet".')
-    print('     --client-args <args>         List of arguments to give the selected client.  These should be')
-    print('                                  key=value pairs, separated by commas, with no spaces.')
+    print('     -c, --client <client>')
+    print('         OpenStack Network client to use.  Currently can be')
+    print('         either "neutron" (default) or "midonet".')
+    print('     -a, --client-auth <auth>')
+    print('         Authentication scheme to use for Openstack ')
+    print('         authentication. Can be"noauth" or "keystone" ("noauth"')
+    print('         is default).')
+    print('     --client-args <args>')
+    print('         List of arguments to give the selected client.  These')
+    print('         should be key=value pairs, separated by commas, with no')
+    print('         spaces.')
     print('   Physical Topology Management Options:')
-    print('     -p, --ptm <ptm-class>        Use the specified PTM implementation class')
-    print('                                  (ConfiguredHostPTMImpl is the default).')
+    print('     -p, --ptm <ptm-class>')
+    print('         Use the specified ptm implementation class')
+    print('         (ConfiguredHostPTMImpl is the default).')
     print('   ConfiguredHostPTMImpl Specific Options:')
-    print('     -o, --topology <topo>        State which physical topologys to configure and run.  Topologies are')
-    print('                                  defined in config/physical_topologies.  By default, tests will run ')
-    print('                                  against a 2NSDB + 3Compute + 2Edge topology. Only one topology can ')
-    print('                                  be run per execution of this command.')
+    print('     -o, --topology <topo>')
+    print('         State which physical topologys to configure and run.')
+    print('         Topologies are defined in config/physical_topologies.')
+    print('         By default, tests will run against a 2NSDB + 3Compute')
+    print('         + 2Edge topology. Only one topology can be run per')
+    print('         execution of this command.')
     print('   Debug Options:')
-    print('     -d, --debug                  Turn on DEBUG logging (and split log output to stdout).')
+    print('     -d, --debug')
+    print('         Turn on DEBUG logging (and split log output to stdout).')
     print('   Output File Options:')
-    print('     -l, --log-dir <dir>          Log file directory (default: /tmp/zephyr/results)')
-    print('     -r, --results-dir <dir>      Results file directory (default: /tmp/zephyr/logs) Timestamp')
-    print('                                  will be appended to prevent overwriting results.')
+    print('     -l, --log-dir <dir>')
+    print('         Log file directory (default: /tmp/zephyr/results)')
+    print('     -r, --results-dir <dir>')
+    print('         Results file directory (default: /tmp/zephyr/logs).')
+    print('         Timestamp will be appended to prevent overwriting')
+    print('         results.')
 
-    if exceptObj is not None:
-        raise exceptObj
+    if except_obj is not None:
+        raise except_obj
 
 try:
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hvdt:n:o:c:p:l:r:a:',
-                                        ['help', 'tests=', 'name=', 'topologies=',
-                                         'client=', 'client-auth=', 'client-args=',
-                                         'ptm=', 'log-dir=', 'debug', 'results-dir=', 'debug-test'])
+    arg_map, extra_args = getopt.getopt(
+        sys.argv[1:],
+        (
+            'h'
+            'v'
+            'd'
+            't:'
+            'n:'
+            'o:'
+            'c:'
+            'p:'
+            'l:'
+            'r:'
+            'a:'
+        ),
+        [
+            'help',
+            'tests=',
+            'name=',
+            'topologies=',
+            'client=',
+            'client-auth=',
+            'client-args=',
+            'ptm=',
+            'log-dir=',
+            'debug',
+            'results-dir=',
+            'debug-test'
+        ])
 
     # Defaults
     client_impl_type = 'neutron'
@@ -83,7 +125,8 @@ try:
     test_debug = False
     log_dir = '/tmp/zephyr/logs'
     results_dir = '/tmp/zephyr/results'
-    ptm_impl_type = 'PTM.impl.ConfiguredHostPTMImpl'
+    ptm_impl_type = (
+        'zephyr.ptm.impl.configured_host_ptm_impl.ConfiguredHostPTMImpl')
     topology = 'config/physical_topologies/2z-3c-2edge.json'
     name = datetime.datetime.utcnow().strftime('%Y_%m_%d_%H-%M-%S')
 
@@ -93,7 +136,9 @@ try:
             sys.exit(0)
         elif arg in ('-t', '--tests'):
             if value == '':
-                usage(ArgMismatchException('Tests should be given as a comma-delimited list with no spaces'))
+                usage(ArgMismatchException(
+                    'Tests should be given as a comma-delimited list '
+                    'with no spaces'))
             tests = value.split(',')
         elif arg in ('-n', '--name'):
             name = value
@@ -109,26 +154,29 @@ try:
             log_dir = value
         elif arg in ('-d', '--debug'):
             debug = True
-        elif arg in ('--debug-test'):
+        elif arg in '--debug-test':
             test_debug = True
         elif arg in ('-r', '--results-dir'):
             results_dir = value
         elif arg == '--client-args':
             for kv in value.split(','):
                 if kv == '':
-                    usage(ArgMismatchException('Client args should be key=value pairs, with one "=", '
-                                               'separated by "," and no spaces.'))
+                    usage(ArgMismatchException(
+                        'Client args should be key=value pairs, '
+                        'with one "=", separated by "," and no spaces.'))
 
                 p = kv.split('=')
                 if len(p) != 2:
-                    usage(ArgMismatchException('Client args should be key=value pairs, with one "=", '
-                                               'separated by "," and no spaces.'))
+                    usage(ArgMismatchException(
+                        'Client args should be key=value pairs, with '
+                        'one "=", separated by "," and no spaces.'))
                 client_args[p[0]] = p[1]
         else:
             raise ArgMismatchException('Invalid argument' + arg)
 
     if len(tests) == 0:
-        usage(ArgMismatchException('Must specify at least one test with the -t or --tests option'))
+        usage(ArgMismatchException(
+            'Must specify at least one test with the -t or --tests option'))
 
     root_dir = LinuxCLI().cmd('pwd').stdout.strip()
     print('Setting root dir to: ' + root_dir)
@@ -137,34 +185,41 @@ try:
     base_client_args = dict()
     if client_impl_type == 'neutron':
         if client_auth_type == 'keystone':
-            base_client_args = {'auth_strategy': 'keystone',
-                                'auth_url': os.environ.get('OS_ATUH_URL', 'http://localhost:5000/v2.0'),
-                                'username': os.environ.get('OS_USERNAME', 'admin'),
-                                'password': os.environ.get('OS_PASSWORD', 'cat'),
-                                'tenant_name': os.environ.get('OS_TENANT_NAME', 'admin')}
+            base_client_args = {
+                'auth_strategy': 'keystone',
+                'auth_url':
+                    os.environ.get('OS_ATUH_URL',
+                                   'http://localhost:5000/v2.0'),
+                'username': os.environ.get('OS_USERNAME', 'admin'),
+                'password': os.environ.get('OS_PASSWORD', 'cat'),
+                'tenant_name': os.environ.get('OS_TENANT_NAME', 'admin')}
         base_client_args.update(client_args)
         client_impl = create_neutron_client(**base_client_args)
-    elif client_impl_type == 'midonet':
-        client_impl = create_midonet_client(**client_args)
     else:
-        raise ArgMismatchException('Invalid client API implementation:' + client_impl_type)
+        raise ArgMismatchException(
+            'Invalid client API implementation:' + client_impl_type)
 
     print('Setting up log manager with debug=' + str(debug))
     log_manager = LogManager(root_dir=log_dir)
-    console_log = log_manager.add_stdout_logger(name='tsm-run-console',
-                                                log_level=logging.DEBUG if debug is True else logging.INFO)
+    console_log = log_manager.add_stdout_logger(
+        name='tsm-run-console',
+        log_level=logging.DEBUG if debug is True else logging.INFO)
     log_manager.rollover_logs_fresh(file_filter='*.log')
 
-    console_log.debug('Setting up PTM from impl: ' + ptm_impl_type)
-    ptm_impl = get_class_from_fqn(ptm_impl_type)(root_dir=root_dir, log_manager=log_manager)
+    console_log.debug('Setting up ptm from impl: ' + ptm_impl_type)
+    ptm_impl = get_class_from_fqn(ptm_impl_type)(
+        root_dir=root_dir, log_manager=log_manager)
     ptm_impl.configure_logging(debug=debug)
     ptm = PhysicalTopologyManager(ptm_impl)
 
-    console_log.debug('Setting up VTM')
-    vtm = VirtualTopologyManager(physical_topology_manager=ptm, client_api_impl=client_impl, log_manager=log_manager)
+    console_log.debug('Setting up vtm')
+    vtm = VirtualTopologyManager(
+        physical_topology_manager=ptm,
+        client_api_impl=client_impl,
+        log_manager=log_manager)
     vtm.configure_logging(debug=debug)
 
-    console_log.debug('Setting up TSM')
+    console_log.debug('Setting up tsm')
     tsm = TestSystemManager(ptm, vtm, log_manager=log_manager)
     tsm.configure_logging(debug=debug)
 
@@ -184,28 +239,34 @@ try:
         for suite, result in tsm.result_map.iteritems():
             print('========================================')
             print('Suite [' + suite + ']')
-            print('Passed [{0}/{1}]'.format(len(result.successes), result.testsRun))
-            print('Expected Failures [{0}/{1}]'.format(len(result.expectedFailures), result.testsRun))
-            print('Failed [{0}/{1}]'.format(len(result.failures), result.testsRun))
-            print('Error [{0}/{1}]'.format(len(result.errors), result.testsRun))
+            print('Passed [{0}/{1}]'.format(
+                len(result.successes), result.testsRun))
+            print('Expected Failures [{0}/{1}]'.format(
+                len(result.expectedFailures), result.testsRun))
+            print('Failed [{0}/{1}]'.format(
+                len(result.failures), result.testsRun))
+            print('Error [{0}/{1}]'.format(
+                len(result.errors), result.testsRun))
             print('')
             for tc, err in result.failures:
                 print('------------------------------')
-                print('Test Case FAILED: [' + tc._get_name() + ']')
+                print('Test Case FAILED: [' + tc.get_name() + ']')
                 print('Failure Message:')
                 print(err)
 
             for tc, err in result.expectedFailures:
                 print('------------------------------')
-                print('Test Case passed with EXPECTED FAILURE: [' + tc._get_name() +
-                      '], see issue(s) [' + ','.join(tc.expected_failure_issue_ids) + ']')
+                print('Test Case passed with EXPECTED FAILURE: [' +
+                      tc.get_name() +
+                      '], see issue(s) [' +
+                      ','.join(tc.expected_failure_issue_ids) + ']')
                 print('Failure Message:')
                 print(err)
 
             for tc, err in result.errors:
                 if isinstance(tc, TestCase):
                     print('------------------------------')
-                    print('Test Case ERROR: [' + tc._get_name() + ']')
+                    print('Test Case ERROR: [' + tc.get_name() + ']')
                     print('Error Message:')
                     print(err)
                 else:
@@ -216,7 +277,7 @@ try:
 
             for tc, err in result.skipped:
                 print('------------------------------')
-                print('Test Case SKIPPED: [' + tc._get_name() + ']')
+                print('Test Case SKIPPED: [' + tc.get_name() + ']')
                 print('Reason:')
                 print(err)
 

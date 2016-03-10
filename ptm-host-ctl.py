@@ -13,26 +13,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import getopt
 import sys
 import traceback
-import getopt
 
-from common.Exceptions import *
-from common.CLI import LinuxCLI
-from common.LogManager import LogManager
-from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
-from PTM.ptm_constants import HOST_CONTROL_CMD_NAME
+from zephyr.common.cli import LinuxCLI
+from zephyr.common.exceptions import *
+from zephyr.common.log_manager import LogManager
+from zephyr.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
+from zephyr.ptm.ptm_constants import HOST_CONTROL_CMD_NAME
 
 
-def usage(exceptClass):
-    print('Usage: ' + HOST_CONTROL_CMD_NAME + ' [-h] [-d] [-l <log_dir>] -c <command> -j <host_json>')
-    if exceptClass is not None:
-        raise exceptClass
+def usage(except_class):
+    print('Usage: ' + HOST_CONTROL_CMD_NAME +
+          ' [-h] [-d] [-l <log_dir>] -c <command> -j <host_json>')
+    if except_class is not None:
+        raise except_class
 
 try:
 
-    arg_map, extra_args = getopt.getopt(sys.argv[1:], 'hdc:j:l:a:',
-                                        ['help', 'debug', 'command=', 'host-json=', 'app-json=', 'log-dir='])
+    arg_map, extra_args = getopt.getopt(
+        sys.argv[1:], 'hdc:j:l:a:',
+        ['help', 'debug', 'command=', 'host-json=', 'app-json=', 'log-dir='])
 
     # Defaults
     host_cmd = ''
@@ -65,7 +67,8 @@ try:
         usage(ArgMismatchException('Must specify JSON representing host'))
 
     if app_json == '':
-        usage(ArgMismatchException('Must specify JSON representing application'))
+        usage(ArgMismatchException(
+            'Must specify JSON representing application'))
 
     arg_list = extra_args
 
@@ -73,7 +76,8 @@ try:
 
     log_manager = LogManager(root_dir=log_dir)
 
-    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir, log_manager=log_manager)
+    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir,
+                                     log_manager=log_manager)
     ptm_impl.configure_logging(debug=debug)
     ptm_impl.ptm_host_app_control(host_cmd, host_json, app_json, arg_list)
 

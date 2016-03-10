@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from PTM.fixtures.ServiceFixture import ServiceFixture
-from common.CLI import LinuxCLI
+from zephyr.ptm.fixtures.service_fixture import ServiceFixture
+from zephyr.common.cli import LinuxCLI
 
 
 class L2GWFixture(ServiceFixture):

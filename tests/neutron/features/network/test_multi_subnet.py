@@ -12,15 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from common.PCAPRules import *
-from common.PCAPPacket import *
-from TSM.NeutronTestCase import NeutronTestCase
-from VTM.Guest import Guest
-
-from collections import namedtuple
-from neutronclient.common.exceptions import *
-
-import unittest
+from zephyr.tsm.neutron_test_case import NeutronTestCase
 
 
 class TestMultiSubnet(NeutronTestCase):

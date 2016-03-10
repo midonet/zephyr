@@ -13,23 +13,11 @@
 # limitations under the License.
 
 import operator
-import time
-
-from TSM.NeutronTestCase import GuestData
-from TSM.NeutronTestCase import NetData
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.NeutronTestCase import require_extension
-from TSM.NeutronTestCase import RouterData
-from TSM.TestCase import expected_failure
-from TSM.TestCase import require_topology_feature
-from PTM.impl.ConfiguredHostPTMImpl import ConfiguredHostPTMImpl
-from PTM.host.Host import Host
-
-from collections import namedtuple
-from common.EchoServer import DEFAULT_ECHO_PORT
-from common.CLI import LinuxCLI
 
 from tests.neutron.features.lbaas.lbaas_test_utils import *
+from zephyr.common.cli import LinuxCLI
+from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm.test_case import require_topology_feature
 
 PACKETS_TO_SEND = 30
 

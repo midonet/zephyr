@@ -12,20 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
-from common.Utils import curl_delete
-from common.Utils import curl_post
-from TSM.NeutronTestCase import require_extension
-from TSM.TestCase import require_topology_feature
-from VTM.Guest import Guest
-from VTM.NeutronAPI import *
-
-from router_peering_utils import L2GWDevice
+from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm.test_case import require_topology_feature
 from router_peering_utils import L2GWNeutronTestCase
-from router_peering_utils import L2GWPeer
-from router_peering_utils import L2GWPeeredTopo
-from router_peering_utils import L2GWSiteTopo
 
 
 class TestRouterPeeringUpdates(L2GWNeutronTestCase):

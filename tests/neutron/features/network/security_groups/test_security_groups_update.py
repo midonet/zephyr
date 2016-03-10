@@ -12,13 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-
-from TSM.NeutronTestCase import require_extension
-from TSM.TestCase import require_topology_feature
-from VTM.Guest import Guest
-from VTM.NeutronAPI import *
-from TSM.NeutronTestCase import NeutronTestCase
+from zephyr.tsm.test_case import require_topology_feature
+from zephyr.tsm.neutron_test_case import NeutronTestCase
 
 
 class TestRouterPeeringSecurityGroups(NeutronTestCase):

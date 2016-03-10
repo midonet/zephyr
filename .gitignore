@@ -5,3 +5,5 @@ logs/
 *.iml
 .tox/
 zephyr.egg-info/**
+test-logs/**
+test-results/**

@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.NeutronTestCase import require_extension
-from VTM.Guest import Guest
-
-from collections import namedtuple
 import unittest
+from collections import namedtuple
+
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.neutron_test_case import require_extension
 
 TopoData = namedtuple('TopoData',
                       'net1 net2 subnet1 subnet2 port1 port2 if1 if2 router1')

@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import require_extension
-from TSM.TestCase import require_topology_feature
-from VTM.NeutronAPI import *
-from VTM.Guest import Guest
+from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm.test_case import require_topology_feature
+from zephyr.vtm.neutron_api import *
 
 from router_peering_utils import L2GWNeutronTestCase
-from router_peering_utils import L2GWSiteData
 
 
 class TestRouterPeeringConnectivity(L2GWNeutronTestCase):

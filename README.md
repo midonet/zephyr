@@ -48,7 +48,7 @@ Zephyr Organization
 Zephyr is organized into three main components and two helper components.  The
 main components are:
 
-* PTM - Physical Topology Manager - Handles setup, teardown, management,
+* ptm - Physical Topology Manager - Handles setup, teardown, management,
 modification, and analysis of the physical layer.  This is what simulates the
 "bare iron" in the test environment.  It is responsible for direct access to and
 from the operating system and OS layer applications (i.e. tcpdump, mz, etc.). When
@@ -57,14 +57,14 @@ a multi-node physical environment), this layer is responsible for connecting
 to the physical layer and enabling the virtual layer to communicate with the
 already-existing physical topology (shell commands, managing ports and networks,
 etc.).
-* VTM - Virtual Topology Manager - Handles access to the virtual topology
+* vtm - Virtual Topology Manager - Handles access to the virtual topology
 via an API object.  In the default case, this is a Neutron client object,
 but specific vendor's API clients can be used.  There are several helper functions
 for topology setup and teardown as well as an encapsulation of a simulated VM
 (VMs can be simulated through IP net namespaces, docker containers, or even be
 actual VMs created through vagrant, kvm, by nova, etc.), which allows for easy
 creation, deletion, modification, and access to these nodes.
-* TSM - Test System Manager - Handles the test system, including configuration,
+* tsm - Test System Manager - Handles the test system, including configuration,
 startup, runtime, cleanup, recording of tests and their results.
 
 The helper components are:
@@ -72,7 +72,7 @@ The helper components are:
 * common - Common utilities for all components, including representations of
 IP addresses, libraries for tcpdump and PCAP-Filter, OS command-line interfaces,
 etc.
-* CBT - Utilities which are in charge of configuring the system, including
+* cbt - Utilities which are in charge of configuring the system, including
 installation and version control of vendor-specific packages.
 
 ### Tests
@@ -81,7 +81,7 @@ Tests run against a supplied physical topology.  Tests also have some control
 over a) which physical topology features it would be compatible with (for
 instance, a test which must run VMs on different hypervisors couldn't run on a
 topology with only one hypervisor), and b) modifying the existing physical
-topology through the PTM.  Tests can also control VMs directly.
+topology through the ptm.  Tests can also control VMs directly.
 
 Tests are organized into TestCase and TestSuite organizational structures, ala
 unittest, nose, etc.  These are used to organize the order in which the tests run,
@@ -89,19 +89,19 @@ but do not affect the topology creation or configuration.  Each TestCase has one
 or more test functions.  Test suites in Zephyr are logical only, and are used to
 encapsulate a single TestCase (with 1 or more test functions). An entire test run,
 from start to finish, will run against a single specified physical topology.  To
-run against multiple topologies, simply re-run the TSM and specify the new
+run against multiple topologies, simply re-run the tsm and specify the new
 topology.
 
 ### Test and component interactions
 
-Tests use PTM fixtures to affect the physical system before and after tests are
+Tests use ptm fixtures to affect the physical system before and after tests are
 executed.  For example, the NeutronDatabaseFixture will set up the Neutron
 database with some default networks and security groups, as well as completely
 drop the Neutron database and recreate a fresh one from scratch when tests are
 finished.  Needless to say, this behavior is not desired in all cases, so fixtures
 can be configured and set up to enable or bypass this functionality.  Furthermore,
-this sort of setup should only happen once, so fixtures are put into the PTM to
-affect the physical system once, after the PTM is started, and once, after the PTM
+this sort of setup should only happen once, so fixtures are put into the ptm to
+affect the physical system once, after the ptm is started, and once, after the ptm
 is shutdown.
 
 Aside from this, when it comes to any virtual setup, the tests are responsible for
@@ -119,19 +119,19 @@ Running Zephyr
 Configuration of Zephyr is done via JSON files by default (although this is
 configurable).
 
-#### PTM Configuration
+#### ptm Configuration
 
-The PTM is configured via physical topology configuration files (JSON by default).
-Each PTM implementation will have its own configuration, as the needs of different
+The ptm is configured via physical topology configuration files (JSON by default).
+Each ptm implementation will have its own configuration, as the needs of different
 implementations would likely require different configuration data (for example,
 an already existing physical topology wouldn't need to have data on what applications
 and what other hosts to start, only a set of IPs, net namespaces, container names,
 etc. to connect to).
 
-##### Sample PTM Configuration
+##### Sample ptm Configuration
 
 This [example configuration file](config/physical_topologies/2z-2c.json) is specific
-to the `ConfiguredHostPTMImpl` PTM implementation.  Other PTM implementations may
+to the `ConfiguredHostPTMImpl` ptm implementation.  Other ptm implementations may
 use a different configuration schema.
 
 This configuration creates a root host, two zookeeper hosts, two compute nodes, and a
@@ -157,7 +157,7 @@ starting and be ready before the network node is started.
 
 Applications, backend APIs, and other custom components can all use configuration
 files as needed.  The _config_ directory is available for any other configuration
-in addition to the PTM config files.
+in addition to the ptm config files.
 
 ### Starting up the physical topology only
 
@@ -181,7 +181,7 @@ The command options are:
 
 ### Running a full test suite
 
-The `tsm-run.py` script is used to launch the TSM and run tests.  This also will
+The `tsm-run.py` script is used to launch the tsm and run tests.  This also will
 specify the physical topology to use, and will be the main point of entry into
 Zephyr for the majority of cases.
 
@@ -192,7 +192,7 @@ Zephyr for the majority of cases.
 | -c CLIENT             | Specify the client API to use ('neutron', 'midonet')              | 'neutron'                                     |
 | -a AUTH               | Specify authentication scheme to use ('keystone', 'noauth')       | 'noauth'                                      |
 | --client-args ARGS    | Specify client params (see below)                                 | None                                          |
-| -p CLASS              | Specify the PTMImpl class to use as the PTM implementation        | 'PTM.impl.ConfiguredHostPTMImpl'              |
+| -p CLASS              | Specify the PTMImpl class to use as the ptm implementation        | 'ptm.impl.ConfiguredHostPTMImpl'              |
 | -o <topology>         | Specify the topology config file to use                           | 'config/physical_topologies/2z-3c-2edge.json' |
 | -d                    | Turn on debug mode for logging                                    | False                                         |
 | -l                    | Specify the logging directory                                     | '/tmp/zephyr/logs'                            |

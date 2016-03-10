@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from TSM.NeutronTestCase import NeutronTestCase
-from TSM.TestCase import require_topology_feature
 import operator
+
+from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.test_case import require_topology_feature
 
 
 class TestBasicPing(NeutronTestCase):
@@ -46,8 +47,10 @@ class TestBasicPing(NeutronTestCase):
             self.LOG.info("Got VM1 IP: " + str(ip1))
             self.LOG.info("Got VM2 IP: " + str(ip2))
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], hv_host='cmp2')
-            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'],
+                                     hv_host='cmp2')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'],
+                                     hv_host='cmp2')
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
@@ -98,8 +101,10 @@ class TestBasicPing(NeutronTestCase):
             self.LOG.info("Got VM1 IP: " + str(ip1))
             self.LOG.info("Got VM2 IP: " + str(ip2))
 
-            vm1 = self.vtm.create_vm(ip1, mac=port1['mac_address'], hv_host='cmp1', name='vm1')
-            vm2 = self.vtm.create_vm(ip2, mac=port2['mac_address'], hv_host='cmp2', name='vm2')
+            vm1 = self.vtm.create_vm(ip1, mac=port1['mac_address'],
+                                     hv_host='cmp1', name='vm1')
+            vm2 = self.vtm.create_vm(ip2, mac=port2['mac_address'],
+                                     hv_host='cmp2', name='vm2')
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
