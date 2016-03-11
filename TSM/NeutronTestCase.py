@@ -79,6 +79,7 @@ class NeutronTestCase(TestCase):
                 "vtep_address": ip,
                 "mac_address": mac,
                 "segmentation_id": segment_id}}
+        self.LOG.debug("RMAC JSON: " + str(mac_add_data_far))
         rmac_json_far_ret = \
             curl_post(curl_url + '/gw/gateway_devices/' +
                       str(gwdev_id) + "/remote_mac_entries",
@@ -109,6 +110,7 @@ class NeutronTestCase(TestCase):
                                           "resource_id": vtep_router_id,
                                           "tunnel_ips": [tunnel_ip],
                                           "tenant_id": 'admin'}}
+        self.LOG.debug("create gateway device JSON: " + str(gw_dev_dict))
         post_ret = curl_post(curl_url, gw_dev_dict)
         gw = json.loads(post_ret)
         self.LOG.debug('create gateway device: ' + str(gw))
@@ -145,6 +147,7 @@ class NeutronTestCase(TestCase):
                                     "devices": [{"device_id": gwdev_id}],
                                     "tenant_id": "admin"}}
 
+        self.LOG.debug("L2GW JSON: " + str(l2gw_data))
         l2_json_ret = curl_post(curl_url, l2gw_data)
         self.LOG.debug('L2GW ' + name + ': ' + str(l2_json_ret))
         l2gw = json.loads(l2_json_ret)
@@ -165,6 +168,7 @@ class NeutronTestCase(TestCase):
                              "l2_gateway_id": l2gw_id,
                              "tenant_id": "admin"}}
 
+        self.LOG.debug("L2 Conn JSON: " + str(l2gw_conn_curl))
         l2_conn_json_ret = curl_post(curl_url, l2gw_conn_curl)
 
         self.LOG.debug('L2 Conn: ' + str(l2_conn_json_ret))

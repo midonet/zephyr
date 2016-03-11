@@ -61,6 +61,7 @@ def curl_post(url, json_data=None, filename=None):
     c.setopt(c.URL, url)
     c.setopt(c.WRITEDATA, buffer)
     if json_data:
+        c.setopt(c.HTTPHEADER, ["Content-Type: application/json"])
         c.setopt(c.POSTFIELDS, json.dumps(json_data))
     if filename:
         c.setopt(c.HTTPPOST, [('fileupload', (c.FORM_FILE, file))])
@@ -77,6 +78,7 @@ def curl_put(url, json_data=None, filename=None):
     c.setopt(c.WRITEDATA, buffer)
     c.setopt(pycurl.CUSTOMREQUEST, "PUT")
     if json_data:
+        c.setopt(c.HTTPHEADER, ["Content-Type: application/json"])
         c.setopt(c.POSTFIELDS, json.dumps(json_data))
     if filename:
         c.setopt(c.HTTPPOST, [('fileupload', (c.FORM_FILE, file))])

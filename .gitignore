@@ -3,6 +3,5 @@
 devstack/
 logs/
 *.iml
-common/
 .tox/
 zephyr.egg-info/**

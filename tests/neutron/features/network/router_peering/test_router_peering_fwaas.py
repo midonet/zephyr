@@ -22,7 +22,7 @@ from VTM.NeutronAPI import *
 from router_peering_utils import L2GWNeutronTestCase
 
 
-class TestRouterPeeringUpdates(L2GWNeutronTestCase):
+class TestRouterPeeringFWaaS(L2GWNeutronTestCase):
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
