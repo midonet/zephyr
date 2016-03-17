@@ -198,6 +198,14 @@ class TomcatFileConfiguration(FileConfigurationHandler):
                                  's/example.com/'
                                  '$public:8443/g'))
 
+        self.cli.rm('/etc/midonet_host_id.properties')
+        uuid_str = 'host_uuid=' + str(unique_id) + '\n'
+        self.cli.write_to_file('/etc/midolman/host_uuid.properties', uuid_str)
+
+        conf_str = ("[zookeeper]\n"
+                    "zookeeper_hosts = " + ip_str + "\n")
+        self.cli.write_to_file('/etc/midonet/midonet.conf', conf_str)
+
 
 class ClusterConfiguration(FileConfigurationHandler):
     def __init__(self):
