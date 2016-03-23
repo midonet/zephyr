@@ -39,6 +39,8 @@ class NeutronTestCase(TestCase):
 
     #TODO(Joe): Split the cleanup into a per-test-group set of files
     servers = list()
+    sgs = set()
+    sgrs = set()
     rmacs = set()
     l2gws = set()
     l2gw_conns = set()
@@ -55,6 +57,8 @@ class NeutronTestCase(TestCase):
     nr_ifaces = list()
 
     def clean_topo(self):
+        self.clean_security_group_rules()
+        self.clean_security_groups()
         self.clean_firewall_policy_rules()
         self.clean_firewall_rules()
         self.clean_firewalls()
@@ -70,6 +74,39 @@ class NeutronTestCase(TestCase):
         self.clean_routers()
         self.clean_subs()
         self.clean_nets()
+
+    def create_security_group(self, name, tenant_id='admin'):
+        sg_data = {'name': name,
+                   'tenant_id': tenant_id}
+        sg = self.api.create_security_group({'security_group': sg_data})
+        self.sgs.add(sg['security_group']['id'])
+        return sg['security_group']
+
+    def delete_security_group(self, sg_id):
+        self.sgs.discard(sg_id)
+        self.api.delete_security_group(sg_id)
+
+    def create_security_group_rule(self, sg_id, remote_group_id=None,
+                                   tenant_id='admin', direction='ingress',
+                                   protocol=None, port_range_min=None,
+                                   port_range_max=None, ethertype='IPv4',
+                                   remote_ip_prefix=None):
+        sgr_data = {'security_group_id': sg_id,
+                    'remote_group_id': remote_group_id,
+                    'direction': direction,
+                    'protocol': protocol,
+                    'port_range_min': port_range_min,
+                    'port_range_max': port_range_max,
+                    'ethertype': ethertype,
+                    'remote_ip_prefix': remote_ip_prefix,
+                    'tenant_id': tenant_id}
+        sgr = self.api.create_security_group_rule({'security_group_rule': sgr_data})
+        self.sgrs.add(sgr['security_group_rule']['id'])
+        return sgr['security_group_rule']
+
+    def delete_security_group_rule(self, sgr_id):
+        self.sgrs.discard(sgr_id)
+        self.api.delete_security_group_rule(sgr_id)
 
     def create_remote_mac_entry(self, ip, mac, segment_id, gwdev_id):
         curl_url = get_neutron_api_url(self.api)
@@ -246,17 +283,29 @@ class NeutronTestCase(TestCase):
         echo_response = vm.send_echo_request(dest_ip=dest_ip)
         self.assertEqual('ping:echo-reply', echo_response)
 
-    def create_vm_server(self, name, net_id, gw_ip):
+    def create_vm_server(self, name, net_id, gw_ip, sgs=[]):
         port_data = {'name': name,
                      'network_id': net_id,
                      'admin_state_up': True,
                      'tenant_id': 'admin'}
+        if sgs:
+            port_data['security_groups'] = sgs
         port = self.api.create_port({'port': port_data})['port']
         ip = port['fixed_ips'][0]['ip_address']
         vm = self.vtm.create_vm(ip=ip, mac=port['mac_address'], gw_ip=gw_ip)
         vm.plugin_vm('eth0', port['id'])
         self.servers.append((vm, ip, port))
         return (port, vm, ip)
+
+    def clean_security_group_rules(self):
+        while self.sgrs:
+            sgr_id = self.sgrs.pop()
+            self.delete_security_group_rule(sgr_id)
+
+    def clean_security_groups(self):
+        while self.sgs:
+            sg_id = self.sgs.pop()
+            self.delete_security_group(sg_id)
 
     def clean_firewall_policy_rules(self):
         while self.fw_ras:
@@ -354,7 +403,7 @@ class NeutronTestCase(TestCase):
     def create_port(self, name, net_id, tenant_id='admin', host=None,
                     host_iface=None, sub_id=None, ip=None, mac=None,
                     port_security_enabled=True, device_owner=None,
-                    device_id=None):
+                    device_id=None, sg_ids=[]):
         port_data = {'name': name,
                      'network_id': net_id,
                      'port_security_enabled': port_security_enabled,
@@ -373,6 +422,8 @@ class NeutronTestCase(TestCase):
             port_data['device_id'] = device_id
         if mac:
             port_data['mac_address'] = mac
+        if sg_ids:
+            port_data['security_groups'] = sg_ids
 
         port = self.api.create_port({'port': port_data})
         self.nports.add(port['port']['id'])
