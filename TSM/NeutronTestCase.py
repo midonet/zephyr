@@ -429,6 +429,10 @@ class NeutronTestCase(TestCase):
         self.nports.add(port['port']['id'])
         return port['port']
 
+    def delete_port(self, port_id):
+        self.nports.discard(port_id)
+        self.api.delete_port(port_id)
+
     def create_network(self, name, admin_state_up=True, tenant_id='admin',
                        external=False, uplink=False):
         net_data = {'name': 'net_' + name,
@@ -464,6 +468,11 @@ class NeutronTestCase(TestCase):
         iface = self.api.add_interface_router(router_id, data)
         self.nr_ifaces.append((router_id, iface))
         return iface
+
+    def remove_router_interface(self, router_id, iface):
+        self.nr_ifaces.remove((router_id, iface))
+        self.nports.discard(iface['port_id'])
+        self.api.remove_interface_router(router_id, iface)
 
     def create_router(self, name, tenant_id='admin', pub_net_id=None,
                       admin_state_up=True, priv_sub_ids=[]):
