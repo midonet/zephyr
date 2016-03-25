@@ -25,6 +25,7 @@ from router_peering_utils import L2GWNeutronTestCase
 from router_peering_utils import L2GWSiteData
 
 import operator
+import unittest
 
 
 class TestRouterPeeringLBaaS(L2GWNeutronTestCase):
@@ -33,6 +34,7 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase):
     @require_extension('l2-gateway')
     @require_topology_feature('config_file', lambda a, b: a in b,
                               ['config/physical_topologies/2z-3c-2edge.json'])
+    @unittest.skip("needs lbaas refactor")
     def test_peered_rotuers_with_lbaas(self):
         vm1 = None
         vm2 = None
