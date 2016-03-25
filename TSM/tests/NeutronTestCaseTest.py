@@ -35,6 +35,7 @@ class SampleTestCase(NeutronTestCase):
 class SampleFixture(NeutronDatabaseFixture):
     def __init__(self, vtm, ptm, logger):
         super(SampleFixture, self).__init__(vtm, ptm, logger)
+        self.api = create_neutron_client()
 
     def setup(self):
         pass

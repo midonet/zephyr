@@ -55,8 +55,6 @@ class NeutronTestCase(TestCase):
     nr_ifaces = list()
 
     def clean_topo(self):
-        if not self.api:
-            return
         topo_info =\
             [(self.sgrs, 'security group rule',
               self.api.delete_security_group_rule),
