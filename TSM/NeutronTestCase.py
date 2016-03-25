@@ -412,6 +412,10 @@ class NeutronTestCase(TestCase):
         self.LOG.debug('Created Neutron network: ' + str(net))
         return net['network']
 
+    def delete_network(self, net_id):
+        self.nnets.remove(net_id)
+        self.api.delete_network(net_id)
+
     def create_subnet(self, name, net_id, cidr, tenant_id='admin',
                       enable_dhcp=True):
         sub_data = {'name': 'sub_' + name,
@@ -424,6 +428,10 @@ class NeutronTestCase(TestCase):
         self.nsubs.append(sub['subnet']['id'])
         self.LOG.debug('Created Neutron subnet: ' + str(sub))
         return sub['subnet']
+
+    def delete_subnet(self, sub_id):
+        self.nsubs.remove(sub_id)
+        self.api.delete_subnet(sub_id)
 
     def create_router_interface(self, router_id, port_id=None, sub_id=None):
         data = {}
@@ -453,6 +461,10 @@ class NeutronTestCase(TestCase):
         self.nrouters.append(router['id'])
         self.LOG.debug('Created Neutron router: ' + str(router))
         return router
+
+    def delete_router(self, rid):
+        self.nrouters.remove(rid)
+        self.api.delete_router(rid)
 
     def __init__(self, methodName='runTest'):
         super(NeutronTestCase, self).__init__(methodName)
