@@ -297,7 +297,7 @@ class NeutronTestCase(TestCase):
         self.api.firewall_policy_remove_rule(fw_policy_id, data)
 
     def verify_connectivity(self, vm, dest_ip):
-        self.assertTrue(vm.ping(target_ip=dest_ip))
+        self.assertTrue(vm.ping(target_ip=dest_ip, timeout=20))
 
         echo_response = vm.send_echo_request(dest_ip=dest_ip)
         self.assertEqual('ping:echo-reply', echo_response)

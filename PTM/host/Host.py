@@ -528,7 +528,7 @@ class Host(PTMObject):
                                 source_port=source_port, dest_port=dest_port, payload=data,
                                 packet_options=packet_options, count=count).stdout
 
-    def ping(self, target_ip, iface=None, count=1):
+    def ping(self, target_ip, iface=None, count=1, timeout=None):
         """
         Ping a target IP.  Can specify the interface to use and/or the number of pings to send.
         Returns true if all pings succeeded, false otherwise.
@@ -538,7 +538,8 @@ class Host(PTMObject):
         :return: bool
         """
         iface_str = ('-I ' + iface) if iface is not None else ''
-        return self.cli.cmd('ping -n ' + iface_str + ' -c ' + str(count) + ' ' + target_ip).ret_code == 0
+        timeout_str = ('-W ' + str(timeout) + ' ') if timeout is not None else ''
+        return self.cli.cmd('ping -n ' + iface_str + ' -c ' + str(count) + ' ' + timeout_str + target_ip).ret_code == 0
 
     def start_capture(self, interface,
                       count=0, type='', filter=None,
