@@ -19,7 +19,9 @@ if [ ".$OS" == ".Ubuntu" ]; then
   ZOOKEEPER="zookeeper zookeeperd"
   TOMCAT="tomcat7"
 
+  sudo apt-add-repository -y ppa:openjdk-r/ppa
   sudo apt-get update
+
 elif [ ".$OS" == ".centos" ]; then
   INSTALL='sudo yum install -y'
 
@@ -33,6 +35,7 @@ elif [ ".$OS" == ".centos" ]; then
 
   ZOOKEEPER="zookeeper zookeeper-server"
   TOMCAT="tomcat"
+
 else
   echo "Must run on CentOS or Ubuntu!"
   exit 1
@@ -58,4 +61,11 @@ sudo pip install unittest2 numpy setuptools pyyaml futures pyhamcrest
 
 # Use IPv4 forwarding
 sudo bash -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
+
+$INSTALL openjdk-7-jre-headless openjdk-7-jdk
+$INSTALL openjdk-8-jre-headless openjdk-8-jdk
+
+sudo pip install xmlrunner
+
+sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 
