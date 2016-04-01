@@ -13,15 +13,14 @@
 # limitations under the License.
 
 from collections import namedtuple
-import logging
 import math
 import time
 
 from zephyr.common.echo_server import DEFAULT_ECHO_PORT
+from zephyr.common.exceptions import ObjectNotFoundException
+from zephyr.common.exceptions import ObjectAlreadyAddedException
 from zephyr.tsm.neutron_test_case import GuestData
-from zephyr.tsm.neutron_test_case import NetData
 from zephyr.tsm.neutron_test_case import NeutronTestCase
-from zephyr.tsm.neutron_test_case import RouterData
 
 LBNetData = namedtuple('LBNetData', 'lbaas member pinger router member_vms')
 
@@ -29,291 +28,426 @@ NUM_PACKETS_TO_SEND = 50
 DEFAULT_POOL_PORT = DEFAULT_ECHO_PORT
 
 
-def create_lb_member_net(tc,
-                         lbaas_cidr='192.168.22.0/24',
-                         member_cidr='192.168.33.0/24',
-                         num_members=2,
-                         create_pinger_net=True,
-                         pinger_cidr='192.168.55.0/24'):
-    """
-    :type tc: NeutronTestCase
-    :type lbaas_cidr: str
-    :type member_cidr: str
-    :type num_members: int
-    :type create_pinger_net: bool
-    :type pinger_cidr: str
-    """
-    if not tc.LOG:
-        tc.LOG = logging.getLogger('lbaas_util_logger')
+class LBaaSTestCase(NeutronTestCase):
+    def __init__(self, method_name='runTest'):
+        super(LBaaSTestCase, self).__init__(method_name)
+        self.topos = {}
+        """ :type: dict[str, dict[str, dict[str, dict[str, str]]] """
 
-    member_data = None
-    lbaas_data = None
-    pinger_data = None
-    router_data = None
-    members = []
-    lbn_data = None
-    router = None
-    router_ifs = []
-    try:
-        # Create pool net/subnet
-        lbaas_net = tc.api.create_network({'network': {'name': 'lbaas_net',
-                                                       'tenant_id': 'admin'}})['network']
-        lbaas_subnet = tc.api.create_subnet({'subnet': {'name': 'lbaas_sub',
-                                                        'network_id': lbaas_net['id'],
-                                                        'ip_version': 4, 'cidr': lbaas_cidr,
-                                                        'tenant_id': 'admin'}})['subnet']
-        tc.LOG.debug('Created subnet for LBaaS pool: ' + str(lbaas_subnet))
-        lbaas_data = NetData(lbaas_net, lbaas_subnet)
+        self.pingers = []
+        """ :type: list[GuestData] """
 
-        # If member net is different, create member net/subnet
-        if member_cidr != lbaas_cidr:
-            member_net = tc.api.create_network({'network': {'name': 'member_net',
-                                                            'tenant_id': 'admin'}})['network']
-            member_subnet = tc.api.create_subnet({'subnet': {'name': 'member_sub',
-                                                             'network_id': member_net['id'],
-                                                             'ip_version': 4, 'cidr': member_cidr,
-                                                             'tenant_id': 'admin'}})['subnet']
-            tc.LOG.debug('Created subnet for members: ' + str(member_subnet))
-            member_data = NetData(member_net, member_subnet)
+        self.pool_ids = []
+        """ :type: list[str] """
+        self.vip_ids = []
+        """ :type: list[str] """
+        self.health_monitor_ids = []
+        """ :type: list[str] """
+        self.associated_health_monitors = []
+        """ :type: list[(str,str)]"""
+        self.member_ids = []
+        """ :type: list[str] """
 
-        else:
-            member_data = NetData(lbaas_net, lbaas_subnet)
+    def create_pinger_net(self, name='main', cidr='192.168.55.0/24',):
+        """
+        :type cidr: str
+        """
+        if name not in self.topos:
+            self.topos[name] = {}
 
-        if create_pinger_net:
-            pinger_net = tc.api.create_network({'network': {'name': 'pinger_net',
-                                                            'tenant_id': 'admin'}})['network']
-            pinger_subnet = tc.api.create_subnet({'subnet': {'name': 'pinger_sub',
-                                                             'network_id': pinger_net['id'],
-                                                             'ip_version': 4, 'cidr': pinger_cidr,
-                                                             'tenant_id': 'admin'}})['subnet']
+        if 'pinger' in self.topos[name]:
+            raise ObjectAlreadyAddedException(
+                'Pinger topo already added for: ' + name)
 
-            tc.LOG.debug('Created subnet for pingers: ' + str(pinger_subnet))
-            pinger_data = NetData(pinger_net, pinger_subnet)
+        pinger_net = self.create_network(name='pinger_net')
+        pinger_subnet = self.create_subnet(name='pinger_sub',
+                                           net_id=pinger_net['id'],
+                                           cidr=cidr)
 
+        self.LOG.debug('Created subnet for pingers: ' + str(pinger_subnet))
+        self.topos[name]['pinger'] = {'network': pinger_net,
+                                      'subnet': pinger_subnet}
+
+    def create_lbaas_net(self, name='main', cidr='192.168.22.0/24'):
+        """
+        :type cidr: str
+        """
+        if name not in self.topos:
+            self.topos[name] = {}
+
+        if 'lbaas' in self.topos[name]:
+            raise ObjectAlreadyAddedException(
+                'LBaaS topo already added for: ' + name)
+
+        lbaas_net = self.create_network(name='lbaas_net')
+        lbaas_subnet = self.create_subnet(name='lbaas_sub',
+                                          net_id=lbaas_net['id'],
+                                          cidr=cidr)
+
+        self.LOG.debug('Created subnet for lbaass: ' + str(lbaas_subnet))
+        self.topos[name]['lbaas'] = {'network': lbaas_net,
+                                     'subnet': lbaas_subnet}
+
+    def create_member_net(self, name='main', cidr='192.168.33.0/24'):
+        """
+        :type cidr: str
+        """
+        if name not in self.topos:
+            self.topos[name] = {}
+
+        if 'member' in self.topos[name]:
+            raise ObjectAlreadyAddedException(
+                'Member topo already added for: ' + name)
+
+        member_net = self.create_network(name='member_net')
+        member_subnet = self.create_subnet(name='member_sub',
+                                           net_id=member_net['id'],
+                                           cidr=cidr)
+
+        self.LOG.debug('Created subnet for members: ' + str(member_subnet))
+        self.topos[name]['member'] = {'network': member_net,
+                                      'subnet': member_subnet}
+
+    def create_lb_router(self, name='main', gw_net_id=None):
         # Create pool router
-        router = tc.api.create_router({'router': {'name': 'lbaas_router',
-                                                  'external_gateway_info':
-                                                      {'network_id': tc.pub_network['id']},
-                                                  'tenant_id': 'admin'}})['router']
+        if name not in self.topos:
+            self.topos[name] = {}
 
-        router_ifs = []
-        tc.LOG.debug('Created subnet router for LBaaS pool: ' + str(router))
-        # Add gw for pool subnet
-        iface = tc.api.add_interface_router(router['id'], {'subnet_id': lbaas_data.subnet['id']})
-        tc.LOG.debug('Created subnet interface for LBaaS pool net: ' + str(iface))
-        router_ifs.append(iface)
-        if member_cidr != lbaas_cidr:
+        if 'router' in self.topos[name]:
+            raise ObjectAlreadyAddedException('Router already added for: ' +
+                                              name)
+
+        router = self.create_router(
+            name=name + '_lb_router',
+            pub_net_id=gw_net_id)
+
+        self.LOG.debug('Created subnet router for LBaaS pool: ' +
+                       str(router))
+
+        if 'lbaas' in self.topos[name]:
+            # Add gw for pool subnet
+            iface = self.create_router_interface(
+                router_id=router['id'],
+                sub_id=self.topos[name]['lbaas']['subnet']['id'])
+            self.LOG.debug('Created subnet interface for LBaaS pool net: ' +
+                           str(iface))
+
+        if 'member' in self.topos[name]:
             # Add gw for member subnet
-            iface2 = tc.api.add_interface_router(router['id'], {'subnet_id': member_data.subnet['id']})
-            tc.LOG.debug('Created subnet interface for member net: ' + str(iface2))
-            router_ifs.append(iface2)
-        if create_pinger_net:
+            iface = self.create_router_interface(
+                router_id=router['id'],
+                sub_id=self.topos[name]['member']['subnet']['id'])
+            self.LOG.debug('Created subnet interface for LBaaS member net: ' +
+                           str(iface))
+
+        if 'pinger' in self.topos[name]:
             # Add gw for pinger subnet
-            iface3 = tc.api.add_interface_router(router['id'], {'subnet_id': pinger_data.subnet['id']})
-            tc.LOG.debug('Created subnet interface for pinger net: ' + str(iface3))
-            router_ifs.append(iface3)
-        router_data = RouterData(router, router_ifs)
+            iface = self.create_router_interface(
+                router_id=router['id'],
+                sub_id=self.topos[name]['pinger']['subnet']['id'])
+            self.LOG.debug('Created subnet interface for pinger net: ' +
+                           str(iface))
 
-        # Create member VMs
+        self.topos[name]['router'] = router
+        return router
+
+    def create_member_vms(self,
+                          num_members,
+                          name='main',
+                          net='member',
+                          hv_host=None):
+        """
+        Create num_member VMs on the net/subnet provided by 'net'
+        :type num_members: int
+        :type name: str
+        :type net: str
+        :type hv_host: str
+        """
+        if name not in self.topos or net not in self.topos[name]:
+            raise ObjectNotFoundException("Name or net not found: " +
+                                          name + ", " + net)
+        net_id = self.topos[name][net]['network']['id']
+        gw_ip = self.topos[name][net]['subnet']['gateway_ip']
+
+        ret = []
+        new_name = name.translate(None, 'aeiou')
         for i in range(0, num_members):
-            port = tc.api.create_port({'port': {'name': 'port1',
-                                                'network_id': member_data.network['id'],
-                                                'admin_state_up': True,
-                                                'tenant_id': 'admin'}})['port']
-            tc.LOG.debug('Created port1: ' + str(port))
-            ip = port['fixed_ips'][0]['ip_address']
-            vm = tc.vtm.create_vm(ip=ip, mac=port['mac_address'],
-                                  gw_ip=member_data.subnet['gateway_ip'])
-            vm.plugin_vm('eth0', port['id'])
-            members.append(GuestData(port, vm, ip))
+            ret.append(GuestData(*self.create_vm_server(
+                name='m_' + new_name + '_' + str(i),
+                net_id=net_id,
+                gw_ip=gw_ip,
+                hv_host=hv_host)))
+        return ret
 
-        lbn_data = LBNetData(lbaas_data,
-                             member_data,
-                             pinger_data,
-                             router_data,
-                             members)
+    def create_pinger_vm(self,
+                         name='main',
+                         net='pinger',
+                         hv_host=None):
+        """
+        Create a VM on the pinger net/subnet provided by 'net'
+        (pinger_net is default)
+        :type name: str
+        :type net: str
+        :type hv_host: str
+        """
+        if name not in self.topos or net not in self.topos[name]:
+            raise ObjectNotFoundException("Name or net not found: " +
+                                          name + ", " + net)
+        net_id = self.topos[name][net]['network']['id']
+        gw_ip = self.topos[name][net]['subnet']['gateway_ip']
+        new_name = name.translate(None, 'aeiou')
+        pinger = GuestData(*self.create_vm_server(
+            name='p_' + new_name,
+            net_id=net_id,
+            gw_ip=gw_ip,
+            hv_host=hv_host))
+        self.pingers.append(pinger)
+        return pinger
 
-    except Exception as e:
-        broken_router_data = RouterData(router, router_ifs)
-        clear_lbaas_member_net(tc,
-                               lbaas_data, member_data, pinger_data, broken_router_data,
-                               members, throw_on_fail=False)
-        tc.LOG.fatal('Error setting up topology: ' + str(e))
-        raise e
-
-    return lbn_data
-
-
-def clear_lbaas_data(tc, lbn_data, throw_on_fail=False):
-    if not lbn_data:
-        return
-
-    clear_lbaas_member_net(tc,
-                           lbn_data.lbaas, lbn_data.member, lbn_data.pinger,
-                           lbn_data.router,
-                           lbn_data.member_vms,
-                           throw_on_fail)
-
-
-def clear_lbaas_member_net(tc,
-                           lbaas_data, member_data, pinger_data,
-                           router_data, members, throw_on_fail=False):
-    """
-    :type tc: NeutronTestCase
-    :type lbaas_data: NetworkData
-    :type member_data: NetworkData
-    :type pinger_data: NetworkData
-    :type router_data: RouterData
-    :type members: list[GuestData]
-
-    :return:
-    """
-    try:
-        for gd in members:
-            if gd:
-                gd.vm.stop_echo_server(ip=gd.ip, port=DEFAULT_POOL_PORT)
-                tc.cleanup_vms([(gd.vm, gd.port)])
-        if router_data:
-            tc.api.update_router(router_data.router['id'], {'router': {'routes': None}})
-            for iface in router_data.if_list:
-                tc.api.remove_interface_router(router_data.router['id'], iface)
-                tc.LOG.debug('Deleted router iface: ' + str(iface))
-            tc.api.delete_router(router_data.router['id'])
-            tc.LOG.debug('Deleted router: ' + router_data.router['id'])
-        if lbaas_data and lbaas_data.network:
-            if lbaas_data.subnet:
-                tc.api.delete_subnet(lbaas_data.subnet['id'])
-                tc.LOG.debug('Deleted LBaaS subnet: ' + lbaas_data.subnet['id'])
-            tc.api.delete_network(lbaas_data.network['id'])
-            tc.LOG.debug('Deleted LBaaS network: ' + lbaas_data.network['id'])
-        if pinger_data and pinger_data.network:
-            if pinger_data.subnet:
-                tc.api.delete_subnet(pinger_data.subnet['id'])
-                tc.LOG.debug('Deleted Pinger subnet: ' + pinger_data.subnet['id'])
-            tc.api.delete_network(pinger_data.network['id'])
-            tc.LOG.debug('Deleted Pinger network: ' + pinger_data.network['id'])
-        if member_data.network and \
-           member_data.network['id'] != lbaas_data.network['id']:
-            if member_data.subnet:
-                tc.api.delete_subnet(member_data.subnet['id'])
-                tc.LOG.debug('Deleted Member subnet: ' + member_data.subnet['id'])
-            tc.api.delete_network(member_data.network['id'])
-            tc.LOG.debug('Deleted Member network: ' + member_data.network['id'])
-    except Exception as e:
-        if throw_on_fail:
-            tc.fail("Failed cleaning up LBaaS topo: " + str(e))
-        else:
-            tc.LOG.fatal("Failed cleaning up LBaaS topo: " + str(e))
-
-
-def send_packets_to_vip(tc, member_list, pinger, vip, num_packets=NUM_PACKETS_TO_SEND,
-                        to_port=DEFAULT_POOL_PORT):
-    """
-    :type tc: NeutronTestCase
-    :type member_list: list[GuestData]
-    :type pinger: GuestData
-    :type vip: str
-    :type num_packets: int
-    :type to_port: int
-    :return:
-    """
-    host_replies = {}
-    """ :type: dict[str, int] """
-    try:
-        for g in member_list:
-            g.vm.start_echo_server(ip=g.ip, port=to_port, echo_data=g.vm.vm_host.name)
-            host_replies[g.vm.vm_host.name] = 0
-        host_replies["NO_RESPONSE"] = 0
-
-        time.sleep(1)
-
-        tc.LOG.debug("Sending " + str(num_packets) + " TCP count from LBaaS VM to VIP:" + str(vip))
-        streak_no_response = 0
-        for i in range(0, num_packets):
-            reply = pinger.vm.send_echo_request(dest_ip=str(vip), dest_port=to_port,
-                                                echo_request='ping').strip()
-            tc.LOG.debug('Got reply from echo-server: ' + reply)
-            replying_vm = reply.split(':')[-1]
-            if replying_vm != '':
-                if replying_vm not in host_replies:
-                    if "MISMATCH_RESPONSE_" + replying_vm not in host_replies:
-                        host_replies["MISMIATCHED_RESPONSE_" + replying_vm] = 0
-                    host_replies["MISMIATCHED_RESPONSE_" + replying_vm] += 1
-                else:
-                    host_replies[replying_vm] += 1
-                streak_no_response = 0
+    def clear_lbaas_data(self, throw_on_fail=False):
+        """
+        :type throw_on_fail: bool
+        :return:
+        """
+        try:
+            while self.vip_ids:
+                vip = self.vip_ids.pop()
+                self.LOG.debug('Deleting VIP: ' + str(vip))
+                self.api.delete_vip(vip)
+            while self.member_ids:
+                member = self.member_ids.pop()
+                self.LOG.debug('Deleting member: ' + str(member))
+                self.api.delete_member(member)
+            while self.associated_health_monitors:
+                hm, pool = self.associated_health_monitors.pop()
+                self.LOG.debug('Disassociating health monitor: ' + str(hm))
+                self.api.disassociate_health_monitor(pool, hm)
+            while self.health_monitor_ids:
+                hm = self.health_monitor_ids.pop()
+                self.LOG.debug('Deleting health monitor: ' + str(hm))
+                self.api.delete_health_monitor(hm)
+            while self.pool_ids:
+                pool = self.pool_ids.pop()
+                self.LOG.debug('Deleting pool: ' + str(pool))
+                self.api.delete_pool(pool)
+        except Exception as e:
+            if throw_on_fail:
+                self.fail("Failed cleaning up LBaaS topo: " + str(e))
             else:
-                host_replies["NO_RESPONSE"] += 1
-                streak_no_response += 1
-                if streak_no_response >= 5:
-                    tc.LOG.fatal("5 missed packets in a row: giving up")
-                    # Fill in the rest of the "NO_RESPONSE" (minus one because
-                    # we already marked this packet as NO_RESPONSE)
-                    host_replies["NO_RESPONSE"] += num_packets - i - 1
-                    break
-    finally:
-        for g in member_list:
-            g.vm.stop_echo_server(ip=g.ip, port=to_port)
+                self.LOG.fatal("Failed cleaning up LBaaS topo: " + str(e))
 
-    return host_replies
+    def create_pool(self, subnet_id, name='pool1', protocol='TCP',
+                    lb_method='ROUND_ROBIN', tenant_id='admin'):
+        pool = self.api.create_pool(
+            {'pool': {'name': name,
+                      'protocol': protocol,
+                      'subnet_id': subnet_id,
+                      'lb_method': lb_method,
+                      'admin_state_up': True,
+                      'tenant_id': tenant_id}})['pool']
+        self.LOG.debug('Created LBaaS Pool: ' + str(pool))
+        self.pool_ids.append(pool['id'])
+        return pool
 
+    def update_pool(self, subnet_id, name='pool1', protocol='TCP',
+                    lb_method='ROUND_ROBIN', tenant_id='admin'):
+        pass
 
-def check_host_replies_against_rr_baseline(tc, member_list, host_replies,
-                                           total_expected=0, identifier=None,
-                                           check_against_round_robin=False):
-    """
-    :type tc: NeutronTestCase
-    :type member_list: list[GuestData]
-    :type host_replies: dict[str, int]
-    :type total_expected: int
-    :type identifier: str
-    :return:
-    """
+    def delete_pool(self, pool_id):
+        self.api.delete_pool(pool_id)
+        self.pool_ids.remove(pool_id)
 
-    failure_conditions = []
+    def create_health_monitor(self, proto_type='TCP', delay=3,
+                              timeout=1, max_retries=2,
+                              tenant_id='admin'):
+        hm = self.api.create_health_monitor(
+            {'health_monitor': {'tenant_id': tenant_id,
+                                'type': proto_type,
+                                'delay': delay,
+                                'timeout': timeout,
+                                'max_retries': max_retries}})['health_monitor']
+        self.LOG.debug('Created Health Monitor: ' + str(hm))
+        self.health_monitor_ids.append(hm['id'])
+        return hm
 
-    if total_expected == 0:
-        total_expected = NUM_PACKETS_TO_SEND
+    def associate_health_monitor(self, hm_id, pool_id, tenant_id='admin'):
+        self.api.associate_health_monitor(
+            pool_id, {'health_monitor': {'tenant_id': tenant_id,
+                                         'id': hm_id}})
+        self.LOG.debug("Associated Health Monitor to pool: " +
+                       str(hm_id) + "=>" + str(pool_id))
+        self.associated_health_monitors.append((hm_id, pool_id))
 
-    failed_response = host_replies["NO_RESPONSE"]
-    if failed_response > 0:
-        failure_conditions.append("VM failed to respond [count: " + str(failed_response) + ']')
+    def delete_health_monitor(self, hm_id):
+        self.api.delete_health_monitor(hm_id)
+        self.health_monitor_ids.remove(hm_id)
 
-    for vm in [m for m in host_replies.iterkeys() if m.startswith("MISMIATCHED_RESPONSE_")]:
-        mismatch_name = vm[21:]
-        failure_conditions.append('Received [' + str(host_replies[vm]) +
-                                  '] mismatched and unexpected reply(ies): ' + mismatch_name)
+    def create_vip(self, pool_id, subnet_id,
+                   name='vip1', protocol='TCP',
+                   protocol_port=DEFAULT_POOL_PORT,
+                   tenant_id='admin'):
+        vip = self.api.create_vip(
+            {'vip': {'name': name,
+                     'subnet_id': subnet_id,
+                     'protocol': protocol,
+                     'protocol_port': protocol_port,
+                     'pool_id': pool_id,
+                     'tenant_id': tenant_id}})['vip']
+        self.LOG.debug('Created LBaaS VIP: ' + str(vip))
+        self.vip_ids.append(vip['id'])
+        return vip
 
-    total_packet_count = sum([c for k, c in host_replies.iteritems() if k != "NO_RESPONSE"])
+    def delete_vip(self, vip_id):
+        self.api.delete_vip(vip_id)
+        self.vip_ids.remove(vip_id)
 
-    tc.LOG.debug("Got total of " + str(total_packet_count) + " packets")
-    if total_expected != total_packet_count:
-        failure_conditions.append("Didn't receive expected number of responses: " +
-                                  str(total_packet_count) + ", expected: " + str(total_expected))
+    def create_member(self, pool_id, ip,
+                      protocol_port=DEFAULT_POOL_PORT,
+                      tenant_id='admin'):
 
-    # Acceptable delta is +/-50% of the expected average
-    baseline_average = float(float(total_expected) / float(len(member_list)))
-    acceptable_delta = float(float(total_expected) / float(2 * len(member_list)))
+        member = self.api.create_member(
+            {'member': {'address': ip,
+                        'protocol_port': protocol_port,
+                        'pool_id': pool_id,
+                        'tenant_id': tenant_id}})['member']
+        self.LOG.debug('Created LBaaS member:' + str(member))
+        self.member_ids.append(member['id'])
+        return member
 
-    for h in member_list:
-        name = h.vm.vm_host.name
-        count = host_replies[name]
-        tc.LOG.debug("Got " + str(count) + " packets on VM: " + name)
+    def delete_member(self, member_id):
+        self.api.delete_member(member_id)
+        self.member_ids.remove(member_id)
 
-        if name not in host_replies or host_replies[name] == 0:
-            failure_conditions.append("Member never responded: " + name)
+    def send_packets_to_vip(self, member_list, pinger,
+                            vip, num_packets=NUM_PACKETS_TO_SEND,
+                            to_port=DEFAULT_POOL_PORT):
+        """
+        :type self: NeutronTestCase
+        :type member_list: list[GuestData]
+        :type pinger: GuestData
+        :type vip: str
+        :type num_packets: int
+        :type to_port: int
+        :return:
+        """
+        host_replies = {}
+        """ :type: dict[str, int] """
+        try:
+            for g in member_list:
+                g.vm.start_echo_server(
+                    ip=g.ip, port=to_port,
+                    echo_data=g.vm.vm_host.name)
+                host_replies[g.vm.vm_host.name] = 0
+            host_replies["NO_RESPONSE"] = 0
 
-        # round robin means the packets should be relatively evenly distributed
-        # but it's not perfect, so allow a leeway for each host
-        if check_against_round_robin:
-            if count < math.floor(baseline_average - acceptable_delta) or \
-               count > math.ceil(baseline_average + acceptable_delta):
-                failure_conditions.append("Number of packets received outside tolerance (vm: " +
-                                          name + ", num_replies: " + str(count) +
-                                          "), (avg: " + str(baseline_average) +
-                                          ", delta: " + str(acceptable_delta) + ")")
+            time.sleep(1)
 
-    if len(failure_conditions) > 0:
-        fail_str = "Failed packet check" + (" for [" + identifier + "]" if identifier else "")
-        fail_str += " because:\n* " + "\n* ".join(failure_conditions)
-        tc.fail(fail_str)
+            self.LOG.debug("Sending " + str(num_packets) +
+                           " TCP count from LBaaS VM to VIP:" + str(vip))
+            streak_no_response = 0
+            for i in range(0, num_packets):
+                reply = pinger.vm.send_echo_request(
+                    dest_ip=str(vip), dest_port=to_port,
+                    echo_request='ping').strip()
+                self.LOG.debug('Got reply from echo-server: ' + reply)
+                replying_vm = reply.split(':')[-1]
+                if replying_vm != '':
+                    if replying_vm not in host_replies:
+                        if "MISMATCH_RESPONSE_" + replying_vm \
+                                not in host_replies:
+                            host_replies["MISMIATCHED_RESPONSE_" +
+                                         replying_vm] = 0
+                        host_replies["MISMIATCHED_RESPONSE_" +
+                                     replying_vm] += 1
+                    else:
+                        host_replies[replying_vm] += 1
+                    streak_no_response = 0
+                else:
+                    host_replies["NO_RESPONSE"] += 1
+                    streak_no_response += 1
+                    if streak_no_response >= 5:
+                        self.LOG.fatal("5 missed packets in a row: giving up")
+                        # Fill in the rest of the "NO_RESPONSE"
+                        # (minus one because we already marked
+                        # this packet as NO_RESPONSE)
+                        host_replies["NO_RESPONSE"] += num_packets - i - 1
+                        break
+        finally:
+            for g in member_list:
+                g.vm.stop_echo_server(ip=g.ip, port=to_port)
+
+        return host_replies
+
+    def check_host_replies_against_rr_baseline(
+            self, member_list, host_replies,
+            total_expected=0, identifier=None,
+            check_against_round_robin=False):
+        """
+        :type self: NeutronTestCase
+        :type member_list: list[GuestData]
+        :type host_replies: dict[str, int]
+        :type total_expected: int
+        :type identifier: str
+        :return:
+        """
+
+        failure_conditions = []
+
+        if total_expected == 0:
+            total_expected = NUM_PACKETS_TO_SEND
+
+        failed_response = host_replies["NO_RESPONSE"]
+        if failed_response > 0:
+            failure_conditions.append("VM failed to respond [count: " +
+                                      str(failed_response) + ']')
+
+        for vm in [m for m in host_replies.iterkeys()
+                   if m.startswith("MISMIATCHED_RESPONSE_")]:
+            mismatch_name = vm[21:]
+            failure_conditions.append(
+                'Received [' + str(host_replies[vm]) +
+                '] mismatched and unexpected reply(ies): ' +
+                mismatch_name)
+
+        total_packet_count = \
+            sum([c for k, c in host_replies.iteritems()
+                 if k != "NO_RESPONSE"])
+
+        self.LOG.debug("Got total of " + str(total_packet_count) + " packets")
+        if total_expected != total_packet_count:
+            failure_conditions.append(
+                "Didn't receive expected number of responses: " +
+                str(total_packet_count) + ", expected: " +
+                str(total_expected))
+
+        # Acceptable delta is +/-50% of the expected average
+        baseline_average = float(float(total_expected) /
+                                 float(len(member_list)))
+        acceptable_delta = float(float(total_expected) /
+                                 float(2 * len(member_list)))
+
+        for h in member_list:
+            name = h.vm.vm_host.name
+            count = host_replies[name]
+            self.LOG.debug("Got " + str(count) + " packets on VM: " + name)
+
+            if name not in host_replies or host_replies[name] == 0:
+                failure_conditions.append("Member never responded: " + name)
+
+            # round robin means the packets should be relatively
+            # evenly distributed but it's not perfect, so allow
+            # a leeway for each host
+            if check_against_round_robin:
+                if count < math.floor(baseline_average - acceptable_delta) or \
+                   count > math.ceil(baseline_average + acceptable_delta):
+                    failure_conditions.append(
+                        "Number of packets received outside tolerance (vm: " +
+                        name + ", num_replies: " + str(count) +
+                        "), (avg: " + str(baseline_average) +
+                        ", delta: " + str(acceptable_delta) + ")")
+
+        if len(failure_conditions) > 0:
+            fail_str = "Failed packet check" + (" for [" + identifier + "]"
+                                                if identifier else "")
+            fail_str += " because:\n* " + "\n* ".join(failure_conditions)
+            self.fail(fail_str)

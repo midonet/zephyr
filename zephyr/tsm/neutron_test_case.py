@@ -132,7 +132,8 @@ class NeutronTestCase(TestCase):
             curl_post(curl_url + '/gw/gateway_devices/' +
                       str(gwdev_id) + "/remote_mac_entries",
                       json_data=mac_add_data_far)
-        self.LOG.debug("RMAC : " + str(rmac_json_far_ret))
+        self.LOG.debug("Adding RMAC JSON: " + str(mac_add_data_far) +
+                       ', return data: ' + str(rmac_json_far_ret))
         rmac = json.loads(rmac_json_far_ret)
         self.rmacs.append((gwdev_id, rmac['remote_mac_entry']['id']))
         self.LOG.debug('Created RMAC entry: ' + str(rmac))
@@ -165,6 +166,8 @@ class NeutronTestCase(TestCase):
                                           "tenant_id": 'admin'}}
         self.LOG.debug("create gateway device JSON: " + str(gw_dev_dict))
         post_ret = curl_post(curl_url, gw_dev_dict)
+        self.LOG.debug('Adding gateway device: ' + str(gw_dev_dict) +
+                       ', return data: ' + str(post_ret))
         gw = json.loads(post_ret)
         self.gws.append(gw['gateway_device']['id'])
         self.LOG.debug("Created GW Device: " + str(gw))
@@ -205,7 +208,8 @@ class NeutronTestCase(TestCase):
 
         self.LOG.debug("L2GW JSON: " + str(l2gw_data))
         l2_json_ret = curl_post(curl_url, l2gw_data)
-        self.LOG.debug('L2GW ' + name + ': ' + str(l2_json_ret))
+        self.LOG.debug('Adding L2GW ' + name + ': ' + str(l2gw_data) +
+                       ', return data: ' + str(l2_json_ret))
         l2gw = json.loads(l2_json_ret)
         self.l2gws.append(l2gw['l2_gateway']['id'])
         self.LOG.debug("Created L2GW: " + str(l2gw))
@@ -230,7 +234,7 @@ class NeutronTestCase(TestCase):
         self.LOG.debug("L2 Conn JSON: " + str(l2gw_conn_curl))
         l2_conn_json_ret = curl_post(curl_url, l2gw_conn_curl)
 
-        self.LOG.debug('L2 Conn: ' + str(l2_conn_json_ret))
+        self.LOG.debug('Adding L2 Conn: ' + str(l2_conn_json_ret))
 
         l2_conn = json.loads(l2_conn_json_ret)
         self.l2gw_conns.append(l2_conn['l2_gateway_connection']['id'])
@@ -307,7 +311,7 @@ class NeutronTestCase(TestCase):
         echo_response = vm.send_echo_request(dest_ip=dest_ip)
         self.assertEqual('ping:echo-reply', echo_response)
 
-    def create_vm_server(self, name, net_id, gw_ip, sgs=list()):
+    def create_vm_server(self, name, net_id, gw_ip, sgs=list(), hv_host=None):
         port_data = {'name': name,
                      'network_id': net_id,
                      'admin_state_up': True,
@@ -316,7 +320,11 @@ class NeutronTestCase(TestCase):
             port_data['security_groups'] = sgs
         port = self.api.create_port({'port': port_data})['port']
         ip = port['fixed_ips'][0]['ip_address']
-        vm = self.vtm.create_vm(ip=ip, mac=port['mac_address'], gw_ip=gw_ip)
+        vm = self.vtm.create_vm(name=name,
+                                ip=ip,
+                                mac=port['mac_address'],
+                                gw_ip=gw_ip,
+                                hv_host=hv_host)
         vm.plugin_vm('eth0', port['id'])
         self.servers.append((vm, ip, port))
         return port, vm, ip
@@ -443,6 +451,8 @@ class NeutronTestCase(TestCase):
             data = {'subnet_id': sub_id}
         iface = self.api.add_interface_router(router_id, data)
         self.nr_ifaces.append((router_id, iface))
+        self.LOG.debug('Added Neutron interface: ' + str(iface) +
+                       ' to router: ' + str(router_id))
         return iface
 
     def remove_router_interface(self, router_id, iface):
@@ -523,8 +533,13 @@ class NeutronTestCase(TestCase):
         self.pub_network = self.neutron_fixture.pub_network
         self.pub_subnet = self.neutron_fixture.pub_subnet
         self.api = self.neutron_fixture.api
-        super(NeutronTestCase, self).run(result)
+        try:
+            super(NeutronTestCase, self).run(result)
+        finally:
+            self.clean_vm_servers()
+            self.clean_topo()
 
+    # TODO(micucci): Change this to use the GuestData namedtuple
     def cleanup_vms(self, vm_port_list):
         """
         :type vm_port_list: list[(Guest, port)]
@@ -549,10 +564,9 @@ class NeutronTestCase(TestCase):
         if not pub_subnet:
             pub_subnet = self.pub_subnet
 
-        # Create an uplink network (Midonet-specific extension
-        # used for provider:network_type)
+        # Create an uplink network (Midonet-specific extension used for
+        # provider:network_type)
         edge_network = self.create_network(edge_host_name, uplink=True)
-        self.LOG.debug('Created edge network: ' + str(edge_network))
 
         # Create uplink network's subnet
         edge_ip = '.'.join(edge_subnet_cidr.split('.')[:-1]) + '.2'
@@ -560,21 +574,18 @@ class NeutronTestCase(TestCase):
 
         edge_subnet = self.create_subnet(edge_host_name, edge_network['id'],
                                          edge_subnet_cidr, enable_dhcp=False)
-        self.LOG.debug('Created edge subnet: ' + str(edge_subnet))
 
         # Create edge router
         edge_router = self.create_router('edge_router')
-        self.LOG.debug('Created edge router: ' + str(edge_router))
 
-        # Create "port" on router by creating a port on the special
-        # uplink network bound to the physical interface on the physical
-        # host, and then linking that network port to the router's interface.
+        # Create "port" on router by creating a port on the special uplink
+        # network bound to the physical interface on the physical host,
+        # and then linking that network port to the router's interface.
         edge_port1 = self.create_port(edge_host_name, edge_network['id'],
                                       host=edge_host_name,
                                       host_iface=edge_iface_name,
                                       sub_id=edge_subnet['id'],
                                       ip=edge_ip)
-        self.LOG.info('Created physical-bound, edge port: ' + str(edge_port1))
         # Bind port to edge router
         if1 = self.create_router_interface(
             edge_router['id'], port_id=edge_port1['id'])
@@ -636,7 +647,7 @@ class NeutronTestCase(TestCase):
                 self.delete_network(en['id'])
 
 
-class require_extension(object):
+class require_extension(object):  # noqa
     def __init__(self, ext):
         self.ext = ext
 

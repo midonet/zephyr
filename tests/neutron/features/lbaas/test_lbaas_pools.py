@@ -12,277 +12,142 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from tests.neutron.features.lbaas.lbaas_test_utils import *
+from tests.neutron.features.lbaas.lbaas_test_utils import DEFAULT_POOL_PORT
+from tests.neutron.features.lbaas.lbaas_test_utils import LBaaSTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 
 
-class TestLBaaSPools(NeutronTestCase):
+class TestLBaaSPools(LBaaSTestCase):
     """
     Test LBaaS pools.  All tests have pinger VM on its own subnet and the VIP
     on the public subnet.
     """
-    def __init__(self, methodName='runTest'):
-        super(TestLBaaSPools, self).__init__(methodName)
 
     @require_extension('lbaas')
     def test_lbaas_pools_on_start_cleanup(self):
-        g_pinger = None
-        g1 = None
-        poola = None
-        vipa = None
-        member1a = None
-        lbn_data = None
         try:
-            lbn_data = create_lb_member_net(self, lbaas_cidr='192.168.22.0/24',
-                                            member_cidr='192.168.33.0/24',
-                                            num_members=1,
-                                            create_pinger_net=True)
-            g1 = lbn_data.member_vms[0]
+            self.create_member_net()
+            self.create_lbaas_net()
+            self.create_pinger_net()
+            self.create_lb_router(gw_net_id=self.pub_network['id'])
 
-            poola = self.api.create_pool({'pool': {'name': 'poola',
-                                                   'protocol': 'TCP',
-                                                   'subnet_id': lbn_data.lbaas.subnet['id'],
-                                                   'lb_method': 'ROUND_ROBIN',
-                                                   'admin_state_up': True,
-                                                   'tenant_id': 'admin'}})['pool']
-            self.LOG.debug('Created LBaaS Pool A: ' + str(poola))
+            poola = self.create_pool(
+                subnet_id=self.topos['main']['lbaas']['subnet']['id'])
 
-            vipa = self.api.create_vip({'vip': {'name': 'poola-vip',
-                                                'subnet_id': self.pub_subnet['id'],
-                                                'protocol': 'TCP',
-                                                'protocol_port': DEFAULT_POOL_PORT,
-                                                'pool_id': poola['id'],
-                                                'tenant_id': 'admin'}})['vip']
-            self.LOG.debug('Created LBaaS VIP A: ' + str(vipa))
+            vms = self.create_member_vms(num_members=1)
+            g1 = vms[0]
 
-            member1a = self.api.create_member({'member': {'address': g1.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT,
-                                                          'pool_id': poola['id'],
-                                                          'tenant_id': 'admin'}})['member']
-
-            self.LOG.debug('Created member1 for LBaaS Pool A: ' + str(member1a))
-
+            self.create_member(pool_id=poola['id'],
+                               ip=g1.ip)
         finally:
-            if vipa:
-                self.api.delete_vip(vipa['id'])
-            if member1a:
-                self.api.delete_member(member1a['id'])
-            if poola:
-                self.api.delete_pool(poola['id'])
-            clear_lbaas_data(self, lbn_data, throw_on_fail=True)
+            self.clean_vm_servers()
+            self.clear_lbaas_data()
+            self.clean_topo()
 
     @require_extension('lbaas')
     def test_lbaas_pools_on_separate_subnet(self):
-        g_pinger = None
-        g1 = None
-        g2 = None
-        poola = None
-        vipa = None
-        member1a = None
-        member2a = None
-        lbn_data = None
         try:
-            lbn_data = create_lb_member_net(self, lbaas_cidr='192.168.22.0/24',
-                                            member_cidr='192.168.33.0/24',
-                                            num_members=2,
-                                            create_pinger_net=True)
-            g1 = lbn_data.member_vms[0]
-            g2 = lbn_data.member_vms[1]
+            self.create_member_net()
+            self.create_lbaas_net()
+            self.create_pinger_net()
+            self.create_lb_router(gw_net_id=self.pub_network['id'])
 
-            port_pinger = self.api.create_port({'port': {'name': 'port3',
-                                                         'network_id': lbn_data.pinger.network['id'],
-                                                         'admin_state_up': True,
-                                                         'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port for lbaas pinger: ' + str(port_pinger))
+            poola = self.create_pool(
+                subnet_id=self.topos['main']['lbaas']['subnet']['id'])
 
-            ip_pinger = port_pinger['fixed_ips'][0]['ip_address']
-            vm_pinger = self.vtm.create_vm(ip=ip_pinger, mac=port_pinger['mac_address'],
-                                           gw_ip=lbn_data.pinger.subnet['gateway_ip'],
-                                           name='vm_pinger')
-            vm_pinger.plugin_vm('eth0', port_pinger['id'])
-            g_pinger = GuestData(port_pinger, vm_pinger, ip_pinger)
+            vipa = self.create_vip(subnet_id=self.pub_subnet['id'],
+                                   protocol_port=DEFAULT_POOL_PORT,
+                                   name='poola-vip1',
+                                   pool_id=poola['id'])
+            vms = self.create_member_vms(num_members=2)
+            g1 = vms[0]
+            g2 = vms[1]
 
-            poola = self.api.create_pool({'pool': {'name': 'poola',
-                                                   'protocol': 'TCP',
-                                                   'subnet_id': lbn_data.lbaas.subnet['id'],
-                                                   'lb_method': 'ROUND_ROBIN',
-                                                   'admin_state_up': True,
-                                                   'tenant_id': 'admin'}})['pool']
-            self.LOG.debug('Created LBaaS Pool A: ' + str(poola))
+            g_pinger = self.create_pinger_vm()
 
-            vipa = self.api.create_vip({'vip': {'name': 'poola-vip',
-                                                'subnet_id': self.pub_subnet['id'],
-                                                'protocol': 'TCP',
-                                                'protocol_port': DEFAULT_POOL_PORT,
-                                                'pool_id': poola['id'],
-                                                'tenant_id': 'admin'}})['vip']
-            self.LOG.debug('Created LBaaS VIP A: ' + str(vipa))
+            self.create_member(pool_id=poola['id'],
+                               ip=g1.ip)
+            self.create_member(pool_id=poola['id'],
+                               ip=g2.ip)
 
-            member1a = self.api.create_member({'member': {'address': g1.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT,
-                                                          'pool_id': poola['id'],
-                                                          'tenant_id': 'admin'}})['member']
-            member2a = self.api.create_member({'member': {'address': g2.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT,
-                                                          'pool_id': poola['id'],
-                                                          'tenant_id': 'admin'}})['member']
+            repliesa = self.send_packets_to_vip(
+                [g1, g2], g_pinger, vipa['address'])
 
-            self.LOG.debug('Created member1 for LBaaS Pool A: ' + str(member1a))
-            self.LOG.debug('Created member2 for LBaaS Pool A: ' + str(member2a))
-
-            repliesa = send_packets_to_vip(self, [g1, g2], g_pinger, vipa['address'])
-
-            check_host_replies_against_rr_baseline(self, [g1, g2], repliesa)
+            self.check_host_replies_against_rr_baseline(
+                [g1, g2], repliesa,
+                identifier="poolA")
 
         finally:
-            if vipa:
-                self.api.delete_vip(vipa['id'])
-            if member1a:
-                self.api.delete_member(member1a['id'])
-            if member2a:
-                self.api.delete_member(member2a['id'])
-            if poola:
-                self.api.delete_pool(poola['id'])
-            if g_pinger:
-                self.cleanup_vms([(g_pinger.vm, g_pinger.port)])
-            clear_lbaas_data(self, lbn_data)
+            self.clean_vm_servers()
+            self.clear_lbaas_data()
+            self.clean_topo()
 
     @require_extension('lbaas')
     def test_lbaas_pools_on_member_subnet(self):
-        g_pinger = None
-        g1 = None
-        g2 = None
-        poola = None
-        vipa = None
-        member1a = None
-        member2a = None
-        lbn_data = None
         try:
-            lbn_data = create_lb_member_net(self, lbaas_cidr='192.168.22.0/24',
-                                            member_cidr='192.168.22.0/24',
-                                            num_members=2,
-                                            create_pinger_net=True)
-            g1 = lbn_data.member_vms[0]
-            g2 = lbn_data.member_vms[1]
+            self.create_lbaas_net()
+            self.create_pinger_net()
+            self.create_lb_router(gw_net_id=self.pub_network['id'])
 
-            port_pinger = self.api.create_port({'port': {'name': 'port3',
-                                                         'network_id': lbn_data.pinger.network['id'],
-                                                         'admin_state_up': True,
-                                                         'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port for lbaas pinger: ' + str(port_pinger))
+            poola = self.create_pool(
+                subnet_id=self.topos['main']['lbaas']['subnet']['id'])
 
-            ip_pinger = port_pinger['fixed_ips'][0]['ip_address']
-            vm_pinger = self.vtm.create_vm(ip=ip_pinger, mac=port_pinger['mac_address'],
-                                           gw_ip=lbn_data.pinger.subnet['gateway_ip'],
-                                           name='vm_pinger')
-            vm_pinger.plugin_vm('eth0', port_pinger['id'])
-            g_pinger = GuestData(port_pinger, vm_pinger, ip_pinger)
+            vipa = self.create_vip(subnet_id=self.pub_subnet['id'],
+                                   protocol_port=DEFAULT_POOL_PORT,
+                                   name='poola-vip1',
+                                   pool_id=poola['id'])
+            vms = self.create_member_vms(num_members=2, net='lbaas')
+            g1 = vms[0]
+            g2 = vms[1]
 
-            poola = self.api.create_pool({'pool': {'name': 'poola',
-                                                   'protocol': 'TCP',
-                                                   'subnet_id': lbn_data.lbaas.subnet['id'],
-                                                   'lb_method': 'ROUND_ROBIN',
-                                                   'admin_state_up': True,
-                                                   'tenant_id': 'admin'}})['pool']
-            self.LOG.debug('Created LBaaS Pool A: ' + str(poola))
+            g_pinger = self.create_pinger_vm()
 
-            vipa = self.api.create_vip({'vip': {'name': 'poola-vip',
-                                                'subnet_id': self.pub_subnet['id'],
-                                                'protocol': 'TCP',
-                                                'protocol_port': DEFAULT_POOL_PORT,
-                                                'pool_id': poola['id'],
-                                                'tenant_id': 'admin'}})['vip']
-            self.LOG.debug('Created LBaaS VIP A: ' + str(vipa))
+            self.create_member(pool_id=poola['id'],
+                               ip=g1.ip)
+            self.create_member(pool_id=poola['id'],
+                               ip=g2.ip)
 
-            member1a = self.api.create_member({'member': {'address': g1.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT,
-                                                          'pool_id': poola['id'],
-                                                          'tenant_id': 'admin'}})['member']
-            member2a = self.api.create_member({'member': {'address': g2.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT,
-                                                          'pool_id': poola['id'],
-                                                          'tenant_id': 'admin'}})['member']
+            repliesa = self.send_packets_to_vip(
+                [g1, g2], g_pinger, vipa['address'])
 
-            self.LOG.debug('Created member1 for LBaaS Pool A: ' + str(member1a))
-            self.LOG.debug('Created member2 for LBaaS Pool A: ' + str(member2a))
-
-            repliesa = send_packets_to_vip(self, [g1, g2], g_pinger, vipa['address'])
-
-            check_host_replies_against_rr_baseline(self, [g1, g2], repliesa)
-
+            self.check_host_replies_against_rr_baseline(
+                [g1, g2], repliesa,
+                identifier="poolA")
         finally:
-            if vipa:
-                self.api.delete_vip(vipa['id'])
-            if member1a:
-                self.api.delete_member(member1a['id'])
-            if member2a:
-                self.api.delete_member(member2a['id'])
-            if poola:
-                self.api.delete_pool(poola['id'])
-            if g_pinger:
-                self.cleanup_vms([(g_pinger.vm, g_pinger.port)])
-            clear_lbaas_data(self, lbn_data)
+            self.clean_vm_servers()
+            self.clear_lbaas_data()
+            self.clean_topo()
 
     @require_extension('lbaas')
     def test_lbaas_pools_ignoring_vip(self):
-        g_pinger = None
-        g1 = None
-        g2 = None
-        poola = None
-        member1a = None
-        member2a = None
-        lbn_data = None
         try:
-            lbn_data = create_lb_member_net(self, lbaas_cidr='192.168.22.0/24',
-                                            member_cidr='192.168.22.0/24',
-                                            num_members=2,
-                                            create_pinger_net=True)
-            g1 = lbn_data.member_vms[0]
-            g2 = lbn_data.member_vms[1]
 
-            port_pinger = self.api.create_port({'port': {'name': 'port3',
-                                                         'network_id': lbn_data.pinger.network['id'],
-                                                         'admin_state_up': True,
-                                                         'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port for lbaas pinger: ' + str(port_pinger))
+            self.create_member_net()
+            self.create_lbaas_net()
+            self.create_pinger_net()
+            self.create_lb_router(gw_net_id=self.pub_network['id'])
 
-            ip_pinger = port_pinger['fixed_ips'][0]['ip_address']
-            vm_pinger = self.vtm.create_vm(ip=ip_pinger, mac=port_pinger['mac_address'],
-                                           gw_ip=lbn_data.pinger.subnet['gateway_ip'],
-                                           name='vm_pinger')
-            vm_pinger.plugin_vm('eth0', port_pinger['id'])
-            g_pinger = GuestData(port_pinger, vm_pinger, ip_pinger)
+            poola = self.create_pool(
+                subnet_id=self.topos['main']['lbaas']['subnet']['id'])
 
-            poola = self.api.create_pool({'pool': {'name': 'poola',
-                                                   'protocol': 'TCP',
-                                                   'subnet_id': lbn_data.lbaas.subnet['id'],
-                                                   'lb_method': 'ROUND_ROBIN',
-                                                   'admin_state_up': True,
-                                                   'tenant_id': 'admin'}})['pool']
-            self.LOG.debug('Created LBaaS Pool A: ' + str(poola))
+            vms = self.create_member_vms(num_members=2, net='lbaas')
+            g1 = vms[0]
+            g2 = vms[1]
 
-            member1a = self.api.create_member({'member': {'address': g1.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT,
-                                                          'pool_id': poola['id'],
-                                                          'tenant_id': 'admin'}})['member']
-            member2a = self.api.create_member({'member': {'address': g2.ip,
-                                                          'protocol_port': DEFAULT_POOL_PORT,
-                                                          'pool_id': poola['id'],
-                                                          'tenant_id': 'admin'}})['member']
+            g_pinger = self.create_pinger_vm()
 
-            self.LOG.debug('Created member1 for LBaaS Pool A: ' + str(member1a))
-            self.LOG.debug('Created member2 for LBaaS Pool A: ' + str(member2a))
+            self.create_member(pool_id=poola['id'],
+                               ip=g1.ip)
+            self.create_member(pool_id=poola['id'],
+                               ip=g2.ip)
 
-            repliesa = send_packets_to_vip(self, [g1], g_pinger, g1.ip)
-            check_host_replies_against_rr_baseline(self, [g1], repliesa)
+            repliesa = self.send_packets_to_vip(
+                [g1], g_pinger, g1.ip)
+
+            self.check_host_replies_against_rr_baseline(
+                [g1], repliesa)
 
         finally:
-            if member1a:
-                self.api.delete_member(member1a['id'])
-            if member2a:
-                self.api.delete_member(member2a['id'])
-            if poola:
-                self.api.delete_pool(poola['id'])
-            if g_pinger:
-                self.cleanup_vms([(g_pinger.vm, g_pinger.port)])
-            clear_lbaas_data(self, lbn_data)
+            self.clean_vm_servers()
+            self.clear_lbaas_data()
+            self.clean_topo()

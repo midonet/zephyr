@@ -108,12 +108,12 @@ class L2GWNeutronTestCase(NeutronTestCase):
                 'l2_gateway_conn': l2gw_conn,
                 'az_net': az_net,
                 'az_sub': az_sub,
+                'az_gw': az_gw,
                 'az_iface_port': iface_port,
                 'az_iface': iface}
 
     def setup_peer_l2gw(self, tun_cidr, tun_ip, tun_gw, tun_host, tun_iface,
                         az_cidr, az_gw, segment_id, peer_router, peer_name):
-
         """
         Setup a single site, ready for peering
         :type l2gw_site_data: L2GWSiteData
