@@ -61,7 +61,8 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
         vmc.start_echo_server(ip=ipc)
         self.verify_connectivity(vma, ipc)
 
-        self.update_port(porta['id'], sg_ids=[sg2['id']])
+        self.api.update_port(porta['id'],
+                             {'port': {'security_groups': [sg2['id']]}})
 
         self.verify_connectivity(vmb, ipc)
         self.verify_connectivity(vmc, ipb)
@@ -71,5 +72,6 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
         self.assertFalse(vmb.ping(ipa))
         self.assertFalse(vmc.ping(ipa))
 
-        self.update_port(porta['id'], sg_ids=[sg1['id']])
+        self.api.update_port(porta['id'],
+                             {'port': {'security_groups': [sg1['id']]}})
         self.verify_connectivity(vmb, ipa)
