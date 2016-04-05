@@ -37,7 +37,10 @@ class VMHost(IPNetNSHost):
         super(VMHost, self).shutdown()
         for iface in self.interfaces.iterkeys():
             near_if_name = self.name + iface
-            self.hypervisor_host.interfaces.pop(near_if_name, None)
+            old_tap_iface = self.hypervisor_host.interfaces.pop(
+                near_if_name, None)
+            """ :type: PTM.host.VirtualInterface.VirtualInterface """
+            old_tap_iface.remove()
 
     def create_interface(self, iface, mac=None, ip_list=None, linked_bridge=None, vlans=None):
         new_if = Interface(iface, self, mac, ip_list, linked_bridge, vlans)
