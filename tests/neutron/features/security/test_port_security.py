@@ -23,16 +23,16 @@ class TestPortSecurity(NeutronTestCase):
     def send_and_capture_spoof(self, sender, receiver, receiver_ip, with_mac=True,
                                spoof_ip='192.168.99.99', spoof_mac='AA:AA:AA:AA:AA:AA'):
         """
-        :param sender: VMHost
-        :param receiver: VMHost
-        :param receiver_ip: str
+        :type sender: zephyr.vtm.guest.Guest
+        :type receiver: zephyr.vtm.guest.Guest
+        :type receiver_ip: str
         :return: list[PCAPPacket]
         """
         pcap_filter_list = [pcap.ICMPProto(),
                             pcap.Host(spoof_ip, proto='ip', source=True, dest=False)]
         if with_mac:
             pcap_filter_list.append(pcap.Host(spoof_mac, proto='ether', source=True, dest=False))
-        receiver.start_capture(interface='eth0', count=1,
+        receiver.start_capture(on_iface='eth0', count=1,
                                pfilter=pcap.And(pcap_filter_list))
 
         send_args = {'source_ip': spoof_ip, 'dest_ip': receiver_ip}
