@@ -15,7 +15,7 @@ export ZEPHYR_TEST_JUNIT_OUTDIR=$ZEPHYR_ROOT/test-results
 TEST_PACKAGES="common ptm vtm tsm"
 
 for dir in $TEST_PACKAGES; do
-  for test in `find $dir/tests -name *Test.py`; do
+  for test in `find zephyr/tests/$dir -name *_test.py`; do
     PYTHONPATH=. python $test
     sleep 3
   done

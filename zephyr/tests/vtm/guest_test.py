@@ -17,6 +17,8 @@ import unittest
 # limitations under the License.
 
 
+import os
+
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.ip import IP
 from zephyr.common.log_manager import LogManager
@@ -26,7 +28,7 @@ from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr.vtm.guest import Guest
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 
-import os
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
 
 
 class MockClient(object):
@@ -72,7 +74,7 @@ class GuestTest(unittest.TestCase):
     def setUpClass(cls):
         cls.lm = LogManager('test-logs')
         cls.ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
+            root_dir=ROOT_DIR,
             log_manager=cls.lm)
         cls.ptm_i.configure_logging(debug=True)
         cls.ptm = PhysicalTopologyManager(cls.ptm_i)

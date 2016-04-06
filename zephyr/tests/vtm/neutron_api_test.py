@@ -29,6 +29,8 @@ from zephyr.vtm.neutron_api import create_neutron_client
 from zephyr.vtm.neutron_api import setup_neutron
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
+
 
 class NeutronAPITest(unittest.TestCase):
     lm = LogManager('test-logs')
@@ -45,7 +47,7 @@ class NeutronAPITest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
+            root_dir=ROOT_DIR,
             log_manager=cls.lm)
         cls.ptm_i.configure_logging(debug=True)
         cls.ptm = PhysicalTopologyManager(cls.ptm_i)

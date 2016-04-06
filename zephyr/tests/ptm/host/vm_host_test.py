@@ -24,13 +24,15 @@ from zephyr.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr.ptm.physical_topology_config import *
 from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
+
 
 class VMHostTest(unittest.TestCase):
 
     def setUp(self):
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(os.path.abspath(__file__)) + '/../..',
+            root_dir=ROOT_DIR,
             log_manager=lm)
         ptm = PhysicalTopologyManager(ptm_i)
 
@@ -40,14 +42,16 @@ class VMHostTest(unittest.TestCase):
         root_hostcfg = HostDef(
             'root',
             interfaces={'hveth0': InterfaceDef('hveth0')})
-        root_host_implcfg = ImplementationDef('test', 'ptm.host.RootHost', [])
+        root_host_implcfg = ImplementationDef(
+            'test',
+            'zephyr.ptm.host.root_host.RootHost', [])
 
         hypervisorcfg = HostDef(
             'hv',
             interfaces={'eth0': InterfaceDef('eth0', [IP('192.168.1.3')])})
         hypervisor_implcfg = ImplementationDef(
-            'test', 'ptm.host.IPNetNSHost',
-            [ApplicationDef('ptm.application.Midolman', id=1)])
+            'test', 'zephyr.ptm.host.ip_netns_host.IPNetNSHost',
+            [ApplicationDef('zephyr.ptm.application.midolman.Midolman', id=1)])
 
         self.root_host = RootHost(root_hostcfg.name, ptm)
         self.hypervisor = IPNetNSHost(hypervisorcfg.name, ptm)
@@ -74,7 +78,7 @@ class VMHostTest(unittest.TestCase):
         self.hypervisor.net_finalize()
 
         self.mm_app = self.hypervisor.applications[0]
-        """ :type: Midolman"""
+        """ :type: zephyr.ptm.application.midolman.Midolman"""
 
     def test_create_vm(self):
 

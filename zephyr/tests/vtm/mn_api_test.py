@@ -28,12 +28,14 @@ from zephyr.vtm.mn_api import setup_main_bridge
 from zephyr.vtm.mn_api import setup_main_tunnel_zone
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
+
 
 class MNAPITest(unittest.TestCase):
     lm = LogManager('test-logs')
     ptm_i = ConfiguredHostPTMImpl(
-        root_dir=os.path.dirname(
-            os.path.abspath(__file__)) + '/../..', log_manager=lm)
+        root_dir=ROOT_DIR,
+        log_manager=lm)
     ptm = PhysicalTopologyManager(ptm_i)
     vtm = None
     main_bridge = None

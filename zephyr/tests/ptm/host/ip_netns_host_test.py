@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import unittest
 
+from zephyr.common.cli import LinuxCLI
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
 from zephyr.ptm.host.interface import Interface
@@ -22,6 +24,8 @@ from zephyr.ptm.host.root_host import RootHost
 from zephyr.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr.ptm.physical_topology_config import *
 from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
 
 
 class DummyInterface(Interface):
@@ -40,8 +44,8 @@ class IPNetNSHostTest(unittest.TestCase):
     def test_configure(self):
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(
-                os.path.abspath(__file__)) + '/../../..', log_manager=lm)
+            root_dir=ROOT_DIR,
+            log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
@@ -67,8 +71,7 @@ class IPNetNSHostTest(unittest.TestCase):
 
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(
-                os.path.abspath(__file__)) + '/../../..', log_manager=lm)
+            root_dir=ROOT_DIR, log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
@@ -114,8 +117,7 @@ class IPNetNSHostTest(unittest.TestCase):
     def test_veth_connection_between_two_hosts(self):
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(
-                os.path.abspath(__file__)) + '/../../..',
+            root_dir=ROOT_DIR,
             log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)

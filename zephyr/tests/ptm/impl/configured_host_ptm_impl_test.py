@@ -21,6 +21,8 @@ from zephyr.common.utils import run_unit_test
 from zephyr.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
+
 
 class ConfiguredHostPTMImplTest(unittest.TestCase):
 
@@ -29,8 +31,7 @@ class ConfiguredHostPTMImplTest(unittest.TestCase):
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(
-                os.path.abspath(__file__)) + '/../../..',
+            root_dir=ROOT_DIR,
             log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
@@ -61,8 +62,7 @@ class ConfiguredHostPTMImplTest(unittest.TestCase):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(
-            os.path.abspath(__file__)) + '/../../..', log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=ROOT_DIR, log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
@@ -76,8 +76,7 @@ class ConfiguredHostPTMImplTest(unittest.TestCase):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(
-            os.path.abspath(__file__)) + '/../../..', log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=ROOT_DIR, log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 
@@ -121,8 +120,7 @@ class ConfiguredHostPTMImplTest(unittest.TestCase):
         path = os.path.abspath(__file__)
         dir_path = os.path.dirname(path)
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(root_dir=os.path.dirname(
-            os.path.abspath(__file__)) + '/../../..', log_manager=lm)
+        ptm_i = ConfiguredHostPTMImpl(root_dir=ROOT_DIR, log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
 

@@ -30,13 +30,14 @@ from zephyr.ptm.physical_topology_config import ImplementationDef
 from zephyr.ptm.physical_topology_config import InterfaceDef
 from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
+
 
 class MidolmanTest(unittest.TestCase):
     def test_create_vm(self):
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(
-                os.path.abspath(__file__)) + '/../../..',
+            root_dir=ROOT_DIR,
             log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
@@ -55,9 +56,11 @@ class MidolmanTest(unittest.TestCase):
                                    'eth0', ip_addresses=[IP('10.0.0.8')])})
 
         cmp1_icfg = ImplementationDef(
-            'cmp1', 'ptm.host.IPNetNSHost',
-            [ApplicationDef('ptm.application.Midolman', id='1')])
-        root_icfg = ImplementationDef('root', 'ptm.RootHost', [])
+            'cmp1', 'zephyr.ptm.host.ip_netns_host.IPNetNSHost',
+            [ApplicationDef(
+                'zephyr.ptm.application.midolman.Midolman', id='1')])
+        root_icfg = ImplementationDef('root',
+                                      'zephyr.ptm.root_host.RootHost', [])
 
         root = RootHost('root', ptm)
         cmp1 = IPNetNSHost(cmp1_cfg.name, ptm)
@@ -87,7 +90,8 @@ class MidolmanTest(unittest.TestCase):
         cmp1.net_finalize()
 
         mm_app = cmp1.applications[0]
-        """ :type: Midolman"""
+        """ :type: zephyr.ptm.application.midolman.Midolman"""
+
         vm1 = mm_app.create_vm("vm1")
         vm1.create_interface('eth0', ip_list=['10.1.1.2'])
 
@@ -110,8 +114,7 @@ class MidolmanTest(unittest.TestCase):
     def test_startup(self):
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(
-                os.path.abspath(__file__)) + '/../../..',
+            root_dir=ROOT_DIR,
             log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
@@ -134,16 +137,19 @@ class MidolmanTest(unittest.TestCase):
                                'eth0': InterfaceDef(
                                    'eth0', ip_addresses=[IP('10.0.0.8')])})
 
-        zoo1_icfg = ImplementationDef('zoo1', 'ptm.host.IPNetNSHost',
-                                      [ApplicationDef(
-                                          'ptm.application.Zookeeper', id='1',
-                                          zookeeper_ips=['10.0.0.2'])])
-        cmp1_icfg = ImplementationDef('cmp1', 'ptm.host.IPNetNSHost',
-                                      [ApplicationDef(
-                                          'ptm.application.Midolman', id='1',
-                                          zookeeper_ips=['10.0.0.2'],
-                                          cassandra_ips=[])])
-        root_icfg = ImplementationDef('root', 'ptm.RootHost', [])
+        zoo1_icfg = ImplementationDef(
+            'zoo1', 'zephyr.ptm.host.ip_netns_host.IPNetNSHost',
+            [ApplicationDef(
+                'zephyr.ptm.application.zookeeper.Zookeeper', id='1',
+                zookeeper_ips=['10.0.0.2'])])
+        cmp1_icfg = ImplementationDef(
+            'cmp1', 'zephyr.ptm.host.ip_netns_host.IPNetNSHost',
+            [ApplicationDef(
+                'zephyr.ptm.application.midolman.Midolman', id='1',
+                zookeeper_ips=['10.0.0.2'],
+                cassandra_ips=[])])
+        root_icfg = ImplementationDef(
+            'root', 'zephyr.ptm.root_host.RootHost', [])
 
         root = RootHost('root', ptm)
         zoo1 = IPNetNSHost(zoo1_cfg.name, ptm)

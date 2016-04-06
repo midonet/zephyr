@@ -83,7 +83,7 @@ class Interface(PTMObject):
         :type new_ip: IP
         """
         self.cli.cmd('ip addr del ' + str(new_ip) +
-                     '/32 dev ' + self.get_name())
+                     ' dev ' + self.get_name())
         self.ip_list.append(new_ip)
 
     def start_vlans(self):

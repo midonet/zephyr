@@ -29,13 +29,14 @@ from zephyr.ptm.physical_topology_config import ImplementationDef
 from zephyr.ptm.physical_topology_config import InterfaceDef
 from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
+
 
 class ZookeeperTest(unittest.TestCase):
     def test_startup(self):
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(
-                os.path.abspath(__file__)) + '/../../..',
+            root_dir=ROOT_DIR,
             log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
@@ -53,13 +54,13 @@ class ZookeeperTest(unittest.TestCase):
                                    'eth0', ip_addresses=[IP('10.0.0.2')])})
 
         zoo1_icfg = ImplementationDef(
-            'zoo1', 'ptm.host.IPNetNSHost',
+            'zoo1', 'zephyr.ptm.host.ip_netns_host.IPNetNSHost',
             [ApplicationDef(
-                'ptm.application.Zookeeper', id='1',
+                'zephyr.ptm.application.zookeeper.Zookeeper', id='1',
                 zookeeper_ips=['10.0.0.2'])])
 
         root_icfg = ImplementationDef(
-            'zoo1', 'ptm.host.RootHost', [])
+            'zoo1', 'zephyr.ptm.host.root_host.RootHost', [])
 
         root = RootHost('root', ptm)
         zoo_host1 = IPNetNSHost('zoo1', ptm)

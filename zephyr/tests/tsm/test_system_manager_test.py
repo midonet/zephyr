@@ -28,7 +28,7 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm.configure_logging(debug=True)
 
         tsm.add_test(
-            "zephyr.tsm.tests.sample.test_sample_cases.SampleTestCase")
+            "zephyr.tests.tsm.sample.test_sample_cases.SampleTestCase")
         self.assertEqual(1, len(tsm.test_cases))
         tc_pair = tsm.test_cases.popitem()
         self.assertTrue(issubclass(tc_pair[0], TestCase))
@@ -41,9 +41,9 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm.configure_logging(debug=True)
 
         tsm.add_test(
-            "zephyr.tsm.tests.sample.test_sample_cases.SampleTestCase")
+            "zephyr.tests.tsm.sample.test_sample_cases.SampleTestCase")
         tsm.add_test(
-            "zephyr.tsm.tests.sample.test_sample_cases."
+            "zephyr.tests.tsm.sample.test_sample_cases."
             "SampleOtherTestCase.test_basic")
         self.assertEqual(2, len(tsm.test_cases))
         tc_pair = tsm.test_cases.popitem()
@@ -51,7 +51,7 @@ class TestSystemManagerTest(unittest.TestCase):
         if tc_pair[0].get_name() == "SampleOtherTestCase":
             self.assertEqual(1, len(tc_pair[1]))
             self.assertEqual(
-                "zephyr.tsm.tests.sample.test_sample_cases."
+                "zephyr.tests.tsm.sample.test_sample_cases."
                 "SampleOtherTestCase.test_basic",
                 tc_pair[1].pop())
         else:
@@ -61,7 +61,7 @@ class TestSystemManagerTest(unittest.TestCase):
         self.assertTrue(issubclass(tc_pair[0], TestCase))
         if tc_pair[0].get_name() == "SampleOtherTestCase":
             self.assertEqual(1, len(tc_pair[1]))
-            self.assertEqual("zephyr.tsm.tests.sample.test_sample_cases."
+            self.assertEqual("zephyr.tests.tsm.sample.test_sample_cases."
                              "SampleOtherTestCase.test_basic",
                              tc_pair[1].pop())
         else:
@@ -73,14 +73,14 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm = TestSystemManager(None, None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
-        tsm.add_test("zephyr.tsm.tests.sample.test_sample_cases."
+        tsm.add_test("zephyr.tests.tsm.sample.test_sample_cases."
                      "SampleTestCase.test_basic")
         self.assertEqual(1, len(tsm.test_cases))
         tc_pair = tsm.test_cases.popitem()
         self.assertTrue(issubclass(tc_pair[0], TestCase))
         self.assertEqual(1, len(tc_pair[1]))
         self.assertEqual(tc_pair[1].pop(),
-                         "zephyr.tsm.tests.sample.test_sample_cases."
+                         "zephyr.tests.tsm.sample.test_sample_cases."
                          "SampleTestCase.test_basic")
 
     def test_add_test_from_pkg_module_class_func_multi(self):
@@ -89,23 +89,23 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm = TestSystemManager(None, None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
-        tsm.add_test("zephyr.tsm.tests.sample.test_sample_cases."
+        tsm.add_test("zephyr.tests.tsm.sample.test_sample_cases."
                      "SampleTestCase.test_basic")
-        tsm.add_test("zephyr.tsm.tests.sample.test_sample_cases."
+        tsm.add_test("zephyr.tests.tsm.sample.test_sample_cases."
                      "SampleTestCase.test_a_failure")
         self.assertEqual(1, len(tsm.test_cases))
         tc_pair = tsm.test_cases.popitem()
         self.assertTrue(issubclass(tc_pair[0], TestCase))
         self.assertEqual(2, len(tc_pair[1]))
         self.assertIn(tc_pair[1].pop(),
-                      ["zephyr.tsm.tests.sample.test_sample_cases."
+                      ["zephyr.tests.tsm.sample.test_sample_cases."
                        "SampleTestCase.test_basic",
-                       "zephyr.tsm.tests.sample.test_sample_cases."
+                       "zephyr.tests.tsm.sample.test_sample_cases."
                        "SampleTestCase.test_a_failure"])
         self.assertIn(tc_pair[1].pop(),
-                      ["zephyr.tsm.tests.sample.test_sample_cases."
+                      ["zephyr.tests.tsm.sample.test_sample_cases."
                        "SampleTestCase.test_basic",
-                       "zephyr.tsm.tests.sample.test_sample_cases."
+                       "zephyr.tests.tsm.sample.test_sample_cases."
                        "SampleTestCase.test_a_failure"])
 
     def test_add_test_from_pkg_module(self):
@@ -114,7 +114,7 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm = TestSystemManager(None, None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
-        tsm.add_test("zephyr.tsm.tests.sample.test_sample_cases")
+        tsm.add_test("zephyr.tests.tsm.sample.test_sample_cases")
         self.assertEqual(2, len(tsm.test_cases))
         tc_pair = tsm.test_cases.popitem()
         self.assertTrue(issubclass(tc_pair[0], TestCase))
@@ -128,7 +128,7 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm = TestSystemManager(None, None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
-        tsm.add_test("zephyr.tsm.tests.sample")
+        tsm.add_test("zephyr.tests.tsm.sample")
         self.assertEqual(2, len(tsm.test_cases))
         tc_pair = tsm.test_cases.popitem()
         self.assertTrue(issubclass(tc_pair[0], TestCase))
@@ -143,8 +143,8 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm.configure_logging(debug=True)
 
         tsm.load_tests(
-            ["zephyr.tsm.tests.sample.test_sample_cases.SampleTestCase",
-             "zephyr.tsm.tests.sample.test_sample_cases.SampleOtherTestCase"])
+            ["zephyr.tests.tsm.sample.test_sample_cases.SampleTestCase",
+             "zephyr.tests.tsm.sample.test_sample_cases.SampleOtherTestCase"])
 
         for test_class, func_list in tsm.test_cases.iteritems():
             self.assertTrue(issubclass(test_class, TestCase))
@@ -156,8 +156,8 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm.configure_logging(debug=True)
 
         tsm.load_tests(
-            ["zephyr.tsm.tests.sample.test_sample_cases.SampleTestCase",
-             "zephyr.tsm.tests.sample.test_sample_cases.SampleOtherTestCase"])
+            ["zephyr.tests.tsm.sample.test_sample_cases.SampleTestCase",
+             "zephyr.tests.tsm.sample.test_sample_cases.SampleOtherTestCase"])
 
         result = tsm.run_all_tests('test1', 'foo-topo')
 
@@ -173,9 +173,9 @@ class TestSystemManagerTest(unittest.TestCase):
         tsm.configure_logging(debug=True)
 
         tsm.add_test(
-            "zephyr.tsm.tests.sample.test_sample_cases.SampleTestCase")
+            "zephyr.tests.tsm.sample.test_sample_cases.SampleTestCase")
         tsm.add_test(
-            "zephyr.tsm.tests.sample.test_sample_cases.SampleOtherTestCase")
+            "zephyr.tests.tsm.sample.test_sample_cases.SampleOtherTestCase")
 
         tsm.run_all_tests('test1', 'foo-topo')
         tsm.run_all_tests('test2', 'foo-topo')

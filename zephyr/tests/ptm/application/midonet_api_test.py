@@ -30,13 +30,14 @@ from zephyr.ptm.physical_topology_config import ImplementationDef
 from zephyr.ptm.physical_topology_config import InterfaceDef
 from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
+
 
 class MidonetAPITest(unittest.TestCase):
     def test_startup(self):
         lm = LogManager('./test-logs')
         ptm_i = ConfiguredHostPTMImpl(
-            root_dir=os.path.dirname(
-                os.path.abspath(__file__)) + '/../../..',
+            root_dir=ROOT_DIR,
             log_manager=lm)
         ptm_i.configure_logging(debug=True)
         ptm = PhysicalTopologyManager(ptm_i)
@@ -61,21 +62,22 @@ class MidonetAPITest(unittest.TestCase):
         net_cfg = HostDef('net')
 
         zoo1_icfg = ImplementationDef(
-            'zoo1', 'ptm.host.IPNetNSHost',
+            'zoo1', 'zephyr.ptm.host.ip_netns_host.IPNetNSHost',
             [ApplicationDef(
-                'ptm.application.Zookeeper', id='1',
+
+                'zephyr.ptm.application.zookeeper.Zookeeper', id='1',
                 zookeeper_ips=['10.0.0.2'])])
         cmp1_icfg = ImplementationDef(
-            'cmp1', 'ptm.host.IPNetNSHost',
+            'cmp1', 'zephyr.ptm.host.ip_netns_host.IPNetNSHost',
             [ApplicationDef(
-                'ptm.application.Midolman', id='1',
+                'zephyr.ptm.application.midolman.Midolman', id='1',
                 zookeeper_ips=['10.0.0.2'], cassandra_ips=[])])
         root_icfg = ImplementationDef(
-            'root', 'ptm.host.RootHost', [])
+            'root', 'zephyr.ptm.host.root_host.RootHost', [])
         net_icfg = ImplementationDef(
-            'net1', 'ptm.host.IPNetNSHost',
+            'net1', 'zephyr.ptm.host.ip_netns_host.IPNetNSHost',
             [ApplicationDef(
-                'ptm.application.MidonetAPI',
+                'zephyr.ptm.application.midonet_api.MidonetAPI',
                 zookeeper_ips=['10.0.0.2'])])
 
         root = RootHost('root', ptm)

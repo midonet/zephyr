@@ -16,7 +16,7 @@ import unittest
 from zephyr.cbt import version_config
 from zephyr.common.utils import run_unit_test
 
-CFG_FILE = '../../config/midonet_version_configuration.json'
+CFG_FILE = '../../../config/midonet_version_configuration.json'
 
 
 class VersionConfigTest(unittest.TestCase):

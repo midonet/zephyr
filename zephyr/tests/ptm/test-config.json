@@ -206,50 +206,50 @@
   "implementation": [
     {
       "host": "root",
-      "impl": "ptm.host.RootHost"
+      "impl": "zephyr.ptm.host.root_host.RootHost"
     },
     {
       "host": "zoo1",
-      "impl": "ptm.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
-        { "class": "ptm.application.Zookeeper",
+        { "class": "zephyr.ptm.application.zookeeper.Zookeeper",
           "id": "1",
           "zookeeper_ips": ["10.0.0.2"]} ]
     },
     {
       "host": "cmp1",
-      "impl": "ptm.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
-        { "class": "ptm.application.Midolman",
+        { "class": "zephyr.ptm.application.midolman.Midolman",
           "id": "1",
           "zookeeper_ips": ["10.0.0.2"],
           "cassandra_ips": []} ]
     },
     {
       "host": "external1",
-      "impl": "ptm.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": []
     },
     {
       "host": "edge1",
-      "impl": "ptm.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
-        { "class": "ptm.application.Quagga",
+        { "class": "zephyr.ptm.application.quagga.Quagga",
           "id": "1"}]
     },
     {
       "host": "test-host1",
-      "impl": "ptm.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": []
     },
     {
       "host": "test-host2",
-      "impl": "ptm.host.IPNetNSHost"
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost"
     },
     { "host": "net1",
-      "impl": "ptm.host.IPNetNSHost",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
-        { "class": "ptm.application.MidonetAPI",
+        { "class": "zephyr.ptm.application.midonet_api.MidonetAPI",
           "zookeeper_ips": ["10.0.0.2"]}]
     }
 

@@ -272,14 +272,14 @@ class PhysicalTopologyConfigTest(unittest.TestCase):
         self.assertTrue('cmp1' in ptc.hosts)
         self.assertTrue('root' in ptc.implementation)
         self.assertEqual(ptc.implementation['root'].impl,
-                         'ptm.host.RootHost')
+                         'zephyr.ptm.host.root_host.RootHost')
         self.assertEqual(0, len(ptc.implementation['root'].apps))
         self.assertTrue('zoo1' in ptc.implementation)
         self.assertEqual(ptc.implementation['zoo1'].impl,
-                         'ptm.host.IPNetNSHost')
+                         'zephyr.ptm.host.ip_netns_host.IPNetNSHost')
         self.assertTrue(1, len(ptc.implementation['zoo1'].apps))
         self.assertEqual(ptc.implementation['zoo1'].apps[0].class_name,
-                         'ptm.application.Zookeeper')
+                         'zephyr.ptm.application.zookeeper.Zookeeper')
         self.assertGreater(len(ptc.wiring), 0)
         self.assertEqual(ptc.wiring['root']['zoo1eth0'].host, 'zoo1')
         self.assertEqual(ptc.wiring['root']['zoo1eth0'].interface, 'eth0')

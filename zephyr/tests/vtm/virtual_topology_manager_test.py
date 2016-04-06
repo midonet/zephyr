@@ -60,7 +60,7 @@ class VirtualTopologyManagerUnitTest(unittest.TestCase):
                                        auth_strategy='test2',
                                        option1='test3'))
 
-        self.assertEqual(api.get_client().get_option('endpoint_ur'), 'test')
+        self.assertEqual(api.get_client().get_option('endpoint_url'), 'test')
         self.assertEqual(api.get_client().get_option('auth_strategy'), 'test2')
         self.assertEqual(api.get_client().get_option('option1'), 'test3')
 
