@@ -99,7 +99,8 @@ class MidonetAPI(Application):
     def wait_for_process_start(self):
         # Checking MN-API status
         connected = False
-        deadline = time.time() + APPLICATION_START_TIMEOUT
+        deadline = time.time() + APPLICATION_START_TIMEOUT + 2000
+        self.LOG.debug("Waiting for API to start on URL: " + self.url)
         while not connected:
             if self.use_cluster:
                 if self.cli.grep_cmd(
