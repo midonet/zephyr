@@ -73,9 +73,9 @@ class TestPortSecurity(NeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
             vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
@@ -111,7 +111,7 @@ class TestPortSecurity(NeutronTestCase):
             vm2.start_echo_server(ip=new_ip2)
 
             # Look for packets on the receiver from the spoofed new_ip1 address to the new_ip2
-            vm2.start_capture(interface='eth0', count=1,
+            vm2.start_capture(on_iface='eth0', count=1,
                               pfilter=pcap.And([pcap.TCPProto(),
                                                 pcap.Host(ip1, proto='ip',
                                                           source=True),
@@ -158,9 +158,9 @@ class TestPortSecurity(NeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
             vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
@@ -217,9 +217,9 @@ class TestPortSecurity(NeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
             vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
@@ -265,9 +265,9 @@ class TestPortSecurity(NeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
             vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
@@ -319,9 +319,9 @@ class TestPortSecurity(NeutronTestCase):
             ip4 = port4['fixed_ips'][0]['ip_address']
 
             vm3 = self.vtm.create_vm(ip=ip3, mac=port3['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
             vm4 = self.vtm.create_vm(ip=ip4, mac=port4['mac_address'], gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: Guest"""
+            """ :type: zephyr.vtm.guest.Guest"""
 
             vm3.plugin_vm('eth0', port3['id'])
             vm4.plugin_vm('eth0', port4['id'])
