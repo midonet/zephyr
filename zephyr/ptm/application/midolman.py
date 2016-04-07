@@ -230,22 +230,23 @@ class Midolman(Application, HypervisorService):
 
     def control_start(self):
         if self.num_id == '1':
-            this_dir = path.dirname(path.abspath(__file__))
+            if self.cli.exists('.mnconf.data'):
+                this_dir = path.dirname(path.abspath(__file__))
 
-            ret = self.cli.cmd('mn-conf set -t default < ' +
-                               this_dir + '/../scripts/midolman.mn-conf')
-            if ret.ret_code != 0:
-                self.LOG.fatal(ret.stdout)
-                self.LOG.fatal(ret.stderr)
-                raise SubprocessFailedException(
-                    'Failed to run mn-conf with defaults: ' + str(ret))
+                ret = self.cli.cmd('mn-conf set -t default < ' +
+                                   this_dir + '/../scripts/midolman.mn-conf')
+                if ret.ret_code != 0:
+                    self.LOG.fatal(ret.stdout)
+                    self.LOG.fatal(ret.stderr)
+                    raise SubprocessFailedException(
+                        'Failed to run mn-conf with defaults: ' + str(ret))
 
-            ret = self.cli.cmd('mn-conf set -t default < .mnconf.data')
-            if ret.ret_code != 0:
-                self.LOG.fatal(ret.stdout)
-                self.LOG.fatal(ret.stderr)
-                raise SubprocessFailedException(
-                    'Failed to run mn-conf: ' + str(ret))
+                ret = self.cli.cmd('mn-conf set -t default < .mnconf.data')
+                if ret.ret_code != 0:
+                    self.LOG.fatal(ret.stdout)
+                    self.LOG.fatal(ret.stderr)
+                    raise SubprocessFailedException(
+                        'Failed to run mn-conf: ' + str(ret))
 
             pid_file = '/run/midolman/dnsmasq.pid'
 
