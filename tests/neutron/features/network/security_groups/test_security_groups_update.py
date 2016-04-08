@@ -61,9 +61,9 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
 
         self.verify_connectivity(vmb, ipc)
         self.verify_connectivity(vmc, ipb)
-        self.verify_connectivity(vma, ipb)
-        self.verify_connectivity(vma, ipc)
 
+        self.assertFalse(vma.ping(ipb))
+        self.assertFalse(vma.ping(ipc))
         self.assertFalse(vmb.ping(ipa))
         self.assertFalse(vmc.ping(ipa))
 
