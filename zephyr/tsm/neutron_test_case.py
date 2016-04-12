@@ -353,7 +353,8 @@ class NeutronTestCase(TestCase):
         del self.servers[:]
 
     def clear_route(self, rid):
-        self.api.update_router(rid, {'router': {'routes': None}})
+        if 'extraroute' in self.api_extension_map:
+            self.api.update_router(rid, {'router': {'routes': None}})
 
     def remove_interface_router(self, rid, iface):
         if iface['port_id'] in self.nports:
