@@ -421,7 +421,6 @@ class TestSystemManager(object):
                 dummy_tc.stop_time = datetime.datetime.utcnow()
                 dummy_tc.run_time = datetime.timedelta()
                 dummy_tc.failureException = e
-                self.ptm.shutdown()
                 result.addError(dummy_tc, sys.exc_info())
                 self.result_map[suite_name] = result
                 return result
