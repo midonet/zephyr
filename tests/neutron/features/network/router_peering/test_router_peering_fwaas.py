@@ -94,22 +94,32 @@ class TestRouterPeeringFWaaS(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
-        self.verify_connectivity(vma, ipb)
+        vmb.start_echo_server(ip=ipb, port=7777)
+        self.assertTrue(vma.ping(target_ip=ipb, timeout=20))
+        self.verify_tcp_connectivity(vma, ipb, 7777)
 
-        vma.start_echo_server(ip=ipa)
-        self.verify_connectivity(vmb, ipa)
+        vma.start_echo_server(ip=ipa, port=8888)
+        self.assertTrue(vmb.ping(target_ip=ipa, timeout=20))
+        self.verify_tcp_connectivity(vmb, ipa, 8888)
 
         fwp = self.create_firewall_policy('POLICY')
         fw = self.create_firewall(fwp['id'], router_ids=[a_tenant_router['id']])
         fwr_icmp = self.create_firewall_rule(action='allow', protocol='icmp')
-        fwr_tcp = self.create_firewall_rule(action='allow', protocol='tcp')
+        fwr_tcp7 = self.create_firewall_rule(action='allow', protocol='tcp',
+                                             dest_port=7777)
+        fwr_tcp8 = self.create_firewall_rule(action='allow', protocol='tcp',
+                                             dest_port=8888)
 
         self.assertFalse(vma.ping(target_ip=ipb))
         self.assertFalse(vmb.ping(target_ip=ipa))
 
         self.insert_firewall_rule(fwp['id'], fwr_icmp['id'])
-        self.insert_firewall_rule(fwp['id'], fwr_tcp['id'])
 
-        self.verify_connectivity(vma, ipb)
-        self.verify_connectivity(vmb, ipa)
+        self.assertTrue(vma.ping(target_ip=ipb, timeout=20))
+        self.assertTrue(vmb.ping(target_ip=ipa, timeout=20))
+
+        self.insert_firewall_rule(fwp['id'], fwr_tcp7['id'])
+        self.insert_firewall_rule(fwp['id'], fwr_tcp8['id'])
+
+        self.verify_tcp_connectivity(vma, ipb, 7777)
+        self.verify_tcp_connectivity(vmb, ipa, 8888)
