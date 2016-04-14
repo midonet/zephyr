@@ -271,7 +271,7 @@ class NeutronTestCase(TestCase):
 
     # TODO(Joe): Move to firewall specific helper file
     def create_firewall_rule(self, source_ip=None, dest_ip=None,
-                             action='allow', protocol='tcp',
+                             dest_port=None, action='allow', protocol='tcp',
                              tenant_id='admin'):
 
         fwpr_data = {'action': action,
@@ -281,6 +281,9 @@ class NeutronTestCase(TestCase):
                      'source_ip_address': source_ip,
                      'destination_ip_address': dest_ip,
                      'tenant_id': tenant_id}
+
+        if dest_port is not None:
+            fwpr_data['destination_port'] = dest_port
         fwpr = self.api.create_firewall_rule({'firewall_rule': fwpr_data})
         self.fwprs.append(fwpr['firewall_rule']['id'])
         return fwpr['firewall_rule']
@@ -301,6 +304,11 @@ class NeutronTestCase(TestCase):
         self.fw_ras.remove((fw_policy_id, fw_rule_id))
         data = {"firewall_rule_id": fw_rule_id}
         self.api.firewall_policy_remove_rule(fw_policy_id, data)
+
+    def verify_tcp_connectivity(self, vm, dest_ip, dest_port):
+        echo_response = vm.send_echo_request(dest_ip=dest_ip,
+                                             dest_port=dest_port)
+        self.assertEqual('ping:echo-reply', echo_response)
 
     def verify_connectivity(self, vm, dest_ip):
         self.assertTrue(vm.ping(target_ip=dest_ip, timeout=20))
