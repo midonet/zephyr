@@ -21,18 +21,15 @@ from zephyr.common.ip import IP
 from zephyr.common.utils import curl_delete
 from zephyr.common.utils import curl_post
 from zephyr.common.utils import curl_put
-from zephyr.ptm.fixtures.midonet_host_setup_fixture import (
-    MidonetHostSetupFixture)
-from zephyr.ptm.fixtures.neutron_database_fixture import (
-    NeutronDatabaseFixture)
 from zephyr.tsm.test_case import TestCase
 from zephyr.vtm.guest import Guest
-from zephyr.vtm.neutron_api import get_neutron_api_url
-from zephyr.vtm.neutron_api import NetData
-from zephyr.vtm.neutron_api import RouterData
+from zephyr.vtm import neutron_api
 
 GuestData = namedtuple('GuestData', 'port vm ip')
 EdgeData = namedtuple('EdgeData', "edge_net router")
+
+MAIN_NET_CIDR = '192.168.0.0/24'
+PUB_NET_CIDR = '200.200.0.0/24'
 
 
 class NeutronTestCase(TestCase):
@@ -86,24 +83,26 @@ class NeutronTestCase(TestCase):
             self.clean_resource(items, res_name, del_func)
 
     def add_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
-        curl_url = (get_neutron_api_url(self.api) + '/bgp-speakers/' +
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/bgp-speakers/' +
                     bgp_speaker_id + '/add_bgp_peer.json')
         curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
 
     def remove_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
-        curl_url = (get_neutron_api_url(self.api) + '/bgp-speakers/' +
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/bgp-speakers/' +
                     bgp_speaker_id + '/remove_bgp_peer.json')
         curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
 
     def create_bgp_speaker_curl(self, name, local_as, router_id,
-                                tenant_id='admin', ip_version=4,
-                                advertise_tenant_networks=True):
+                                tenant_id='admin', ip_version=4):
         speaker_data = {'name': name,
                         'logical_router': router_id,
                         'tenant_id': tenant_id,
                         'local_as': local_as,
                         'ip_version': ip_version}
-        curl_url = get_neutron_api_url(self.api) + '/bgp-speakers.json'
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/bgp-speakers.json')
         post_ret = curl_post(curl_url, {'bgp_speaker': speaker_data})
         speaker = json.loads(post_ret)
         self.bgp_speakers.append(speaker['bgp_speaker']['id'])
@@ -114,7 +113,8 @@ class NeutronTestCase(TestCase):
         self.delete_bgp_speaker_curl(bgp_speaker_id)
 
     def delete_bgp_speaker_curl(self, bgp_speaker_id):
-        curl_url = get_neutron_api_url(self.api) + '/bgp-speakers.json/'
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/bgp-speakers.json/')
         curl_delete(curl_url + bgp_speaker_id)
 
     def create_bgp_peer_curl(self, name, peer_ip, remote_as, auth_type='none',
@@ -124,7 +124,8 @@ class NeutronTestCase(TestCase):
                      'peer_ip': peer_ip,
                      'auth_type': auth_type,
                      'remote_as': remote_as}
-        curl_url = get_neutron_api_url(self.api) + '/bgp-peers.json'
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/bgp-peers.json')
         post_ret = curl_post(curl_url, {'bgp_peer': peer_data})
         peer = json.loads(post_ret)
         self.bgp_peers.append(peer['bgp_peer']['id'])
@@ -135,7 +136,8 @@ class NeutronTestCase(TestCase):
         self.delete_bgp_peer_curl(bgp_peer_id)
 
     def delete_bgp_peer_curl(self, bgp_peer_id):
-        curl_url = get_neutron_api_url(self.api) + '/bgp-peers.json/'
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/bgp-peers.json/')
         curl_delete(curl_url + bgp_peer_id)
 
     def create_security_group(self, name, tenant_id='admin'):
@@ -179,7 +181,7 @@ class NeutronTestCase(TestCase):
         self.api.delete_security_group_rule(sgr_id)
 
     def create_remote_mac_entry(self, ip, mac, segment_id, gwdev_id):
-        curl_url = get_neutron_api_url(self.api)
+        curl_url = neutron_api.get_neutron_api_url(self.api)
         mac_add_data_far = \
             {"remote_mac_entry": {
                 "tenant_id": "admin",
@@ -199,7 +201,7 @@ class NeutronTestCase(TestCase):
         return rmac['remote_mac_entry']
 
     def delete_l2_gateway_conn(self, l2gwconn_id):
-        curl_url = get_neutron_api_url(self.api)
+        curl_url = neutron_api.get_neutron_api_url(self.api)
         curl_delete(curl_url + "/l2-gateway-connections/" + l2gwconn_id)
 
     def delete_l2_gw_conn(self, l2gwconn_id):
@@ -207,7 +209,7 @@ class NeutronTestCase(TestCase):
         self.l2gw_conns.remove(l2gwconn_id)
 
     def delete_rmac(self, gwdev_id, rme_id):
-        curl_url = get_neutron_api_url(self.api)
+        curl_url = neutron_api.get_neutron_api_url(self.api)
         curl_delete(curl_url +
                     "/gw/gateway_devices/" + str(gwdev_id) +
                     "/remote_mac_entries/" + str(rme_id))
@@ -218,7 +220,8 @@ class NeutronTestCase(TestCase):
 
     def create_gateway_device(self, resource_id, dev_type='router_vtep',
                               tunnel_ip=None, name=None):
-        curl_url = get_neutron_api_url(self.api) + '/gw/gateway_devices'
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/gw/gateway_devices')
         gw_dict = {"type": dev_type,
                    "resource_id": resource_id,
                    "tenant_id": 'admin'}
@@ -246,13 +249,14 @@ class NeutronTestCase(TestCase):
             gwdict['tunnel_ips'] = [tunnel_ip]
         curl_req = {"gateway_device": gwdict}
 
-        curl_url = get_neutron_api_url(self.api)
+        curl_url = neutron_api.get_neutron_api_url(self.api)
         device_json_ret = curl_put(
             curl_url + '/gw/gateway_devices/' + gwdev_id, curl_req)
         self.LOG.debug("Update gateway device" + device_json_ret)
 
     def delete_gw_dev(self, gwdev_id):
-        curl_url = get_neutron_api_url(self.api) + '/gw/gateway_devices/'
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/gw/gateway_devices/')
         curl_delete(curl_url + gwdev_id)
 
     def delete_gateway_device(self, gwdev_id):
@@ -266,7 +270,8 @@ class NeutronTestCase(TestCase):
                                 ip=tunnel_ip)
 
     def create_l2_gateway(self, name, gwdev_id):
-        curl_url = get_neutron_api_url(self.api) + '/l2-gateways'
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/l2-gateways')
         l2gw_data = {"l2_gateway": {"name": 'l2gw_' + name,
                                     "devices": [{"device_id": gwdev_id}],
                                     "tenant_id": "admin"}}
@@ -281,7 +286,7 @@ class NeutronTestCase(TestCase):
         return l2gw['l2_gateway']
 
     def delete_l2gw(self, l2gw_id):
-        curl_url = get_neutron_api_url(self.api)
+        curl_url = neutron_api.get_neutron_api_url(self.api)
         curl_delete(curl_url + "/l2-gateways/" + str(l2gw_id))
 
     def delete_l2_gateway(self, l2gw_id):
@@ -289,7 +294,8 @@ class NeutronTestCase(TestCase):
         self.l2gws.remove(l2gw_id)
 
     def create_l2_gateway_connection(self, net_id, segment_id, l2gw_id):
-        curl_url = get_neutron_api_url(self.api) + '/l2-gateway-connections'
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/l2-gateway-connections')
         l2gw_conn_curl = {"l2_gateway_connection": {
             "network_id": net_id,
             "segmentation_id": segment_id,
@@ -595,8 +601,7 @@ class NeutronTestCase(TestCase):
         self.main_subnet = None
         self.pub_network = None
         self.pub_subnet = None
-        self.api = None
-        """ :type: neutron_client.Client """
+        self.init_networks = True
 
     @classmethod
     def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
@@ -613,34 +618,27 @@ class NeutronTestCase(TestCase):
         ext_list = cls.api.list_extensions()['extensions']
         cls.api_extension_map = {v['alias']: v for v in ext_list}
 
-        # Only add the midonet- and neutron-setup fixture
-        # once for each scenario.
-        if 'midonet-setup' not in ptm.fixtures:
-            test_case_logger.debug('Adding midonet-setup fixture')
-            midonet_fixture = MidonetHostSetupFixture(
-                cls.vtm, cls.ptm, test_case_logger)
-            ptm.add_fixture('midonet-setup', midonet_fixture)
-
-        if 'neutron-setup' not in ptm.fixtures:
-            test_case_logger.debug('Adding neutron-setup fixture')
-            neutron_fixture = NeutronDatabaseFixture(
-                cls.vtm, cls.ptm, test_case_logger)
-            ptm.add_fixture('neutron-setup', neutron_fixture)
+    def init_main_pub_networks(self):
+        self.LOG.debug(
+            "Initializing Main and Public Networks")
+        self.main_network = self.create_network('main')
+        self.main_subnet = self.create_subnet(
+            'main_sub', net_id=self.main_network['id'], cidr=MAIN_NET_CIDR)
+        self.pub_network = self.create_network('public', external=True)
+        self.pub_subnet = self.create_subnet(
+            'public_sub', net_id=self.pub_network['id'], cidr=PUB_NET_CIDR)
+        self.public_router = self.create_router(
+            'main_pub_router', pub_net_id=self.pub_network['id'],
+            priv_sub_ids=[self.main_subnet['id']])
 
     def run(self, result=None):
         """
         Special run override to make sure to set up neutron data
         prior to running the test case function.
         """
-        self.neutron_fixture = self.ptm.get_fixture('neutron-setup')
-        self.LOG.debug(
-            "Initializing Test Case Neutron Data from neutron-setup fixture")
-        self.main_network = self.neutron_fixture.main_network
-        self.main_subnet = self.neutron_fixture.main_subnet
-        self.pub_network = self.neutron_fixture.pub_network
-        self.pub_subnet = self.neutron_fixture.pub_subnet
-        self.api = self.neutron_fixture.api
         try:
+            if self.init_networks is True:
+                self.init_main_pub_networks()
             super(NeutronTestCase, self).run(result)
         finally:
             self.clean_vm_servers()
@@ -730,10 +728,10 @@ class NeutronTestCase(TestCase):
         self.LOG.info('Added return routes to host router')
 
         return EdgeData(
-            NetData(
+            neutron_api.NetData(
                 edge_network,
                 edge_subnet),
-            RouterData(edge_router, if_list))
+            neutron_api.RouterData(edge_router, if_list))
 
     def delete_edge_router(self, edge_data):
         """

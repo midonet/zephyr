@@ -192,7 +192,7 @@ Zephyr for the majority of cases.
 | -c CLIENT             | Specify the client API to use ('neutron', 'midonet')              | 'neutron'                                     |
 | -a AUTH               | Specify authentication scheme to use ('keystone', 'noauth')       | 'noauth'                                      |
 | --client-args ARGS    | Specify client params (see below)                                 | None                                          |
-| -p CLASS              | Specify the PTMImpl class to use as the ptm implementation        | 'ptm.impl.ConfiguredHostPTMImpl'              |
+| -p CLASS              | Specify the PTMImpl class to use as the ptm implementation        | 'zephyr_ptm.ptm.impl.ConfiguredHostPTMImpl'              |
 | -o <topology>         | Specify the topology config file to use                           | 'config/physical_topologies/2z-3c-2edge.json' |
 | -d                    | Turn on debug mode for logging                                    | False                                         |
 | -l                    | Specify the logging directory                                     | '/tmp/zephyr/logs'                            |

@@ -17,8 +17,8 @@ import logging
 from zephyr.common.exceptions import ArgMismatchException
 from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr.common.log_manager import LogManager
-from zephyr.ptm.ptm_constants import ZEPHYR_LOG_FILE_NAME
 from zephyr.vtm.guest import Guest
+from zephyr_ptm.ptm.ptm_constants import ZEPHYR_LOG_FILE_NAME
 
 
 class VirtualTopologyManager(object):
@@ -76,6 +76,7 @@ class VirtualTopologyManager(object):
         """
         if self.physical_topology_manager is None:
             raise ArgMismatchException("Cannot create a VM without a ptm")
+
         new_vm = self.physical_topology_manager.create_vm(
             ip, mac, gw_ip, hv_host, name)
         if not new_vm:

@@ -15,12 +15,11 @@
 import unittest
 
 from zephyr.common.utils import run_unit_test
-from zephyr.ptm.fixtures.neutron_database_fixture import NeutronDatabaseFixture
-from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.vtm.neutron_api import *
+from zephyr.vtm import neutron_api
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
+from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 
 class SampleTestCase(NeutronTestCase):
@@ -33,26 +32,16 @@ class SampleTestCase(NeutronTestCase):
         self.fail("This test shouldn't be run!")
 
 
-class SampleFixture(NeutronDatabaseFixture):
-    def __init__(self, vtm, ptm, logger):
-        super(SampleFixture, self).__init__(vtm, ptm, logger)
-        self.api = create_neutron_client()
-
-    def setup(self):
-        pass
-
-    def teardown(self):
-        pass
-
-
 class NeutronTestCaseTest(unittest.TestCase):
     def test_require_extension(self):
-        vtm = VirtualTopologyManager(None, create_neutron_client(), None)
         ptm = PhysicalTopologyManager()
-        ptm.add_fixture('neutron-setup', SampleFixture(vtm, ptm, None))
+        vtm = VirtualTopologyManager(
+            None, neutron_api.create_neutron_client(), None)
+
         SampleTestCase._prepare_class(ptm, vtm)
         tc = SampleTestCase('test_needs_agent')
         tr = unittest.TestResult()
+        tc.init_networks = False
         tc.run(tr)
         self.assertEqual(0, len(tr.errors))
         self.assertEqual(0, len(tr.failures))
@@ -60,6 +49,7 @@ class NeutronTestCaseTest(unittest.TestCase):
 
         tc = SampleTestCase('test_needs_asdf')
         tr = unittest.TestResult()
+        tc.init_networks = False
         tc.run(tr)
         self.assertEqual(0, len(tr.errors))
         self.assertEqual(1, len(tr.skipped))

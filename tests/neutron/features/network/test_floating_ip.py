@@ -18,7 +18,6 @@ from zephyr.common import ip
 
 from zephyr.tsm import neutron_test_case
 from zephyr.tsm import test_case
-from zephyr.vtm import neutron_api
 
 
 class TestFloatingIP(neutron_test_case.NeutronTestCase):
@@ -172,98 +171,87 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
     @neutron_test_case.require_extension('extraroute')
     @unittest.skip("The deletion of the exter subnet keeps screwing up")
     def test_fip_to_fip_connectivity_two_sites(self):
-        floating_ip1 = None
-        floating_ip2 = None
-        new_topo = None
-        port2 = None
-        vm2 = None
-        ip2 = None
-        try:
-            new_topo = neutron_api.create_neutron_main_pub_networks(
-                self.api,
-                main_name='main_2', main_subnet_cidr='192.168.10.0/24',
-                pub_name='pub_2', pub_subnet_cidr='200.200.10.0/24',
-                log=self.LOG)
+        new_main_network = self.create_network('main')
+        new_main_subnet = self.create_subnet(
+            'main_sub', net_id=new_main_network['id'],
+            cidr='192.168.10.0/24')
+        new_pub_network = self.create_network('public', external=True)
+        new_pub_subnet = self.create_subnet(
+            'public_sub', net_id=new_pub_network['id'],
+            cidr='200.200.10.0/24')
+        self.create_router(
+            'main_pub_router', pub_net_id=new_pub_network['id'],
+            priv_sub_ids=[new_main_subnet['id']])
 
-            self.create_edge_router(
-                pub_subnets=[self.pub_subnet], router_host_name='router1',
-                edge_host_name='edge1', edge_iface_name='eth1',
-                edge_subnet_cidr='172.16.2.0/24')
-            self.create_edge_router(
-                pub_subnets=[new_topo.pub_net.subnet],
-                router_host_name='router1',
-                edge_host_name='edge2', edge_iface_name='eth1',
-                edge_subnet_cidr='172.17.2.0/24')
+        self.create_edge_router(
+            pub_subnets=[self.pub_subnet], router_host_name='router1',
+            edge_host_name='edge1', edge_iface_name='eth1',
+            edge_subnet_cidr='172.16.2.0/24')
+        self.create_edge_router(
+            pub_subnets=[new_pub_subnet],
+            router_host_name='router1',
+            edge_host_name='edge2', edge_iface_name='eth1',
+            edge_subnet_cidr='172.17.2.0/24')
 
-            (port1, vm1, ip1) = self.create_vm_server(
-                'vm1', self.main_network['id'],
-                self.main_subnet['gateway_ip'])
-            (port2, vm2, ip2) = self.create_vm_server(
-                'vm2', new_topo.main_net.network['id'],
-                new_topo.main_net.subnet['gateway_ip'])
+        (port1, vm1, ip1) = self.create_vm_server(
+            'vm1', self.main_network['id'],
+            self.main_subnet['gateway_ip'])
+        (port2, vm2, ip2) = self.create_vm_server(
+            'vm2', new_main_network['id'],
+            new_main_subnet['gateway_ip'])
 
-            floating_ip1 = self.create_floating_ip(
-                port_id=port1['id'],
-                pub_net_id=self.pub_network['id'])
+        floating_ip1 = self.create_floating_ip(
+            port_id=port1['id'],
+            pub_net_id=self.pub_network['id'])
 
-            fip1 = floating_ip1['floating_ip_address']
-            self.LOG.debug("Received floating IP1: " + str(fip1))
+        fip1 = floating_ip1['floating_ip_address']
+        self.LOG.debug("Received floating IP1: " + str(fip1))
 
-            floating_ip2 = self.create_floating_ip(
-                port_id=port2['id'],
-                pub_net_id=new_topo.pub_net.network['id'])
+        floating_ip2 = self.create_floating_ip(
+            port_id=port2['id'],
+            pub_net_id=new_pub_network['id'])
 
-            fip2 = floating_ip2['floating_ip_address']
-            self.LOG.debug("Received floating IP2: " + str(fip2))
+        fip2 = floating_ip2['floating_ip_address']
+        self.LOG.debug("Received floating IP2: " + str(fip2))
 
-            # Test that VM canNOT reach via internal IP
-            # Ping
-            self.assertFalse(vm1.ping(target_ip=ip2))
-            self.assertFalse(vm2.ping(target_ip=ip1))
+        # Test that VM canNOT reach via internal IP
+        # Ping
+        self.assertFalse(vm1.ping(target_ip=ip2))
+        self.assertFalse(vm2.ping(target_ip=ip1))
 
-            # Test that VM1 can reach VM2 via FIP
-            # Ping
-            self.assertTrue(vm1.ping(target_ip=fip2))
-            self.assertTrue(vm2.ping(target_ip=fip1))
+        # Test that VM1 can reach VM2 via FIP
+        # Ping
+        self.assertTrue(vm1.ping(target_ip=fip2))
+        self.assertTrue(vm2.ping(target_ip=fip1))
 
-            # TCP
-            vm2.start_echo_server(ip=ip2)
-            echo_response = vm1.send_echo_request(dest_ip=fip2)
-            self.assertEqual('ping:echo-reply', echo_response)
+        # TCP
+        vm2.start_echo_server(ip=ip2)
+        echo_response = vm1.send_echo_request(dest_ip=fip2)
+        self.assertEqual('ping:echo-reply', echo_response)
 
-            # TODO(micucci): Fix UDP
-            # UDP
-            # ext_host.stop_echo_server(ip=ip2)
-            # ext_host.start_echo_server(ip=ip2, protocol='udp')
-            # echo_response = vm1.send_echo_request(
-            #   dest_ip=fip2, protocol='udp')
-            # self.assertEqual('ping:echo-reply', echo_response)
+        # TODO(micucci): Fix UDP
+        # UDP
+        # ext_host.stop_echo_server(ip=ip2)
+        # ext_host.start_echo_server(ip=ip2, protocol='udp')
+        # echo_response = vm1.send_echo_request(
+        #   dest_ip=fip2, protocol='udp')
+        # self.assertEqual('ping:echo-reply', echo_response)
 
-            # Test that VM2 can reach VM1 via FIP
-            # Ping
-            self.assertTrue(vm2.ping(target_ip=fip1))
+        # Test that VM2 can reach VM1 via FIP
+        # Ping
+        self.assertTrue(vm2.ping(target_ip=fip1))
 
-            # TCP
-            vm1.start_echo_server(ip=ip1)
-            echo_response = vm2.send_echo_request(dest_ip=fip1)
-            self.assertEqual('ping:echo-reply', echo_response)
+        # TCP
+        vm1.start_echo_server(ip=ip1)
+        echo_response = vm2.send_echo_request(dest_ip=fip1)
+        self.assertEqual('ping:echo-reply', echo_response)
 
-            # UDP
-            # vm1.stop_echo_server(ip=ip1)
-            # vm1.start_echo_server(ip=ip1, protocol='udp')
-            # echo_response = vm2.send_echo_request(
-            #   dest_ip=fip1, protocol='udp')
-            # self.assertEqual('ping:echo-reply', echo_response)
-
-        finally:
-            if floating_ip1:
-                self.delete_floating_ip(floating_ip1['id'])
-            if floating_ip2:
-                self.delete_floating_ip(floating_ip2['id'])
-
-            self.clean_vm_servers()
-
-            neutron_api.delete_neutron_main_pub_networks(self.api, new_topo)
+        # UDP
+        # vm1.stop_echo_server(ip=ip1)
+        # vm1.start_echo_server(ip=ip1, protocol='udp')
+        # echo_response = vm2.send_echo_request(
+        #   dest_ip=fip1, protocol='udp')
+        # self.assertEqual('ping:echo-reply', echo_response)
 
     @neutron_test_case.require_extension('extraroute')
     @test_case.expected_failure('MI-953')

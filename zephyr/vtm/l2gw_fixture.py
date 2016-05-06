@@ -13,10 +13,9 @@
 # limitations under the License.
 
 from zephyr.common.cli import LinuxCLI
-from zephyr.ptm.fixtures.service_fixture import ServiceFixture
 
 
-class L2GWFixture(ServiceFixture):
+class L2GWFixture(object):
     def __init__(self):
         super(L2GWFixture, self).__init__()
 

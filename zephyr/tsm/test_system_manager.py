@@ -23,10 +23,10 @@ import unittest
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.exceptions import *
 from zephyr.common.log_manager import LogManager
-from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
-from zephyr.ptm.ptm_constants import ZEPHYR_LOG_FILE_NAME
 from zephyr.tsm.test_case import TestCase
 from zephyr.tsm.test_result import TestResult
+from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
+from zephyr_ptm.ptm.ptm_constants import ZEPHYR_LOG_FILE_NAME
 
 DEFAULT_TEST_LOADER = {'unittest': unittest.defaultTestLoader}
 DEFAULT_TEST_SUITE_TYPE = {'unittest': unittest.TestSuite}

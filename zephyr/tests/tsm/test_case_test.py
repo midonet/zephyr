@@ -16,12 +16,12 @@ import operator
 import unittest
 
 from zephyr.common.utils import run_unit_test
-from zephyr.ptm.impl.physical_topology_manager_impl import (
-    PhysicalTopologyManagerImpl)
-from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr.tsm.test_case import expected_failure
 from zephyr.tsm.test_case import require_topology_feature
 from zephyr.tsm.test_case import TestCase
+from zephyr_ptm.ptm.impl.physical_topology_manager_impl import (
+    PhysicalTopologyManagerImpl)
+from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 
 class SamplePTM(PhysicalTopologyManagerImpl):

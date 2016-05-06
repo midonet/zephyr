@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.common.exceptions import *
 from zephyr.common.echo_server import DEFAULT_ECHO_PORT
+from zephyr.common import exceptions
 
 PACKET_CAPTURE_TIMEOUT = 10
 
@@ -192,10 +192,10 @@ class Guest(object):
                                       blocking=blocking)
         """ :type: CommandStatus"""
         if result.ret_code != 0:
-            raise SubprocessFailedException('Retcode: ' +
-                                            str(result.ret_code) +
-                                            ', cmd output: ' + result.stdout +
-                                            ', cmd error: ' + result.stderr)
+            raise exceptions.SubprocessFailedException(
+                'Retcode: ' + str(result.ret_code) +
+                ', cmd output: ' + result.stdout +
+                ', cmd error: ' + result.stderr)
         return result
 
     def terminate(self):

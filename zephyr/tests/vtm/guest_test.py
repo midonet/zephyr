@@ -23,10 +23,10 @@ from zephyr.common.cli import LinuxCLI
 from zephyr.common.ip import IP
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
-from zephyr.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
-from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr.vtm.guest import Guest
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
+from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
+from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
 
@@ -78,8 +78,9 @@ class GuestTest(unittest.TestCase):
             log_manager=cls.lm)
         cls.ptm_i.configure_logging(debug=True)
         cls.ptm = PhysicalTopologyManager(cls.ptm_i)
-        cls.ptm.configure(os.path.dirname(
-            os.path.abspath(__file__)) + '/test-basic-config.json')
+        cls.ptm.configure(
+            config_file='test-basic-config.json',
+            config_dir=os.path.dirname(os.path.abspath(__file__)))
         cls.ptm.startup()
 
     def test_host_plugin_vm(self):

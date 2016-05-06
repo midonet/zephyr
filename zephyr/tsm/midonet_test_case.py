@@ -14,9 +14,8 @@
 
 import logging
 
-from zephyr.ptm.fixtures.midonet_host_setup_fixture import (
-    MidonetHostSetupFixture)
 from zephyr.tsm.test_case import TestCase
+from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
 
 
 class MidonetTestCase(TestCase):
@@ -40,8 +39,8 @@ class MidonetTestCase(TestCase):
         # Only add the midonet-setup fixture once for each scenario.
         if 'midonet-setup' not in ptm.fixtures:
             test_case_logger.debug('Adding midonet-setup fixture')
-            midonet_fixture = MidonetHostSetupFixture(
-                cls.vtm, cls.ptm, test_case_logger)
+            midonet_fixture = midonet_setup_fixture.MidonetSetupFixture(
+                cls.ptm, test_case_logger)
             ptm.add_fixture('midonet-setup', midonet_fixture)
 
     def run(self, result=None):

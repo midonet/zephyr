@@ -12,10 +12,10 @@ sudo pip -q install xmlrunner
 export ZEPHYR_TEST_JUNIT_OUTDIR=$ZEPHYR_ROOT/test-results
 
 # Run all tests in each package's tests directory
-TEST_PACKAGES="common ptm vtm tsm"
+TEST_PACKAGES="ptm"
 
 for dir in $TEST_PACKAGES; do
-  for test in `find zephyr/tests/$dir -name *_test.py`; do
+  for test in `find zephyr_ptm/tests/$dir -name *_test.py`; do
     PYTHONPATH=. python $test
     sleep 3
   done
@@ -23,7 +23,9 @@ done
 
 set -e
 
-$ZEPHYR_ROOT/tsm-run.py -d -l $ZEPHYR_ROOT/test-logs -r $ZEPHYR_TEST_JUNIT_OUTDIR \
+$ZEPHYR_ROOT/tsm-run.py -d \
+    -l $ZEPHYR_ROOT/test-logs \
+    -r $ZEPHYR_TEST_JUNIT_OUTDIR \
     -c neutron \
     -t tests.neutron.reliability.test_basic_ping
 

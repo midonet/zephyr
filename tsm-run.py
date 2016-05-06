@@ -28,11 +28,11 @@ from zephyr.common.exceptions import SubprocessFailedException
 from zephyr.common.exceptions import TestException
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import get_class_from_fqn
-from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr.tsm.test_case import TestCase
 from zephyr.tsm.test_system_manager import TestSystemManager
 from zephyr.vtm.neutron_api import create_neutron_client
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
+from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 
 def usage(except_obj):
@@ -126,8 +126,8 @@ try:
     log_dir = '/tmp/zephyr/logs'
     results_dir = '/tmp/zephyr/results'
     ptm_impl_type = (
-        'zephyr.ptm.impl.configured_host_ptm_impl.ConfiguredHostPTMImpl')
-    topology = 'config/physical_topologies/2z-3c-2edge.json'
+        'zephyr_ptm.ptm.impl.configured_host_ptm_impl.ConfiguredHostPTMImpl')
+    topology = '2z-3c-2edge.json'
     name = datetime.datetime.utcnow().strftime('%Y_%m_%d_%H-%M-%S')
 
     for arg, value in arg_map:
@@ -205,13 +205,24 @@ try:
         name='tsm-run-console',
         log_level=logging.DEBUG if debug is True else logging.INFO)
     log_manager.rollover_logs_fresh(file_filter='*.log')
+    
+    # TODO(micucci): Instead of a PTM start, this should just use
+    # whatever physical underlay is set on the system.  Instead, we should
+    # read in a json config which specifies the physical model (more
+    # specifically, the computes, and what driver to use to create VMs).
+    # This would be an output of the PTM, or can be created by the user
+    # to represent an existing model (or can be an output of a devstack).
 
     console_log.debug('Setting up ptm from impl: ' + ptm_impl_type)
     ptm_impl = get_class_from_fqn(ptm_impl_type)(
         root_dir=root_dir, log_manager=log_manager)
+    console_log.debug('Using PTM impl class: ' +
+                      str(type(ptm_impl).__name__))
     ptm_impl.configure_logging(debug=debug)
     ptm = PhysicalTopologyManager(ptm_impl)
 
+    # TODO(micucci): This will take a map specifying how to create VMs
+    # instead of a PTM
     console_log.debug('Setting up vtm')
     vtm = VirtualTopologyManager(
         physical_topology_manager=ptm,

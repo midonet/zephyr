@@ -19,15 +19,12 @@ import unittest
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
-from zephyr.ptm.application.midolman import Midolman
-from zephyr.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
-from zephyr.ptm.physical_topology_manager import PhysicalTopologyManager
-from zephyr.vtm.mn_api import create_midonet_client
-from zephyr.vtm.mn_api import setup_main_tunnel_zone
-from zephyr.vtm.neutron_api import clean_neutron
-from zephyr.vtm.neutron_api import create_neutron_client
-from zephyr.vtm.neutron_api import setup_neutron
+from zephyr.vtm import neutron_api
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
+from zephyr_ptm.ptm.application.midolman import Midolman
+from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
+from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
+from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
 
@@ -43,33 +40,36 @@ class NeutronAPITest(unittest.TestCase):
     main_subnet = None
     pub_network = None
     pub_subnet = None
+    public_router = None
+    public_router_iface = None
 
-    @classmethod
-    def setUpClass(cls):
-        cls.ptm_i = ConfiguredHostPTMImpl(
+    def setUp(self):
+        self.ptm_i = ConfiguredHostPTMImpl(
             root_dir=ROOT_DIR,
-            log_manager=cls.lm)
-        cls.ptm_i.configure_logging(debug=True)
-        cls.ptm = PhysicalTopologyManager(cls.ptm_i)
-        cls.ptm.configure(os.path.dirname(
-            os.path.abspath(__file__)) + '/test-basic-config.json')
+            log_manager=self.lm)
+        self.ptm_i.configure_logging(debug=True)
+        self.ptm = PhysicalTopologyManager(self.ptm_i)
+        self.ptm.configure(
+            config_file='test-basic-config.json',
+            config_dir=os.path.dirname(os.path.abspath(__file__)))
+
         logging.getLogger("neutronclient").addHandler(logging.StreamHandler())
         try:
-            cls.ptm.startup()
-            cls.vtm = VirtualTopologyManager(
-                client_api_impl=create_neutron_client(),
-                physical_topology_manager=cls.ptm)
+            self.ptm.startup()
+            self.vtm = VirtualTopologyManager(
+                client_api_impl=neutron_api.create_neutron_client(),
+                physical_topology_manager=self.ptm)
 
-            cls.api = cls.vtm.get_client()
+            self.api = self.vtm.get_client()
             """ :type: neutron_client.Client"""
 
-            cls.mn_api = create_midonet_client()
+            self.mn_api = midonet_setup_fixture.create_midonet_client()
 
             log = logging.getLogger("neutronclient")
             log.setLevel(logging.DEBUG)
 
             tunnel_zone_host_map = {}
-            for host_name, host in cls.ptm.impl_.hosts_by_name.iteritems():
+            for host_name, host in self.ptm.impl_.hosts_by_name.iteritems():
                 # On each host, check if there is at least one Midolman
                 # app running
                 for app in host.applications:
@@ -80,21 +80,46 @@ class NeutronAPITest(unittest.TestCase):
                             host.interfaces['eth0'].ip_list[0].ip)
                         break
 
-            setup_main_tunnel_zone(cls.mn_api,
-                                   tunnel_zone_host_map,
-                                   log)
+            midonet_setup_fixture.setup_main_tunnel_zone(
+                self.mn_api,
+                tunnel_zone_host_map,
+                log)
 
-            try:
-                btd = setup_neutron(cls.api, log=log)
-                cls.main_network = btd.main_net.network
-                cls.main_subnet = btd.main_net.subnet
-                cls.pub_network = btd.pub_net.network
-                cls.pub_subnet = btd.pub_net.subnet
-            except Exception:
-                clean_neutron(log=log)
-                raise
+            self.main_network = self.api.create_network(
+                {'network': {
+                    'name': 'main',
+                    'tenant_id': 'admin'}})['network']
+            self.main_subnet = self.api.create_subnet(
+                {'subnet': {
+                    'name': 'main_sub',
+                    'ip_version': 4,
+                    'network_id': self.main_network['id'],
+                    'cidr': '192.168.10.0/24',
+                    'tenant_id': 'admin'}})['subnet']
+            self.pub_network = self.api.create_network(
+                {'network': {
+                    'name': 'public',
+                    'router:external': True,
+                    'tenant_id': 'admin'}})['network']
+            self.pub_subnet = self.api.create_subnet(
+                {'subnet': {
+                    'name': 'public_sub',
+                    'ip_version': 4,
+                    'network_id': self.pub_network['id'],
+                    'cidr': '200.200.10.0/24',
+                    'tenant_id': 'admin'}})['subnet']
+            self.public_router = self.api.create_router(
+                {'router': {
+                    'name': 'main_public_router',
+                    'external_gateway_info': {
+                        'network_id': self.pub_network['id']},
+                    'tenant_id': 'admin'}})['router']
+            self.public_router_iface = self.api.add_interface_router(
+                self.public_router['id'],
+                {'subnet_id': self.main_subnet['id']})
+
         except (KeyboardInterrupt, Exception):
-            cls.ptm.shutdown()
+            self.ptm.shutdown()
             LinuxCLI().cmd('ip netns del vm1')
             raise
 
@@ -191,16 +216,26 @@ class NeutronAPITest(unittest.TestCase):
             if port2 is not None:
                 self.api.delete_port(port2['id'])
 
-    @classmethod
-    def tearDownClass(cls):
+    def tearDown(self):
         log = logging.getLogger("neutronclient")
         log.setLevel(logging.DEBUG)
 
-        try:
-            cls.ptm.shutdown()
-            LinuxCLI().cmd('ip netns del vm1')
-        finally:
-            clean_neutron(log=log)
+        if self.public_router:
+            if self.public_router_iface:
+                self.api.remove_interface_router(self.public_router['id'],
+                                                 self.public_router_iface)
+            self.api.delete_router(self.public_router['id'])
+        if self.main_subnet:
+            self.api.delete_subnet(self.main_subnet['id'])
+        if self.pub_subnet:
+            self.api.delete_subnet(self.pub_subnet['id'])
+        if self.main_network:
+            self.api.delete_network(self.main_network['id'])
+        if self.pub_network:
+            self.api.delete_network(self.pub_network['id'])
+
+        self.ptm.shutdown()
+        LinuxCLI().cmd('ip netns del vm1')
 
 
 run_unit_test(NeutronAPITest)

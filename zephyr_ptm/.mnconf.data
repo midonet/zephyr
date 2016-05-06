@@ -1,0 +1,17 @@
+zookeeper {
+  zookeeper_hosts : "10.0.0.2:2181,10.0.0.3:2181"
+}
+cassandra {
+  servers : ""
+  replication_factor : 0
+  send_buffer_pool_buf_size_kb : 10
+  haproxy_health_monitor : true
+}
+agent {
+  midolman {
+    bgpd_binary : "/usr/sbin"
+  }
+  loggers {
+    root=DEBUG
+  }
+}

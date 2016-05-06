@@ -14,12 +14,30 @@
 
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.tsm.test_case import require_topology_feature
-from zephyr.vtm.neutron_api import *
+from zephyr.vtm import neutron_api
 
 from router_peering_utils import L2GWNeutronTestCase
 
 
 class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
+    def create_neutron_main_pub_networks(
+            self, main_name, main_subnet_cidr, pub_name, pub_subnet_cidr):
+        new_main_network = self.create_network(main_name)
+        new_main_subnet = self.create_subnet(
+            main_name + '_sub', net_id=new_main_network['id'],
+            cidr=main_subnet_cidr)
+        new_pub_network = self.create_network(pub_name, external=True)
+        new_pub_subnet = self.create_subnet(
+            pub_name + '_sub', net_id=new_pub_network['id'],
+            cidr=pub_subnet_cidr)
+        new_public_router = self.create_router(
+            'main_pub_router', pub_net_id=new_pub_network['id'],
+            priv_sub_ids=[new_main_subnet['id']])
+
+        return neutron_api.BasicTopoData(
+            neutron_api.NetData(new_main_network, new_main_subnet),
+            neutron_api.NetData(new_pub_network, new_pub_subnet),
+            neutron_api.RouterData(new_public_router, []))
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
@@ -34,9 +52,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         port1 = None
         port2 = None
 
-        east_topo = None
         east_l2gw_topo = None
-        west_topo = None
         west_l2gw_topo = None
 
         peered_topo = None
@@ -47,21 +63,16 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         west_main_cidr = "192.168.30.0/24"
 
         try:
-
-            east_topo = create_neutron_main_pub_networks(
-                self.api,
+            east_topo = self.create_neutron_main_pub_networks(
                 main_name='main_east',
                 main_subnet_cidr=east_main_cidr,
                 pub_name='pub_east',
-                pub_subnet_cidr="200.200.120.0/24",
-                log=self.LOG)
-            west_topo = create_neutron_main_pub_networks(
-                self.api,
+                pub_subnet_cidr="200.200.120.0/24")
+            west_topo = self.create_neutron_main_pub_networks(
                 main_name='main_west',
                 main_subnet_cidr=west_main_cidr,
                 pub_name='pub_west',
-                pub_subnet_cidr="200.200.130.0/24",
-                log=self.LOG)
+                pub_subnet_cidr="200.200.130.0/24",)
 
             port1 = self.api.create_port({
                 'port': {'name': 'port_vm1',
@@ -154,9 +165,6 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             self.clean_peer(east_l2gw_topo)
             self.clean_peer(west_l2gw_topo)
 
-            delete_neutron_main_pub_networks(self.api, east_topo)
-            delete_neutron_main_pub_networks(self.api, west_topo)
-
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
@@ -170,9 +178,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         port1 = None
         port2 = None
 
-        east_topo = None
         east_l2gw_topo = None
-        west_topo = None
         west_l2gw_topo = None
         east_ed = None
         west_ed = None
@@ -187,20 +193,16 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         exterior_ip = "172.20.1.1"
         try:
 
-            east_topo = create_neutron_main_pub_networks(
-                self.api,
+            east_topo = self.create_neutron_main_pub_networks(
                 main_name='main_east',
                 main_subnet_cidr=east_main_cidr,
                 pub_name='pub_east',
-                pub_subnet_cidr="200.200.120.0/24",
-                log=self.LOG)
-            west_topo = create_neutron_main_pub_networks(
-                self.api,
+                pub_subnet_cidr="200.200.120.0/24")
+            west_topo = self.create_neutron_main_pub_networks(
                 main_name='main_west',
                 main_subnet_cidr=west_main_cidr,
                 pub_name='pub_west',
-                pub_subnet_cidr="200.200.130.0/24",
-                log=self.LOG)
+                pub_subnet_cidr="200.200.130.0/24")
             east_ed = self.create_edge_router(
                 pub_subnets=east_topo.pub_net.subnet,
                 router_host_name='router1',
@@ -287,9 +289,6 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             if west_ed:
                 self.delete_edge_router(west_ed)
 
-            delete_neutron_main_pub_networks(self.api, east_topo)
-            delete_neutron_main_pub_networks(self.api, west_topo)
-
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
@@ -303,9 +302,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         port1 = None
         port2 = None
 
-        east_topo = None
         east_l2gw_topo = None
-        west_topo = None
         west_l2gw_topo = None
         east_ed = None
         west_ed = None
@@ -321,21 +318,16 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         west_main_cidr = "192.168.30.0/24"
 
         try:
-
-            east_topo = create_neutron_main_pub_networks(
-                self.api,
+            east_topo = self.create_neutron_main_pub_networks(
                 main_name='main_east',
                 main_subnet_cidr=east_main_cidr,
                 pub_name='pub_east',
-                pub_subnet_cidr="200.200.120.0/24",
-                log=self.LOG)
-            west_topo = create_neutron_main_pub_networks(
-                self.api,
+                pub_subnet_cidr="200.200.120.0/24")
+            west_topo = self.create_neutron_main_pub_networks(
                 main_name='main_west',
                 main_subnet_cidr=west_main_cidr,
                 pub_name='pub_west',
-                pub_subnet_cidr="200.200.130.0/24",
-                log=self.LOG)
+                pub_subnet_cidr="200.200.130.0/24")
             east_ed = self.create_edge_router(
                 pub_subnets=east_topo.pub_net.subnet,
                 router_host_name='router1',
@@ -483,9 +475,6 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             if west_ed:
                 self.delete_edge_router(west_ed)
 
-            delete_neutron_main_pub_networks(self.api, east_topo)
-            delete_neutron_main_pub_networks(self.api, west_topo)
-
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
@@ -494,14 +483,11 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
     def test_peered_routers_large_data(self):
         vm1 = None
         vm2 = None
-        ip1 = None
         ip2 = None
         port1 = None
         port2 = None
 
-        east_topo = None
         east_l2gw_topo = None
-        west_topo = None
         west_l2gw_topo = None
 
         peered_topo = None
@@ -512,15 +498,16 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         west_main_cidr = "192.168.30.0/24"
 
         try:
-
-            east_topo = create_neutron_main_pub_networks(
-                self.api, main_name='main_east',
-                main_subnet_cidr=east_main_cidr, pub_name='pub_east',
-                pub_subnet_cidr="200.200.120.0/24", log=self.LOG)
-            west_topo = create_neutron_main_pub_networks(
-                self.api, main_name='main_west',
-                main_subnet_cidr=west_main_cidr, pub_name='pub_west',
-                pub_subnet_cidr="200.200.130.0/24", log=self.LOG)
+            east_topo = self.create_neutron_main_pub_networks(
+                main_name='main_east',
+                main_subnet_cidr=east_main_cidr,
+                pub_name='pub_east',
+                pub_subnet_cidr="200.200.120.0/24")
+            west_topo = self.create_neutron_main_pub_networks(
+                main_name='main_west',
+                main_subnet_cidr=west_main_cidr,
+                pub_name='pub_west',
+                pub_subnet_cidr="200.200.130.0/24")
 
             port1 = self.api.create_port({
                 'port': {'name': 'port_vm1',
@@ -618,6 +605,3 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             self.clean_peered_site(peered_topo)
             self.clean_peer(east_l2gw_topo)
             self.clean_peer(west_l2gw_topo)
-
-            delete_neutron_main_pub_networks(self.api, east_topo)
-            delete_neutron_main_pub_networks(self.api, west_topo)
