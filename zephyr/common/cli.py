@@ -265,6 +265,13 @@ class LinuxCLI(object):
         else:
             return False
 
+    def grep_count(self, cmd_line, grep, pipe=False):
+        if pipe:
+            grep_cmd = ['grep', '-c', grep]
+            return int(self.cmd_pipe([cmd_line, grep_cmd]).stdout)
+        else:
+            return int(self.cmd(cmd_line + '| grep -c "' + grep + '"').stdout)
+
     def mkdir(self, dir_name):
         return self.cmd('mkdir -p ' + dir_name).stdout
 

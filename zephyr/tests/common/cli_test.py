@@ -290,6 +290,24 @@ class CLITest(unittest.TestCase):
         self.assertTrue(len(pids) > 0)
         self.assertTrue(len(ppids) > 0)
 
+    def test_grep_count(self):
+        cli = LinuxCLI()
+        try:
+            cli.write_to_file('test-grep-count',
+                              'foo\nfoo\nbar\nfoo bar\nfoo foo\n')
+            count = cli.grep_count('cat test-grep-count', 'foo')
+            self.assertEqual(4, count)
+            count2 = cli.grep_count('cat test-grep-count', 'baz')
+            self.assertEqual(0, count2)
+            count3 = cli.grep_count(
+                ['cat', 'test-grep-count'], 'foo', pipe=True)
+            self.assertEqual(4, count3)
+            count4 = cli.grep_count(
+                ['cat', 'test-grep-count'], 'baz', pipe=True)
+            self.assertEqual(0, count4)
+        finally:
+            cli.rm('test-grep-count')
+
     def tearDown(self):
         LinuxCLI().rm('tmp-test')
 
