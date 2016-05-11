@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+from zephyr.common import pcap
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 
@@ -57,7 +59,8 @@ class TestExternalConnectivity(NeutronTestCase):
             # Test UDP
             # TODO(micucci): Fix UDP
             # ext_host.start_echo_server(ip=ext_ip, protocol='udp')
-            # echo_response = vm1.send_echo_request(dest_ip=ext_ip, protocol='udp')
+            # echo_response = vm1.send_echo_request(
+            #   dest_ip=ext_ip, protocol='udp')
             # self.assertEqual('ping:echo-reply', echo_response)
 
         finally:
@@ -136,3 +139,50 @@ class TestExternalConnectivity(NeutronTestCase):
                 self.delete_edge_router(edge_data)
             except Exception as e:
                 self.LOG.fatal("Error deleting topology: " + str(e))
+
+    @require_extension('extraroute')
+    def test_neutron_api_ping_with_high_id(self):
+        self.create_edge_router(edge_host_name='edge1',
+                                edge_subnet_cidr='172.16.2.0/24')
+        self.create_edge_router(edge_host_name='edge2',
+                                edge_subnet_cidr='172.17.2.0/24',
+                                gateway=False)
+
+        (porta, vm1, ipa) = self.create_vm_server(
+            "pinger", self.main_network['id'],
+            self.main_subnet['gateway_ip'])
+        """:type: (str, zephyr.vtm.guest.Guest, str)"""
+
+        ext_host = self.ptm.impl_.hosts_by_name['ext1']
+        """:type: Host"""
+        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+
+        vm1.start_capture('eth0', pfilter=pcap.ICMPProto())
+
+        # Test Ping
+        self.LOG.info('Pinging from VM1 to external')
+        self.assertTrue(vm1.ping(target_ip=ext_ip))
+
+        ret0 = vm1.capture_packets('eth0', count=2, timeout=15)
+        self.assertEqual(2, len(ret0))
+
+        # Test Ping with set ID
+        self.LOG.info('Pinging from VM1 to external with '
+                      'low ICMP ID')
+        vm1.send_packet(on_iface='eth0', dest_ip=ext_ip,
+                        packet_type='icmp',
+                        packet_options={'command': 'ping', 'id': '3'})
+
+        ret1 = vm1.capture_packets('eth0', count=2, timeout=15)
+        self.assertEqual(2, len(ret1))
+
+        self.LOG.info('Pinging from VM1 to external with '
+                      'high ICMP ID')
+        vm1.send_packet(on_iface='eth0', dest_ip=ext_ip,
+                        packet_type='icmp',
+                        packet_options={'command': 'ping', 'id': '35000'})
+
+        ret2 = vm1.capture_packets('eth0', count=2, timeout=5)
+        self.assertEqual(2, len(ret2))
+
+        vm1.stop_capture('eth0')

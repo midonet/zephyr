@@ -121,10 +121,6 @@ class TCPSender(object):
             if payload is not None else ''
         pkt_bldr_arg_str = ' '.join((src_ip_str, dest_ip_str, delay_str,
                                      payload_str))
-        opt_list = ', '.join(
-            '%(k)s=%(v)s' % {'k': k, 'v': v}
-            for k, v in packet_options.iteritems()) \
-            if packet_options is not None else ''
 
         if packet_type is 'arp' or packet_type is 'icmp':
             if 'command' not in packet_options:
@@ -149,12 +145,10 @@ class TCPSender(object):
                 if packet_options is not None else ''
 
         full_cmd_str = \
-            ('mz %(iface)s %(arglist)s %(extra_args)s %(opt_args)s'
-             '%(pkttype)s "%(cmd)s"' %
+            ('mz %(iface)s %(arglist)s %(extra_args)s %(pkttype)s "%(cmd)s"' %
              {'iface': interface,
               'arglist': arg_str,
               'extra_args': pkt_bldr_arg_str,
-              'opt_args': opt_list,
               'pkttype': pkt_type_str,
               'cmd': cmd_str})
         prev = cli.log_cmd
