@@ -60,7 +60,6 @@ class NeutronTestCase(TestCase):
         topo_info =\
             [(self.sgrs, 'security group rule',
               self.api.delete_security_group_rule),
-             (self.sgs, 'security group', self.api.delete_security_group),
              (self.fw_ras, 'firewall policy rule', self.delete_fpr),
              (self.fwprs, 'firewall rule', self.api.delete_firewall_rule),
              (self.fws, 'firewall', self.api.delete_firewall),
@@ -74,6 +73,7 @@ class NeutronTestCase(TestCase):
               self.remove_interface_router),
              (self.gws, 'gateway', self.delete_gw_dev),
              (self.nports, 'port', self.api.delete_port),
+             (self.sgs, 'security group', self.api.delete_security_group),
              (self.nrouters, 'router', self.api.delete_router),
              (self.nsubs, 'subnet', self.api.delete_subnet),
              (self.nnets, 'network', self.api.delete_network)]
@@ -157,8 +157,7 @@ class NeutronTestCase(TestCase):
         self.delete_rmac(gwdev_id, rme_id)
         self.rmacs.remove((gwdev_id, rme_id))
 
-    def
-        (self, resource_id, dev_type='router_vtep',
+    def create_gateway_device(self, resource_id, dev_type='router_vtep',
                               tunnel_ip=None, name=None):
         curl_url = get_neutron_api_url(self.api) + '/gw/gateway_devices'
         gw_dict = {"type": dev_type,
@@ -224,7 +223,7 @@ class NeutronTestCase(TestCase):
 
     def delete_l2gw(self, l2gw_id):
         curl_url = get_neutron_api_url(self.api)
-        curl_delete(curl_url + "/l2-gateway-connections/" + str(l2gw_id))
+        curl_delete(curl_url + "/l2-gateways/" + str(l2gw_id))
 
     def delete_l2_gateway(self, l2gw_id):
         self.delete_l2gw(l2gw_id)
@@ -392,7 +391,7 @@ class NeutronTestCase(TestCase):
     def create_port(self, name, net_id, tenant_id='admin', host=None,
                     host_iface=None, sub_id=None, ip=None, mac=None,
                     port_security_enabled=True, device_owner=None,
-                    device_id=None, sg_ids=list()):
+                    device_id=None, sg_ids=None):
         port_data = {'name': name,
                      'network_id': net_id,
                      'port_security_enabled': port_security_enabled,

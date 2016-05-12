@@ -62,7 +62,8 @@ class L2GWNeutronTestCase(NeutronTestCase):
     def hook_tenant_router_to_az_net(self, name, tenant_router_id, az_net_id,
                                      az_sub_id, az_gw):
         iface_port = self.create_port(name, az_net_id, ip=az_gw,
-                                      sub_id=az_sub_id)
+                                      sub_id=az_sub_id,
+                                      port_security_enabled=False)
         iface = self.create_router_interface(tenant_router_id,
                                              iface_port['id'])
         return (iface_port, iface)
@@ -70,13 +71,15 @@ class L2GWNeutronTestCase(NeutronTestCase):
     def hook_vtep_to_uplink_net(self, name, vtep_router_id, vtep_net_id,
                                 tun_host, tun_iface, vtep_sub_id, tun_ip,
                                 tun_gw):
-        tun_port = self.create_port(name, vtep_net_id, host=tun_host,
-            host_iface=tun_iface, sub_id=vtep_sub_id, ip=tun_ip)
+        tun_port = self.create_port(
+            name, vtep_net_id, host=tun_host,
+            host_iface=tun_iface, sub_id=vtep_sub_id, ip=tun_ip,
+            port_security_enabled=False)
         vtep_tun_if = self.create_router_interface(vtep_router_id,
                                                    tun_port['id'])
         route = {'nexthop': tun_gw, 'destination': '0.0.0.0/0'}
         self.api.update_router(vtep_router_id, {'router': {'routes': [route]}})
-        return (tun_port, vtep_tun_if)
+        return tun_port, vtep_tun_if
 
     def create_router_peering_topo(self, name, az_cidr, az_gw, tun_cidr,
                                    tun_ip, tun_gw, tun_host, tun_iface,
