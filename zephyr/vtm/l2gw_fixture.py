@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.ptm.fixtures.service_fixture import ServiceFixture
 from zephyr.common.cli import LinuxCLI
+from zephyr.ptm.fixtures.service_fixture import ServiceFixture
 
 
 class L2GWFixture(ServiceFixture):
@@ -21,7 +21,8 @@ class L2GWFixture(ServiceFixture):
         super(L2GWFixture, self).__init__()
 
     def setup(self):
-        LinuxCLI().cmd("neutron-l2gw-db-manage --config-file /etc/neutron/neutron.conf upgrade head")
+        LinuxCLI().cmd("neutron-l2gw-db-manage --config-file "
+                       "/etc/neutron/neutron.conf upgrade head")
         LinuxCLI().cmd("neutron-db-manage --service fwaas upgrade head")
 
     def teardown(self):

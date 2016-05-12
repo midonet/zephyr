@@ -157,13 +157,20 @@ class NeutronTestCase(TestCase):
         self.delete_rmac(gwdev_id, rme_id)
         self.rmacs.remove((gwdev_id, rme_id))
 
-    def create_gateway_device(self, tunnel_ip, name, vtep_router_id):
+    def
+        (self, resource_id, dev_type='router_vtep',
+                              tunnel_ip=None, name=None):
         curl_url = get_neutron_api_url(self.api) + '/gw/gateway_devices'
-        gw_dev_dict = {"gateway_device": {"name": 'vtep_router_' + name,
-                                          "type": 'router_vtep',
-                                          "resource_id": vtep_router_id,
-                                          "tunnel_ips": [tunnel_ip],
-                                          "tenant_id": 'admin'}}
+        gw_dict = {"type": dev_type,
+                   "resource_id": resource_id,
+                   "tenant_id": 'admin'}
+
+        if dev_type == 'router_vtep':
+            gw_dict["name"] = 'gwdev_' + name
+            gw_dict["tunnel_ips"] = [tunnel_ip]
+
+        gw_dev_dict = {"gateway_device": gw_dict}
+
         self.LOG.debug("create gateway device JSON: " + str(gw_dev_dict))
         post_ret = curl_post(curl_url, gw_dev_dict)
         self.LOG.debug('Adding gateway device: ' + str(gw_dev_dict) +
@@ -202,7 +209,7 @@ class NeutronTestCase(TestCase):
 
     def create_l2_gateway(self, name, gwdev_id):
         curl_url = get_neutron_api_url(self.api) + '/l2-gateways'
-        l2gw_data = {"l2_gateway": {"name": 'vtep_router_gw_' + name,
+        l2gw_data = {"l2_gateway": {"name": 'l2gw_' + name,
                                     "devices": [{"device_id": gwdev_id}],
                                     "tenant_id": "admin"}}
 
@@ -223,10 +230,10 @@ class NeutronTestCase(TestCase):
         self.delete_l2gw(l2gw_id)
         self.l2gws.remove(l2gw_id)
 
-    def create_l2_gateway_connection(self, az_net_id, segment_id, l2gw_id):
+    def create_l2_gateway_connection(self, net_id, segment_id, l2gw_id):
         curl_url = get_neutron_api_url(self.api) + '/l2-gateway-connections'
         l2gw_conn_curl = {"l2_gateway_connection": {
-            "network_id": az_net_id,
+            "network_id": net_id,
             "segmentation_id": segment_id,
             "l2_gateway_id": l2gw_id,
             "tenant_id": "admin"}}
@@ -417,7 +424,8 @@ class NeutronTestCase(TestCase):
         self.api.delete_port(port_id)
 
     def create_network(self, name, admin_state_up=True, tenant_id='admin',
-                       external=False, uplink=False):
+                       external=False, uplink=False,
+                       port_security_enabled=True):
         net_data = {'name': 'net_' + name,
                     'admin_state_up': admin_state_up,
                     'tenant_id': tenant_id}
@@ -425,6 +433,8 @@ class NeutronTestCase(TestCase):
             net_data['router:external'] = True
         if uplink:
             net_data['provider:network_type'] = 'uplink'
+        if not port_security_enabled:
+            net_data['port_security_enabled'] = False
 
         net = self.api.create_network({'network': net_data})
         self.nnets.append(net['network']['id'])

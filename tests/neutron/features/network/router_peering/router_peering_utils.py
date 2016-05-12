@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import namedtuple
-from L2GWFixture import L2GWFixture
 import logging
-from zephyr.common.utils import curl_delete
+from collections import namedtuple
+
 from zephyr.common.exceptions import ObjectNotFoundException
+from zephyr.common.utils import curl_delete
 from zephyr.tsm.neutron_test_case import NeutronTestCase
-from zephyr.vtm.neutron_api import get_neutron_api_url
+from zephyr.vtm.l2gw_fixture import L2GWFixture
 from zephyr.vtm.neutron_api import NetData
 from zephyr.vtm.neutron_api import RouterData
-
+from zephyr.vtm.neutron_api import get_neutron_api_url
 
 L2GWDevice = namedtuple("L2GWDevice", "gwdev l2gw l2conn")
 L2GWSiteData = namedtuple("L2GWSiteData",
@@ -89,7 +89,9 @@ class L2GWNeutronTestCase(NeutronTestCase):
             name, vtep_router['id'], vtep_net['id'], tun_host, tun_iface,
             vtep_sub['id'], tun_ip, tun_gw)
 
-        gw = self.create_gateway_device(tun_ip, name, vtep_router['id'])
+        gw = self.create_gateway_device(
+            resource_id=vtep_router['id'],
+            dev_type='router_vtep', tunnel_ip=tun_ip, name=name)
         l2gw = self.create_l2_gateway(name, gw['id'])
         az_net = self.create_network(name + "_AZ")
         az_sub = self.create_subnet(name + "_AZ", az_net['id'], az_cidr,
@@ -160,7 +162,9 @@ class L2GWNeutronTestCase(NeutronTestCase):
                           ' VTEP router: ' + str(vtep_tun_if))
 
             # Set up GW device
-            gw = self.create_gateway_device(tun_ip, peer_name, vtep_router['id'])
+            gw = self.create_gateway_device(
+                resource_id=vtep_router['id'],
+                dev_type='router_vtep', tunnel_ip=tun_ip, name=peer_name)
             gwdev_id = gw['id']
 
             # Set up L2GW

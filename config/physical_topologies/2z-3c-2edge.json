@@ -7,6 +7,9 @@
         {
           "name": "br0",
           "ip_addresses": [{"ip": "10.0.0.240", "subnet": "24"}]
+        },
+        {
+          "name": "br_vlan"
         }
       ],
       "interfaces": [
@@ -19,7 +22,11 @@
         {"name": "edge2eth0", "linked_bridge": "br0"},
         {"name": "tun1eth0", "linked_bridge": "br0"},
         {"name": "tun2eth0", "linked_bridge": "br0"},
-        {"name": "ext1eth0", "linked_bridge": "br0"}
+        {"name": "ext1eth0", "linked_bridge": "br0"},
+        {"name": "ext2eth0", "linked_bridge": "br_vlan"},
+        {"name": "ext3eth0", "linked_bridge": "br_vlan"},
+        {"name": "ext4eth0", "linked_bridge": "br_vlan"},
+        {"name": "cmp1eth1", "linked_bridge": "br_vlan"}
       ]
     },
     {
@@ -32,7 +39,10 @@
     },
     {
       "name": "cmp1",
-      "interfaces": [{"name": "eth0","ip_addresses": [{"ip": "10.0.0.8"}]}]
+      "interfaces": [
+        {"name": "eth0","ip_addresses": [{"ip": "10.0.0.8"}]},
+        {"name": "eth1","ip_addresses": []}
+      ]
     },
     {
       "name": "cmp2",
@@ -106,9 +116,48 @@
           "name": "eth0",
           "ip_addresses": [{"ip": "172.20.1.1"}]
         }
-      ],
-      "routes": [
-        {"dest": "default", "gw": "172.20.1.2", "dev": "eth0"}
+      ]
+    },
+    {
+      "name": "ext2",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "vlans": [
+            {
+              "id": "100",
+              "ip_addresses": [{"ip": "172.20.100.224", "subnet": "24"}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ext3",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "vlans": [
+            {
+              "id": "200",
+              "ip_addresses": [{"ip": "172.20.100.224", "subnet": "24"}]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ext4",
+      "interfaces": [
+        {
+          "name": "eth0",
+          "vlans": [
+            {
+              "id": "300",
+              "ip_addresses": [{"ip": "172.20.100.224", "subnet": "24"}]
+            }
+          ]
+        }
       ]
     },
     {
@@ -127,6 +176,10 @@
     {
       "near": {"host": "root", "interface": "cmp1eth0"},
       "far": {"host": "cmp1", "interface": "eth0"}
+    },
+    {
+      "near": {"host": "root", "interface": "cmp1eth1"},
+      "far": {"host": "cmp1", "interface": "eth1"}
     },
     {
       "near": {"host": "root", "interface": "cmp2eth0"},
@@ -153,24 +206,36 @@
       "far": {"host": "tun2", "interface": "eth0"}
     },
     {
-      "near": { "host": "router1", "interface": "eth1" },
-      "far":  { "host": "edge1", "interface": "eth1" }
+      "near": { "host": "router1", "interface": "eth1"},
+      "far": { "host": "edge1", "interface": "eth1"}
     },
     {
-      "near": { "host": "router1", "interface": "eth2" },
-      "far":  { "host": "edge2", "interface": "eth1" }
+      "near": {"host": "router1", "interface": "eth2"},
+      "far": {"host": "edge2", "interface": "eth1"}
     },
     {
-      "near": { "host": "router1", "interface": "eth3" },
-      "far":  { "host": "tun1", "interface": "eth1" }
+      "near": {"host": "router1", "interface": "eth3"},
+      "far": {"host": "tun1", "interface": "eth1"}
     },
     {
-      "near": { "host": "router1", "interface": "eth4" },
-      "far":  { "host": "tun2", "interface": "eth1" }
+      "near": {"host": "router1", "interface": "eth4"},
+      "far": {"host": "tun2", "interface": "eth1"}
     },
     {
-      "near":  { "host": "router1", "interface": "eth0" },
-      "far": { "host": "ext1", "interface": "eth0" }
+      "near": {"host": "router1", "interface": "eth0"},
+      "far": {"host": "ext1", "interface": "eth0"}
+    },
+    {
+      "near": {"host": "root", "interface": "ext2eth0"},
+      "far": {"host": "ext2", "interface": "eth0"}
+    },
+    {
+      "near": {"host": "root", "interface": "ext3eth0"},
+      "far": {"host": "ext3", "interface": "eth0"}
+    },
+    {
+      "near": {"host": "root", "interface": "ext4eth0"},
+      "far": {"host": "ext4", "interface": "eth0"}
     }
   ],
   "implementation": [
@@ -300,13 +365,25 @@
       "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": []
     },
+    { "host": "ext2",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
+      "apps": []
+    },
+    { "host": "ext3",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
+      "apps": []
+    },
+    { "host": "ext4",
+      "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
+      "apps": []
+    },
     { "host": "router1",
       "impl": "zephyr.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": []
     }
   ],
   "host_start_order": [
-    ["root", "router1", "ext1"],
+    ["root", "router1", "ext1", "ext2", "ext3", "ext4"],
     ["zoo1", "zoo2"],
     ["net1"],
     ["cmp1", "cmp2", "cmp3", "edge1", "edge2", "tun1", "tun2"]
