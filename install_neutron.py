@@ -39,7 +39,8 @@ class NeutronComponentInstaller(object):
     def __init__(self, ost_version):
         self.version = ost_version
         self.config_funcs = {'kilo': self.kilo_config,
-                             'liberty': self.liberty_config}
+                             'liberty': self.liberty_config,
+                             'mitaka': self.liberty_config}
 
     def install_packages(self):
 
@@ -92,7 +93,11 @@ class NeutronComponentInstaller(object):
                           'NEUTRON_PLUGIN_CONFIG="/etc/neutron/plugin.ini"\n')
         cli.cmd('neutron-db-manage --config-file /etc/neutron/neutron.conf '
                 '--config-file /etc/neutron/plugin.ini upgrade head')
-        cli.cmd('midonet-db-manage upgrade head')
+        if str(self.version) == 'kilo' or str(self.version) == 'liberty':
+            cli.cmd('midonet-db-manage upgrade head')
+        else:
+            cli.cmd('neutron-db-manage --subproject '
+                    'networking-midonet upgrade heads')
 
         cli.cmd("service neutron-server restart")
         cli.cmd("service neutron-dhcp-agent restart")
