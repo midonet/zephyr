@@ -575,12 +575,16 @@ class NeutronTestCase(TestCase):
                 if vm is not None:
                     vm.terminate()
 
-    def create_edge_router(self, pub_subnet=None, router_host_name='router1',
+    def create_edge_router(self, pub_subnets=None, router_host_name='router1',
                            edge_host_name='edge1', edge_iface_name='eth1',
-                           edge_subnet_cidr='172.16.2.0/24'):
+                           edge_subnet_cidr='172.16.2.0/24', gateway=True,
+                           gateway_networks=None):
 
-        if not pub_subnet:
-            pub_subnet = self.pub_subnet
+        if not pub_subnets:
+            pub_subnets = [self.pub_subnet]
+
+        if not gateway_networks:
+            gateway_networks = [self.pub_network]
 
         # Create an uplink network (Midonet-specific extension used for
         # provider:network_type)
@@ -605,16 +609,21 @@ class NeutronTestCase(TestCase):
                                       sub_id=edge_subnet['id'],
                                       ip=edge_ip)
         # Bind port to edge router
-        if1 = self.create_router_interface(
-            edge_router['id'], port_id=edge_port1['id'])
+        if_list = [self.create_router_interface(
+            edge_router['id'], port_id=edge_port1['id'])]
 
-        self.LOG.info('Added interface to edge router: ' + str(if1))
-
-        # Bind public network to edge router
-        if2 = self.create_router_interface(
-            edge_router['id'], sub_id=pub_subnet['id'])
-
-        self.LOG.info('Added interface to edge router: ' + str(if2))
+        if gateway:
+            for sub in pub_subnets:
+                # Bind public network to edge router
+                if_list.append(self.create_router_interface(
+                    edge_router['id'], sub_id=sub['id']))
+        else:
+            for net in gateway_networks:
+                pub_port = self.create_port(net['name'] + '_gwport',
+                                            net['id'])
+                if_list.append(self.create_router_interface(
+                    edge_router['id'],
+                    port_id=pub_port['id']))
 
         # Add the default route
         edge_router = self.api.update_router(
@@ -626,15 +635,16 @@ class NeutronTestCase(TestCase):
 
         router_host = self.ptm.impl_.hosts_by_name[router_host_name]
         """ :type: Host"""
-        router_host.add_route(
-            IP.make_ip(pub_subnet['cidr']), IP(edge_ip, '24'))
-        self.LOG.info('Added return route to host router')
+        for sub in pub_subnets:
+            router_host.add_route(
+                IP.make_ip(sub['cidr']), IP(edge_ip, '24'))
+        self.LOG.info('Added return routes to host router')
 
         return EdgeData(
             NetData(
                 edge_network,
                 edge_subnet),
-            RouterData(edge_router, [if1, if2]))
+            RouterData(edge_router, if_list))
 
     def delete_edge_router(self, edge_data):
         """

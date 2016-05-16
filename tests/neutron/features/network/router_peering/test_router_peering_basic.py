@@ -55,7 +55,7 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
         a_edge = self.create_edge_router(
-            pub_subnet=a_pub_sub,
+            pub_subnets=a_pub_sub,
             router_host_name='router1',
             edge_host_name='edge2',
             edge_iface_name='eth1',
@@ -74,7 +74,7 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
         b_edge = self.create_edge_router(
-            pub_subnet=b_pub_sub,
+            pub_subnets=b_pub_sub,
             router_host_name='router1',
             edge_host_name='edge1',
             edge_iface_name='eth1',
