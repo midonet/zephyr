@@ -93,7 +93,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         echo_response = vm1.send_echo_request(dest_ip=ext_ip)
         self.assertEqual('ping:echo-reply', echo_response)
 
-    @require_extension('extraroute')
+    @neutron_test_case.require_extension('extraroute')
     def test_neutron_api_ping_with_high_id(self):
         self.create_edge_router(edge_host_name='edge1',
                                 edge_subnet_cidr='172.16.2.0/24')
