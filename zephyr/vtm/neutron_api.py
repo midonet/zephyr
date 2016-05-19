@@ -169,24 +169,27 @@ def setup_neutron(api,
 
     # Add rules to default security group
     log.debug('Creating default sec group rules for sec group: ' + def_sg_id)
+    """
     api.create_security_group_rule(
         {'security_group_rule': {'direction': 'ingress',
-                                 'protocol': 'icmp',
+                                 'remote_group_id': def_sg_id,
+                                 'ethertype': 'IPv4',
                                  'security_group_id': def_sg_id,
                                  'tenant_id': tenant_id}})
     api.create_security_group_rule(
         {'security_group_rule': {'direction': 'egress',
-                                 'protocol': 'icmp',
+                                 'ethertype': 'IPv4',
                                  'security_group_id': def_sg_id,
                                  'tenant_id': tenant_id}})
     api.create_security_group_rule(
         {'security_group_rule': {'direction': 'ingress',
-                                 'protocol': 'tcp',
+                                 'remote_group_id': def_sg_id,
+                                 'ethertype': 'IPv6',
                                  'security_group_id': def_sg_id,
                                  'tenant_id': tenant_id}})
     api.create_security_group_rule(
         {'security_group_rule': {'direction': 'egress',
-                                 'protocol': 'tcp',
+                                 'ethertype': 'IPv6',
                                  'security_group_id': def_sg_id,
                                  'tenant_id': tenant_id}})
     api.update_quota(tenant_id, {'quota': {'network': -1,
@@ -195,6 +198,7 @@ def setup_neutron(api,
                                            'pool': -1,
                                            'security_group': -1,
                                            'vip': -1}})
+    """
 
     return btd
 

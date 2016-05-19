@@ -112,11 +112,13 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
-        vm1.start_capture('eth0', pfilter=pcap.ICMPProto())
+        vm1.start_capture('eth0', pfilter=pcap.ICMPProto(), 
+                          save_dump_file=True, 
+                          save_dump_filename="high_id_out.tcpdump")
 
         # Test Ping
         self.LOG.info('Pinging from VM1 to external')
-        self.assertTrue(vm1.ping(target_ip=ext_ip))
+        self.assertTrue(vm1.ping(target_ip=ext_ip, count=1))
 
         ret0 = vm1.capture_packets('eth0', count=2, timeout=15)
         self.assertEqual(2, len(ret0))
