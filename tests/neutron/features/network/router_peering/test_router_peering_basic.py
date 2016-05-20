@@ -58,7 +58,9 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             edge_subnet_cidr='172.17.2.0/24')
         (porta, vma, ipa) = self.create_vm_server(
             "A", a_net['id'], a_sub['gateway_ip'])
-        a_fip = self.create_floating_ip(porta['id'], a_pub_net['id'])
+        a_fip = self.create_floating_ip(
+            pub_net_id=a_pub_net['id'],
+            port_id=porta['id'])
 
         b_cidr = "192.168.30.0/24"
         b_pub_cidr = "200.200.130.0/24"
@@ -77,7 +79,9 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             edge_subnet_cidr='172.16.2.0/24')
         (portb, vmb, ipb) = self.create_vm_server(
             "B", b_net['id'], b_sub['gateway_ip'])
-        b_fip = self.create_floating_ip(portb['id'], b_pub_net['id'])
+        b_fip = self.create_floating_ip(
+            pub_net_id=b_pub_net['id'],
+            port_id=portb['id'])
 
         a_peer_topo = self.create_router_peering_topo(
             name="EAST",

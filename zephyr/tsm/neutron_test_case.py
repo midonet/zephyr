@@ -143,6 +143,7 @@ class NeutronTestCase(TestCase):
         sg_data = {'name': name,
                    'tenant_id': tenant_id}
         sg = self.api.create_security_group({'security_group': sg_data})
+        self.LOG.debug('Created security group: ' + str(sg))
         self.sgs.append(sg['security_group']['id'])
         return sg['security_group']
 
@@ -166,6 +167,7 @@ class NeutronTestCase(TestCase):
                     'tenant_id': tenant_id}
         sgr = self.api.create_security_group_rule(
             {'security_group_rule': sgr_data})
+        self.LOG.debug('Created security group rule: ' + str(sgr))
         self.sgrs.append(sgr['security_group_rule']['id'])
         return sgr['security_group_rule']
 
@@ -374,14 +376,18 @@ class NeutronTestCase(TestCase):
                                              dest_port=dest_port)
         self.assertEqual('ping:echo-reply', echo_response)
 
-    def verify_connectivity(self, vm, dest_ip):
-        self.assertTrue(vm.ping(target_ip=dest_ip, timeout=20))
+    def verify_connectivity(self, vm, dest_ip, count=2):
+        self.assertTrue(vm.ping(target_ip=dest_ip, count=count, timeout=20))
 
-        echo_response = vm.send_echo_request(dest_ip=dest_ip)
-        self.assertEqual('ping:echo-reply', echo_response)
+        for i in range(0, count):
+            echo_response = vm.send_echo_request(dest_ip=dest_ip)
+            self.assertEqual('ping:echo-reply', echo_response)
 
-        echo_response = vm.send_echo_request(dest_ip=dest_ip)
-        self.assertEqual('ping:echo-reply', echo_response)
+        # TODO(micucci): Fix UDP
+        # for i in range(0, count):
+        #     echo_response = vm.send_echo_request(dest_ip=dest_ip,
+        #                                          protocol='udp')
+        #     self.assertEqual('ping:echo-reply', echo_response)
 
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
                          allowed_address_pairs=None, hv_host=None):
@@ -440,13 +446,26 @@ class NeutronTestCase(TestCase):
             self.nports.remove(iface['port_id'])
         self.api.remove_interface_router(rid, iface)
 
-    def create_floating_ip(self, port_id, pub_net_id, tenant_id='admin'):
-        fip_data = {'port_id': port_id,
-                    'tenant_id': tenant_id,
-                    'floating_network_id': pub_net_id}
+    def create_floating_ip(self, pub_net_id, port_id=None, tenant_id='admin'):
+        fip_data = {
+            'tenant_id': tenant_id,
+            'floating_network_id': pub_net_id}
+        if port_id:
+            fip_data['port_id'] = port_id
         fip = self.api.create_floatingip({'floatingip': fip_data})
         self.fips.append(fip['floatingip']['id'])
         self.LOG.debug('Created Neutron FIP: ' + str(fip))
+        return fip['floatingip']
+
+    def update_floating_ip(self, fip_id,
+                           pub_net_id=None, port_id=None):
+        fip_data = {}
+        if pub_net_id:
+            fip_data['floating_network_id'] = pub_net_id
+        if port_id:
+            fip_data['port_id'] = port_id
+        fip = self.api.update_floatingip(fip_id, {'floatingip': fip_data})
+        self.LOG.debug('Updated Neutron FIP: ' + str(fip))
         return fip['floatingip']
 
     def delete_floating_ip(self, fip_id):

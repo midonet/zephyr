@@ -16,8 +16,10 @@ import logging
 
 from midonetclient.api import MidonetApi
 
-from zephyr.common.exceptions import *
+import time
+
 from zephyr.cbt import version_config
+from zephyr.common import exceptions
 
 
 def create_midonet_client(
@@ -37,7 +39,8 @@ def setup_main_tunnel_zone(api, host_ip_map, logger=None):
     :return:
     """
     if not isinstance(api, MidonetApi):
-        raise ArgMismatchException('Need midonet client for this test')
+        raise exceptions.ArgMismatchException(
+            'Need midonet client for this test')
 
     if logger is None:
         logger = logging.getLogger()
@@ -60,8 +63,8 @@ def setup_main_tunnel_zone(api, host_ip_map, logger=None):
                     h.get_id())
 
         if h.get_name() not in host_ip_map:
-            raise ArgMismatchException('MN Host: ' + h.get_name() +
-                                       ' has no configured IPs listed!')
+            raise exceptions.ArgMismatchException(
+                'MN Host: ' + h.get_name() + ' has no configured IPs listed!')
 
         tzh = tz.add_tunnel_zone_host()
         tzh.ip_address(host_ip_map[h.get_name()])
@@ -74,7 +77,8 @@ def setup_main_tunnel_zone(api, host_ip_map, logger=None):
 def setup_main_bridge(api):
 
     if not isinstance(api, MidonetApi):
-        raise ArgMismatchException('Need midonet client for this test')
+        raise exceptions.ArgMismatchException(
+            'Need midonet client for this test')
 
     brs = api.get_bridges(None)
     """:type: list[Bridge]"""
@@ -84,3 +88,29 @@ def setup_main_bridge(api):
             return br
 
     return api.add_bridge().name('bridge_0').tenant_id('test1').create()
+
+
+def wait_for_all_mn_apps(api, mm_name_list, logger=None, timeout=10):
+    """
+    :type api: MidonetAPI
+    :type mn_map: list[str]
+    :type timeout: int
+    """
+    if not isinstance(api, MidonetApi):
+        raise exceptions.ArgMismatchException(
+            'Need midonet client for this test')
+
+    logger.info('Waiting for hosts to all connect')
+    deadline = time.time() + timeout
+    while True:
+
+        connected_hosts = [h.get_name() for h in api.get_hosts()]
+        logger.info('Current active hosts: ' + ', '.join(connected_hosts))
+        if set(connected_hosts) == set(mm_name_list):
+            logger.info('All hosts connected!')
+            return True
+        if time.time() > deadline:
+            raise exceptions.SubprocessTimeoutException(
+                'Hosts: ' + str(mm_name_list) +
+                ' did not all start within timeout')
+        time.sleep(1)

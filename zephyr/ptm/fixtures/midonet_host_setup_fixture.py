@@ -14,8 +14,7 @@
 
 from zephyr.ptm.application.midolman import Midolman
 from zephyr.ptm.fixtures.service_fixture import ServiceFixture
-from zephyr.vtm.mn_api import create_midonet_client
-from zephyr.vtm.mn_api import setup_main_tunnel_zone
+from zephyr.vtm import mn_api
 
 
 class MidonetHostSetupFixture(ServiceFixture):
@@ -32,9 +31,10 @@ class MidonetHostSetupFixture(ServiceFixture):
 
     def setup(self):
         try:
-            self.api = create_midonet_client()
+            self.api = mn_api.create_midonet_client()
 
             tunnel_zone_host_map = {}
+            mm_name_list = []
             for host_name, host in self.ptm.impl_.hosts_by_name.iteritems():
                 # On each host, check if there is at least one
                 # Midolman app running
@@ -47,12 +47,16 @@ class MidonetHostSetupFixture(ServiceFixture):
                                 tunnel_zone_host_map[host.name] = (
                                     iface.ip_list[0].ip)
                                 break
+                        mm_name_list.append(host_name)
                         break
 
-            setup_main_tunnel_zone(self.api,
-                                   tunnel_zone_host_map,
-                                   self.LOG)
-
+            mn_api.wait_for_all_mn_apps(self.api,
+                                        mm_name_list,
+                                        self.LOG,
+                                        timeout=40)
+            mn_api.setup_main_tunnel_zone(self.api,
+                                          tunnel_zone_host_map,
+                                          self.LOG)
         except Exception:
             self.teardown()
             raise

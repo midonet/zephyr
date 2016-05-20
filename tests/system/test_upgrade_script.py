@@ -76,8 +76,8 @@ class TestUpgradeScript(LBaaSTestCase):
             self.associate_health_monitor(hm2['id'], poolb['id'])
 
             self.create_floating_ip(
-                port_id=g_pinger.port['id'],
-                pub_net_id=self.pub_network['id'])
+                pub_net_id=self.pub_network['id'],
+                port_id=g_pinger.port['id'])
 
             sg1 = self.create_security_group(name='test_sg')
 

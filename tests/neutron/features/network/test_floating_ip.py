@@ -16,272 +16,160 @@ import unittest
 
 from zephyr.common import ip
 
-from zephyr.tsm.test_case import expected_failure
-from zephyr.vtm.neutron_api import create_neutron_main_pub_networks
-from zephyr.vtm.neutron_api import delete_neutron_main_pub_networks
-
-from zephyr.tsm.neutron_test_case import NeutronTestCase
-from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm import neutron_test_case
+from zephyr.tsm import test_case
+from zephyr.vtm import neutron_api
 
 
-class TestFloatingIP(NeutronTestCase):
-    @require_extension('extraroute')
+class TestFloatingIP(neutron_test_case.NeutronTestCase):
+    @neutron_test_case.require_extension('extraroute')
     def test_external_connectivity_via_fip_assigned_after_creation(self):
-        floating_ip1 = None
+        # Create a SG to allow pings to come back into a FIP (just
+        # for this one test to make sure forward flows from external hosts
+        # can reach FIPs
+
+        allowed_sg = self.create_security_group('allow_in')
+        self.create_security_group_rule(
+            sg_id=allowed_sg['id'],
+            direction='ingress')
+        self.create_edge_router()
+
+        (port1, vm1, ip1) = self.create_vm_server(
+            'vm1', self.main_network['id'],
+            self.main_subnet['gateway_ip'],
+            sgs=[allowed_sg['id']])
+        floating_ip1 = self.create_floating_ip(
+            pub_net_id=self.pub_network['id'])
+
+        fip1 = floating_ip1['floating_ip_address']
+        self.LOG.debug("Received floating IP: " + str(fip1))
+
+        self.update_floating_ip(
+            fip_id=floating_ip1['id'],
+            port_id=port1['id'])
+
+        ext_host = self.ptm.impl_.hosts_by_name['ext1']
+        """:type: Host"""
+        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+        ext_host.add_route(
+            route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
+            gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
+
         try:
-            self.create_edge_router()
-
-            (port1, vm1, ip1) = self.create_vm_server(
-                'vm1', self.main_network['id'],
-                self.main_subnet['gateway_ip'])
-
-            floating_ip1 = self.api.create_floatingip(
-                {'floatingip': {
-                    'tenant_id': 'admin',
-                    'floating_network_id': self.pub_network['id']}}
-            )['floatingip']
-
-            fip1 = floating_ip1['floating_ip_address']
-            self.LOG.debug("Received floating IP: " + str(fip1))
-
-            floating_ip1 = self.api.update_floatingip(
-                floating_ip1['id'],
-                {'floatingip': {'port_id': port1['id']}})['floatingip']
-
-            ext_host = self.ptm.impl_.hosts_by_name['ext1']
-            """:type: Host"""
-            ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
-            ext_host.add_route(
-                route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
-                gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
+            vm1.start_echo_server(ip=ip1)
+            ext_host.start_echo_server(ip=ext_ip)
 
             # Test that VM can still contact exterior host
-            # Ping
-            self.assertTrue(vm1.ping(target_ip=ext_ip))
+            self.verify_connectivity(vm1, ext_ip)
+            self.verify_connectivity(ext_host, fip1)
 
-            try:
-                # TCP
-                ext_host.start_echo_server(ip=ext_ip)
-                echo_response = vm1.send_echo_request(dest_ip=ext_ip)
-                self.assertEqual('ping:echo-reply', echo_response)
-
-                # TODO(micucci): Fix UDP
-                # UDP
-                # ext_host.stop_echo_server(ip=ext_ip)
-                # ext_host.start_echo_server(ip=ext_ip, protocol='udp')
-                # echo_response = vm1.send_echo_request(
-                #   dest_ip=ext_ip, protocol='udp')
-                # self.assertEqual('ping:echo-reply', echo_response)
-
-            finally:
-                ext_host.stop_echo_server(ip=ext_ip)
-
-            # Now test exterior host can contact VM via FIP
-            # Ping
-            self.assertTrue(ext_host.ping(target_ip=fip1))
-
-            # TCP
-            vm1.start_echo_server(ip=ip1)
-            echo_response = ext_host.send_echo_request(dest_ip=fip1)
-            self.assertEqual('ping:echo-reply', echo_response)
-
-            # UDP
-            # vm1.stop_echo_server(ip=ext_ip)
-            # vm1.start_echo_server(ip=ip1, protocol='udp')
-            # echo_response = ext_host.send_echo_request(
-            #   dest_ip=fip1, protocol='udp')
-            # self.assertEqual('ping:echo-reply', echo_response)
         finally:
-            if floating_ip1:
-                self.api.update_floatingip(
-                    floating_ip1['id'],
-                    {'floatingip': {'port_id': None}})
-                self.api.delete_floatingip(floating_ip1['id'])
+            ext_host.stop_echo_server(ip=ext_ip)
 
-    @require_extension('extraroute')
+    @neutron_test_case.require_extension('extraroute')
     def test_external_connectivity_via_fip_assigned_during_creation(self):
-        floating_ip1 = None
+        self.create_edge_router()
+        (port1, vm1, ip1) = self.create_vm_server(
+            'vm1', self.main_network['id'],
+            self.main_subnet['gateway_ip'])
+
+        floating_ip1 = self.create_floating_ip(
+            port_id=port1['id'],
+            pub_net_id=self.pub_network['id'])
+
+        fip1 = floating_ip1['floating_ip_address']
+        self.LOG.debug("Received floating IP: " + str(fip1))
+
+        ext_host = self.ptm.impl_.hosts_by_name['ext1']
+        """:type: Host"""
+        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+        ext_host.add_route(
+            route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
+            gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
+
         try:
-            self.create_edge_router()
-            (port1, vm1, ip1) = self.create_vm_server(
-                'vm1', self.main_network['id'],
-                self.main_subnet['gateway_ip'])
-
-            floating_ip1 = self.api.create_floatingip(
-                {'floatingip': {
-                    'tenant_id': 'admin',
-                    'port_id': port1['id'],
-                    'floating_network_id': self.pub_network['id']}}
-            )['floatingip']
-
-            fip1 = floating_ip1['floating_ip_address']
-            self.LOG.debug("Received floating IP: " + str(fip1))
-
-            ext_host = self.ptm.impl_.hosts_by_name['ext1']
-            """:type: Host"""
-            ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
-            ext_host.add_route(
-                route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
-                gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
+            ext_host.start_echo_server(ip=ext_ip)
 
             # Test that VM can still contact exterior host
-            # Ping
-            self.assertTrue(vm1.ping(target_ip=ext_ip))
-
-            try:
-                # TCP
-                ext_host.start_echo_server(ip=ext_ip)
-                echo_response = vm1.send_echo_request(dest_ip=ext_ip)
-                self.assertEqual('ping:echo-reply', echo_response)
-
-                # TODO(micucci): Fix UDP
-                # UDP
-                # ext_host.stop_echo_server(ip=ext_ip)
-                # ext_host.start_echo_server(ip=ext_ip, protocol='udp')
-                # echo_response = vm1.send_echo_request(
-                #   dest_ip=ext_ip, protocol='udp')
-                # self.assertEqual('ping:echo-reply', echo_response)
-
-            finally:
-                ext_host.stop_echo_server(ip=ext_ip)
-
-            # Now test exterior host can contact VM via FIP
-            # Ping
-            self.assertTrue(ext_host.ping(target_ip=fip1))
-
-            # TCP
-            vm1.start_echo_server(ip=ip1)
-            echo_response = ext_host.send_echo_request(dest_ip=fip1)
-            self.assertEqual('ping:echo-reply', echo_response)
-
-            # UDP
-            # vm1.stop_echo_server(ip=ext_ip)
-            # vm1.start_echo_server(ip=ip1, protocol='udp')
-            # echo_response = ext_host.send_echo_request(
-            #   dest_ip=fip1, protocol='udp')
-            # self.assertEqual('ping:echo-reply', echo_response)
+            self.verify_connectivity(vm1, ext_ip)
 
         finally:
-            if floating_ip1:
-                self.api.update_floatingip(
-                    floating_ip1['id'],
-                    {'floatingip': {'port_id': None}})
-                self.api.delete_floatingip(floating_ip1['id'])
+            ext_host.stop_echo_server(ip=ext_ip)
 
-    @expected_failure('MI-115')
-    @require_extension('extraroute')
+    @test_case.expected_failure('MI-115')
+    @neutron_test_case.require_extension('extraroute')
     def test_fip_to_fip_connectivity_one_site_source_has_private_ip(self):
-        floating_ip1 = None
-        try:
-            self.create_edge_router()
-            (port1, vm1, ip1) = self.create_vm_server(
-                'vm1', self.main_network['id'],
-                self.main_subnet['gateway_ip'])
-            (port2, vm2, ip2) = self.create_vm_server(
-                'vm2', self.main_network['id'],
-                self.main_subnet['gateway_ip'])
+        self.create_edge_router()
+        (port1, vm1, ip1) = self.create_vm_server(
+            'vm1', self.main_network['id'],
+            self.main_subnet['gateway_ip'])
+        (port2, vm2, ip2) = self.create_vm_server(
+            'vm2', self.main_network['id'],
+            self.main_subnet['gateway_ip'])
 
-            floating_ip1 = self.api.create_floatingip(
-                {'floatingip': {
-                    'tenant_id': 'admin',
-                    'port_id': port1['id'],
-                    'floating_network_id': self.pub_network['id']}}
-            )['floatingip']
+        floating_ip1 = self.create_floating_ip(
+            pub_net_id=self.pub_network['id'],
+            port_id=port1['id'])
 
-            fip1 = floating_ip1['floating_ip_address']
-            self.LOG.debug("Received floating IP1: " + str(fip1))
+        fip1 = floating_ip1['floating_ip_address']
+        self.LOG.debug("Received floating IP1: " + str(fip1))
 
-            # Test that VM can reach via internal IP
-            # Ping
-            self.assertTrue(vm1.ping(target_ip=ip2))
-            self.assertTrue(vm2.ping(target_ip=ip1))
+        vm1.start_echo_server(ip=ip1)
+        vm2.start_echo_server(ip=ip2)
 
-            # Test that VM2 can reach VM1 via FIP
-            # Ping
-            self.assertTrue(vm2.ping(target_ip=fip1))
+        # Test that VM can reach via internal IP
+        self.verify_connectivity(vm1, ip2)
+        self.verify_connectivity(vm2, ip1)
 
-            # TCP
-            vm1.start_echo_server(ip=ip1)
-            echo_response = vm2.send_echo_request(dest_ip=fip1)
-            self.assertEqual('ping:echo-reply', echo_response)
+        # Test that VM can reach via floating IP
+        self.verify_connectivity(vm2, fip1)
 
-        finally:
-            if floating_ip1:
-                self.api.update_floatingip(
-                    floating_ip1['id'],
-                    {'floatingip': {'port_id': None}})
-                self.api.delete_floatingip(floating_ip1['id'])
-
-    @require_extension('extraroute')
+    @neutron_test_case.require_extension('extraroute')
     def test_fip_to_fip_connectivity_one_site_source_has_fip(self):
-        floating_ip1 = None
-        floating_ip2 = None
-        try:
-            self.create_edge_router()
-            (port1, vm1, ip1) = self.create_vm_server(
-                'vm1', self.main_network['id'],
-                self.main_subnet['gateway_ip'])
-            (port2, vm2, ip2) = self.create_vm_server(
-                'vm2', self.main_network['id'],
-                self.main_subnet['gateway_ip'])
+        allowed_sg = self.create_security_group('allow_fip_in')
+        self.create_security_group_rule(
+            sg_id=allowed_sg['id'],
+            remote_ip_prefix=self.pub_subnet['cidr'],
+            direction='ingress')
+        self.create_security_group_rule(
+            sg_id=allowed_sg['id'],
+            remote_group_id=allowed_sg['id'],
+            direction='ingress')
 
-            floating_ip1 = self.api.create_floatingip(
-                {'floatingip': {
-                    'tenant_id': 'admin',
-                    'port_id': port1['id'],
-                    'floating_network_id': self.pub_network['id']}}
-            )['floatingip']
+        self.create_edge_router()
+        (port1, vm1, ip1) = self.create_vm_server(
+            'vm1', self.main_network['id'],
+            self.main_subnet['gateway_ip'],
+            sgs=[allowed_sg['id']])
+        (port2, vm2, ip2) = self.create_vm_server(
+            'vm2', self.main_network['id'],
+            self.main_subnet['gateway_ip'],
+            sgs=[allowed_sg['id']])
 
-            fip1 = floating_ip1['floating_ip_address']
-            self.LOG.debug("Received floating IP1: " + str(fip1))
+        floating_ip1 = self.create_floating_ip(
+            pub_net_id=self.pub_network['id'],
+            port_id=port1['id'])
+        floating_ip2 = self.create_floating_ip(
+            pub_net_id=self.pub_network['id'],
+            port_id=port2['id'])
 
-            floating_ip2 = self.api.create_floatingip(
-                {'floatingip': {
-                    'tenant_id': 'admin',
-                    'port_id': port2['id'],
-                    'floating_network_id': self.pub_network['id']}}
-            )['floatingip']
+        fip1 = floating_ip1['floating_ip_address']
+        self.LOG.debug("Received floating IP1: " + str(fip1))
+        fip2 = floating_ip2['floating_ip_address']
+        self.LOG.debug("Received floating IP2: " + str(fip2))
 
-            fip2 = floating_ip2['floating_ip_address']
-            self.LOG.debug("Received floating IP2: " + str(fip2))
+        vm1.start_echo_server(ip=ip1)
+        vm2.start_echo_server(ip=ip2)
 
-            # Test that VM can reach via internal IP
-            # Ping
-            self.assertTrue(vm1.ping(target_ip=ip2))
-            self.assertTrue(vm2.ping(target_ip=ip1))
+        # Test that VM can reach via internal IP
+        self.verify_connectivity(vm1, ip2)
+        self.verify_connectivity(vm2, ip1)
 
-            # Test that VM1 can reach VM2 via FIP
-            # Ping
-            self.assertTrue(vm1.ping(target_ip=fip2))
+        # Test that VM can reach via floating IP
+        self.verify_connectivity(vm2, fip1)
+        self.verify_connectivity(vm1, fip2)
 
-            # TCP
-            vm2.start_echo_server(ip=ip2)
-            echo_response = vm1.send_echo_request(dest_ip=fip2)
-            self.assertEqual('ping:echo-reply', echo_response)
-
-            # Test that VM2 can reach VM1 via FIP
-            # Ping
-            self.assertTrue(vm2.ping(target_ip=fip1))
-
-            # TCP
-            vm1.start_echo_server(ip=ip1)
-            echo_response = vm2.send_echo_request(dest_ip=fip1)
-            self.assertEqual('ping:echo-reply', echo_response)
-
-        finally:
-            if floating_ip1:
-                self.api.update_floatingip(
-                    floating_ip1['id'],
-                    {'floatingip': {'port_id': None}})
-                self.api.delete_floatingip(floating_ip1['id'])
-
-            if floating_ip2:
-                self.api.update_floatingip(
-                    floating_ip2['id'],
-                    {'floatingip': {'port_id': None}})
-                self.api.delete_floatingip(floating_ip2['id'])
-
-    @require_extension('extraroute')
+    @neutron_test_case.require_extension('extraroute')
     @unittest.skip("The deletion of the exter subnet keeps screwing up")
     def test_fip_to_fip_connectivity_two_sites(self):
         floating_ip1 = None
@@ -291,7 +179,7 @@ class TestFloatingIP(NeutronTestCase):
         vm2 = None
         ip2 = None
         try:
-            new_topo = create_neutron_main_pub_networks(
+            new_topo = neutron_api.create_neutron_main_pub_networks(
                 self.api,
                 main_name='main_2', main_subnet_cidr='192.168.10.0/24',
                 pub_name='pub_2', pub_subnet_cidr='200.200.10.0/24',
@@ -314,14 +202,14 @@ class TestFloatingIP(NeutronTestCase):
                 'vm2', new_topo.main_net.network['id'],
                 new_topo.main_net.subnet['gateway_ip'])
 
-            floating_ip1 = self.create_floatingip(
+            floating_ip1 = self.create_floating_ip(
                 port_id=port1['id'],
                 pub_net_id=self.pub_network['id'])
 
             fip1 = floating_ip1['floating_ip_address']
             self.LOG.debug("Received floating IP1: " + str(fip1))
 
-            floating_ip2 = self.create_floatingip(
+            floating_ip2 = self.create_floating_ip(
                 port_id=port2['id'],
                 pub_net_id=new_topo.pub_net.network['id'])
 
@@ -375,10 +263,10 @@ class TestFloatingIP(NeutronTestCase):
 
             self.clean_vm_servers()
 
-            delete_neutron_main_pub_networks(self.api, new_topo)
+            neutron_api.delete_neutron_main_pub_networks(self.api, new_topo)
 
-    @require_extension('extraroute')
-    @expected_failure('MI-953')
+    @neutron_test_case.require_extension('extraroute')
+    @test_case.expected_failure('MI-953')
     def test_fips_with_multiple_subnets_on_single_public_network(self):
         # New public top with a 30-bit mask (so 200.200.10.0-3 are
         # valid addresses, with 0=net addr, 1=gw addr, and 3=bcast addr)

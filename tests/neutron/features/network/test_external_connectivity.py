@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
 from zephyr.common import ip
 from zephyr.common import pcap
 from zephyr.tsm import neutron_test_case
@@ -35,23 +34,12 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
 
-        # Test Ping
-        self.LOG.info('Pinging from VM1 to external')
-        self.assertTrue(vm1.ping(target_ip=ext_ip))
-
-        # Test TCP
-        ext_host.start_echo_server(ip=ext_ip)
-        echo_response = vm1.send_echo_request(dest_ip=ext_ip)
-        self.assertEqual('ping:echo-reply', echo_response)
-        ext_host.stop_echo_server(ip=ext_ip)
-
-        # Test UDP
-        # TODO(micucci): Fix UDP
-        # ext_host.start_echo_server(ip=ext_ip, protocol='udp')
-        # echo_response = vm1.send_echo_request(
-        #   ddddsdfdest_ip=ext_ip, protocol='udp')
-        # self.assertEqual('ping:echo-reply', echo_response)
-
+        # Test VM -> exterior host
+        try:
+            ext_host.start_echo_server(ip=ext_ip)
+            self.verify_connectivity(vm1, ext_ip)
+        finally:
+            ext_host.stop_echo_server(ip=ext_ip)
 
     @neutron_test_case.require_extension('extraroute')
     def test_neutron_delete_readd_ext_router(self):
@@ -68,30 +56,24 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
-
-        # Test Ping
-        self.LOG.info('Pinging from VM1 to external')
-        self.assertTrue(vm1.ping(target_ip=ext_ip))
-
-        # Test TCP
-        ext_host.start_echo_server(ip=ext_ip)
-        echo_response = vm1.send_echo_request(dest_ip=ext_ip)
-        self.assertEqual('ping:echo-reply', echo_response)
-        ext_host.stop_echo_server(ip=ext_ip)
+        # Test VM -> exterior host
+        try:
+            ext_host.start_echo_server(ip=ext_ip)
+            self.verify_connectivity(vm1, ext_ip)
+        finally:
+            ext_host.stop_echo_server(ip=ext_ip)
 
         # Delete and re-add exterior router
         self.delete_edge_router(edge_data)
 
-        edge_data = self.create_edge_router()
+        self.create_edge_router()
 
-        # Test Ping
-        self.LOG.info('Pinging again from VM1 to external')
-        self.assertTrue(vm1.ping(target_ip=ext_ip))
-
-        # Test TCP
-        ext_host.start_echo_server(ip=ext_ip)
-        echo_response = vm1.send_echo_request(dest_ip=ext_ip)
-        self.assertEqual('ping:echo-reply', echo_response)
+        # Test VM -> exterior host
+        try:
+            ext_host.start_echo_server(ip=ext_ip)
+            self.verify_connectivity(vm1, ext_ip)
+        finally:
+            ext_host.stop_echo_server(ip=ext_ip)
 
     @neutron_test_case.require_extension('extraroute')
     def test_neutron_api_ping_with_high_id(self):
@@ -112,8 +94,8 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
-        vm1.start_capture('eth0', pfilter=pcap.ICMPProto(), 
-                          save_dump_file=True, 
+        vm1.start_capture('eth0', pfilter=pcap.ICMPProto(),
+                          save_dump_file=True,
                           save_dump_filename="high_id_out.tcpdump")
 
         # Test Ping
