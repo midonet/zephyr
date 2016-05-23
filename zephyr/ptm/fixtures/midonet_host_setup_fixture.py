@@ -42,8 +42,11 @@ class MidonetHostSetupFixture(ServiceFixture):
                     if isinstance(app, Midolman):
                         # If so, add the host and its eth0 interface
                         # to the tunnel zone map and move on to next host
-                        tunnel_zone_host_map[host.name] = (
-                            host.interfaces['eth0'].ip_list[0].ip)
+                        for iface in host.interfaces.values():
+                            if len(iface.ip_list) is not 0:
+                                tunnel_zone_host_map[host.name] = (
+                                    iface.ip_list[0].ip)
+                                break
                         break
 
             setup_main_tunnel_zone(self.api,
