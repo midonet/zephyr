@@ -39,6 +39,8 @@ class NeutronTestCase(TestCase):
 
     # TODO(Joe): Split the cleanup into a per-test-group set of files
     servers = list()
+    bgp_speakers = list()
+    bgp_peers = list()
     sgs = list()
     sgrs = list()
     rmacs = list()
@@ -60,6 +62,8 @@ class NeutronTestCase(TestCase):
         topo_info =\
             [(self.sgrs, 'security group rule',
               self.api.delete_security_group_rule),
+             (self.bgp_peers, 'bgp peer', self.delete_bgp_peer_curl),
+             (self.bgp_speakers, 'bgp speaker', self.delete_bgp_speaker_curl),
              (self.fw_ras, 'firewall policy rule', self.delete_fpr),
              (self.fwprs, 'firewall rule', self.api.delete_firewall_rule),
              (self.fws, 'firewall', self.api.delete_firewall),
@@ -80,6 +84,54 @@ class NeutronTestCase(TestCase):
 
         for (items, res_name, del_func) in topo_info:
             self.clean_resource(items, res_name, del_func)
+
+    def add_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
+        curl_url = (get_neutron_api_url(self.api) + '/bgp-speakers/' +
+                    bgp_speaker_id + '/add_bgp_peer.json')
+        curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
+
+    def create_bgp_speaker_curl(self, name, local_as, router_id,
+                                tenant_id='admin', ip_version=4,
+                                advertise_tenant_networks=True):
+        speaker_data = {'name': name,
+                        'router_id': router_id,
+                        'tenant_id': tenant_id,
+                        'local_as': local_as,
+                        'ip_version': ip_version,
+                        'advertise_tenant_networks': advertise_tenant_networks}
+        curl_url = get_neutron_api_url(self.api) + '/bgp-speakers.json'
+        post_ret = curl_post(curl_url, {'bgp_speaker': speaker_data})
+        speaker = json.loads(post_ret)
+        return speaker['bgp_speaker']
+
+    def delete_bgp_speaker(self, bgp_speaker_id):
+        self.bgp_speakers.remove(bgp_speaker_id)
+        self.delete_bgp_speaker_curl(bgp_speaker_id)
+
+    def delete_bgp_speaker_curl(self, bgp_speaker_id):
+        curl_url = get_neutron_api_url(self.api) + '/bgp-speakers.json/'
+        curl_delete(curl_url + bgp_speaker_id)
+
+    def create_bgp_peer_curl(self, name, peer_ip, remote_as, auth_type='none',
+                             tenant_id='admin'):
+        peer_data = {'name': name,
+                     'tenant_id': tenant_id,
+                     'peer_ip': peer_ip,
+                     'auth_type': auth_type,
+                     'remote_as': remote_as}
+        curl_url = get_neutron_api_url(self.api) + '/bgp-peers.json'
+        post_ret = curl_post(curl_url, {'bgp_peer': peer_data})
+        peer = json.loads(post_ret)
+        self.bgp_peers.append(peer['bgp_peer']['id'])
+        return peer['bgp_peer']
+
+    def delete_bgp_peer(self, bgp_peer_id):
+        self.bgp_peers.remove(bgp_peer_id)
+        self.delete_bgp_peer_curl(bgp_peer_id)
+
+    def delete_bgp_peer_curl(self, bgp_peer_id):
+        curl_url = get_neutron_api_url(self.api) + '/bgp-peers.json/'
+        curl_delete(curl_url + bgp_peer_id)
 
     def create_security_group(self, name, tenant_id='admin'):
         sg_data = {'name': name,
