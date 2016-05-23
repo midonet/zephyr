@@ -337,6 +337,10 @@ class Host(PTMObject):
             self.cli.cmd('ip addr add ' + str(ip) + ' dev lo')
         self.cli.cmd('ip link set dev lo up')
 
+    def reset_default_route(self, ip):
+        self.cli.cmd('ip route del default')
+        self.cli.cmd('ip route add default via ' + ip)
+
     def add_route(self, route_ip='default', gw_ip=None, dev=None):
         """
         :type route_ip: IP
