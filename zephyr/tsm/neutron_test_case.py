@@ -325,13 +325,20 @@ class NeutronTestCase(TestCase):
         echo_response = vm.send_echo_request(dest_ip=dest_ip)
         self.assertEqual('ping:echo-reply', echo_response)
 
-    def create_vm_server(self, name, net_id, gw_ip, sgs=list(), hv_host=None):
+    def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
+                         allowed_address_pairs=None, hv_host=None):
         port_data = {'name': name,
                      'network_id': net_id,
                      'admin_state_up': True,
                      'tenant_id': 'admin'}
         if sgs:
             port_data['security_groups'] = sgs
+        if allowed_address_pairs:
+            port_data['allowed_address_pairs'] = (
+                [{'ip_address': pair[0],
+                  'mac_address': pair[1]} if len(pair) > 1
+                 else {'ip_address': pair[0]}
+                 for pair in allowed_address_pairs])
         port = self.api.create_port({'port': port_data})['port']
         ip = port['fixed_ips'][0]['ip_address']
         vm = self.vtm.create_vm(name=name,
@@ -391,7 +398,7 @@ class NeutronTestCase(TestCase):
     def create_port(self, name, net_id, tenant_id='admin', host=None,
                     host_iface=None, sub_id=None, ip=None, mac=None,
                     port_security_enabled=True, device_owner=None,
-                    device_id=None, sg_ids=None):
+                    device_id=None, sg_ids=None, allowed_address_pairs=None):
         port_data = {'name': name,
                      'network_id': net_id,
                      'port_security_enabled': port_security_enabled,
@@ -412,6 +419,12 @@ class NeutronTestCase(TestCase):
             port_data['mac_address'] = mac
         if sg_ids:
             port_data['security_groups'] = sg_ids
+        if allowed_address_pairs:
+            port_data['allowed_address_pairs'] = (
+                [{'ip_address': pair[0],
+                  'mac_address': pair[1]} if len(pair) > 1
+                 else {'ip_address': pair[0]}
+                 for pair in allowed_address_pairs])
 
         port = self.api.create_port({'port': port_data})
         self.nports.append(port['port']['id'])
