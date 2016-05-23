@@ -90,6 +90,11 @@ class NeutronTestCase(TestCase):
                     bgp_speaker_id + '/add_bgp_peer.json')
         curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
 
+    def remove_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
+        curl_url = (get_neutron_api_url(self.api) + '/bgp-speakers/' +
+                    bgp_speaker_id + '/remove_bgp_peer.json')
+        curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
+
     def create_bgp_speaker_curl(self, name, local_as, router_id,
                                 tenant_id='admin', ip_version=4,
                                 advertise_tenant_networks=True):
@@ -102,6 +107,7 @@ class NeutronTestCase(TestCase):
         curl_url = get_neutron_api_url(self.api) + '/bgp-speakers.json'
         post_ret = curl_post(curl_url, {'bgp_speaker': speaker_data})
         speaker = json.loads(post_ret)
+        self.bgp_speakers.append(speaker['bgp_speaker']['id'])
         return speaker['bgp_speaker']
 
     def delete_bgp_speaker(self, bgp_speaker_id):
