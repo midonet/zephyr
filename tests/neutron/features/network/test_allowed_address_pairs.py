@@ -74,12 +74,25 @@ class TestAllowedAddressPairs(NeutronTestCase):
             receiver.stop_capture(on_iface='eth0')
 
     def test_allowed_address_pairs_normal_antispoof(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.99/32')
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -92,12 +105,20 @@ class TestAllowedAddressPairs(NeutronTestCase):
             should_fail=True)
 
     def test_allowed_address_pairs_reply_antispoof_same_network(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -114,6 +135,12 @@ class TestAllowedAddressPairs(NeutronTestCase):
         self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0'))
 
     def test_allowed_address_pairs_reply_antispoof_diff_network(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         # Create a first network for testing
         net1 = self.create_network(name='net1')
         subnet1 = self.create_subnet(name='net1_sub', net_id=net1['id'],
@@ -130,10 +157,12 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=net1['id'],
-            gw_ip=subnet1['gateway_ip'])
+            gw_ip=subnet1['gateway_ip'],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=net2['id'],
-            gw_ip=subnet2['gateway_ip'])
+            gw_ip=subnet2['gateway_ip'],
+            sgs=[aap_sg['id']])
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -152,13 +181,26 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
-            allowed_address_pairs=[("192.168.99.99",)])
+            allowed_address_pairs=[("192.168.99.99",)],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.99/32')
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -170,12 +212,20 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip_round_trip(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -206,13 +256,26 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip_mac(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
-            allowed_address_pairs=[("192.168.99.99/32", "AA:AA:AA:AA:AA:AA")])
+            allowed_address_pairs=[("192.168.99.99/32", "AA:AA:AA:AA:AA:AA")],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.99/32')
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -236,15 +299,36 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_multi_ip_and_mac(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
             allowed_address_pairs=[("192.168.99.99", "AA:AA:AA:AA:AA:AA"),
                                    ("192.168.99.98", "AA:AA:AA:AA:AA:BB"),
-                                   ("192.168.99.97", "AA:AA:AA:AA:AA:CC")])
+                                   ("192.168.99.97", "AA:AA:AA:AA:AA:CC")],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.99/32')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.98/32')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.97/32')
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -272,18 +356,30 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_double_mac(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
             allowed_address_pairs=[("192.168.99.99", "AA:AA:AA:AA:AA:AA"),
-                                   ("192.168.99.99", "AA:AA:AA:AA:AA:DD")])
+                                   ("192.168.99.99", "AA:AA:AA:AA:AA:DD")],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.99/32')
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
-
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                     spoof_ip="192.168.99.99",
                                     spoof_mac="AA:AA:AA:AA:AA:AA")
@@ -300,13 +396,26 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_subnet(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
-            allowed_address_pairs=[("192.168.99.0/24",)])
+            allowed_address_pairs=[("192.168.99.0/24",)],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.0/24')
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -333,13 +442,26 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_mac_subnet(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
-            allowed_address_pairs=[("192.168.99.0/24", "AA:AA:AA:AA:AA:AA")])
+            allowed_address_pairs=[("192.168.99.0/24", "AA:AA:AA:AA:AA:AA")],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.0/24')
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -360,13 +482,26 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_updates(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
-            allowed_address_pairs=[("192.168.99.0/24",)])
+            allowed_address_pairs=[("192.168.99.0/24",)],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        sgr99_0 = self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.0/24')
 
         # Default IP and MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -384,6 +519,11 @@ class TestAllowedAddressPairs(NeutronTestCase):
                 {"ip_address": "192.168.98.96",
                  "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
         self.LOG.debug('Updated port1: ' + str(port1))
+
+        sgr98_96 = self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.98.96/32')
 
         # Send to new IP and new MAC
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -412,6 +552,17 @@ class TestAllowedAddressPairs(NeutronTestCase):
                 {"ip_address": "192.168.98.96",
                  "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
         self.LOG.debug('Updated port1: ' + str(port1))
+
+        self.delete_security_group_rule(sgr99_0['id'])
+
+        sgr99_99 = self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.99/32')
+        sgr99_98 = self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.98/32')
 
         # Send to old specific IP with old mac
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -468,6 +619,8 @@ class TestAllowedAddressPairs(NeutronTestCase):
                  "mac_address": "AA:AA:AA:AA:AA:DD"}]}})['port']
         self.LOG.debug('Updated port1: ' + str(port1))
 
+        self.delete_security_group_rule(sgr99_98['id'])
+
         # Send to IP2 and mac2
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                     spoof_ip="192.168.98.96",
@@ -491,6 +644,9 @@ class TestAllowedAddressPairs(NeutronTestCase):
                 'allowed_address_pairs': []}})['port']
         self.LOG.debug('Updated port1: ' + str(port1))
 
+        self.delete_security_group_rule(sgr99_99['id'])
+        self.delete_security_group_rule(sgr98_96['id'])
+
         # Default IP/MAC should still work
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
@@ -502,14 +658,27 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_subnet_with_specific_ip(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
             allowed_address_pairs=[("192.168.99.0/24",),
-                                   ("192.168.99.98",)])
+                                   ("192.168.99.98",)],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.0/24')
 
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
@@ -564,16 +733,33 @@ class TestAllowedAddressPairs(NeutronTestCase):
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_ip_subnet_with_mixed_ips_macs(self):
+        aap_sg = self.create_security_group('aap_sg')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_group_id=aap_sg['id'])
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
             allowed_address_pairs=[("192.168.99.0/24",),
                                    ("192.168.99.98", "AA:AA:AA:AA:AA:DD"),
                                    ("192.168.98.0/24", "AA:AA:AA:AA:AA:CC"),
-                                   ("192.168.98.5",)])
+                                   ("192.168.98.5",)],
+            sgs=[aap_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'])
+            gw_ip=self.main_subnet['gateway_ip'],
+            sgs=[aap_sg['id']])
+
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.99.0/24')
+        self.create_security_group_rule(
+            aap_sg['id'],
+            direction='ingress',
+            remote_ip_prefix='192.168.98.0/24')
 
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
