@@ -26,3 +26,4 @@ class IPNetNSHost(Host):
         """
         super(IPNetNSHost, self).__init__(name, ptm, NetNSCLI(name),
                                           CREATENSCMD, REMOVENSCMD)
+        self.on_namespace = True

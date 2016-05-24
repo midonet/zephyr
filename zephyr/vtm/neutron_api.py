@@ -192,13 +192,13 @@ def setup_neutron(api,
                                  'ethertype': 'IPv6',
                                  'security_group_id': def_sg_id,
                                  'tenant_id': tenant_id}})
+    """
     api.update_quota(tenant_id, {'quota': {'network': -1,
                                            'subnet': -1,
                                            'router': -1,
                                            'pool': -1,
                                            'security_group': -1,
                                            'vip': -1}})
-    """
 
     return btd
 

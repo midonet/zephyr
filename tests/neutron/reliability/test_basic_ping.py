@@ -48,9 +48,9 @@ class TestBasicPing(NeutronTestCase):
             self.LOG.info("Got VM2 IP: " + str(ip2))
 
             vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'],
-                                     hv_host='cmp2')
+                                     hv_host='cmp1')
             vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'],
-                                     hv_host='cmp2')
+                                     hv_host='cmp1')
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
