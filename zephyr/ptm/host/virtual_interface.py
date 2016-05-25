@@ -19,7 +19,7 @@ from zephyr.ptm.host.interface import Interface
 class VirtualInterface(Interface):
     def __init__(self, name, host, mac=None, ip_addr=list(),
                  linked_bridge=None, vlans=None,
-                 far_interface=None):
+                 far_interface=None, use_namespace=True):
         """
         A virtual interface using the veth driver to create a pair of
         connected interfaces. One side of the pair is usually set to
@@ -40,14 +40,19 @@ class VirtualInterface(Interface):
 
         # Set up an interface to represent the peer
         self.peer_interface = far_interface
+        self.use_namespace = use_namespace
 
     def create(self):
         """
         Link a veth peer to a far host and return the new interface
         :return: Interface The peer on the far host, configured and ready
         """
-        self.cli.cmd('ip link add dev ' + self.get_name() +
-                     ' type veth peer name ' + self.peer_name)
+        self.cli.cmd(
+            'ip link add dev ' + self.get_name() +
+            ' type veth peer name ' +
+            (self.peer_name
+             if self.use_namespace
+             else self.peer_interface.name))
 
         # Add interface to the linked bridge, if there is one
         if self.linked_bridge is not None:
@@ -57,10 +62,11 @@ class VirtualInterface(Interface):
         if self.peer_interface is None:
             return
 
-        # move peer interface onto far host's namespace
-        self.cli.cmd('ip link set dev ' + self.peer_name + ' netns ' +
-                     self.peer_interface.host.name + ' name ' +
-                     self.peer_interface.name)
+        if self.use_namespace:
+            # move peer interface onto far host's namespace
+            self.cli.cmd('ip link set dev ' + self.peer_name + ' netns ' +
+                         self.peer_interface.host.name + ' name ' +
+                         self.peer_interface.name)
 
         # In the unlikely chance that the peer is also linked to a bridge,
         # go ahead and link

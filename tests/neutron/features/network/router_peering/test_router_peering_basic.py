@@ -23,8 +23,6 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_edge_and_vtep_router(self):
         try:
             self.connect_through_edge_and_vtep_router()
@@ -35,8 +33,6 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_vtep_router(self):
         try:
             self.connect_through_vtep_router()
@@ -55,7 +51,7 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
         a_edge = self.create_edge_router(
-            pub_subnets=a_pub_sub,
+            pub_subnets=[a_pub_sub],
             router_host_name='router1',
             edge_host_name='edge2',
             edge_iface_name='eth1',
@@ -74,7 +70,7 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
         b_edge = self.create_edge_router(
-            pub_subnets=b_pub_sub,
+            pub_subnets=[b_pub_sub],
             router_host_name='router1',
             edge_host_name='edge1',
             edge_iface_name='eth1',
@@ -120,6 +116,9 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
 
         exterior_ip = "172.20.1.1"
         vmb.start_echo_server(ip=ipb)
+
+        import pdb; pdb.set_trace()
+
         self.verify_connectivity(vma, ipb)
         self.verify_connectivity(vma, b_fip['floating_ip_address'])
 

@@ -85,6 +85,7 @@ class Host(PTMObject):
         self.log_level = logging.INFO
         self.echo_server_procs = {}
         """ :type: dict[int, CommandStatus]"""
+        self.on_namespace = False
 
     def configure_logging(self, debug=False,
                           log_file_name=ZEPHYR_LOG_FILE_NAME):
@@ -199,7 +200,8 @@ class Host(PTMObject):
             name=near_interface.name, host=near_interface.host,
             mac=near_interface.mac, ip_addr=near_interface.ip_list,
             linked_bridge=near_interface.linked_bridge,
-            vlans=near_interface.vlans, far_interface=far_interface)
+            vlans=near_interface.vlans, far_interface=far_interface,
+            use_namespace=far_host.on_namespace)
 
         self.interfaces[new_if.name] = new_if
 

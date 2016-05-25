@@ -43,7 +43,7 @@ class Midolman(Application, HypervisorService):
         super(Midolman, self).__init__(host, app_id)
         self.vms = {}
         """ :type: dict[str, VMHost]"""
-        self.num_id = '1'
+        self.num_id = ''
         self.unique_id = uuid.uuid4()
         self.zookeeper_ips = []
         self.cassandra_ips = []
@@ -108,7 +108,8 @@ class Midolman(Application, HypervisorService):
         self.configurator.configure(self.num_id, self.unique_id,
                                     self.zookeeper_ips, self.cassandra_ips)
         self.cli.rm('/etc/midonet_host_id.properties')
-        log_dir = '/var/log/midolman.' + self.num_id
+        subdir = '.' + self.num_id if self.num_id != '' else ''
+        log_dir = '/var/log/midolman' + subdir
         log_manager.add_external_log_file(
             FileLocation(log_dir + '/midolman.log'), self.num_id,
             '%Y.%m.%d %H:%M:%S.%f')
@@ -229,7 +230,7 @@ class Midolman(Application, HypervisorService):
         self.LOG.debug("--\n" + stdout + "--\n" + stderr + "==")
 
     def control_start(self):
-        if self.num_id == '1':
+        if self.num_id == '1' or self.num_id == '':
             if self.cli.exists('.mnconf.data'):
                 this_dir = path.dirname(path.abspath(__file__))
 
@@ -272,7 +273,7 @@ class Midolman(Application, HypervisorService):
             pid = self.cli.read_from_file('/run/midolman/pid')
             self.cli.cmd('kill ' + str(pid))
 
-        if self.num_id == '1':
+        if self.num_id == '1' or self.num_id == '':
             pid_file = '/run/midolman/dnsmasq.pid'
 
             if self.cli.exists(pid_file):
@@ -295,18 +296,20 @@ class Midolman(Application, HypervisorService):
 class ComputeMNConfConfiguration(ProgramConfigurationHandler):
 
     def configure(self, num_id, unique_id, zookeeper_ips, cassandra_ips):
-        etc_dir = '/etc/midolman.' + num_id
-        var_lib_dir = '/var/lib/midolman.' + num_id
-        var_log_dir = '/var/log/midolman.' + num_id
-        var_run_dir = '/run/midolman.' + num_id
+        subdir = '.' + num_id if num_id != '' else ''
+        etc_dir = '/etc/midolman' + subdir
+        var_lib_dir = '/var/lib/midolman' + subdir
+        var_log_dir = '/var/log/midolman' + subdir
+        var_run_dir = '/run/midolman' + subdir
 
         if len(zookeeper_ips) is not 0:
             z_ip_str = ','.join([ip.ip + ':2181' for ip in zookeeper_ips])
         else:
             z_ip_str = ''
 
-        self.cli.rm(etc_dir)
-        self.cli.copy_dir('/etc/midolman', etc_dir)
+        if num_id != '':
+            self.cli.rm(etc_dir)
+            self.cli.copy_dir('/etc/midolman', etc_dir)
 
         self.cli.rm(var_lib_dir)
         self.cli.mkdir(var_lib_dir)
@@ -332,8 +335,9 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
 
         # Allow connecting via debugger - MM 1 listens on 1411, MM 2 on 1412,
         # MM 3 on 1413
-        self.cli.regex_file(mmenv, '/runjdwp/s/^..//g')
-        self.cli.regex_file(mmenv, '/runjdwp/s/1414/141' + num_id + '/g')
+        self.cli.regex_file(mmenv, '/runjdwp/s/^# //g')
+        self.cli.regex_file(mmenv, '/runjdwp/s/141[0-9]/141' +
+                                   (num_id if num_id != '' else '0') + '/g')
 
         # Setting memory to the ones before
         # https://github.com/midokura/midonet/commit/
@@ -376,13 +380,20 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
             self.cli.write_to_file('.mnconf.data', mn_conf_str)
 
     def mount_config(self, num_id):
-        self.cli.mount('/run/midolman.' + num_id, '/run/midolman')
-        self.cli.mount('/var/lib/midolman.' + num_id, '/var/lib/midolman')
-        self.cli.mount('/var/log/midolman.' + num_id, '/var/log/midolman')
-        self.cli.mount('/etc/midolman.' + num_id, '/etc/midolman')
+        subdir = '.' + num_id if num_id != '' else ''
+        etc_dir = '/etc/midolman' + subdir
+        var_lib_dir = '/var/lib/midolman' + subdir
+        var_log_dir = '/var/log/midolman' + subdir
+        var_run_dir = '/run/midolman' + subdir
+        self.cli.mount(var_run_dir, '/run/midolman')
+        self.cli.mount(var_lib_dir, '/var/lib/midolman')
+        self.cli.mount(var_log_dir, '/var/log/midolman')
+        self.cli.mount(etc_dir, '/etc/midolman')
 
     def unmount_config(self, num_id):
-        self.cli.unmount('/run/midolman.' + num_id)
+        subdir = '.' + num_id if num_id != '' else ''
+        var_run_dir = '/run/midolman' + subdir
+        self.cli.unmount(var_run_dir)
         self.cli.unmount('/var/lib/midolman')
         self.cli.unmount('/var/log/midolman')
         self.cli.unmount('/etc/midolman')
@@ -391,10 +402,11 @@ class ComputeMNConfConfiguration(ProgramConfigurationHandler):
 class ComputeFileConfiguration(FileConfigurationHandler):
     def configure(self, num_id, unique_id, zookeeper_ips, cassandra_ips):
 
-        etc_dir = '/etc/midolman.' + num_id
-        var_lib_dir = '/var/lib/midolman.' + num_id
-        var_log_dir = '/var/lib/midolman.' + num_id
-        var_run_dir = '/run/midolman.' + num_id
+        subdir = '.' + num_id if num_id != '' else ''
+        etc_dir = '/etc/midolman' + subdir
+        var_lib_dir = '/var/lib/midolman' + subdir
+        var_log_dir = '/var/log/midolman' + subdir
+        var_run_dir = '/run/midolman' + subdir
 
         self.cli.rm(etc_dir)
         self.cli.copy_dir('/etc/midolman', etc_dir)
@@ -459,8 +471,9 @@ class ComputeFileConfiguration(FileConfigurationHandler):
 
         # Allow connecting via debugger - MM 1 listens on 1411, MM 2 on 1412,
         # MM 3 on 1413, ...
-        self.cli.regex_file(mmenv, '/runjdwp/s/^..//g')
-        self.cli.regex_file(mmenv, '/runjdwp/s/1414/141' + num_id + '/g')
+        self.cli.regex_file(mmenv, '/runjdwp/s/^# //g')
+        self.cli.regex_file(mmenv, '/runjdwp/s/141[0-9]/141' +
+                                   (num_id if num_id != '' else '0') + '/g')
 
         # Setting memory to the ones before
         # https://github.com/midokura/midonet/commit/
@@ -473,13 +486,20 @@ class ComputeFileConfiguration(FileConfigurationHandler):
         self.cli.write_to_file(etc_dir + '/host_uuid.properties', uuid_str)
 
     def mount_config(self, num_id):
-        self.cli.mount('/run/midolman.' + num_id, '/run/midolman')
-        self.cli.mount('/var/lib/midolman.' + num_id, '/var/lib/midolman')
-        self.cli.mount('/var/log/midolman.' + num_id, '/var/log/midolman')
-        self.cli.mount('/etc/midolman.' + num_id, '/etc/midolman')
+        subdir = '.' + num_id if num_id != '' else ''
+        etc_dir = '/etc/midolman' + subdir
+        var_lib_dir = '/var/lib/midolman' + subdir
+        var_log_dir = '/var/log/midolman' + subdir
+        var_run_dir = '/run/midolman' + subdir
+        self.cli.mount(var_run_dir, '/run/midolman')
+        self.cli.mount(var_lib_dir, '/var/lib/midolman')
+        self.cli.mount(var_log_dir, '/var/log/midolman')
+        self.cli.mount(etc_dir, '/etc/midolman')
 
     def unmount_config(self, num_id):
-        self.cli.unmount('/run/midolman.' + num_id)
+        subdir = '.' + num_id if num_id != '' else ''
+        var_run_dir = '/run/midolman' + subdir
+        self.cli.unmount(var_run_dir)
         self.cli.unmount('/var/lib/midolman')
         self.cli.unmount('/var/log/midolman')
         self.cli.unmount('/etc/midolman')

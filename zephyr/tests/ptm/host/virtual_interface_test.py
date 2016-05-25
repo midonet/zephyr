@@ -82,6 +82,37 @@ class VirtualInterfaceTest(unittest.TestCase):
 
         h2.remove()
 
+    def test_create_with_no_netns_host(self):
+        h = Host('test', None, LinuxCLI(), lambda n: None, lambda n: None)
+        h2 = Host('test2', None, LinuxCLI(), lambda n: None, lambda n: None)
+
+        p = Interface(name='testp', host=h2,
+                      ip_addr=[IP.make_ip('10.0.0.1')])
+        i = VirtualInterface(name='testi', host=h,
+                             ip_addr=[IP.make_ip('192.168.0.2')],
+                             far_interface=p,
+                             use_namespace=False)
+
+        i.create()  # should create and set peer on far host
+
+        self.assertTrue(LinuxCLI().grep_cmd('ip l', 'testp'))
+        self.assertTrue(LinuxCLI().grep_cmd('ip l', 'testi'))
+        self.assertFalse(LinuxCLI().grep_cmd('ip l', 'testi.p'))
+
+        i.config_addr()
+        p.up()
+        p.config_addr()
+
+        self.assertTrue(LinuxCLI().grep_cmd('ip a | grep testp | grep inet',
+                                            '10.0.0.1'))
+
+        i.remove()  # should remove both interfaces
+
+        self.assertFalse(LinuxCLI().grep_cmd('ip l', 'testp'))
+        self.assertFalse(LinuxCLI().grep_cmd('ip l', 'testi'))
+
+        h2.remove()
+
     def test_add_del_ip(self):
         h = Host('test', None, LinuxCLI(), lambda n: None, lambda n: None)
         h2 = Host('test2', None, NetNSCLI('test2'), CREATENSCMD, REMOVENSCMD)
