@@ -105,9 +105,13 @@ class MidonetAPI(Application):
             if self.use_cluster:
                 if self.cli.grep_cmd(
                         'tac /var/log/midonet-cluster/midonet-cluster.log',
-                        "MidoNet Cluster is up",
+                        "MidoNet Cluster \(started\|is up\)",
                         options='-m1'):
                     connected = True
+                else:
+                    if time.time() > deadline:
+                        raise SubprocessFailedException(
+                            'Cluster timed out while starting')
             else:
                 if self.cli.cmd('midonet-cli --midonet-url="' + self.url +
                                 '" -A -e "host list"').ret_code == 0:
