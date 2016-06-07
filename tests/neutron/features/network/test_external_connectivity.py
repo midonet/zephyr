@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 from zephyr.common import ip
 from zephyr.common import pcap
 from zephyr.tsm import neutron_test_case
@@ -94,16 +96,14 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
-        vm1.start_capture('eth0', pfilter=pcap.ICMPProto(),
-                          save_dump_file=True,
-                          save_dump_filename="high_id_out.tcpdump")
 
         # Test Ping
         self.LOG.info('Pinging from VM1 to external')
         self.assertTrue(vm1.ping(target_ip=ext_ip, count=1))
 
-        ret0 = vm1.capture_packets('eth0', count=2, timeout=15)
-        self.assertEqual(2, len(ret0))
+        vm1.start_capture('eth0', pfilter=pcap.ICMPProto(),
+                          save_dump_file=True,
+                          save_dump_filename='highid.out')
 
         # Test Ping with set ID
         self.LOG.info('Pinging from VM1 to external with '
@@ -111,17 +111,24 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         vm1.send_packet(on_iface='eth0', dest_ip=ext_ip,
                         packet_type='icmp',
                         packet_options={'command': 'ping', 'id': '3'})
+        time.sleep(15)
+        vm1.stop_capture('eth0')
+        ret1 = vm1.capture_packets('eth0', count=0)
 
-        ret1 = vm1.capture_packets('eth0', count=2, timeout=15)
         self.assertEqual(2, len(ret1))
 
+        vm1.start_capture('eth0', pfilter=pcap.ICMPProto(),
+                          save_dump_file=True,
+                          save_dump_filename='highid2.out')
         self.LOG.info('Pinging from VM1 to external with '
                       'high ICMP ID')
         vm1.send_packet(on_iface='eth0', dest_ip=ext_ip,
                         packet_type='icmp',
                         packet_options={'command': 'ping', 'id': '35000'})
 
-        ret2 = vm1.capture_packets('eth0', count=2, timeout=5)
-        self.assertEqual(2, len(ret2))
-
+        time.sleep(15)
         vm1.stop_capture('eth0')
+        ret2 = vm1.capture_packets('eth0', count=0)
+
+        self.ef_assertEqual("MI-910", 2, len(ret2))
+
