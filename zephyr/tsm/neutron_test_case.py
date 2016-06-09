@@ -99,11 +99,10 @@ class NeutronTestCase(TestCase):
                                 tenant_id='admin', ip_version=4,
                                 advertise_tenant_networks=True):
         speaker_data = {'name': name,
-                        'router_id': router_id,
+                        'logical_router': router_id,
                         'tenant_id': tenant_id,
                         'local_as': local_as,
-                        'ip_version': ip_version,
-                        'advertise_tenant_networks': advertise_tenant_networks}
+                        'ip_version': ip_version}
         curl_url = get_neutron_api_url(self.api) + '/bgp-speakers.json'
         post_ret = curl_post(curl_url, {'bgp_speaker': speaker_data})
         speaker = json.loads(post_ret)

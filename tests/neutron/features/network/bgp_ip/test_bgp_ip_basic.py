@@ -53,7 +53,8 @@ class TestBGPIPBasic(NeutronTestCase):
         self.create_router_interface(a_router['id'], port_id=aa_port['id'])
         self.create_router_interface(a_router['id'], port_id=ac_port['id'])
 
-        a_bgp_speaker = self.create_bgp_speaker('A_BGP', a_as, a_router['id'])
+        a_bgp_speaker = self.create_bgp_speaker_curl('A_BGP', a_as,
+                                                     a_router['id'])
 
         (porta, vma, ipa) = self.create_vm_server(
             "A", a_net['id'], a_sub['gateway_ip'])
@@ -66,13 +67,14 @@ class TestBGPIPBasic(NeutronTestCase):
         self.create_router_interface(b_router['id'], port_id=bb_port['id'])
         self.create_router_interface(b_router['id'], port_id=bc_port['id'])
 
-        b_bgp_speaker = self.create_bgp_speaker('B_BGP', b_as, b_router['id'])
+        b_bgp_speaker = self.create_bgp_speaker_curl('B_BGP', b_as,
+                                                     b_router['id'])
 
         a_peer_ip = bc_port['fixed_ips'][0]['ip_address']
         b_peer_ip = ac_port['fixed_ips'][0]['ip_address']
 
-        a_peer = self.create_bgp_peer('A_PEER', a_peer_ip, b_as)
-        b_peer = self.create_bgp_peer('B_PEER', b_peer_ip, a_as)
+        a_peer = self.create_bgp_peer_curl('A_PEER', a_peer_ip, b_as)
+        b_peer = self.create_bgp_peer_curl('B_PEER', b_peer_ip, a_as)
 
         self.add_bgp_speaker_peer(a_bgp_speaker['id'], a_peer['id'])
         self.add_bgp_speaker_peer(b_bgp_speaker['id'], b_peer['id'])
