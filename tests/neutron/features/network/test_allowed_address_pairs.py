@@ -95,7 +95,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             remote_ip_prefix='192.168.99.99/32')
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         # Default state should be PS enabled on net and any created ports
         # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
@@ -121,7 +121,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             sgs=[aap_sg['id']])
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
         new_ip = '.'.join(ip2.split('.')[0:3]) + '.155'
         vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
 
@@ -132,7 +132,8 @@ class TestAllowedAddressPairs(NeutronTestCase):
         self.assertEqual('', echo_data)
 
         # Ping to spoofed IP should work, but reply should be blocked
-        self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0'))
+        self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0',
+                                  timeout=5))
 
     def test_allowed_address_pairs_reply_antispoof_diff_network(self):
         aap_sg = self.create_security_group('aap_sg')
@@ -165,7 +166,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             sgs=[aap_sg['id']])
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         new_ip = '.'.join(ip2.split('.')[0:3]) + '.155'
         vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
@@ -177,7 +178,8 @@ class TestAllowedAddressPairs(NeutronTestCase):
         self.assertEqual('', echo_data)
 
         # Ping to spoofed IP should work, but reply should be blocked
-        self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0'))
+        self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0',
+                                  timeout=5))
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip(self):
@@ -203,7 +205,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             remote_ip_prefix='192.168.99.99/32')
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                     spoof_ip="192.168.99.99", spoof_mac="",
@@ -228,7 +230,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             sgs=[aap_sg['id']])
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
         new_ip = '.'.join(ip2.split('.')[0:3]) + '.235'
         vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
 
@@ -239,7 +241,8 @@ class TestAllowedAddressPairs(NeutronTestCase):
         self.assertEqual('', echo_data)
 
         # Ping to spoofed IP should work, but reply should be blocked
-        self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0'))
+        self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0',
+                                  timeout=5))
 
         # Update with AAP
         port2 = self.api.update_port(port2['id'],
@@ -252,7 +255,8 @@ class TestAllowedAddressPairs(NeutronTestCase):
         self.assertEqual('ping:echo-reply', echo_data)
 
         # Ping to spoofed IP should work now
-        self.assertTrue(vm1.ping(target_ip=new_ip, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=new_ip, on_iface='eth0',
+                                 timeout=30))
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip_mac(self):
@@ -278,7 +282,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             remote_ip_prefix='192.168.99.99/32')
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         # Send to spoof IP with spoof MAC
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -331,7 +335,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             remote_ip_prefix='192.168.99.97/32')
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         # Send to ip1 and mac1
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -379,7 +383,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             remote_ip_prefix='192.168.99.99/32')
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                     spoof_ip="192.168.99.99",
                                     spoof_mac="AA:AA:AA:AA:AA:AA")
@@ -418,7 +422,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             remote_ip_prefix='192.168.99.0/24')
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                     spoof_ip="192.168.99.2",
@@ -464,7 +468,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             remote_ip_prefix='192.168.99.0/24')
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
                                     spoof_ip="192.168.99.2",
@@ -504,7 +508,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             remote_ip_prefix='192.168.99.0/24')
 
         # Default IP and MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         # Send to subnet spoof IP with default MAC, should work
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -648,7 +652,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         self.delete_security_group_rule(sgr98_96['id'])
 
         # Default IP/MAC should still work
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         # Send to deleted IP/mac - should FAIL
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
@@ -680,7 +684,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             direction='ingress',
             remote_ip_prefix='192.168.99.0/24')
 
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         # Send to subnet IP with default MAC
         self.send_and_capture_spoof(sender=vm1, receiver=vm2,
@@ -761,7 +765,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
             direction='ingress',
             remote_ip_prefix='192.168.98.0/24')
 
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0', timeout=30))
 
         # Send to subnet, default MAC
         self.send_and_capture_spoof(sender=vm1, receiver=vm2, receiver_ip=ip2,
