@@ -279,10 +279,12 @@ class L2GWNeutronTestCase(NeutronTestCase):
             return None
 
     def add_peer(self, topo, tenant_router_id, segment_id, rmt_router_ip,
-                 rmt_router_mac, rmt_private_cidr, dev_id, rmt_tunnel_ip):
+                 rmt_router_mac, rmt_private_cidr, dev_id, rmt_tunnel_ip,
+                 add_route=True):
         route = {'nexthop': rmt_router_ip, 'destination': rmt_private_cidr}
-        self.api.update_router(tenant_router_id,
-                               {'router': {'routes': [route]}})
+        if add_route:
+            self.api.update_router(tenant_router_id,
+                                   {'router': {'routes': [route]}})
         ghost_port = self.create_ghost_port(
             topo['az_net']['id'], rmt_router_ip, rmt_router_mac,
             dev_id)
