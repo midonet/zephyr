@@ -255,3 +255,4 @@ class ClusterConfiguration(FileConfigurationHandler):
                    "zookeeper_hosts = " + z_ip_str + "\n"
         self.cli.write_to_file('/etc/midonet/midonet.conf', conf_str)
         zkcli.cmd('mn-conf set -t default "agent.cluster.enabled: true"')
+        zkcli.cmd('mn-conf set -t default "cluster.loggers.root: DEBUG"')

@@ -103,7 +103,10 @@ class NeutronTestCase(TestCase):
                         'ip_version': ip_version}
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/bgp-speakers.json')
+        self.LOG.debug("create bgp speaker JSON: " + str(speaker_data))
         post_ret = curl_post(curl_url, {'bgp_speaker': speaker_data})
+        self.LOG.debug('Adding BGP speaker: ' + str(speaker_data) +
+                       ', return data: ' + str(post_ret))
         speaker = json.loads(post_ret)
         self.bgp_speakers.append(speaker['bgp_speaker']['id'])
         return speaker['bgp_speaker']
@@ -126,7 +129,10 @@ class NeutronTestCase(TestCase):
                      'remote_as': remote_as}
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/bgp-peers.json')
+        self.LOG.debug("create bgp peer JSON: " + str(peer_data))
         post_ret = curl_post(curl_url, {'bgp_peer': peer_data})
+        self.LOG.debug('Adding BGP peer: ' + str(peer_data) +
+                       ', return data: ' + str(post_ret))
         peer = json.loads(post_ret)
         self.bgp_peers.append(peer['bgp_peer']['id'])
         return peer['bgp_peer']
@@ -445,6 +451,22 @@ class NeutronTestCase(TestCase):
     def clear_route(self, rid):
         if 'extraroute' in self.api_extension_map:
             self.api.update_router(rid, {'router': {'routes': None}})
+
+    def add_routes(self, rid, route_dest_gw_pairs):
+        if 'extraroute' in self.api_extension_map:
+            route_list = []
+            for route_pair in route_dest_gw_pairs:
+                route_dest = route_pair[0]
+                route_gw = route_pair[1]
+                route_list.append({'destination': route_dest,
+                                   'nexthop': route_gw})
+            new_router = self.api.update_router(
+                rid,
+                {'router': {'routes': route_list}})['router']
+            self.LOG.info('Added routes to router: ' +
+                          str(new_router))
+            return new_router
+        return None
 
     def remove_interface_router(self, rid, iface):
         if iface['port_id'] in self.nports:

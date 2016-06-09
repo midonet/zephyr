@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import time
+
 from zephyr.tsm.neutron_test_case import NeutronTestCase
-from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.tsm.test_case import require_topology_feature
 
 
-class TestBGPIPBasic(NeutronTestCase):
+class TestBGPIPExtraRoutes(NeutronTestCase):
 
     @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['2z-1c.json'])
-    @require_extension('bgp-speaker-router-insertion')
+                              ['config/physical_topologies/2z-1c.json'])
     def test_bgp_ip_2_router(self):
         a_as = 64512
         b_as = 64513
@@ -31,27 +30,29 @@ class TestBGPIPBasic(NeutronTestCase):
         a_net = self.create_network('A_NET')
         a_sub = self.create_subnet('A_NET', a_net['id'], a_cidr)
 
+        a2_cidr = "192.168.50.0/24"
+        a2_net = self.create_network('A2_NET')
+        a2_sub = self.create_subnet('A2_NET', a2_net['id'], a2_cidr)
+
         b_cidr = "192.168.30.0/24"
         b_net = self.create_network('B_NET')
         b_sub = self.create_subnet('B_NET', b_net['id'], b_cidr)
 
         c_cidr = "192.168.100.0/24"
         c_net = self.create_network('C_NET')
-        self.create_subnet('C_NET', c_net['id'], c_cidr)
+        c_sub = self.create_subnet('C_NET', c_net['id'], c_cidr)
 
         a_router = self.create_router('A_ROUTER')
         aa_port = self.create_port('A_IFACE', a_net['id'],
                                    port_security_enabled=False)
         ac_port = self.create_port('AC_IFACE', c_net['id'],
                                    port_security_enabled=False)
+
         self.create_router_interface(a_router['id'], port_id=aa_port['id'])
         self.create_router_interface(a_router['id'], port_id=ac_port['id'])
 
         a_bgp_speaker = self.create_bgp_speaker_curl(
             'A_BGP', a_as, a_router['id'])
-
-        (porta, vma, ipa) = self.create_vm_server(
-            "A", a_net['id'], a_sub['gateway_ip'])
 
         b_router = self.create_router('B_ROUTER')
         bb_port = self.create_port('B_IFACE', b_net['id'],
@@ -63,6 +64,25 @@ class TestBGPIPBasic(NeutronTestCase):
 
         b_bgp_speaker = self.create_bgp_speaker_curl(
             'B_BGP', b_as, b_router['id'])
+
+        a2_router = self.create_router('A2_ROUTER',
+                                       priv_sub_ids=[a2_sub['id']])
+        a2a_port = self.create_port('A2A_IFACE', a_net['id'],
+                                    port_security_enabled=False)
+        self.create_router_interface(a2_router['id'], port_id=a2a_port['id'])
+
+        aa_peer_ip = aa_port['fixed_ips'][0]['ip_address']
+        a2a_peer_ip = a2a_port['fixed_ips'][0]['ip_address']
+
+        # Routes from A2 router to the B network
+        self.add_routes(a2_router['id'], [(b_cidr, aa_peer_ip)])
+        # Routes from A router to the A2 network (should be learned by B!)
+        self.add_routes(a_router['id'], [(a2_cidr, a2a_peer_ip)])
+
+        (porta, vma, ipa) = self.create_vm_server(
+            "A", a2_net['id'], a2_sub['gateway_ip'])
+        """ :type vma: zephyr.vtm.guest.Guest """
+        vma.vm_host.add_route(gw_ip='192.168.50.1')
 
         a_peer_ip = bc_port['fixed_ips'][0]['ip_address']
         b_peer_ip = ac_port['fixed_ips'][0]['ip_address']

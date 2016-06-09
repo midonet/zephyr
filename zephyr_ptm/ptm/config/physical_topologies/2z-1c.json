@@ -102,7 +102,6 @@
       "impl": "zephyr_ptm.ptm.host.root_host.RootHost",
       "apps": [
         { "class": "zephyr_ptm.ptm.application.midolman.Midolman",
-          "id": "2",
           "zookeeper_ips": ["10.1.0.2", "10.1.0.3"],
           "cassandra_ips": []},
         {
@@ -120,7 +119,7 @@
   "host_start_order": [
     "root",
     ["zoo1", "zoo2"],
-    "cmp1",
-    "net1"
+    "net1",
+    "cmp1"
   ]
 }
