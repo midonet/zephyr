@@ -17,8 +17,8 @@ import math
 import time
 
 from zephyr.common.echo_server import DEFAULT_ECHO_PORT
-from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr.common.exceptions import ObjectAlreadyAddedException
+from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr.tsm.neutron_test_case import GuestData
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 
