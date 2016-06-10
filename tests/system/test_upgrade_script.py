@@ -13,10 +13,10 @@
 # limitations under the License.
 
 from midonetclient.api import MidonetApi
-from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.cbt import version_config
-from tests.neutron.features.lbaas.lbaas_test_utils import LBaaSTestCase
 from tests.neutron.features.lbaas.lbaas_test_utils import DEFAULT_POOL_PORT
+from tests.neutron.features.lbaas.lbaas_test_utils import LBaaSTestCase
+from zephyr.cbt import version_config
+from zephyr.tsm.neutron_test_case import require_extension
 
 
 class TestUpgradeScript(LBaaSTestCase):
@@ -49,7 +49,7 @@ class TestUpgradeScript(LBaaSTestCase):
                             pool_id=poola['id'])
 
             self.create_vip(subnet_id=self.pub_subnet['id'],
-                            protocol_port=DEFAULT_POOL_PORT+1,
+                            protocol_port=DEFAULT_POOL_PORT + 1,
                             name='poolb-vip1',
                             pool_id=poolb['id'])
 
