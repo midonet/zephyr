@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.tsm.test_case import require_topology_feature
 from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.test_case import require_topology_feature
 
 
 class TestRouterPeeringSecurityGroups(NeutronTestCase):

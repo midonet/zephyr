@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.tsm.test_case import require_topology_feature
 from zephyr.tsm.neutron_test_case import NeutronTestCase
+from zephyr.tsm.test_case import require_topology_feature
 
 
 class TestRouterPeeringSecurityGroups(NeutronTestCase):
@@ -36,7 +36,8 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
         self.create_security_group_rule(sg1['id'], remote_group_id=sg1['id'])
 
         sg2 = self.create_security_group('SG_2')
-        self.create_security_group_rule(sg2['id'], remote_ip_prefix='1.1.1.1/32')
+        self.create_security_group_rule(sg2['id'],
+                                        remote_ip_prefix='1.1.1.1/32')
 
         (porta, vma, ipa) = self.create_vm_server(
             "A", net['id'], sub['gateway_ip'], sgs=[sg1['id']])
