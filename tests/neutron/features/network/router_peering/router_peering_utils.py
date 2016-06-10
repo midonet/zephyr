@@ -12,24 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
 from collections import namedtuple
+import logging
 
 from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr.common.utils import curl_delete
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.vtm.l2gw_fixture import L2GWFixture
+from zephyr.vtm.neutron_api import get_neutron_api_url
 from zephyr.vtm.neutron_api import NetData
 from zephyr.vtm.neutron_api import RouterData
-from zephyr.vtm.neutron_api import get_neutron_api_url
 
 L2GWDevice = namedtuple("L2GWDevice", "gwdev l2gw l2conn")
 L2GWSiteData = namedtuple("L2GWSiteData",
                           "tunnel_cidr tunnel_ip tunnel_gw tunnel_uplink_host "
                           "tunnel_uplink_iface az_cidr az_gw")
 L2GWSiteTopo = namedtuple("L2GWSiteTopo",
-                          "tunnel_port tunnel tunnel_ip vtep_router l2dev az peer_router "
-                          "peer_router_port")
+                          "tunnel_port tunnel tunnel_ip vtep_router l2dev "
+                          "az peer_router peer_router_port")
 L2GWPeer = namedtuple("L2GWPeer", "rmac_entry gwdev_id fake_peer_port")
 L2GWPeeredTopo = namedtuple("L2GWPeeredTopo", "east west")
 
@@ -52,7 +52,8 @@ class L2GWNeutronTestCase(NeutronTestCase):
             ptm.add_fixture('l2gw-setup', L2GWFixture())
 
     def create_ghost_port(self, az_net_id, ip, mac, other_port_id):
-        ghost_port = self.create_port("ghost_port", az_net_id, ip=ip, mac=mac,
+        ghost_port = self.create_port(
+            "ghost_port", az_net_id, ip=ip, mac=mac,
             device_owner="network:remote_site", port_security_enabled=False,
             device_id=other_port_id)
         self.LOG.debug("Created ghost port on east network mimicking "
@@ -154,13 +155,14 @@ class L2GWNeutronTestCase(NeutronTestCase):
             # special uplink network bound to the physical interface on
             # the physical host, and then linking that network port to
             # the router's interface.
-            tun_port = self.create_uplink_port(peer_name, tun_network['id'], tun_host,
-                                               tun_iface, tun_subnet['id'], tun_ip)
+            tun_port = self.create_uplink_port(peer_name, tun_network['id'],
+                                               tun_host, tun_iface,
+                                               tun_subnet['id'], tun_ip)
 
             # Bind port to edge router
             vtep_tun_if = self.api.add_interface_router(
-                    vtep_router['id'],
-                    {'port_id': tun_port['id']})
+                vtep_router['id'], {'port_id': tun_port['id']})
+
             self.LOG.info('Added interface to ' + peer_name +
                           ' VTEP router: ' + str(vtep_tun_if))
 
@@ -176,77 +178,71 @@ class L2GWNeutronTestCase(NeutronTestCase):
 
             # Set up shared (Availability Zone) subnet
             az_net = self.api.create_network(
-                    {'network': {'name': 'az_net_' + peer_name,
-                                 'tenant_id': 'admin'}})['network']
+                {'network': {'name': 'az_net_' + peer_name,
+                             'tenant_id': 'admin'}})['network']
 
             az_sub = self.api.create_subnet(
-                    {'subnet': {'name': 'az_sub_' + peer_name,
-                                'tenant_id': 'admin',
-                                'network_id': az_net['id'],
-                                'enable_dhcp': False,
-                                'gateway_ip': None,
-                                'ip_version': 4,
-                                'cidr': az_cidr}})['subnet']
+                {'subnet': {'name': 'az_sub_' + peer_name,
+                            'tenant_id': 'admin',
+                            'network_id': az_net['id'],
+                            'enable_dhcp': False,
+                            'gateway_ip': None,
+                            'ip_version': 4,
+                            'cidr': az_cidr}})['subnet']
 
             # Set up l2gw connection from VTEP to shared subnet
-            l2gw_conn = self.create_l2_gateway_connection(az_net['id'], segment_id, l2gw_id)
+            l2gw_conn = self.create_l2_gateway_connection(
+                az_net['id'], segment_id, l2gw_id)
             l2conn_id = l2gw_conn['id']
 
             # Set up tenant router port on the shared subnet
             peer_router_port = self.api.create_port(
-                    {'port':
-                     {'name': 'tenant_port_' + peer_name,
-                      'network_id': az_net['id'],
-                      'admin_state_up': True,
-                      'fixed_ips': [{'subnet_id': az_sub['id'],
-                                     'ip_address': az_gw}],
-                      'tenant_id': 'admin'}})['port']
+                {'port':
+                    {'name': 'tenant_port_' + peer_name,
+                     'network_id': az_net['id'],
+                     'admin_state_up': True,
+                     'fixed_ips': [{'subnet_id': az_sub['id'],
+                                    'ip_address': az_gw}],
+                     'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port for peer router on AZ ' +
                            peer_name + ' network: ' + str(peer_router_port))
             # Add the shared subnet port to the tenant router
             peer_router_iface = self.api.add_interface_router(
-                    peer_router['id'],
-                    {'port_id': peer_router_port['id']})
+                peer_router['id'], {'port_id': peer_router_port['id']})
 
             # Add the default route through the tunnel uplink
             vtep_router = self.api.update_router(
-                    vtep_router['id'],
-                    {'router': {
-                        'routes': [{'nexthop': tun_gw,
-                                    'destination': '0.0.0.0/0'}]}})['router']
+                vtep_router['id'],
+                {'router': {
+                    'routes': [{'nexthop': tun_gw,
+                                'destination': '0.0.0.0/0'}]}})['router']
 
             self.LOG.debug(peer_name + ' peer finished: ' + str(peer_router))
 
             return L2GWSiteTopo(
-                    tunnel_port=tun_port,
-                    tunnel=NetData(network=tun_network,
-                                   subnet=tun_subnet),
-                    tunnel_ip=tun_ip,
-                    vtep_router=RouterData(router=vtep_router,
-                                           if_list=[vtep_tun_if]),
-                    l2dev=L2GWDevice(gwdev=gwdev_id,
-                                     l2gw=l2gw_id,
-                                     l2conn=l2conn_id),
-                    az=NetData(network=az_net,
-                               subnet=az_sub),
-                    peer_router=RouterData(router=peer_router,
-                                           if_list=[peer_router_iface]),
-                    peer_router_port=peer_router_port)
+                tunnel_port=tun_port,
+                tunnel=NetData(network=tun_network, subnet=tun_subnet),
+                tunnel_ip=tun_ip,
+                vtep_router=RouterData(router=vtep_router,
+                                       if_list=[vtep_tun_if]),
+                l2dev=L2GWDevice(gwdev=gwdev_id, l2gw=l2gw_id,
+                                 l2conn=l2conn_id),
+                az=NetData(network=az_net, subnet=az_sub),
+                peer_router=RouterData(router=peer_router,
+                                       if_list=[peer_router_iface]),
+                peer_router_port=peer_router_port)
 
         except Exception as e:
             self.LOG.fatal("Error creating shared-site topology: " + str(e))
             self.clean_peer_data(
-                    tunnel=NetData(network=tun_network,
-                                   subnet=tun_subnet),
-                    vtep_router=RouterData(router=vtep_router,
-                                           if_list=[vtep_tun_if]),
-                    l2dev=L2GWDevice(gwdev=gwdev_id,
-                                     l2gw=l2gw_id,
-                                     l2conn=l2conn_id),
-                    az=NetData(network=az_net,
-                               subnet=az_sub),
-                    peer_router=RouterData(router=peer_router,
-                                           if_list=[peer_router_iface]))
+                tunnel=NetData(network=tun_network, subnet=tun_subnet),
+                vtep_router=RouterData(
+                    router=vtep_router, if_list=[vtep_tun_if]),
+                l2dev=L2GWDevice(gwdev=gwdev_id, l2gw=l2gw_id,
+                                 l2conn=l2conn_id),
+                az=NetData(network=az_net, subnet=az_sub),
+                peer_router=RouterData(router=peer_router,
+                                       if_list=[peer_router_iface]))
             return None
 
     def peer_sites(self,
@@ -288,9 +284,10 @@ class L2GWNeutronTestCase(NeutronTestCase):
         ghost_port = self.create_ghost_port(
             topo['az_net']['id'], rmt_router_ip, rmt_router_mac,
             dev_id)
-        rmac = self.create_remote_mac_entry(rmt_tunnel_ip,
-            rmt_router_mac, segment_id,
+        rmac = self.create_remote_mac_entry(
+            rmt_tunnel_ip, rmt_router_mac, segment_id,
             topo['gateway_device']['id'])
+
         topo = dict()
         topo['ghost_port'] = ghost_port
         topo['remote_mac_entry'] = rmac
@@ -330,13 +327,14 @@ class L2GWNeutronTestCase(NeutronTestCase):
 
             # Create ghost ports on both networks for each others' peer ports
             fake_peer_port = self.create_ghost_port(
-                    near_side.az.network['id'], far_port_main_ip,
-                    far_port['mac_address'], far_port['id'])
+                near_side.az.network['id'], far_port_main_ip,
+                far_port['mac_address'], far_port['id'])
 
             # Add MAC addresses into each site to tunnel to far end
-            rmac = self.create_remote_mac_entry(far_side.tunnel_ip,
-                    far_side.peer_router_port['mac_address'], segment_id,
-                    near_side.l2dev.gwdev)
+            rmac = self.create_remote_mac_entry(
+                far_side.tunnel_ip, far_side.peer_router_port['mac_address'],
+                segment_id, near_side.l2dev.gwdev)
+
             rmac_entry = rmac['id']
 
             return L2GWPeer(rmac_entry,
@@ -407,7 +405,7 @@ class L2GWNeutronTestCase(NeutronTestCase):
                                        str(i) + ' on: ' +
                                        vtep_router.router['id'])
                         self.api.remove_interface_router(
-                                vtep_router.router['id'], i)
+                            vtep_router.router['id'], i)
             if l2dev and l2dev.gwdev:
                 self.LOG.debug("Cleaning GW dev:" +
                                curl_url + "/gw/gateway_devices/" +
@@ -428,7 +426,7 @@ class L2GWNeutronTestCase(NeutronTestCase):
                                        str(i) + ' on tenant rotuer: ' +
                                        peer_router.router['id'])
                         self.api.remove_interface_router(
-                                peer_router.router['id'], i)
+                            peer_router.router['id'], i)
 
             if az:
                 if az.subnet:

@@ -49,19 +49,19 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         try:
 
             east_topo = create_neutron_main_pub_networks(
-                    self.api,
-                    main_name='main_east',
-                    main_subnet_cidr=east_main_cidr,
-                    pub_name='pub_east',
-                    pub_subnet_cidr="200.200.120.0/24",
-                    log=self.LOG)
+                self.api,
+                main_name='main_east',
+                main_subnet_cidr=east_main_cidr,
+                pub_name='pub_east',
+                pub_subnet_cidr="200.200.120.0/24",
+                log=self.LOG)
             west_topo = create_neutron_main_pub_networks(
-                    self.api,
-                    main_name='main_west',
-                    main_subnet_cidr=west_main_cidr,
-                    pub_name='pub_west',
-                    pub_subnet_cidr="200.200.130.0/24",
-                    log=self.LOG)
+                self.api,
+                main_name='main_west',
+                main_subnet_cidr=west_main_cidr,
+                pub_name='pub_west',
+                pub_subnet_cidr="200.200.130.0/24",
+                log=self.LOG)
 
             port1 = self.api.create_port({
                 'port': {'name': 'port_vm1',
@@ -71,9 +71,8 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(
-                    ip=ip1,
-                    mac=port1['mac_address'],
-                    gw_ip=east_topo.main_net.subnet['gateway_ip'])
+                ip=ip1, mac=port1['mac_address'],
+                gw_ip=east_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
@@ -86,9 +85,8 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm2 = self.vtm.create_vm(
-                    ip=ip2,
-                    mac=port2['mac_address'],
-                    gw_ip=west_topo.main_net.subnet['gateway_ip'])
+                ip=ip2, mac=port2['mac_address'],
+                gw_ip=west_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm2.plugin_vm('eth0', port2['id'])
@@ -190,59 +188,57 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         try:
 
             east_topo = create_neutron_main_pub_networks(
-                    self.api,
-                    main_name='main_east',
-                    main_subnet_cidr=east_main_cidr,
-                    pub_name='pub_east',
-                    pub_subnet_cidr="200.200.120.0/24",
-                    log=self.LOG)
+                self.api,
+                main_name='main_east',
+                main_subnet_cidr=east_main_cidr,
+                pub_name='pub_east',
+                pub_subnet_cidr="200.200.120.0/24",
+                log=self.LOG)
             west_topo = create_neutron_main_pub_networks(
-                    self.api,
-                    main_name='main_west',
-                    main_subnet_cidr=west_main_cidr,
-                    pub_name='pub_west',
-                    pub_subnet_cidr="200.200.130.0/24",
-                    log=self.LOG)
+                self.api,
+                main_name='main_west',
+                main_subnet_cidr=west_main_cidr,
+                pub_name='pub_west',
+                pub_subnet_cidr="200.200.130.0/24",
+                log=self.LOG)
             east_ed = self.create_edge_router(
-                    pub_subnets=east_topo.pub_net.subnet,
-                    router_host_name='router1',
-                    edge_host_name='edge2',
-                    edge_iface_name='eth1',
-                    edge_subnet_cidr='172.17.2.0/24')
+                pub_subnets=east_topo.pub_net.subnet,
+                router_host_name='router1',
+                edge_host_name='edge2',
+                edge_iface_name='eth1',
+                edge_subnet_cidr='172.17.2.0/24')
             west_ed = self.create_edge_router(
-                    pub_subnets=west_topo.pub_net.subnet,
-                    router_host_name='router1',
-                    edge_host_name='edge1',
-                    edge_iface_name='eth1',
-                    edge_subnet_cidr='172.16.2.0/24')
+                pub_subnets=west_topo.pub_net.subnet,
+                router_host_name='router1',
+                edge_host_name='edge1',
+                edge_iface_name='eth1',
+                edge_subnet_cidr='172.16.2.0/24')
 
             port1 = self.api.create_port(
-                    {'port': {'name': 'port_vm1',
-                              'network_id': east_topo.main_net.network['id'],
-                              'admin_state_up': True,
-                              'tenant_id': 'admin'}})['port']
+                {'port': {'name': 'port_vm1',
+                          'network_id': east_topo.main_net.network['id'],
+                          'admin_state_up': True,
+                          'tenant_id': 'admin'}})['port']
 
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(
-                    ip=ip1,
-                    mac=port1['mac_address'],
-                    gw_ip=east_topo.main_net.subnet['gateway_ip'])
+                ip=ip1, mac=port1['mac_address'],
+                gw_ip=east_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
 
             port2 = self.api.create_port(
-                    {'port': {'name': 'port_vm2',
-                              'network_id': west_topo.main_net.network['id'],
-                              'admin_state_up': True,
-                              'tenant_id': 'admin'}})['port']
+                {'port': {'name': 'port_vm2',
+                          'network_id': west_topo.main_net.network['id'],
+                          'admin_state_up': True,
+                          'tenant_id': 'admin'}})['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm2 = self.vtm.create_vm(
-                    ip=ip2,
-                    mac=port2['mac_address'],
-                    gw_ip=west_topo.main_net.subnet['gateway_ip'])
+                ip=ip2, mac=port2['mac_address'],
+                gw_ip=west_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm2.plugin_vm('eth0', port2['id'])
@@ -327,58 +323,56 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         try:
 
             east_topo = create_neutron_main_pub_networks(
-                    self.api,
-                    main_name='main_east',
-                    main_subnet_cidr=east_main_cidr,
-                    pub_name='pub_east',
-                    pub_subnet_cidr="200.200.120.0/24",
-                    log=self.LOG)
+                self.api,
+                main_name='main_east',
+                main_subnet_cidr=east_main_cidr,
+                pub_name='pub_east',
+                pub_subnet_cidr="200.200.120.0/24",
+                log=self.LOG)
             west_topo = create_neutron_main_pub_networks(
-                    self.api,
-                    main_name='main_west',
-                    main_subnet_cidr=west_main_cidr,
-                    pub_name='pub_west',
-                    pub_subnet_cidr="200.200.130.0/24",
-                    log=self.LOG)
+                self.api,
+                main_name='main_west',
+                main_subnet_cidr=west_main_cidr,
+                pub_name='pub_west',
+                pub_subnet_cidr="200.200.130.0/24",
+                log=self.LOG)
             east_ed = self.create_edge_router(
-                    pub_subnets=east_topo.pub_net.subnet,
-                    router_host_name='router1',
-                    edge_host_name='edge2',
-                    edge_iface_name='eth1',
-                    edge_subnet_cidr='172.17.2.0/24')
+                pub_subnets=east_topo.pub_net.subnet,
+                router_host_name='router1',
+                edge_host_name='edge2',
+                edge_iface_name='eth1',
+                edge_subnet_cidr='172.17.2.0/24')
             west_ed = self.create_edge_router(
-                    pub_subnets=west_topo.pub_net.subnet,
-                    router_host_name='router1',
-                    edge_host_name='edge1',
-                    edge_iface_name='eth1',
-                    edge_subnet_cidr='172.16.2.0/24')
+                pub_subnets=west_topo.pub_net.subnet,
+                router_host_name='router1',
+                edge_host_name='edge1',
+                edge_iface_name='eth1',
+                edge_subnet_cidr='172.16.2.0/24')
 
             port1 = self.api.create_port(
-                    {'port': {'name': 'port_vm1',
-                              'network_id': east_topo.main_net.network['id'],
-                              'admin_state_up': True,
-                              'tenant_id': 'admin'}})['port']
+                {'port': {'name': 'port_vm1',
+                          'network_id': east_topo.main_net.network['id'],
+                          'admin_state_up': True,
+                          'tenant_id': 'admin'}})['port']
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(
-                    ip=ip1,
-                    mac=port1['mac_address'],
-                    gw_ip=east_topo.main_net.subnet['gateway_ip'])
+                ip=ip1, mac=port1['mac_address'],
+                gw_ip=east_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
 
             port2 = self.api.create_port(
-                    {'port': {'name': 'port_vm2',
-                              'network_id': west_topo.main_net.network['id'],
-                              'admin_state_up': True,
-                              'tenant_id': 'admin'}})['port']
+                {'port': {'name': 'port_vm2',
+                          'network_id': west_topo.main_net.network['id'],
+                          'admin_state_up': True,
+                          'tenant_id': 'admin'}})['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm2 = self.vtm.create_vm(
-                    ip=ip2,
-                    mac=port2['mac_address'],
-                    gw_ip=west_topo.main_net.subnet['gateway_ip'])
+                ip=ip2, mac=port2['mac_address'],
+                gw_ip=west_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm2.plugin_vm('eth0', port2['id'])
@@ -407,18 +401,18 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             self.assertIsNotNone(peered_topo)
 
             floating_ip_east = self.api.create_floatingip(
-                    {'floatingip': {
-                        'tenant_id': 'admin',
-                        'port_id': port1['id'],
-                        'floating_network_id':
-                            east_topo.pub_net.network['id']}})['floatingip']
+                {'floatingip':
+                    {'tenant_id': 'admin',
+                     'port_id': port1['id'],
+                     'floating_network_id':
+                     east_topo.pub_net.network['id']}})['floatingip']
 
             floating_ip_west = self.api.create_floatingip(
-                    {'floatingip': {
-                        'tenant_id': 'admin',
-                        'port_id': port2['id'],
-                        'floating_network_id':
-                            west_topo.pub_net.network['id']}})['floatingip']
+                {'floatingip':
+                    {'tenant_id': 'admin',
+                     'port_id': port2['id'],
+                     'floating_network_id':
+                     west_topo.pub_net.network['id']}})['floatingip']
 
             fip_e = floating_ip_east['floating_ip_address']
             self.LOG.debug("Received floating IP E: " + str(fip_e))
@@ -520,19 +514,13 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
         try:
 
             east_topo = create_neutron_main_pub_networks(
-                    self.api,
-                    main_name='main_east',
-                    main_subnet_cidr=east_main_cidr,
-                    pub_name='pub_east',
-                    pub_subnet_cidr="200.200.120.0/24",
-                    log=self.LOG)
+                self.api, main_name='main_east',
+                main_subnet_cidr=east_main_cidr, pub_name='pub_east',
+                pub_subnet_cidr="200.200.120.0/24", log=self.LOG)
             west_topo = create_neutron_main_pub_networks(
-                    self.api,
-                    main_name='main_west',
-                    main_subnet_cidr=west_main_cidr,
-                    pub_name='pub_west',
-                    pub_subnet_cidr="200.200.130.0/24",
-                    log=self.LOG)
+                self.api, main_name='main_west',
+                main_subnet_cidr=west_main_cidr, pub_name='pub_west',
+                pub_subnet_cidr="200.200.130.0/24", log=self.LOG)
 
             port1 = self.api.create_port({
                 'port': {'name': 'port_vm1',
@@ -542,9 +530,8 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(
-                    ip=ip1,
-                    mac=port1['mac_address'],
-                    gw_ip=east_topo.main_net.subnet['gateway_ip'])
+                ip=ip1, mac=port1['mac_address'],
+                gw_ip=east_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', port1['id'])
@@ -557,9 +544,8 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm2 = self.vtm.create_vm(
-                    ip=ip2,
-                    mac=port2['mac_address'],
-                    gw_ip=west_topo.main_net.subnet['gateway_ip'])
+                ip=ip2, mac=port2['mac_address'],
+                gw_ip=west_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
             vm2.plugin_vm('eth0', port2['id'])

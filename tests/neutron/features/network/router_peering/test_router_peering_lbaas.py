@@ -17,8 +17,8 @@ from zephyr.tsm.neutron_test_case import GuestData
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.tsm.test_case import require_topology_feature
 
-from tests.neutron.features.lbaas.lbaas_test_utils import LBaaSTestCase
 from tests.neutron.features.lbaas.lbaas_test_utils import DEFAULT_POOL_PORT
+from tests.neutron.features.lbaas.lbaas_test_utils import LBaaSTestCase
 
 
 PACKETS_TO_SEND = 20

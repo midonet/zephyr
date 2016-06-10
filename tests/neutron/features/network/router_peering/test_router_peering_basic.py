@@ -121,8 +121,6 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
         exterior_ip = "172.20.1.1"
         vmb.start_echo_server(ip=ipb)
 
-        import pdb; pdb.set_trace()
-
         self.verify_connectivity(vma, ipb)
         self.verify_connectivity(vma, b_fip['floating_ip_address'])
 

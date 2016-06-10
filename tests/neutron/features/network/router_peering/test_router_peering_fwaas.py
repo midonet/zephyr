@@ -103,7 +103,8 @@ class TestRouterPeeringFWaaS(L2GWNeutronTestCase):
         self.verify_tcp_connectivity(vmb, ipa, 8888)
 
         fwp = self.create_firewall_policy('POLICY')
-        fw = self.create_firewall(fwp['id'], router_ids=[a_tenant_router['id']])
+        fw = self.create_firewall(fwp['id'],
+                                  router_ids=[a_tenant_router['id']])
         fwr_icmp = self.create_firewall_rule(action='allow', protocol='icmp')
         fwr_tcp7 = self.create_firewall_rule(action='allow', protocol='tcp',
                                              dest_port=7777)

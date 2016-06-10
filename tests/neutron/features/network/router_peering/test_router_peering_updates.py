@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from router_peering_utils import L2GWNeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.tsm.test_case import require_topology_feature
-from router_peering_utils import L2GWNeutronTestCase
 
 
 class TestRouterPeeringUpdates(L2GWNeutronTestCase):
@@ -146,7 +146,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         vma.start_echo_server(ip=ipa)
         self.verify_connectivity(vmb, ipa)
 
-        self.api.update_router(a_tenant_router['id'], {'router': {'routes': None}})
+        self.api.update_router(a_tenant_router['id'],
+                               {'router': {'routes': None}})
         self.remove_router_interface(a_tenant_router['id'],
                                      a_top['az_iface'])
 
@@ -161,8 +162,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         self.assertFalse(vma.ping(target_ip=ipb))
         self.assertFalse(vmb.ping(target_ip=ipa))
 
-        (iface_port, iface) = self.hook_tenant_router_to_az_net("EAST",
-            a_tenant_router['id'], a_top['az_net']['id'],
+        (iface_port, iface) = self.hook_tenant_router_to_az_net(
+            "EAST", a_tenant_router['id'], a_top['az_net']['id'],
             a_top['az_sub']['id'], "192.168.200.2")
         a_top['az_iface_port'] = iface_port
         a_top['az_iface'] = iface
@@ -250,7 +251,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         vma.start_echo_server(ip=ipa)
         self.verify_connectivity(vmb, ipa)
 
-        self.api.update_router(a_tenant_router['id'], {'router': {'routes': None}})
+        self.api.update_router(a_tenant_router['id'],
+                               {'router': {'routes': None}})
         self.remove_router_interface(a_tenant_router['id'],
                                      a_top['az_iface'])
 
@@ -265,8 +267,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         self.assertFalse(vma.ping(target_ip=ipb))
         self.assertFalse(vmb.ping(target_ip=ipa))
 
-        (iface_port, iface) = self.hook_tenant_router_to_az_net("EAST",
-            a_tenant_router['id'], a_top['az_net']['id'],
+        (iface_port, iface) = self.hook_tenant_router_to_az_net(
+            "EAST", a_tenant_router['id'], a_top['az_net']['id'],
             a_top['az_sub']['id'], "192.168.200.2")
         a_top['az_iface_port'] = iface_port
         a_top['az_iface'] = iface
@@ -537,12 +539,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
                               new_tunnel_ip)
 
         self.api.update_router(b_top['vtep_router']['id'],
-            {'router': {'routes': None}})
+                               {'router': {'routes': None}})
         self.remove_router_interface(b_top['vtep_router']['id'],
                                      b_top['vtep_tun_if'])
 
-        tun_port = self.create_uplink_port("WEST",
-            b_top['vtep_net']['id'], "tun1", "eth1",
+        tun_port = self.create_uplink_port(
+            "WEST", b_top['vtep_net']['id'], "tun1", "eth1",
             b_top['vtep_sub']['id'], new_tunnel_ip)
 
         vtep_tun_if = self.create_router_interface(
@@ -550,7 +552,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
 
         route = {u'destination': u'0.0.0.0/0', u'nexthop': u'2.2.2.3'}
         self.api.update_router(b_top['vtep_router']['id'],
-            {'router': {'routes': [route]}})
+                               {'router': {'routes': [route]}})
 
         self.delete_remote_mac_entry(a_top['gateway_device']['id'],
                                      a_rme['remote_mac_entry']['id'])

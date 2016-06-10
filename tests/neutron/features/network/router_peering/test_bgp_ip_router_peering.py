@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from router_peering_utils import L2GWNeutronTestCase
 import time
 from zephyr.common.ip import IP
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.tsm.test_case import require_topology_feature
-from router_peering_utils import L2GWNeutronTestCase
 
 
 class TestRouterPeeringBGP(L2GWNeutronTestCase):
@@ -86,8 +86,10 @@ class TestRouterPeeringBGP(L2GWNeutronTestCase):
         a_as = 64512
         b_as = 64513
 
-        a_bgp_speaker = self.create_bgp_speaker('A_BGP', a_as, a_tenant_router['id'])
-        b_bgp_speaker = self.create_bgp_speaker('B_BGP', b_as, b_tenant_router['id'])
+        a_bgp_speaker = self.create_bgp_speaker('A_BGP', a_as,
+                                                a_tenant_router['id'])
+        b_bgp_speaker = self.create_bgp_speaker('B_BGP', b_as,
+                                                b_tenant_router['id'])
 
         a_peer = self.create_bgp_peer('A_PEER', '192.168.200.3', b_as)
         b_peer = self.create_bgp_peer('B_PEER', '192.168.200.2', a_as)

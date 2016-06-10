@@ -56,7 +56,8 @@ class TestRouterPeeringSecurityGroups(L2GWNeutronTestCase):
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
         b_sg = self.create_security_group('SG_B')
-        self.create_security_group_rule(b_sg['id'], remote_ip_prefix=ipa + '/32')
+        self.create_security_group_rule(b_sg['id'],
+                                        remote_ip_prefix=ipa + '/32')
 
         (portb, vmb, ipb) = self.create_vm_server(
             "B", b_net['id'], b_sub['gateway_ip'], sgs=[b_sg['id']])

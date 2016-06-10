@@ -75,7 +75,8 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
         c_net = self.create_network('NORTH')
         c_sub = self.create_subnet('NORTH', c_net['id'], c_cidr)
         c_pub_net = self.create_network('PUB_NORTH', external=True)
-        c_pub_sub = self.create_subnet('PUB_NORTH', c_pub_net['id'], c_pub_cidr)
+        c_pub_sub = self.create_subnet('PUB_NORTH', c_pub_net['id'],
+                                       c_pub_cidr)
         c_tenant_router = self.create_router('NORTH',
                                              pub_net_id=c_pub_net['id'],
                                              priv_sub_ids=[c_sub['id']])
@@ -87,7 +88,8 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
         d_net = self.create_network('NORTH')
         d_sub = self.create_subnet('NORTH', d_net['id'], d_cidr)
         d_pub_net = self.create_network('PUB_NORTH', external=True)
-        d_pub_sub = self.create_subnet('PUB_NORTH', d_pub_net['id'], d_pub_cidr)
+        d_pub_sub = self.create_subnet('PUB_NORTH', d_pub_net['id'],
+                                       d_pub_cidr)
         d_tenant_router = self.create_router('NORTH',
                                              pub_net_id=d_pub_net['id'],
                                              priv_sub_ids=[d_sub['id']])
@@ -114,12 +116,12 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
         c_top['l2_gateway_conn'] = self.create_l2_gateway_connection(
             c_top['az_net']['id'], "200", c_top['l2_gateway']['id'])
 
-        c_top['az_iface_port'] = self.create_port("EAST_2",
-            c_top['az_net']['id'], sub_id=c_top['az_sub']['id'],
+        c_top['az_iface_port'] = self.create_port(
+            "EAST_2", c_top['az_net']['id'], sub_id=c_top['az_sub']['id'],
             ip="192.168.201.2")
 
-        c_top['az_iface'] = self.create_router_interface(c_tenant_router['id'],
-            c_top['az_iface_port']['id'])
+        c_top['az_iface'] = self.create_router_interface(
+            c_tenant_router['id'], c_top['az_iface_port']['id'])
 
         b_top = self.create_router_peering_topo(
             name="WEST",
@@ -141,11 +143,12 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
         d_top['l2_gateway_conn'] = self.create_l2_gateway_connection(
             d_top['az_net']['id'], "200", d_top['l2_gateway']['id'])
 
-        d_top['az_iface_port'] = self.create_port("WEST_2",
-            d_top['az_net']['id'], sub_id=d_top['az_sub']['id'], ip="192.168.201.3")
+        d_top['az_iface_port'] = self.create_port(
+            "WEST_2", d_top['az_net']['id'], sub_id=d_top['az_sub']['id'],
+            ip="192.168.201.3")
 
-        d_top['az_iface'] = self.create_router_interface(d_tenant_router['id'],
-            d_top['az_iface_port']['id'])
+        d_top['az_iface'] = self.create_router_interface(
+            d_tenant_router['id'], d_top['az_iface_port']['id'])
 
         a_router_mac = a_top['az_iface_port']['mac_address']
         b_router_mac = b_top['az_iface_port']['mac_address']
@@ -214,7 +217,8 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
         c_net = self.create_network('NORTH')
         c_sub = self.create_subnet('NORTH', c_net['id'], c_cidr)
         c_pub_net = self.create_network('PUB_NORTH', external=True)
-        c_pub_sub = self.create_subnet('PUB_NORTH', c_pub_net['id'], c_pub_cidr)
+        c_pub_sub = self.create_subnet('PUB_NORTH', c_pub_net['id'],
+                                       c_pub_cidr)
         c_tenant_router = self.create_router('NORTH',
                                              pub_net_id=c_pub_net['id'],
                                              priv_sub_ids=[c_sub['id']])
@@ -276,7 +280,8 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        self.api.update_router(a_tenant_router['id'],
+        self.api.update_router(
+            a_tenant_router['id'],
             {'router': {'routes': [{'nexthop': "192.168.200.4",
                                     'destination': c_cidr},
                                    {'nexthop': "192.168.200.3",
