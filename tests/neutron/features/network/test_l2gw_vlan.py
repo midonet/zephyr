@@ -48,11 +48,11 @@ class TestL2GWVLAN(NeutronTestCase):
         # Create the normal tenant networks
         tenant1_net = self.create_network("net1_net")
         tenant1_sub = self.create_subnet(
-            "net1_sub",  tenant1_net['id'], '172.20.100.0/24')
+            "net1_sub", tenant1_net['id'], '172.20.100.0/24')
 
         tenant2_net = self.create_network("net2_net")
         tenant2_sub = self.create_subnet(
-            "net2_sub",  tenant2_net['id'], '172.20.100.0/24')
+            "net2_sub", tenant2_net['id'], '172.20.100.0/24')
 
         # Turn the VLAN-aware bridge into a l2gw device
         gw_dev = self.create_gateway_device(
@@ -99,31 +99,31 @@ class TestL2GWVLAN(NeutronTestCase):
 
         try:
             # From VMs in VLAN to ext host in VLAN should work
-            self.assertEquals(
+            self.assertEqual(
                 "vm1:ext2",
                 vm1.send_echo_request(
                     dest_ip=ext_ip, dest_port=5082, echo_request='vm1'))
-            self.assertEquals(
+            self.assertEqual(
                 "vm2:ext3",
                 vm2.send_echo_request(
                     dest_ip=ext_ip, dest_port=5083, echo_request='vm2'))
 
             # From ext hosts in VLAN to VM in VLAN should work
-            self.assertEquals(
+            self.assertEqual(
                 "ext2:vm1",
                 ext2_host.send_echo_request(
                     dest_ip=ip1, dest_port=5080, echo_request='ext2'))
-            self.assertEquals(
+            self.assertEqual(
                 "ext3:vm2",
                 ext3_host.send_echo_request(
                     dest_ip=ip2, dest_port=5081, echo_request='ext3'))
 
             # From VMs to ext hosts in different VLAN should NOT work
-            self.assertEquals(
+            self.assertEqual(
                 "",
                 vm2.send_echo_request(
                     dest_ip=ext_ip, dest_port=5082, echo_request='vm2'))
-            self.assertEquals(
+            self.assertEqual(
                 "",
                 vm1.send_echo_request(
                     dest_ip=ext_ip, dest_port=5083, echo_request='vm1'))

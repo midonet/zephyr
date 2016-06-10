@@ -13,9 +13,9 @@
 # limitations under the License.
 
 from zephyr.common.ip import IP
+from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.tsm.test_case import require_topology_feature
-from zephyr.tsm.neutron_test_case import NeutronTestCase
 
 
 class TestBGPIPBasic(NeutronTestCase):

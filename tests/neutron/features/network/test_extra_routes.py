@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest
 from collections import namedtuple
-
+import unittest
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 
@@ -61,7 +60,8 @@ class TestExtraRoutes(NeutronTestCase):
             }}
 
             router1 = self.api.create_router(router1def)['router']
-            self.LOG.debug('Created router1 from net1 to net2: ' + str(router1))
+            self.LOG.debug('Created router1 from net1 to net2: ' +
+                           str(router1))
 
             port1def = {'port': {'name': 'port1',
                                  'network_id': net1['id'],
@@ -86,7 +86,8 @@ class TestExtraRoutes(NeutronTestCase):
             self.LOG.debug("Added interface to router: " + str(if1))
             self.LOG.debug("Added interface to router: " + str(if2))
 
-            return TopoData(net1, net2, subnet1, subnet2, port1, port2, if1, if2, router1)
+            return TopoData(net1, net2, subnet1, subnet2, port1, port2, if1,
+                            if2, router1)
         except Exception as e:
             self.LOG.fatal('Error setting up topology: ' + str(e))
             raise e
@@ -99,7 +100,8 @@ class TestExtraRoutes(NeutronTestCase):
         if td is None:
             return
         if td.router1 is not None:
-            self.api.update_router(td.router1['id'], {'router': {'routes': None}})
+            self.api.update_router(
+                td.router1['id'], {'router': {'routes': None}})
         if td.if1 is not None:
             self.api.remove_interface_router(td.router1['id'], td.if1)
         if td.if2 is not None:
@@ -131,17 +133,22 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'],
+                                     gw_ip=td.subnet1['gateway_ip'],
+                                     hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp2')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'],
+                                     gw_ip=td.subnet2['gateway_ip'],
+                                     hv_host='cmp2')
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
 
-            self.api.update_port(td.port1['id'],
-                                 {'port': {
-                                     'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
+            self.api.update_port(
+                td.port1['id'],
+                {'port': {
+                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -155,12 +162,14 @@ class TestExtraRoutes(NeutronTestCase):
                     }
                 ]
             }}
-            new_router1 = self.api.update_router(td.router1['id'], updatedef)['router']
+            new_router1 = self.api.update_router(
+                td.router1['id'], updatedef)['router']
 
-            # Re-assign named tuple with "router1" field set to new value (must reset because
-            #   named tuples are immutable).
+            # Re-assign named tuple with "router1" field set to new value
+            # (must reset because named tuples are immutable).
             self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
+            td = TopoData(**{f: (v if f != 'router1' else new_router1)
+                             for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -190,17 +199,22 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'],
+                                     gw_ip=td.subnet1['gateway_ip'],
+                                     hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'],
+                                     gw_ip=td.subnet2['gateway_ip'],
+                                     hv_host='cmp1')
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
 
-            self.api.update_port(td.port1['id'],
-                                 {'port': {
-                                     'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
+            self.api.update_port(
+                td.port1['id'],
+                {'port': {
+                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -214,12 +228,14 @@ class TestExtraRoutes(NeutronTestCase):
                     }
                 ]
             }}
-            new_router1 = self.api.update_router(td.router1['id'], updatedef)['router']
+            new_router1 = self.api.update_router(
+                td.router1['id'], updatedef)['router']
 
-            # Re-assign named tuple with "router1" field set to new value (must reset because
-            #   named tuples are immutable).
+            # Re-assign named tuple with "router1" field set to new value
+            # (must reset because named tuples are immutable).
             self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
+            td = TopoData(**{f: (v if f != 'router1' else new_router1)
+                             for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -251,8 +267,10 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
-            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
+            vm1 = self.vtm.create_vm(ip=ip1, gw_ip=td.subnet1['gateway_ip'],
+                                     hv_host='cmp2')
+            vm2 = self.vtm.create_vm(ip=ip2, gw_ip=td.subnet2['gateway_ip'],
+                                     hv_host='cmp1')
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
@@ -269,12 +287,14 @@ class TestExtraRoutes(NeutronTestCase):
                     }
                 ]
             }}
-            new_router1 = self.api.update_router(td.router1['id'], updatedef)['router']
+            new_router1 = self.api.update_router(
+                td.router1['id'], updatedef)['router']
 
-            # Re-assign named tuple with "router1" field set to new value (must reset because
-            #   named tuples are immutable).
+            # Re-assign named tuple with "router1" field set to new value
+            # (must reset because named tuples are immutable).
             self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
+            td = TopoData(**{f: (v if f != 'router1' else new_router1)
+                             for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to 8.8.8.8')
             self.assertTrue(vm1.ping(target_ip="8.8.8.8"))
@@ -302,22 +322,28 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'],
+                                     gw_ip=td.subnet1['gateway_ip'],
+                                     hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'],
+                                     gw_ip=td.subnet2['gateway_ip'],
+                                     hv_host='cmp1')
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
 
-            self.api.update_port(td.port1['id'],
-                                 {'port': {
-                                     'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
-                                                               {"ip_address": "172.17.0.2"}]}})
+            self.api.update_port(
+                td.port1['id'],
+                {'port': {
+                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
+                                              {"ip_address": "172.17.0.2"}]}})
 
-            self.api.update_port(td.port2['id'],
-                                 {'port': {
-                                     'allowed_address_pairs': [{"ip_address": "172.18.0.2"}]}})
+            self.api.update_port(
+                td.port2['id'],
+                {'port': {
+                    'allowed_address_pairs': [{"ip_address": "172.18.0.2"}]}})
 
             # Add two extra IP addrs to vm1's interface and one to vm2
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -341,12 +367,14 @@ class TestExtraRoutes(NeutronTestCase):
                     }
                 ]
             }}
-            new_router1 = self.api.update_router(td.router1['id'], updatedef)['router']
+            new_router1 = self.api.update_router(
+                td.router1['id'], updatedef)['router']
 
-            # Re-assign named tuple with "router1" field set to new value (must reset because
-            #   named tuples are immutable).
+            # Re-assign named tuple with "router1" field set to new value
+            # (must reset because named tuples are immutable).
             self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
+            td = TopoData(**{f: (v if f != 'router1' else new_router1)
+                             for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -379,18 +407,23 @@ class TestExtraRoutes(NeutronTestCase):
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'],
+                                     gw_ip=td.subnet1['gateway_ip'],
+                                     hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'],
+                                     gw_ip=td.subnet2['gateway_ip'],
+                                     hv_host='cmp1')
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
 
-            self.api.update_port(td.port1['id'],
-                                 {'port': {
-                                     'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
-                                                               {"ip_address": "172.16.0.3"}]}})
+            self.api.update_port(
+                td.port1['id'],
+                {'port': {
+                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
+                                              {"ip_address": "172.16.0.3"}]}})
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -406,12 +439,14 @@ class TestExtraRoutes(NeutronTestCase):
                     }
                 ]
             }}
-            new_router1 = self.api.update_router(td.router1['id'], updatedef)['router']
+            new_router1 = self.api.update_router(
+                td.router1['id'], updatedef)['router']
 
-            # Re-assign named tuple with "router1" field set to new value (must reset because
-            #   named tuples are immutable).
+            # Re-assign named tuple with "router1" field set to new value
+            # (must reset because named tuples are immutable).
             self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
+            td = TopoData(**{f: (v if f != 'router1' else new_router1)
+                             for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -445,58 +480,74 @@ class TestExtraRoutes(NeutronTestCase):
         try:
             td = self.setup_standard_neutron_topo()
 
-            router1extra = self.api.create_router({'router': {'name': 'router1extra',
-                                                              'admin_state_up': True,
-                                                              'tenant_id': 'admin'}})['router']
+            router1extra = self.api.create_router(
+                {'router': {'name': 'router1extra',
+                            'admin_state_up': True,
+                            'tenant_id': 'admin'}})['router']
 
-            port1extra = self.api.create_port({'port': {'name': 'port1extra',
-                                                        'network_id': td.net1['id'],
-                                                        'admin_state_up': True,
-                                                        'tenant_id': 'admin'}})['port']
+            port1extra = self.api.create_port(
+                {'port': {'name': 'port1extra',
+                          'network_id': td.net1['id'],
+                          'admin_state_up': True,
+                          'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port1extra: ' + str(port1extra))
 
-            port2extra = self.api.create_port({'port': {'name': 'port2extra',
-                                                        'network_id': td.net2['id'],
-                                                        'admin_state_up': True,
-                                                        'tenant_id': 'admin'}})['port']
+            port2extra = self.api.create_port(
+                {'port': {'name': 'port2extra',
+                          'network_id': td.net2['id'],
+                          'admin_state_up': True,
+                          'tenant_id': 'admin'}})['port']
             self.LOG.debug('Created port2extra: ' + str(port2extra))
 
             try:
-                if1 = self.api.add_interface_router(router1extra['id'], {'port_id': port1extra['id']})
-                self.LOG.debug('Added port1extra port to router router1extra: ' + str(if1))
+                if1 = self.api.add_interface_router(
+                    router1extra['id'], {'port_id': port1extra['id']})
+                self.LOG.debug('Added port1extra port to router ' +
+                               'router1extra: ' + str(if1))
             except Exception:
-                self.LOG.fatal('Exception raised trying to add interface for port1extra')
-                ports = [i for i in self.api.list_ports(port_id=port1extra['id'])['ports']
-                         if i['id'] == port1extra['id']]
+                self.LOG.fatal('Exception raised trying to add interface ' +
+                               'for port1extra')
+                ports_list = self.api.list_ports(
+                    port_id=port1extra['id'])['ports']
+                ports = [i for i in ports_list if i['id'] == port1extra['id']]
                 self.LOG.debug('Got port list: ' + str(ports))
                 if len(ports) == 0:
                     self.LOG.fatal('Port: ' + port1extra['id'] +
-                                   ' was incorrectly deleted when add router interface failed!')
+                                   ' was incorrectly deleted when add ' +
+                                   'router interface failed!')
                     port1extra = None
                 raise
-            if2 = self.api.add_interface_router(router1extra['id'], {'port_id': port2extra['id']})
-            self.LOG.debug('Added port2extra port to router router2extra: ' + str(if2))
+            if2 = self.api.add_interface_router(
+                router1extra['id'], {'port_id': port2extra['id']})
+            self.LOG.debug('Added port2extra port to router router2extra: ' +
+                           str(if2))
 
             ip1 = td.port1['fixed_ips'][0]['ip_address']
             ip2 = td.port2['fixed_ips'][0]['ip_address']
             ip1extra = port1extra['fixed_ips'][0]['ip_address']
             ip2extra = port2extra['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'], gw_ip=td.subnet1['gateway_ip'], hv_host='cmp2')
+            vm1 = self.vtm.create_vm(ip=ip1, mac=td.port1['mac_address'],
+                                     gw_ip=td.subnet1['gateway_ip'],
+                                     hv_host='cmp2')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'], gw_ip=td.subnet2['gateway_ip'], hv_host='cmp1')
+            vm2 = self.vtm.create_vm(ip=ip2, mac=td.port2['mac_address'],
+                                     gw_ip=td.subnet2['gateway_ip'],
+                                     hv_host='cmp1')
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
 
-            self.api.update_port(td.port1['id'],
-                                 {'port': {
-                                     'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
+            self.api.update_port(
+                td.port1['id'],
+                {'port': {
+                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
 
-            self.api.update_port(td.port2['id'],
-                                 {'port': {
-                                     'allowed_address_pairs': [{"ip_address": "172.18.0.3"}]}})
+            self.api.update_port(
+                td.port2['id'],
+                {'port': {
+                    'allowed_address_pairs': [{"ip_address": "172.18.0.3"}]}})
 
             # Add an extra IP addr to vm1's interface
             vm1.execute('ip a add 172.16.0.2/32 dev eth0')
@@ -516,12 +567,14 @@ class TestExtraRoutes(NeutronTestCase):
                     }
                 ]
             }}
-            new_router1 = self.api.update_router(td.router1['id'], updatedef)['router']
+            new_router1 = self.api.update_router(
+                td.router1['id'], updatedef)['router']
 
-            # Re-assign named tuple with "router1" field set to new value (must reset because
-            #   named tuples are immutable).
+            # Re-assign named tuple with "router1" field set to new value
+            # (must reset because named tuples are immutable).
             self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1) for f, v in td._asdict().iteritems()})
+            td = TopoData(**{f: (v if f != 'router1' else new_router1)
+                             for f, v in td._asdict().iteritems()})
 
             self.LOG.info('Pinging from VM1 to VM2')
             self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
@@ -541,7 +594,8 @@ class TestExtraRoutes(NeutronTestCase):
             if port2extra is not None:
                 self.api.delete_port(port2extra['id'])
             if router1extra is not None:
-                self.api.update_router(router1extra['id'], {'router': {'routes': None}})
+                self.api.update_router(
+                    router1extra['id'], {'router': {'routes': None}})
                 if if1 is not None:
                     self.api.remove_interface_router(router1extra['id'], if1)
                 if if2 is not None:

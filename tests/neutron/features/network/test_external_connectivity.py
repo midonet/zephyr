@@ -131,4 +131,3 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         ret2 = vm1.capture_packets('eth0', count=0)
 
         self.ef_assertEqual("MI-910", 2, len(ret2))
-

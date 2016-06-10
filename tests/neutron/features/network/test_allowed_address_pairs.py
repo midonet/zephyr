@@ -61,8 +61,8 @@ class TestAllowedAddressPairs(NeutronTestCase):
             self.assertEqual(1, len(packets))
         except SubprocessTimeoutException as e:
             if not should_fail:
-                import traceback
                 import sys
+                import traceback
                 self.LOG.error(traceback.format_tb(sys.exc_traceback))
                 self.fail("Sending spoofed packet with IP: " + spoof_ip +
                           " and MAC: " + spoof_mac +
