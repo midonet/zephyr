@@ -15,7 +15,6 @@
 from router_peering_utils import L2GWNeutronTestCase
 from zephyr.tsm.neutron_test_case import GuestData
 from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.tsm.test_case import require_topology_feature
 
 from tests.neutron.features.lbaas.lbaas_test_utils import DEFAULT_POOL_PORT
 from tests.neutron.features.lbaas.lbaas_test_utils import LBaaSTestCase
@@ -30,8 +29,6 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_rotuers_with_lbaas_members_same_side_az(self):
         try:
             a_topo, b_topo = self.connect_through_vtep_router()
@@ -75,8 +72,6 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_rotuers_with_lbaas_members_far_side_az(self):
         try:
             a_topo, b_topo = self.connect_through_vtep_router()
@@ -124,8 +119,6 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_rotuers_with_lbaas_members_both_sides_az(self):
         try:
             a_topo, b_topo = self.connect_through_vtep_router()

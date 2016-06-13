@@ -81,9 +81,9 @@ class MidolmanTest(unittest.TestCase):
                 zookeeper_ips=['10.0.0.2'])])
 
         root = RootHost('root', ptm)
-        zoo1 = IPNetNSHost(zoo1_cfg.name, ptm)
-        cmp1 = IPNetNSHost(cmp1_cfg.name, ptm)
-        net = IPNetNSHost(net_cfg.name, ptm)
+        zoo1 = IPNetNSHost(zoo1_cfg.name, ptm_i)
+        cmp1 = IPNetNSHost(cmp1_cfg.name, ptm_i)
+        net = IPNetNSHost(net_cfg.name, ptm_i)
 
         root.configure_logging(log_file_name="test-ptm.log", debug=True)
         zoo1.configure_logging(log_file_name="test-ptm.log", debug=True)
@@ -197,10 +197,10 @@ class MidolmanTest(unittest.TestCase):
                 'zephyr_ptm.ptm.application.midonet_api.MidonetAPI',
                 zookeeper_ips=['10.0.0.2'])])
 
-        root = RootHost('root', ptm)
-        zoo1 = IPNetNSHost(zoo1_cfg.name, ptm)
-        cmp1 = IPNetNSHost(cmp1_cfg.name, ptm)
-        net = IPNetNSHost(net_cfg.name, ptm)
+        root = RootHost('root', ptm_i)
+        zoo1 = IPNetNSHost(zoo1_cfg.name, ptm_i)
+        cmp1 = IPNetNSHost(cmp1_cfg.name, ptm_i)
+        net = IPNetNSHost(net_cfg.name, ptm_i)
 
         root.configure_logging(log_file_name="test-ptm.log", debug=True)
         zoo1.configure_logging(log_file_name="test-ptm.log", debug=True)

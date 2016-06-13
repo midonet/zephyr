@@ -14,7 +14,6 @@
 
 from router_peering_utils import L2GWNeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.tsm.test_case import require_topology_feature
 
 
 class TestRouterPeeringUpdates(L2GWNeutronTestCase):
@@ -22,8 +21,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_router_restart(self):
         try:
             self.router_restart()
@@ -34,8 +31,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_add_reboot_vms(self):
         try:
             self.add_reboot_vms()
@@ -46,8 +41,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_remove_readd_l2gw(self):
         try:
             self.remove_readd_l2gw()
@@ -58,8 +51,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_remove_readd_l2gwconn(self):
         try:
             self.remove_readd_l2gwconn()
@@ -70,8 +61,6 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_update_tunnel_ip(self):
         try:
             self.update_tunnel_ip()

@@ -62,8 +62,8 @@ class ZookeeperTest(unittest.TestCase):
         root_icfg = ImplementationDef(
             'zoo1', 'zephyr_ptm.ptm.host.root_host.RootHost', [])
 
-        root = RootHost('root', ptm)
-        zoo_host1 = IPNetNSHost('zoo1', ptm)
+        root = RootHost('root', ptm_i)
+        zoo_host1 = IPNetNSHost('zoo1', ptm_i)
 
         root.configure_logging(log_file_name="test-ptm.log", debug=True)
         zoo_host1.configure_logging(log_file_name="test-ptm.log", debug=True)

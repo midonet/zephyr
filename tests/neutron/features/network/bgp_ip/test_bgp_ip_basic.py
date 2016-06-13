@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.common.ip import IP
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.tsm.test_case import require_topology_feature
@@ -21,15 +20,9 @@ from zephyr.tsm.test_case import require_topology_feature
 class TestBGPIPBasic(NeutronTestCase):
 
     @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-2c.json'])
+                              ['2z-1c.json'])
+    @require_extension('bgp-speaker-router-insertion')
     def test_bgp_ip_2_router(self):
-        try:
-            self.bgp_ip_2_router()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    def bgp_ip_2_router(self):
         a_as = 64512
         b_as = 64513
 
@@ -43,7 +36,7 @@ class TestBGPIPBasic(NeutronTestCase):
 
         c_cidr = "192.168.100.0/24"
         c_net = self.create_network('C_NET')
-        c_sub = self.create_subnet('C_NET', c_net['id'], c_cidr)
+        self.create_subnet('C_NET', c_net['id'], c_cidr)
 
         a_router = self.create_router('A_ROUTER')
         aa_port = self.create_port('A_IFACE', a_net['id'],

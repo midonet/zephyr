@@ -205,7 +205,7 @@ try:
         name='tsm-run-console',
         log_level=logging.DEBUG if debug is True else logging.INFO)
     log_manager.rollover_logs_fresh(file_filter='*.log')
-    
+
     # TODO(micucci): Instead of a PTM start, this should just use
     # whatever physical underlay is set on the system.  Instead, we should
     # read in a json config which specifies the physical model (more

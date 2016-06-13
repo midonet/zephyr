@@ -25,7 +25,7 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
     @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-3tun.json'])
+                              ['2z-3c-3tun.json'])
     def test_peered_routers_multiple_peers(self):
         try:
             self.multiple_peers()
@@ -36,8 +36,6 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_multiple_azs(self):
         try:
             self.multiple_azs()

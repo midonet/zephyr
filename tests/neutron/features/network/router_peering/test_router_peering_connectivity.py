@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.tsm.test_case import require_topology_feature
 from zephyr.vtm import neutron_api
 
 from router_peering_utils import L2GWNeutronTestCase
@@ -42,8 +41,6 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_same_tenant(self):
         vm1 = None
         vm2 = None
@@ -168,8 +165,6 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_external_connectivity(self):
         vm1 = None
         vm2 = None
@@ -292,8 +287,6 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_floating_ip(self):
         vm1 = None
         vm2 = None
@@ -478,8 +471,6 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_peered_routers_large_data(self):
         vm1 = None
         vm2 = None

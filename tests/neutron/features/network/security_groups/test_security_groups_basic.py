@@ -13,13 +13,10 @@
 # limitations under the License.
 
 from zephyr.tsm.neutron_test_case import NeutronTestCase
-from zephyr.tsm.test_case import require_topology_feature
 
 
 class TestRouterPeeringSecurityGroups(NeutronTestCase):
 
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-3c-2edge.json'])
     def test_security_group_basic_remote_group(self):
         try:
             self.security_group_remote_group()

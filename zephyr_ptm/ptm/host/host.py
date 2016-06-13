@@ -402,7 +402,7 @@ class Host(PTMObject):
                " -j '" + host_cfg_str + "' " +
                " -a '" + app_cfg_str + "' " +
                " -l '" + self.ptm.log_manager.root_dir + "' " +
-               " -f '" + self.ptm.impl_.log_file_name + "' " +
+               " -f '" + self.ptm.log_file_name + "' " +
                ' '.join(arg_list) + '"')
 
         return LinuxCLI().cmd(cmd, blocking=False).process

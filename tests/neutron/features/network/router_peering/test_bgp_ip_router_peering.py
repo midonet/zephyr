@@ -14,9 +14,7 @@
 
 from router_peering_utils import L2GWNeutronTestCase
 import time
-from zephyr.common.ip import IP
 from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.tsm.test_case import require_topology_feature
 
 
 class TestRouterPeeringBGP(L2GWNeutronTestCase):
