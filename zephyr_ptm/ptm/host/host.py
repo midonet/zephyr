@@ -57,7 +57,7 @@ class Host(PTMObject):
                  host_create_func=None, host_remove_func=None):
         super(Host, self).__init__(name, cli)
         self.ptm = ptm
-        """ :type: PhysicalTopologyManager"""
+        """ :type: ConfiguredHostPTMImpl"""
         self.bridges = {}
         """ :type: dict[str, Bridge]"""
         self.interfaces = {}
@@ -188,16 +188,41 @@ class Host(PTMObject):
             if app_type not in self.applications_by_type:
                 self.applications_by_type[app_type] = []
             else:
-                # Only one of any non-supplementary app is allowed
-                if app_type != application.APPLICATION_TYPE_SUPPLEMENTARY:
+                # Check if multiple copies of this app type are allowed
+                if app_type not in application.APPLICATION_MULTI_ALLOWED:
                     raise ArgMismatchException(
                         "Cannot run more than one application of type: " +
                         a.type_as_str(app_type) + " on a single host")
+            self.LOG.debug(
+                'Configuring application: ' + a.get_name() + ' as a: ' +
+                application.Application.type_as_str(app_type))
             self.applications_by_type[app_type].append(a)
 
     def is_hypervisor(self):
         return (application.APPLICATION_TYPE_HYPERVISOR
                 in self.applications_by_type)
+
+    def fetch_resources_from_apps(
+            self, resource_name, app_types=None,
+            **kwargs):
+        """
+        :type resource_name: str
+        :type app_types: list[int]
+        :type kwargs: dict[str, any]
+        :rtype: list[str]
+        """
+        if not app_types:
+            app_types = [application.APPLICATION_TYPE_NETWORK_OVERLAY]
+
+        ret_list = []
+        for app_type in app_types:
+            if app_type in self.applications_by_type:
+                for app in self.applications_by_type[app_type]:
+                    resource_return = app.get_resource(
+                        resource_name, **kwargs)
+                    if resource_return:
+                        ret_list.append(resource_return)
+        return ret_list
 
     def create_cfg_map(self):
         pass

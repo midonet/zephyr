@@ -27,13 +27,13 @@ class FileLocationTest(unittest.TestCase):
             cli.write_to_file('testdir/test2', 'test2str')
             fl = FileLocation('test')
             self.assertEqual('.', fl.path)
-            fl.get_file(FileAccessor(), near_filename='test_copy')
+            fl.copy_file(FileAccessor(), near_filename='test_copy')
             self.assertTrue(cli.exists('test_copy'))
 
             fl2 = FileLocation('testdir/test2')
             self.assertEqual('testdir', fl2.path)
 
-            # fl2.get_file(SSHFileAccessor('localhost', LinuxCLI().whoami()),
+            # fl2.copy_file(SSHFileAccessor('localhost', LinuxCLI().whoami()),
             # near_filename='test2_copy')
             # self.assertTrue(cli.exists('test2_copy'))
 

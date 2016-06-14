@@ -41,6 +41,20 @@ class Zookeeper(application.Application):
         self.pid = 0
         self.configurator = ZookeeperFileConfiguration()
 
+    def get_resource(self, resource_name, **kwargs):
+        """
+        Resource Type | Return Type
+        --------------+--------------------------------
+        log           | log file as a STRING
+        """
+        if resource_name == 'log':
+            # TODO(micucci) Use an SSH accessor here if this app is
+            # on a remote host
+            floc = FileLocation(
+                '/var/log/zookeeper.' + self.num_id + '/zookeeper.log')
+            return floc.fetch_file()
+        return None
+
     def configure(self, host_cfg, app_cfg):
         """
         Configure this host type from a PTC HostDef config and the

@@ -21,7 +21,7 @@ class NetnsHV(application.Application):
     """
     A service to start and delete VMs represented by IP Net namespaces.
     """
-    def __init__(self, host, app_id):
+    def __init__(self, host, app_id=''):
         super(NetnsHV, self).__init__(host, app_id)
         self.vms = {}
 

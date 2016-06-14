@@ -18,8 +18,10 @@ import unittest
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
-from zephyr_ptm.ptm.host.ip_netns_host import IPNetNSHost
-from zephyr_ptm.ptm.host.root_host import RootHost
+from zephyr.vtm import virtual_topology_manager
+from zephyr_ptm.ptm.application import application
+from zephyr_ptm.ptm.application import midolman
+from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
 from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_config import *
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
@@ -28,64 +30,63 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
 
 
 class VMHostTest(unittest.TestCase):
+    ptm_i = None
+    ptm = None
+    vtm = None
+    hv_app = None
+    hypervisor = None
+    main_bridge = None
 
-    def setUp(self):
-        lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(
-            root_dir=ROOT_DIR,
-            log_manager=lm)
-        ptm = PhysicalTopologyManager(ptm_i)
+    @classmethod
+    def setUpClass(cls):
+        try:
+            lm = LogManager('./test-logs')
+            cls.ptm_i = ConfiguredHostPTMImpl(
+                root_dir=ROOT_DIR,
+                log_manager=lm)
+            cls.ptm_i.configure_logging(log_file_name='test-ptm.log',
+                                        debug=True)
+            cls.ptm = PhysicalTopologyManager(cls.ptm_i)
+            path = os.path.abspath(__file__)
+            dir_path = os.path.dirname(path)
+            cls.ptm.configure(
+                config_file='test-basic-ptm.json',
+                config_dir=dir_path + '/..')
+            cls.ptm.startup()
 
-        self.hypervisor = None
-        self.root_host = None
+            cls.vtm = virtual_topology_manager.VirtualTopologyManager(
+                client_api_impl=midonet_setup_fixture.create_midonet_client(),
+                physical_topology_manager=cls.ptm)
 
-        root_hostcfg = HostDef(
-            'root',
-            interfaces={'hveth0': InterfaceDef('hveth0')})
-        root_host_implcfg = ImplementationDef(
-            'test',
-            'zephyr_ptm.ptm.host.root_host.RootHost', [])
+            # Set up virtual topology
+            api = cls.vtm.get_client()
+            """ :type: MidonetApi"""
 
-        hypervisorcfg = HostDef(
-            'hv',
-            interfaces={'eth0': InterfaceDef('eth0', [IP('192.168.1.3')])})
-        hypervisor_implcfg = ImplementationDef(
-            'test', 'zephyr_ptm.ptm.host.ip_netns_host.IPNetNSHost',
-            [
-                ApplicationDef(
-                    'zephyr_ptm.ptm.application.midolman.Midolman',
-                    id=1),
-                ApplicationDef(
-                    'zephyr_ptm.ptm.application.netns_hv.NetnsHV')])
+            tunnel_zone_host_map = {}
+            for host_name, host in cls.ptm.impl_.hosts_by_name.iteritems():
+                # On each host, check if there is at least one
+                # Midolman app running
+                for app in host.applications:
+                    if isinstance(app, midolman.Midolman):
+                        # If so, add the host and its eth0 interface
+                        # to the tunnel zone map and move on to next host
+                        tunnel_zone_host_map[host.name] = (
+                            host.interfaces['eth0'].ip_list[0].ip)
+                        break
+            midonet_setup_fixture.setup_main_tunnel_zone(
+                api,
+                tunnel_zone_host_map,
+                cls.ptm_i.LOG)
 
-        self.root_host = RootHost(root_hostcfg.name, ptm)
-        self.hypervisor = IPNetNSHost(hypervisorcfg.name, ptm)
+            cls.main_bridge = midonet_setup_fixture.setup_main_bridge(api)
+            """ :type: Bridge"""
+            cls.hypervisor = cls.ptm_i.hosts_by_name['cmp1']
+            hv_app_type = application.APPLICATION_TYPE_HYPERVISOR
+            cls.hv_app = cls.hypervisor.applications_by_type[hv_app_type][0]
 
-        lm.add_file_logger('test.log', 'test')
-        self.root_host.configure_logging(log_file_name="test-ptm.log",
-                                         debug=True)
-        self.hypervisor.configure_logging(log_file_name="test-ptm.log",
-                                          debug=True)
-
-        # Now configure the host with the definition and impl configs
-        self.root_host.config_from_ptc_def(root_hostcfg, root_host_implcfg)
-        self.hypervisor.config_from_ptc_def(hypervisorcfg, hypervisor_implcfg)
-
-        self.root_host.link_interface(
-            self.root_host.interfaces['hveth0'],
-            self.hypervisor, self.hypervisor.interfaces['eth0'])
-
-        self.root_host.create()
-        self.hypervisor.create()
-        self.root_host.boot()
-        self.hypervisor.boot()
-        self.root_host.net_up()
-        self.hypervisor.net_up()
-        self.root_host.net_finalize()
-        self.hypervisor.net_finalize()
-
-        self.hv_app = self.hypervisor.applications[1]
-        """ :type: zephyr_ptm.ptm.application.netns_hv.NetnsHV"""
+        except (KeyboardInterrupt, Exception):
+            cls.ptm.shutdown()
+            raise
 
     def test_create_vm(self):
 
@@ -138,15 +139,18 @@ class VMHostTest(unittest.TestCase):
             vm_host1.shutdown()
             vm_host1.remove()
 
-    def tearDown(self):
-        self.root_host.net_down()
-        self.hypervisor.net_down()
-        self.hypervisor.shutdown()
-        self.root_host.shutdown()
-        self.hypervisor.remove()
-        self.root_host.remove()
-        LinuxCLI().cmd('ip netns del test_vm')
-        LinuxCLI().rm('tcp.vmhost.out')
+    def test_basic_file_access(self):
+        log_files = self.hypervisor.fetch_resources_from_apps(
+            resource_name='log')
+        self.assertEqual(1, len(log_files))
+        self.assertGreater(len(log_files[0]), 0)
+
+    @classmethod
+    def tearDownClass(cls):
+        LinuxCLI().cmd('ip netns del vm1')
+        cls.main_bridge.delete()
+        cls.ptm.shutdown()
+        LinuxCLI().cmd('rm -f tcp.vmhost.out')
 
 
 run_unit_test(VMHostTest)

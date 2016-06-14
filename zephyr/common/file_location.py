@@ -20,9 +20,16 @@ class FileAccessor(object):
     def __init__(self):
         super(FileAccessor, self).__init__()
 
-    def get_file(self, far_path, far_filename, near_path, near_filename):
+    def copy_file(self, far_path, far_filename, near_path, near_filename):
         LinuxCLI(priv=False).copy_file(far_path + '/' + far_filename,
                                        near_path + '/' + near_filename)
+
+    def fetch_file(self, far_path, far_filename):
+        cli = LinuxCLI()
+        f_name = far_path + '/' + far_filename
+        if not cli.exists(f_name):
+            return None
+        return LinuxCLI().cat(f_name)
 
 
 class SSHFileAccessor(FileAccessor):
@@ -31,7 +38,7 @@ class SSHFileAccessor(FileAccessor):
         self.remote_server = remote_server
         self.remote_username = remote_username
 
-    def get_file(self, far_path, far_filename, near_path, near_filename):
+    def copy_file(self, far_path, far_filename, near_path, near_filename):
         # For SSH, we must have an absolute path
         if far_path == '.':
             # If path is current dir, expand with PWD
@@ -51,6 +58,13 @@ class SSHFileAccessor(FileAccessor):
             self.remote_server + ':' + far_f + ' ' +
             near_f)
 
+    def fetch_file(self, far_path, far_filename):
+        self.copy_file(far_path=far_path,
+                       far_filename=far_filename,
+                       near_path='~',
+                       near_filename='.tmp.file.' + far_filename)
+        return LinuxCLI().cat('~/.tmp.file.' + far_filename)
+
 
 class FileLocation(object):
     def __eq__(self, other):
@@ -67,10 +81,14 @@ class FileLocation(object):
         self.filename = os.path.basename(filename)
         self.default_accessor = default_accessor
 
-    def get_file(self, accessor=None, near_path='.', near_filename=None):
+    def copy_file(self, accessor=None, near_path='.', near_filename=None):
         near_fn = near_filename if near_filename is not None else self.filename
         curr_acc = accessor if accessor is not None else self.default_accessor
-        curr_acc.get_file(self.path, self.filename, near_path, near_fn)
+        curr_acc.copy_file(self.path, self.filename, near_path, near_fn)
+
+    def fetch_file(self, accessor=None):
+        curr_acc = accessor if accessor is not None else self.default_accessor
+        return curr_acc.fetch_file(self.path, self.filename)
 
     def full_path(self):
         return self.path + '/' + self.filename

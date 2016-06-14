@@ -306,7 +306,7 @@ class LogManager(object):
         """
         for loc, logger_infos in self.open_log_files.iteritems():
             (l, fh, date_format, date_pos) = logger_infos[0]
-            loc.get_file(near_path=dest_path)
+            loc.copy_file(near_path=dest_path)
             self.collated_log_files.add(
                 (FileLocation(dest_path + '/' + loc.filename),
                  date_format, date_pos))
@@ -314,7 +314,7 @@ class LogManager(object):
         for loc, num_id, date_format, date_pos in self.external_log_files:
             new_file_name = loc.filename if num_id == '' \
                 else loc.filename + '.' + str(num_id)
-            loc.get_file(near_path=dest_path, near_filename=new_file_name)
+            loc.copy_file(near_path=dest_path, near_filename=new_file_name)
             self.collated_log_files.add(
                 (FileLocation(dest_path + '/' + new_file_name),
                  date_format, date_pos))

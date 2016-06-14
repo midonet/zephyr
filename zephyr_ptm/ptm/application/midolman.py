@@ -50,12 +50,54 @@ class Midolman(application.Application):
         self.cassandra_ips = []
         self.hv_active = True
 
+        self.config_dir = '/etc/midolman'
+        self.lib_dir = '/var/lib/midolman'
+        self.log_dir = '/var/log/midolman'
+        self.runtime_dir = '/run/midolman'
+
         if version_config.ConfigMap.get_configured_parameter(
                 'option_config_mnconf') is True:
             self.configurator = ComputeMNConfConfiguration()
         else:
             self.configurator = ComputeFileConfiguration()
         self.my_ip = '127.0.0.1'
+
+    def get_resource(self, resource_name, **kwargs):
+        """
+        Resource Type | Return Type
+        --------------+--------------------------------
+        log           | log file as a STRING
+        fwaas_log     | if "uuid" is provided, specific log as a STRING
+                      | if "uuid" is not provided, map of
+                      |     filename -> contents as a STRING
+
+        """
+        if resource_name == 'log':
+            # TODO(micucci) Use an SSH accessor here if this app is
+            # on a remote host
+            self.LOG.debug("Fetching log from: " +
+                           self.log_dir + "/midolman.log")
+            floc = FileLocation(self.log_dir + '/midolman.log')
+            return floc.fetch_file()
+        elif resource_name == 'fwaas_log':
+            if 'uuid' not in kwargs:
+                # Get ALL firewall logs as a dict of filename -> contents
+                files = {}
+                fwaas_logs = LinuxCLI().ls('fw-*.log')
+                for log in fwaas_logs:
+                    floc = FileLocation(log)
+                    self.LOG.debug("Fetching fwaas log from: " +
+                                   log)
+                    files[floc.filename] = floc.fetch_file()
+                return files
+            else:
+                log_name = (self.log_dir + '/fw-' +
+                            str(kwargs['uuid']) + '.log')
+                self.LOG.debug("Fetching fwaas log from: " +
+                               log_name)
+                floc = FileLocation(log_name)
+            return floc.fetch_file()
+        return None
 
     def configure(self, host_cfg, app_cfg):
         """
@@ -80,10 +122,16 @@ class Midolman(application.Application):
             self.hv_active = app_cfg.kwargs['hypervisor']
 
         if 'id' in app_cfg.kwargs:
-            self.num_id = app_cfg.kwargs['id']
+            self.num_id = str(app_cfg.kwargs['id'])
 
         self.my_ip = self.host.main_ip
         self.LOG.debug("Found host IP[" + self.my_ip + "]")
+
+        subdir = '.' + self.num_id if self.num_id != '' else ''
+        self.config_dir = '/etc/midolman' + subdir
+        self.lib_dir = '/var/lib/midolman' + subdir
+        self.log_dir = '/var/log/midolman' + subdir
+        self.runtime_dir = '/run/midolman' + subdir
 
     def print_config(self, indent=0):
         super(Midolman, self).print_config(indent)
@@ -233,7 +281,7 @@ class Midolman(application.Application):
         if process.pid == -1:
             raise exceptions.SubprocessFailedException('midolman')
         real_pid = self.cli.get_parent_pids(process.pid)[-1]
-        self.cli.write_to_file('/run/midolman/pid', str(real_pid))
+        self.cli.write_to_file(self.runtime_dir + '/pid', str(real_pid))
 
     def control_stop(self):
         if self.cli.exists('/run/midolman/pid'):

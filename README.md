@@ -242,13 +242,41 @@ the entire ARGS parameter in quotes.
 Writing Tests for Zephyr
 ------------------------
 
-(In progress)
+# Test Basics
+(TBD)
+
+# Resources
+
+Each application can have its resources queried and returned via the
+Host object.  Each application specifically defines its own resource
+list and their types.  The types for the applications which are a part
+of the Zephyr PTM are as follows:
+
+Zookeeper
+        Resource Name | Return Type
+        --------------+--------------------------------
+        log           | zookeeper.log file as a STRING
+
+MidonetAPI
+        Resource Name | Return Type
+        --------------+--------------------------------
+        log           | midonet-api.log or midoent-cluster.log file
+                      |     as a STRING
+
+Midolman
+        Resource Name | Return Type
+        --------------+--------------------------------
+        log           | midolman.log file as a STRING
+        fwaas_log     | if "uuid" is provided as an extra arg,
+                      |     specific FWaaS log as a STRING
+                      | if "uuid" is not provided, map of each FWaaS
+                      |     log's filename -> contents as a STRING
 
 
 Improving Zephyr
 ----------------
 
-(In progress)
+(TBD)
 
 References
 ----------

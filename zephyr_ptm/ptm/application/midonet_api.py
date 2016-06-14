@@ -51,6 +51,22 @@ class MidonetAPI(application.Application):
             'param_midonet_api_url')
         self.ip = None
 
+    def get_resource(self, resource_name, **kwargs):
+        """
+        Resource Type | Return Type
+        --------------+--------------------------------
+        log           | log file as a STRING
+        """
+        if resource_name == 'log':
+            # TODO(micucci) Use an SSH accessor here if this app is
+            # on a remote host
+            floc = FileLocation(
+                "/var/log/midonet-cluster/midonet-cluster.log"
+                if self.use_cluster
+                else "/var/log/tomcat7/midonet-api.log")
+            return floc.fetch_file()
+        return None
+
     def configure(self, host_cfg, app_cfg):
         """
         Configure this host type from a PTC HostDef config and the

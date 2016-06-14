@@ -90,29 +90,29 @@ class MNAPITest(unittest.TestCase):
         except (KeyboardInterrupt, Exception):
             self.ptm.shutdown()
             raise
-    #
-    # def test_midonet_api_ping_two_hosts_same_hv(self):
-    #
-    #     port1 = self.main_bridge.add_port().create()
-    #     """ :type: Port"""
-    #     port2 = self.main_bridge.add_port().create()
-    #     """ :type: Port"""
-    #
-    #     vm1 = self.vtm.create_vm(ip='10.1.1.2', hv_host='cmp1')
-    #     vm2 = self.vtm.create_vm(ip='10.1.1.3', hv_host='cmp1')
-    #
-    #     try:
-    #         vm1.plugin_vm('eth0', port1.get_id())
-    #         vm2.plugin_vm('eth0', port2.get_id())
-    #         time.sleep(1)
-    #         self.assertTrue(vm1.ping(target_ip='10.1.1.3', on_iface='eth0'))
-    #         self.assertTrue(vm2.ping(target_ip='10.1.1.2', on_iface='eth0'))
-    #
-    #     finally:
-    #         vm1.terminate()
-    #         vm2.terminate()
-    #         port1.delete()
-    #         port2.delete()
+
+    def test_midonet_api_ping_two_hosts_same_hv(self):
+
+        port1 = self.main_bridge.add_port().create()
+        """ :type: Port"""
+        port2 = self.main_bridge.add_port().create()
+        """ :type: Port"""
+
+        vm1 = self.vtm.create_vm(ip='10.1.1.2', hv_host='cmp1')
+        vm2 = self.vtm.create_vm(ip='10.1.1.3', hv_host='cmp1')
+
+        try:
+            vm1.plugin_vm('eth0', port1.get_id())
+            vm2.plugin_vm('eth0', port2.get_id())
+            time.sleep(1)
+            self.assertTrue(vm1.ping(target_ip='10.1.1.3', on_iface='eth0'))
+            self.assertTrue(vm2.ping(target_ip='10.1.1.2', on_iface='eth0'))
+
+        finally:
+            vm1.terminate()
+            vm2.terminate()
+            port1.delete()
+            port2.delete()
 
     def test_midonet_api_ping_two_hosts_diff_hv(self):
 

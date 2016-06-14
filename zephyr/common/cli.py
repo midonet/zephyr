@@ -364,6 +364,9 @@ class LinuxCLI(object):
         file_ptr = open(file_name, 'r')
         return file_ptr.read()
 
+    def cat(self, file_path):
+        return self.cmd('cat ' + file_path).stdout
+
     @staticmethod
     def ls(file_filter='./*'):
         file_list = [f

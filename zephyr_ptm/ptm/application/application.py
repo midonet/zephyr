@@ -21,7 +21,10 @@ APPLICATION_TYPE_NETWORK_OVERLAY = 1
 APPLICATION_TYPE_HYPERVISOR = 2
 APPLICATION_TYPE_NSDB = 3
 APPLICATION_TYPE_API = 4
-APPLICATION_TYPE_SUPPLEMENTARY = 5
+APPLICATION_TYPE_RESOURCE_RETRIEVAL = 5
+APPLICATION_TYPE_SUPPLEMENTARY = 6
+APPLICATION_MULTI_ALLOWED = [APPLICATION_TYPE_RESOURCE_RETRIEVAL,
+                             APPLICATION_TYPE_SUPPLEMENTARY]
 
 
 class Application(object):
@@ -45,6 +48,8 @@ class Application(object):
             return "NSDB"
         if app_type == APPLICATION_TYPE_API:
             return "API"
+        if app_type == APPLICATION_TYPE_RESOURCE_RETRIEVAL:
+            return "Resource Retrieval"
         if app_type == APPLICATION_TYPE_SUPPLEMENTARY:
             return "Supplementary-Application"
 
@@ -71,6 +76,13 @@ class Application(object):
 
     def configure(self, host_cfg, app_config):
         pass
+
+    def get_resource(self, resource_name, **kwargs):
+        """
+        :type resource_name: str
+        :rtype: any
+        """
+        return None
 
     def configure_logging(self,
                           log_file_name, debug=False):

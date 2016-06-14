@@ -139,7 +139,9 @@
           "id": "1",
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
           "cassandra_ips": []},
-        { "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"}
+        {
+          "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"
+        }
       ]},
     { "host": "cmp2",
       "impl": "zephyr_ptm.ptm.host.ip_netns_host.IPNetNSHost",
@@ -148,7 +150,9 @@
           "id": "2",
           "zookeeper_ips": ["10.0.0.2", "10.0.0.3"],
           "cassandra_ips": []},
-        { "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"}
+        {
+          "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"
+        }
       ]},
     { "host": "net1",
       "impl": "zephyr_ptm.ptm.host.root_host.RootHost",
@@ -159,10 +163,8 @@
   ],
   "host_start_order": [
     "root",
-    "zoo1",
-    "zoo2",
-    "cmp1",
-    "cmp2",
+    ["zoo1", "zoo2"],
+    ["cmp1", "cmp2"],
     "net1"
   ]
 }
