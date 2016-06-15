@@ -17,7 +17,7 @@ import json
 from zephyr.common import exceptions
 from zephyr.common import ip
 from zephyr.common.utils import get_class_from_fqn
-from zephyr_ptm.ptm.application.hypervisor_service import HypervisorService
+from zephyr_ptm.ptm.application.netns_hv import NetnsHV
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
 from zephyr_ptm.ptm.fixtures import neutron_setup_fixture
 from zephyr_ptm.ptm.impl.physical_topology_manager_impl import (
@@ -135,15 +135,13 @@ class ConfiguredHostPTMImpl(PhysicalTopologyManagerImpl):
                 self.LOG.debug('Adding host to VN host list:' + h.name)
 
             for a in h.applications:
-                if isinstance(a, HypervisorService):
-                    """ :type a: HypervisorService"""
-                    if a.is_hypervisor():
-                        self.LOG.debug(
-                            'Adding host application to hypervisor list:' +
-                            h.name + '/' + a.__class__.__name__)
-                        if h.name not in self.hypervisors:
-                            self.hypervisors[h.name] = []
-                        self.hypervisors[h.name].append(a)
+                if isinstance(a, NetnsHV):
+                    self.LOG.debug(
+                        'Adding host application to hypervisor list:' +
+                        h.name + '/' + a.__class__.__name__)
+                    if h.name not in self.hypervisors:
+                        self.hypervisors[h.name] = []
+                    self.hypervisors[h.name].append(a)
 
         # After the hosts are all added and configured, we can cross-reference
         # any mention of hosts in the wiring config and build a map that links

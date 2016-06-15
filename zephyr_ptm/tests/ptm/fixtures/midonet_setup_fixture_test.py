@@ -49,8 +49,8 @@ class MNAPITest(unittest.TestCase):
             path = os.path.abspath(__file__)
             dir_path = os.path.dirname(path)
             self.ptm.configure(
-                config_file='test-basic-config.json',
-                config_dir=dir_path)
+                config_file='test-basic-ptm.json',
+                config_dir=dir_path + '/..')
             logging.getLogger("midonetclient.api_lib").addHandler(
                 logging.StreamHandler())
             self.ptm.startup()

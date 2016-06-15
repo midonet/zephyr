@@ -89,6 +89,9 @@
           "class": "zephyr_ptm.ptm.application.midolman.Midolman",
           "zookeeper_ips": ["10.1.0.2", "10.1.0.3"],
           "cassandra_ips": []
+        },
+        {
+          "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"
         }
       ]
     },

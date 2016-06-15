@@ -21,7 +21,7 @@ import traceback
 from zephyr.common.cli import LinuxCLI
 from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
-from zephyr_ptm.ptm.application import hypervisor_service
+from zephyr_ptm.ptm.application import netns_hv
 from zephyr_ptm.ptm.config import version_config
 from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
@@ -45,11 +45,12 @@ def print_json(pt_imp):
     print ("hypervisors: [")
     for h in pt_imp.hosts_by_name.itervalues():
         for app in h.applications:
-            if isinstance(app, hypervisor_service.HypervisorService):
+            if isinstance(app, netns_hv.NetnsHV):
                 print("  {")
                 print("    host: " + h.name + ",")
                 print("    ip: " + app.get_communication_ip() + ",")
-                print("    method: mm_ctl")
+                print("    class: " + app.get_class_name())
+                print("    method: connect_iface_to_port")
                 print("  },")
     print("]")
     print("}")

@@ -18,13 +18,17 @@ import time
 from zephyr.common.file_location import *
 from zephyr.common.cli import *
 from zephyr.common.ip import IP
-from zephyr_ptm.ptm.application.application import Application
+from zephyr_ptm.ptm.application import application
 
 
-class Cassandra(Application):
+class Cassandra(application.Application):
     @staticmethod
     def get_name():
         return 'cassandra'
+
+    @staticmethod
+    def get_type():
+        return application.APPLICATION_TYPE_SUPPLEMENTARY
 
     def __init__(self, host, app_id=''):
         super(Cassandra, self).__init__(host, app_id)

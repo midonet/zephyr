@@ -69,9 +69,12 @@ class MidolmanTest(unittest.TestCase):
                 zookeeper_ips=['10.0.0.2'])])
         cmp1_icfg = ImplementationDef(
             'cmp1', 'zephyr_ptm.ptm.host.ip_netns_host.IPNetNSHost',
-            [ApplicationDef(
-                'zephyr_ptm.ptm.application.midolman.Midolman', id='1',
-                zookeeper_ips=['10.0.0.2'], cassandra_ips=[])])
+            [
+                ApplicationDef(
+                    'zephyr_ptm.ptm.application.midolman.Midolman', id='1',
+                    zookeeper_ips=['10.0.0.2'], cassandra_ips=[]),
+                ApplicationDef(
+                    'zephyr_ptm.ptm.application.netns_hv.NetnsHV')])
         root_icfg = ImplementationDef(
             'root', 'zephyr_ptm.ptm.host.root_host.RootHost', [])
         net_icfg = ImplementationDef(
@@ -121,10 +124,10 @@ class MidolmanTest(unittest.TestCase):
         net.net_finalize()
         cmp1.net_finalize()
 
-        mm_app = cmp1.applications[0]
-        """ :type: ptm.application.midolman.Midolman"""
+        hv_app = cmp1.applications[1]
+        """ :type: ptm.application.netns_hv.NetnsHV"""
 
-        vm1 = mm_app.create_vm("vm1")
+        vm1 = hv_app.create_vm("vm1")
         vm1.create_interface('eth0', ip_list=['10.1.1.2'])
 
         self.assertTrue('eth0' in vm1.interfaces)
@@ -157,7 +160,6 @@ class MidolmanTest(unittest.TestCase):
             root_dir=ROOT_DIR,
             log_manager=lm)
         ptm_i.configure_logging(log_file_name="test-ptm.log", debug=True)
-        ptm = PhysicalTopologyManager(ptm_i)
 
         root_cfg = HostDef('root',
                            bridges={
@@ -186,9 +188,12 @@ class MidolmanTest(unittest.TestCase):
                 zookeeper_ips=['10.0.0.2'])])
         cmp1_icfg = ImplementationDef(
             'cmp1', 'zephyr_ptm.ptm.host.ip_netns_host.IPNetNSHost',
-            [ApplicationDef(
-                'zephyr_ptm.ptm.application.midolman.Midolman', id='1',
-                zookeeper_ips=['10.0.0.2'], cassandra_ips=[])])
+            [
+                ApplicationDef(
+                    'zephyr_ptm.ptm.application.midolman.Midolman', id='1',
+                    zookeeper_ips=['10.0.0.2'], cassandra_ips=[]),
+                ApplicationDef(
+                    'zephyr_ptm.ptm.application.netns_hv.NetnsHV')])
         root_icfg = ImplementationDef(
             'root', 'zephyr_ptm.ptm.host.root_host.RootHost', [])
         net_icfg = ImplementationDef(

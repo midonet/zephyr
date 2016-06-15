@@ -51,9 +51,12 @@ class VMHostTest(unittest.TestCase):
             interfaces={'eth0': InterfaceDef('eth0', [IP('192.168.1.3')])})
         hypervisor_implcfg = ImplementationDef(
             'test', 'zephyr_ptm.ptm.host.ip_netns_host.IPNetNSHost',
-            [ApplicationDef(
-                'zephyr_ptm.ptm.application.midolman.Midolman',
-                id=1)])
+            [
+                ApplicationDef(
+                    'zephyr_ptm.ptm.application.midolman.Midolman',
+                    id=1),
+                ApplicationDef(
+                    'zephyr_ptm.ptm.application.netns_hv.NetnsHV')])
 
         self.root_host = RootHost(root_hostcfg.name, ptm)
         self.hypervisor = IPNetNSHost(hypervisorcfg.name, ptm)
@@ -81,13 +84,13 @@ class VMHostTest(unittest.TestCase):
         self.root_host.net_finalize()
         self.hypervisor.net_finalize()
 
-        self.mm_app = self.hypervisor.applications[0]
-        """ :type: zephyr_ptm.ptm.application.midolman.Midolman"""
+        self.hv_app = self.hypervisor.applications[1]
+        """ :type: zephyr_ptm.ptm.application.netns_hv.NetnsHV"""
 
     def test_create_vm(self):
 
-        vm_host = self.mm_app.create_vm('test_vm')
-        self.assertIs(vm_host, self.mm_app.get_vm('test_vm'))
+        vm_host = self.hv_app.create_vm('test_vm')
+        self.assertIs(vm_host, self.hv_app.get_vm('test_vm'))
 
         vm_host.create()
         vm_host.boot()
@@ -99,8 +102,8 @@ class VMHostTest(unittest.TestCase):
 
     def test_create_vm_interface(self):
 
-        vm_host = self.mm_app.create_vm('test_vm')
-        self.assertIs(vm_host, self.mm_app.get_vm('test_vm'))
+        vm_host = self.hv_app.create_vm('test_vm')
+        self.assertIs(vm_host, self.hv_app.get_vm('test_vm'))
 
         vm_host.create_interface('eth0', ip_list=[IP('10.50.50.3')])
 
@@ -111,7 +114,7 @@ class VMHostTest(unittest.TestCase):
         vm_host.remove()
 
     def test_packet_communication(self):
-        vm_host1 = self.mm_app.create_vm('test_vm1')
+        vm_host1 = self.hv_app.create_vm('test_vm1')
         try:
 
             vm_host1.create_interface('eth0', ip_list=[IP('10.50.50.3')])

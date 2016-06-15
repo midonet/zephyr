@@ -200,6 +200,9 @@
           "id": "1",
           "zookeeper_ips": ["10.1.0.2", "10.1.0.3"],
           "cassandra_ips": []
+        },
+        {
+          "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"
         }
       ]
     },
@@ -212,6 +215,9 @@
           "id": "2",
           "zookeeper_ips": [ "10.1.0.2", "10.1.0.3"],
           "cassandra_ips": []
+        },
+        {
+          "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"
         }
       ]
     },
@@ -224,6 +230,9 @@
           "id": "3",
           "zookeeper_ips": ["10.1.0.2", "10.1.0.3"],
           "cassandra_ips": []
+        },
+        {
+          "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"
         }
       ]
     },
@@ -243,7 +252,6 @@
         {
           "class": "zephyr_ptm.ptm.application.midolman.Midolman",
           "id": "6",
-          "hypervisor": false,
           "zookeeper_ips": ["10.1.0.2", "10.1.0.3"],
           "cassandra_ips": []
         }
@@ -255,7 +263,6 @@
         {
           "class": "zephyr_ptm.ptm.application.midolman.Midolman",
           "id": "7",
-          "hypervisor": false,
           "zookeeper_ips": ["10.1.0.2", "10.1.0.3"],
           "cassandra_ips": []
         }
@@ -267,7 +274,6 @@
         {
           "class": "zephyr_ptm.ptm.application.midolman.Midolman",
           "id": "9",
-          "hypervisor": false,
           "zookeeper_ips": ["10.1.0.2", "10.1.0.3"],
           "cassandra_ips": []
         }

@@ -12,18 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from application import Application
 from configuration_handler import FileConfigurationHandler
 from os import path
 from zephyr.common.file_location import *
+from zephyr_ptm.ptm.application import application
 
 
-class Quagga(Application):
+class Quagga(application.Application):
 
     def __init__(self, host, app_id=''):
         super(Quagga, self).__init__(host, app_id)
         self.num_id = '1'
         self.configurator = RouterFileConfiguration()
+
+    @staticmethod
+    def get_type():
+        return application.APPLICATION_TYPE_SUPPLEMENTARY
 
     def configure(self, host_cfg, app_cfg):
         """

@@ -28,6 +28,7 @@ from zephyr.common.tcp_dump import TCPDump
 from zephyr.common.tcp_sender import TCPSender
 from zephyr.common.utils import get_class_from_fqn
 from zephyr.common.utils import terminate_process
+from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.host.bridge import Bridge
 from zephyr_ptm.ptm.host.interface import Interface
 from zephyr_ptm.ptm.host.virtual_interface import VirtualInterface
@@ -75,6 +76,8 @@ class Host(PTMObject):
         """ :type LogManager"""
         self.applications = []
         """ :type: list[ptm.application.application.Application]"""
+        self.applications_by_type = {}
+        """ :type: dict[int, list[ptm.application.application.Application]]"""
         self.ip_forward_rules = []
         """ :type: list[(str, str)]"""
         self.route_rules = []
@@ -86,6 +89,7 @@ class Host(PTMObject):
         """ :type: dict[int, CommandStatus]"""
         self.on_namespace = False
         self.log_file_name = ptm_constants.ZEPHYR_LOG_FILE_NAME
+        self.main_ip = '127.0.0.1'
 
     def configure_logging(self,
                           log_file_name, debug=False):
@@ -151,6 +155,15 @@ class Host(PTMObject):
                 iface.name, self, iface.mac_address,
                 iface.ip_addresses, link_br, iface.vlans)
 
+        main_iface = None
+        if 'eth0' in self.interfaces:
+            main_iface = self.interfaces['eth0']
+        elif len(self.interfaces) > 0:
+            main_iface = self.interfaces.values()[0]
+
+        if main_iface and len(main_iface.ip_list) > 0:
+            self.main_ip = main_iface.ip_list[0].ip
+
         for ip_rule in ip_rules:
             self.ip_forward_rules.append((ip_rule.exterior, ip_rule.interior))
 
@@ -171,6 +184,20 @@ class Host(PTMObject):
             a.configure_logging(log_file_name=self.log_file_name,
                                 debug=self.debug)
             self.applications.append(a)
+            app_type = a.get_type()
+            if app_type not in self.applications_by_type:
+                self.applications_by_type[app_type] = []
+            else:
+                # Only one of any non-supplementary app is allowed
+                if app_type != application.APPLICATION_TYPE_SUPPLEMENTARY:
+                    raise ArgMismatchException(
+                        "Cannot run more than one application of type: " +
+                        a.type_as_str(app_type) + " on a single host")
+            self.applications_by_type[app_type].append(a)
+
+    def is_hypervisor(self):
+        return (application.APPLICATION_TYPE_HYPERVISOR
+                in self.applications_by_type)
 
     def create_cfg_map(self):
         pass
@@ -366,6 +393,8 @@ class Host(PTMObject):
     def print_config(self, indent=0):
         print(('    ' * indent) + self.name + ": Impl class " +
               self.__class__.__name__)
+        print(('    ' * (indent + 1)) + 'Is-Hypervisor: ' +
+              str(self.is_hypervisor()))
         if self.bridges is not None and len(self.bridges) > 0:
             print(('    ' * (indent + 1)) + '[bridges]')
             for b in self.bridges.itervalues():

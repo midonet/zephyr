@@ -21,19 +21,21 @@ from zephyr.common.cli import LinuxCLI
 from zephyr.common import exceptions
 from zephyr.common.file_location import FileLocation
 from zephyr.common.ip import IP
-from zephyr_ptm.ptm.application.application import Application
+from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.application import configuration_handler
-from zephyr_ptm.ptm.application.hypervisor_service import HypervisorService
 from zephyr_ptm.ptm.config import version_config
-from zephyr_ptm.ptm.host.vm_host import VMHost
 from zephyr_ptm.ptm.physical_topology_config import HostDef
 from zephyr_ptm.ptm import ptm_constants
 
 
-class Midolman(Application, HypervisorService):
+class Midolman(application.Application):
     @staticmethod
     def get_name():
         return 'midolman'
+
+    @staticmethod
+    def get_type():
+        return application.APPLICATION_TYPE_NETWORK_OVERLAY
 
     """
     Implements the HypervisorHost contract to create VMs
@@ -63,7 +65,7 @@ class Midolman(Application, HypervisorService):
         :type app_cfg: ApplicationDef
         :return:
         """
-        self.LOG.debug("Individual host configuration for [" +
+        self.LOG.debug("Midolman app configuration for [" +
                        host_cfg.name + "]")
 
         if 'cassandra_ips' in app_cfg.kwargs:
@@ -80,20 +82,13 @@ class Midolman(Application, HypervisorService):
         if 'id' in app_cfg.kwargs:
             self.num_id = app_cfg.kwargs['id']
 
-        if u'eth0' in host_cfg.interfaces:
-            if len(host_cfg.interfaces[u'eth0'].ip_addresses) == 0:
-                raise exceptions.ObjectNotFoundException(
-                    'No IP address assigned on "eth0" for host: ' + self.name)
-            self.my_ip = host_cfg.interfaces[u'eth0'].ip_addresses[0].ip
-            self.LOG.debug(
-                "Found eth0 in interface cfg with IP[" + self.my_ip + "]")
+        self.my_ip = self.host.main_ip
+        self.LOG.debug("Found host IP[" + self.my_ip + "]")
 
     def print_config(self, indent=0):
         super(Midolman, self).print_config(indent)
         print(('    ' * (indent + 1)) + 'Num-id: ' + self.num_id)
         print(('    ' * (indent + 1)) + 'My IP: ' + self.my_ip)
-        print(('    ' * (indent + 1)) + 'Is-Hypervisor: ' +
-              str(self.is_hypervisor()))
         print(('    ' * (indent + 1)) + 'Zookeeper-IPs: ' +
               ', '.join(str(ip) for ip in self.zookeeper_ips))
         print(('    ' * (indent + 1)) + 'Cassandra-IPs: ' +
@@ -182,40 +177,9 @@ class Midolman(Application, HypervisorService):
     def cleanup_environment(self):
         self.configurator.unmount_config(self.num_id)
 
-    def is_hypervisor(self):
-        return self.hv_active
-
-    def get_communication_ip(self):
-        return self.my_ip
-
     @staticmethod
     def is_virtual_network_host():
         return True
-
-    def create_vm(self, name):
-        """
-        Create a VM and return it
-        :type name: str
-        :return: VMHost
-        """
-        new_host = VMHost(name, self.host.ptm, self.host, self)
-        new_host.configure_logging(
-            log_file_name=self.log_file_name, debug=self.host.debug)
-        new_host.create()
-        new_host.boot()
-        new_host.net_up()
-        new_host.net_up()
-        new_host.net_finalize()
-        self.vms[name] = new_host
-        return new_host
-
-    def get_vm(self, name):
-        if name not in self.vms:
-            raise exceptions.HostNotFoundException(name)
-        return self.vms[name]
-
-    def get_vm_count(self):
-        return len(self.vms)
 
     def connect_iface_to_port(self, vm_host, iface, port_id):
         near_if_name = vm_host.name + iface.name

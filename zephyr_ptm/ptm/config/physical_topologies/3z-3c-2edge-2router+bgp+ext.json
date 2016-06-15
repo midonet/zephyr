@@ -241,6 +241,9 @@
           "id": "1",
           "zookeeper_ips": ["10.0.0.2"],
           "cassandra_ips": []
+        },
+        {
+          "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"
         }
       ]
     },
@@ -251,6 +254,9 @@
           "id": "2",
           "zookeeper_ips": ["10.0.0.2"],
           "cassandra_ips": []
+        },
+        {
+          "class": "zephyr_ptm.ptm.application.netns_hv.NetnsHV"
         }
       ]
     },
@@ -266,7 +272,6 @@
       "impl": "zephyr_ptm.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         { "class": "zephyr_ptm.ptm.application.midolman.Midolman",
-          "hypervisor": false,
           "id": "3"
         }
       ]
@@ -276,7 +281,6 @@
       "impl": "zephyr_ptm.ptm.host.ip_netns_host.IPNetNSHost",
       "apps": [
         { "class": "zephyr_ptm.ptm.application.midolman.Midolman",
-          "hypervisor": false,
           "id": "4"
         }
       ]

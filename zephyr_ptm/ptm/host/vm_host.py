@@ -21,9 +21,7 @@ class VMHost(IPNetNSHost):
     def __init__(self, name, ptm, hypervisor_host, hypervisor_app):
         super(VMHost, self).__init__(name, ptm)
         self.hypervisor_host = hypervisor_host
-        """ :type: Host"""
         self.hypervisor_app = hypervisor_app
-        """ :type: HypervisorService"""
 
     def wait_for_process_start(self):
         pass
@@ -70,8 +68,8 @@ class VMHost(IPNetNSHost):
                 self.name + ' not found')
         self.LOG.debug('Connecting interface: ' + iface + ' to port ID: ' +
                        port_id)
-        self.hypervisor_app.connect_iface_to_port(self, self.interfaces[iface],
-                                                  port_id)
+        self.hypervisor_app.plugin_iface_to_network(
+            self, self.interfaces[iface], port_id)
 
     def unplug_iface(self, port_id):
         self.hypervisor_app.disconnect_port(port_id)

@@ -17,17 +17,21 @@ import time
 
 from zephyr.common.exceptions import *
 from zephyr.common.file_location import *
-from zephyr_ptm.ptm.application.application import Application
+from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.physical_topology_config import *
 from zephyr_ptm.ptm.application.configuration_handler import (
     FileConfigurationHandler)
 from zephyr_ptm.ptm.ptm_constants import APPLICATION_START_TIMEOUT
 
 
-class Zookeeper(Application):
+class Zookeeper(application.Application):
     @staticmethod
     def get_name():
         return 'zookeeper'
+
+    @staticmethod
+    def get_type():
+        return application.APPLICATION_TYPE_NSDB
 
     def __init__(self, host, app_id=''):
         super(Zookeeper, self).__init__(host, app_id)

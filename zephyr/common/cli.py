@@ -259,8 +259,8 @@ class LinuxCLI(object):
             return False
 
     def grep_cmd(self, cmd_line, grep, options=''):
-        if self.cmd(cmd_line + '| grep -q ' + options + ' "' +
-                    grep + '"').ret_code == 0:
+        grep_line = cmd_line + '| grep -q ' + options + ' "' + grep + '"'
+        if self.cmd(grep_line).ret_code == 0:
             return True
         else:
             return False

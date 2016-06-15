@@ -18,7 +18,7 @@ import uuid
 from zephyr.common.exceptions import *
 from zephyr.common.file_location import *
 from zephyr.common.ip import IP
-from zephyr_ptm.ptm.application.application import Application
+from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.application.configuration_handler import (
     FileConfigurationHandler)
 from zephyr_ptm.ptm.config import version_config
@@ -27,11 +27,15 @@ from zephyr_ptm.ptm.ptm_constants import APPLICATION_START_TIMEOUT
 
 # TODO(micucci): This is really the controller and should be refactored in
 # case it's not on root or same host as a Compute
-class MidonetAPI(Application):
+class MidonetAPI(application.Application):
 
     @staticmethod
     def get_name():
         return 'midonet-api'
+
+    @staticmethod
+    def get_type():
+        return application.APPLICATION_TYPE_API
 
     def __init__(self, host, app_id=''):
         super(MidonetAPI, self).__init__(host, app_id)

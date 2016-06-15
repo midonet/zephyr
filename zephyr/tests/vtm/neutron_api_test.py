@@ -50,7 +50,7 @@ class NeutronAPITest(unittest.TestCase):
         self.ptm_i.configure_logging(debug=True)
         self.ptm = PhysicalTopologyManager(self.ptm_i)
         self.ptm.configure(
-            config_file='test-basic-config.json',
+            config_file='test-basic-ptm.json',
             config_dir=os.path.dirname(os.path.abspath(__file__)))
 
         logging.getLogger("neutronclient").addHandler(logging.StreamHandler())

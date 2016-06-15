@@ -16,11 +16,37 @@ import datetime
 import logging
 from zephyr_ptm.ptm import ptm_constants
 
+APPLICATION_TYPE_UNKNOWN = 0
+APPLICATION_TYPE_NETWORK_OVERLAY = 1
+APPLICATION_TYPE_HYPERVISOR = 2
+APPLICATION_TYPE_NSDB = 3
+APPLICATION_TYPE_API = 4
+APPLICATION_TYPE_SUPPLEMENTARY = 5
+
 
 class Application(object):
     @staticmethod
     def get_name():
         return '<unknown>'
+
+    @staticmethod
+    def get_type():
+        return APPLICATION_TYPE_UNKNOWN
+
+    @staticmethod
+    def type_as_str(app_type):
+        if app_type == APPLICATION_TYPE_UNKNOWN:
+            return "Unknown"
+        if app_type == APPLICATION_TYPE_NETWORK_OVERLAY:
+            return "Network-Overlay"
+        if app_type == APPLICATION_TYPE_HYPERVISOR:
+            return "Hypervisor-Service"
+        if app_type == APPLICATION_TYPE_NSDB:
+            return "NSDB"
+        if app_type == APPLICATION_TYPE_API:
+            return "API"
+        if app_type == APPLICATION_TYPE_SUPPLEMENTARY:
+            return "Supplementary-Application"
 
     def __init__(self, host, app_id=''):
         """
@@ -29,7 +55,7 @@ class Application(object):
         :return:
         """
         self.host = host
-        """ :type: Host"""
+        """ :type: zephyr_ptm.ptm.host.host.Host"""
         self.cli = host.cli
         """ :type: LinuxCLI"""
 
