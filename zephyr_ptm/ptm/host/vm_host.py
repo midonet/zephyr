@@ -12,16 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr_ptm.ptm.host.interface import Interface
 from zephyr_ptm.ptm.host.ip_netns_host import IPNetNSHost
 
 
 class VMHost(IPNetNSHost):
-    def __init__(self, name, ptm, hypervisor_host, hypervisor_app):
+    def __init__(self, name, ptm, hypervisor_host):
         super(VMHost, self).__init__(name, ptm)
         self.hypervisor_host = hypervisor_host
-        self.hypervisor_app = hypervisor_app
 
     def wait_for_process_start(self):
         pass
@@ -60,16 +58,3 @@ class VMHost(IPNetNSHost):
         new_if.up()
         new_if.config_addr()
         new_if.start_vlans()
-
-    def plugin_iface(self, iface, port_id):
-        if iface not in self.interfaces:
-            raise ObjectNotFoundException(
-                'Cannot plug in interface: ' + iface + ' on VM ' +
-                self.name + ' not found')
-        self.LOG.debug('Connecting interface: ' + iface + ' to port ID: ' +
-                       port_id)
-        self.hypervisor_app.plugin_iface_to_network(
-            self, self.interfaces[iface], port_id)
-
-    def unplug_iface(self, port_id):
-        self.hypervisor_app.disconnect_port(port_id)

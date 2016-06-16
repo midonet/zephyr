@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import unittest
 
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
-from zephyr.vtm import virtual_topology_manager
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.application import midolman
+from zephyr_ptm.ptm.config import version_config
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
 from zephyr_ptm.ptm.physical_topology_config import *
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
@@ -28,9 +29,26 @@ from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
 
 
+def print_json(json_out_file, ptm_imp, debug, log_dir):
+    config_map = {
+        'debug': debug,
+        'log_dir': log_dir,
+        'ptm_log_file': ptm_imp.log_file_name,
+        'underlay_system':
+            "zephyr_ptm.ptm.underlay.ptm_underlay_system.PTMUnderlaySystem",
+        'topology_config_file': ptm_imp.topo_file,
+        'root_dir': ptm_imp.root_dir,
+        'api_url':
+            version_config.ConfigMap.get_configured_parameter(
+                'param_midonet_api_url')
+    }
+    out_str = json.dumps(config_map)
+    with open(json_out_file, 'w') as fp:
+        fp.write(out_str)
+
+
 class VMHostTest(unittest.TestCase):
     ptm = None
-    vtm = None
     hv_app = None
     hypervisor = None
     main_bridge = None
@@ -52,12 +70,10 @@ class VMHostTest(unittest.TestCase):
                 config_dir=dir_path + '/..')
             cls.ptm.startup()
 
-            cls.vtm = virtual_topology_manager.VirtualTopologyManager(
-                client_api_impl=midonet_setup_fixture.create_midonet_client(),
-                physical_topology_manager=cls.ptm)
+            print_json('./underlay-config.json', cls.ptm, True, './test-logs')
 
             # Set up virtual topology
-            api = cls.vtm.get_client()
+            api = midonet_setup_fixture.create_midonet_client()
             """ :type: MidonetApi"""
 
             tunnel_zone_host_map = {}

@@ -14,12 +14,13 @@
 # limitations under the License.
 
 import getopt
+import os
 import sys
 import traceback
 
-from zephyr.common.cli import LinuxCLI
 from zephyr.common.exceptions import *
 from zephyr.common.log_manager import LogManager
+from zephyr.common import zephyr_constants
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr_ptm.ptm import ptm_constants
 
@@ -43,7 +44,7 @@ try:
     app_json = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False
-    log_file = ptm_constants.ZEPHYR_LOG_FILE_NAME
+    log_file = zephyr_constants.ZEPHYR_LOG_FILE_NAME
 
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
@@ -76,7 +77,11 @@ try:
 
     arg_list = extra_args
 
-    root_dir = LinuxCLI().cmd('pwd').stdout.strip()
+    ptm_ctl_dir = os.path.dirname(os.path.abspath(__file__))
+
+    zephyr_constants.ZephyrInit.init(ptm_ctl_dir + "/../zephyr.conf")
+    root_dir = zephyr_constants.ZephyrInit.BIN_ROOT_DIR
+    print('Setting root dir to: ' + root_dir)
 
     log_manager = LogManager(root_dir=log_dir)
 

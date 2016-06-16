@@ -674,24 +674,14 @@ class NeutronTestCase(TestCase):
 
     def __init__(self, method_name='runTest'):
         super(NeutronTestCase, self).__init__(method_name)
-        self.neutron_fixture = None
-        """:type: NeutronDatabaseFixture"""
-        self.midonet_fixture = None
-        """:type: MidonetHostSetupFixture"""
-        self.main_network = None
         self.main_subnet = None
         self.pub_network = None
         self.pub_subnet = None
         self.init_networks = True
 
     @classmethod
-    def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
-        """
-
-        :param ptm:
-        :type test_case_logger: logging.logger
-        """
-        super(NeutronTestCase, cls)._prepare_class(ptm, vtm, test_case_logger)
+    def _prepare_class(cls, vtm, test_case_logger=logging.getLogger()):
+        super(NeutronTestCase, cls)._prepare_class(vtm, test_case_logger)
 
         cls.api = cls.vtm.get_client()
         """ :type: neutron_client.Client """
@@ -801,7 +791,7 @@ class NeutronTestCase(TestCase):
         self.LOG.info('Added default route to edge router: ' +
                       str(edge_router))
 
-        router_host = self.ptm.hosts_by_name[router_host_name]
+        router_host = self.vtm.get_host(router_host_name)
         """ :type: Host"""
         for sub in pub_subnets:
             router_host.add_route(

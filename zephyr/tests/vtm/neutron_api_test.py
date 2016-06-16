@@ -21,16 +21,12 @@ from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
 from zephyr.vtm import neutron_api
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
-from zephyr_ptm.ptm.application.midolman import Midolman
-from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
-from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
 
 
 class NeutronAPITest(unittest.TestCase):
     lm = LogManager('test-logs')
-    ptm = None
     vtm = None
     api = None
     mn_api = None
@@ -42,45 +38,14 @@ class NeutronAPITest(unittest.TestCase):
     public_router_iface = None
 
     def setUp(self):
-        self.ptm = PhysicalTopologyManager(
-            root_dir=ROOT_DIR,
-            log_manager=self.lm)
-        self.ptm.configure_logging(debug=True)
-        self.ptm.configure(
-            config_file='test-basic-ptm.json',
-            config_dir=os.path.dirname(os.path.abspath(__file__)))
-
         logging.getLogger("neutronclient").addHandler(logging.StreamHandler())
         try:
-            self.ptm.startup()
             self.vtm = VirtualTopologyManager(
-                client_api_impl=neutron_api.create_neutron_client(),
-                physical_topology_manager=self.ptm)
-
+                client_api_impl=neutron_api.create_neutron_client())
+            self.vtm.configure_logging(debug=True)
+            self.vtm.read_underlay_config('underlay-config.json')
             self.api = self.vtm.get_client()
             """ :type: neutron_client.Client"""
-
-            self.mn_api = midonet_setup_fixture.create_midonet_client()
-
-            log = logging.getLogger("neutronclient")
-            log.setLevel(logging.DEBUG)
-
-            tunnel_zone_host_map = {}
-            for host_name, host in self.ptm.hosts_by_name.iteritems():
-                # On each host, check if there is at least one Midolman
-                # app running
-                for app in host.applications:
-                    if isinstance(app, Midolman):
-                        # If so, add the host and its eth0 interface to
-                        # the tunnel zone map and move on to next host
-                        tunnel_zone_host_map[host.name] = (
-                            host.interfaces['eth0'].ip_list[0].ip)
-                        break
-
-            midonet_setup_fixture.setup_main_tunnel_zone(
-                self.mn_api,
-                tunnel_zone_host_map,
-                log)
 
             self.main_network = self.api.create_network(
                 {'network': {
@@ -116,7 +81,6 @@ class NeutronAPITest(unittest.TestCase):
                 {'subnet_id': self.main_subnet['id']})
 
         except (KeyboardInterrupt, Exception):
-            self.ptm.shutdown()
             LinuxCLI().cmd('ip netns del vm1')
             raise
 
@@ -141,12 +105,12 @@ class NeutronAPITest(unittest.TestCase):
             port2 = self.api.create_port(port2def)['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            self.ptm.LOG.info("Got port 1 IP: " + str(ip1))
-            self.ptm.LOG.info("Got port 2 IP: " + str(ip2))
+            self.vtm.LOG.info("Got port 1 IP: " + str(ip1))
+            self.vtm.LOG.info("Got port 2 IP: " + str(ip2))
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'],
+            vm1 = self.vtm.create_vm(ip_addr=ip1, mac=port1['mac_address'],
                                      hv_host='cmp2')
-            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'],
+            vm2 = self.vtm.create_vm(ip_addr=ip2, mac=port2['mac_address'],
                                      hv_host='cmp2')
 
             vm1.plugin_vm('eth0', port1['id'])
@@ -187,8 +151,8 @@ class NeutronAPITest(unittest.TestCase):
             port2 = self.api.create_port(port2def)['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            self.ptm.LOG.info("Got port 1 IP: " + str(ip1))
-            self.ptm.LOG.info("Got port 2 IP: " + str(ip2))
+            self.vtm.LOG.info("Got port 1 IP: " + str(ip1))
+            self.vtm.LOG.info("Got port 2 IP: " + str(ip2))
 
             vm1 = self.vtm.create_vm(ip1, mac=port1['mac_address'],
                                      hv_host='cmp1', name='vm1')
@@ -214,9 +178,6 @@ class NeutronAPITest(unittest.TestCase):
                 self.api.delete_port(port2['id'])
 
     def tearDown(self):
-        log = logging.getLogger("neutronclient")
-        log.setLevel(logging.DEBUG)
-
         if self.public_router:
             if self.public_router_iface:
                 self.api.remove_interface_router(self.public_router['id'],
@@ -231,7 +192,6 @@ class NeutronAPITest(unittest.TestCase):
         if self.pub_network:
             self.api.delete_network(self.pub_network['id'])
 
-        self.ptm.shutdown()
         LinuxCLI().cmd('ip netns del vm1')
 
 

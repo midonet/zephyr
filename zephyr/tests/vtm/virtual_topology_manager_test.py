@@ -55,7 +55,6 @@ class MockClient(object):
 class VirtualTopologyManagerUnitTest(unittest.TestCase):
     def test_creation(self):
         api = VirtualTopologyManager(
-            physical_topology_manager=None,
             client_api_impl=MockClient(endpoint_url='test',
                                        auth_strategy='test2',
                                        option1='test3'))
@@ -65,8 +64,7 @@ class VirtualTopologyManagerUnitTest(unittest.TestCase):
         self.assertEqual(api.get_client().get_option('option1'), 'test3')
 
     def test_subnet(self):
-        api = VirtualTopologyManager(physical_topology_manager=None,
-                                     client_api_impl=MockClient())
+        api = VirtualTopologyManager(client_api_impl=MockClient())
         subnet = {
             'subnet': {
                 'name': 'test-l2',

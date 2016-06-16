@@ -46,7 +46,7 @@ class NetnsHV(application.Application):
         :type name: str
         :return: VMHost
         """
-        new_host = vm_host.VMHost(name, self.host.ptm, self.host, self)
+        new_host = vm_host.VMHost(name, self.host.ptm, self.host)
         new_host.configure_logging(
             log_file_name=self.log_file_name, debug=self.host.debug)
         new_host.create()
@@ -65,7 +65,7 @@ class NetnsHV(application.Application):
     def get_vm_count(self):
         return len(self.vms)
 
-    def plugin_iface_to_network(self, vm_host, iface, port_id):
+    def plugin_iface_to_network(self, vm_host_name, iface, port_id):
         net_type = application.APPLICATION_TYPE_NETWORK_OVERLAY
         if net_type not in self.host.applications_by_type:
             raise exceptions.ArgMismatchException(
@@ -73,7 +73,7 @@ class NetnsHV(application.Application):
                 ' because there is no network overlay app running.')
         net_overlay_app = self.host.applications_by_type[net_type][0]
         net_overlay_app.connect_iface_to_port(
-            vm_host, iface, port_id)
+            vm_host_name=vm_host_name, iface=iface, port_id=port_id)
 
     def disconnect_port(self, port_id):
         net_type = application.APPLICATION_TYPE_NETWORK_OVERLAY

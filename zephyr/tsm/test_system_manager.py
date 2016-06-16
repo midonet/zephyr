@@ -23,10 +23,9 @@ import unittest
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.exceptions import *
 from zephyr.common.log_manager import LogManager
+from zephyr.common import zephyr_constants
 from zephyr.tsm.test_case import TestCase
 from zephyr.tsm.test_result import TestResult
-from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
-from zephyr_ptm.ptm.ptm_constants import ZEPHYR_LOG_FILE_NAME
 
 DEFAULT_TEST_LOADER = {'unittest': unittest.defaultTestLoader}
 DEFAULT_TEST_SUITE_TYPE = {'unittest': unittest.TestSuite}
@@ -34,10 +33,8 @@ DEFAULT_TEST_RUNNER = 'unittest'
 
 
 class TestSystemManager(object):
-    def __init__(self, ptm, vtm, log_manager=None,
+    def __init__(self, vtm, log_manager=None,
                  test_system=DEFAULT_TEST_RUNNER, debug=False):
-        self.ptm = ptm
-        """ :type: PhysicalTopologyManager"""
         self.vtm = vtm
         """ :type: VirtualTopologyManager"""
         self.test_cases = {}
@@ -65,11 +62,9 @@ class TestSystemManager(object):
         """ :type: logging.Logger"""
         self.CONSOLE.addHandler(logging.NullHandler())
 
-        if self.ptm is None:
-            self.ptm = PhysicalTopologyManager()
-
-    def configure_logging(self, log_name='tsm-root', debug=False,
-                          log_file_name=ZEPHYR_LOG_FILE_NAME):
+    def configure_logging(
+            self, log_name='tsm-root', debug=False,
+            log_file_name=zephyr_constants.ZEPHYR_LOG_FILE_NAME):
         self.debug = debug
         level = logging.INFO
         if debug is True:
@@ -392,7 +387,7 @@ class TestSystemManager(object):
 
             testcase_log.debug('tsm: Preparing test class: ' +
                                test_class.get_name())
-            test_class._prepare_class(self.ptm, self.vtm, testcase_log)
+            test_class._prepare_class(self.vtm, testcase_log)
 
             test_loader = DEFAULT_TEST_LOADER[self.test_system]
             if func_set is None:
@@ -403,43 +398,33 @@ class TestSystemManager(object):
         # Flatten the tests
         running_suite = unittest.TestSuite(self.test_suite_to_flat_list(suite))
 
-        # Run the test by setting up the topology, then executing the case, and
-        # finally cleaning up the topology
         try:
-            try:
-                self.LOG.debug('tsm: Starting topology via config file: ' +
-                               topology)
-                self.ptm.configure(topology)
-                self.ptm.startup()
-                self.ptm.fixture_setup()
-            except Exception as e:
-                self.LOG.fatal('Fatal error starting up topology: ' + topology)
-                self.LOG.fatal('Traceback: ')
-                self.LOG.fatal(traceback.format_tb(sys.exc_traceback))
-                dummy_tc = TestCase()
-                dummy_tc.start_time = datetime.datetime.utcnow()
-                dummy_tc.stop_time = datetime.datetime.utcnow()
-                dummy_tc.run_time = datetime.timedelta()
-                dummy_tc.failureException = e
-                result.addError(dummy_tc, sys.exc_info())
-                self.result_map[suite_name] = result
-                return result
+            self.LOG.debug('tsm: Starting topology via config file: ' +
+                           topology)
+        except Exception as e:
+            self.LOG.fatal('Fatal error starting up topology: ' + topology)
+            self.LOG.fatal('Traceback: ')
+            self.LOG.fatal(traceback.format_tb(sys.exc_traceback))
+            dummy_tc = TestCase()
+            dummy_tc.start_time = datetime.datetime.utcnow()
+            dummy_tc.stop_time = datetime.datetime.utcnow()
+            dummy_tc.run_time = datetime.timedelta()
+            dummy_tc.failureException = e
+            result.addError(dummy_tc, sys.exc_info())
+            self.result_map[suite_name] = result
+            return result
 
-            result.start_time = datetime.datetime.utcnow()
-            self.LOG.debug('Starting suite [' + suite_name +
-                           '] at timestamp[' +
-                           str(result.start_time) + ']')
-            if self.test_system == 'unittest':
-                running_suite.run(result, debug=self.test_debug)
-            result.stop_time = datetime.datetime.utcnow()
-            self.LOG.debug('Finished suite [' + suite_name +
-                           '] at timestamp[' +
-                           str(result.stop_time) + ']')
-            result.run_time = (result.stop_time - result.start_time)
-        finally:
-            self.LOG.debug('Stopping topology from config file: ' + topology)
-            self.ptm.shutdown()
-            self.ptm.fixture_teardown()
+        result.start_time = datetime.datetime.utcnow()
+        self.LOG.debug('Starting suite [' + suite_name +
+                       '] at timestamp[' +
+                       str(result.start_time) + ']')
+        if self.test_system == 'unittest':
+            running_suite.run(result, debug=self.test_debug)
+        result.stop_time = datetime.datetime.utcnow()
+        self.LOG.debug('Finished suite [' + suite_name +
+                       '] at timestamp[' +
+                       str(result.stop_time) + ']')
+        result.run_time = (result.stop_time - result.start_time)
 
         self.result_map[suite_name] = result
         return result

@@ -29,9 +29,9 @@ class EFException(unittest.case._ExpectedFailure):  # noqa
 class TestCase(unittest.TestCase):
 
     vtm = None
-    """ :type: VirtualTopologyManager"""
-    ptm = None
-    """ :type: PhysicalTopologyManager"""
+    """ :type: zephyr.vtm.virtual_topology_manager.VirtualTopologyManager"""
+    underlay = None
+    """ :type: zephyr.vtm.underlay.underlay_system.UnderlaySystem"""
     LOG = None
     """ :type: logging.Logger"""
 
@@ -58,10 +58,9 @@ class TestCase(unittest.TestCase):
         return cls.__name__
 
     @classmethod
-    def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
-        cls.ptm = ptm
-        """ :type: PhysicalTopologyManager"""
+    def _prepare_class(cls, vtm, test_case_logger=logging.getLogger()):
         cls.vtm = vtm
+        cls.underlay = vtm.underlay_system if vtm else None
         """ :type: VirtualTopologyManager"""
         cls.LOG = test_case_logger
         if cls.LOG is None:
@@ -253,7 +252,7 @@ class require_topology_feature(object):  # noqa - Decorator class
             """
             :type slf: TestCase
             """
-            feature_val = slf.ptm.get_topology_feature(self.feature)
+            feature_val = slf.underlay.get_topology_feature(self.feature)
 
             # If feature is set, func not set, value not set:
             # Check for feature existence

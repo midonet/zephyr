@@ -78,8 +78,10 @@ class TestBGPIPBasic(NeutronTestCase):
         (portb, vmb, ipb) = self.create_vm_server(
             "B", b_net['id'], b_sub['gateway_ip'])
 
-        vma.vm_host.reset_default_route(aa_port['fixed_ips'][0]['ip_address'])
-        vmb.vm_host.reset_default_route(bb_port['fixed_ips'][0]['ip_address'])
+        vma.vm_underlay.reset_default_route(
+            aa_port['fixed_ips'][0]['ip_address'])
+        vmb.vm_underlay.reset_default_route(
+            bb_port['fixed_ips'][0]['ip_address'])
 
         time.sleep(60)
 

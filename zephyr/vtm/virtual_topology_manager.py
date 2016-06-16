@@ -12,24 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 
-from zephyr.common.exceptions import ArgMismatchException
-from zephyr.common.exceptions import ObjectNotFoundException
+from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
+from zephyr.common import utils
+from zephyr.common import zephyr_constants
 from zephyr.vtm.guest import Guest
-from zephyr_ptm.ptm.ptm_constants import ZEPHYR_LOG_FILE_NAME
 
 
 class VirtualTopologyManager(object):
     def __init__(self,
-                 physical_topology_manager,
                  client_api_impl=None,
                  log_manager=None):
 
         self.client_api_impl = client_api_impl
-        self.physical_topology_manager = physical_topology_manager
-        """ :type: PhysicalTopologyManager"""
         self.log_manager = (log_manager
                             if log_manager is not None
                             else LogManager(root_dir='logs'))
@@ -38,9 +36,15 @@ class VirtualTopologyManager(object):
         self.LOG.addHandler(logging.NullHandler())
         self.log_level = logging.INFO
         self.debug = False
+        self.underlay_system = None
+        """
+        :type: zephyr.vtm.underlay.underlay_system.UnderlaySystem
+        """
 
-    def configure_logging(self, log_name='vtm-root',
-                          debug=False, log_file_name=ZEPHYR_LOG_FILE_NAME):
+    def configure_logging(
+            self, log_name='vtm-root',
+            debug=False,
+            log_file_name=zephyr_constants.ZEPHYR_LOG_FILE_NAME):
         self.log_level = (logging.DEBUG
                           if debug is True
                           else logging.INFO)
@@ -62,11 +66,15 @@ class VirtualTopologyManager(object):
     def get_client(self):
         return self.client_api_impl
 
-    def create_vm(self, ip, mac=None, gw_ip=None, hv_host=None, name=None):
+    def get_host(self, name):
+        return self.underlay_system.hosts.get(name, None)
+
+    def create_vm(self, ip_addr, mac=None,
+                  gw_ip=None, hv_host=None, name=None):
         """
         Creates a guest VM on the Physical Topology and returns the Guest
         object representing the VM as part of the virtual topology.
-        :param ip: str IP Address to use for the VM (required)
+        :param ip_addr: str IP Address to use for the VM (required)
         :param mac: str Ether Address to use for the VM
         :param gw_ip: str Gateway IP to use for the VM
         :param hv_host: str: Hypervisor to use, otherwise the least-loaded HV
@@ -74,12 +82,32 @@ class VirtualTopologyManager(object):
         :param name: str: Name to use for the VM.  Otherwise one is generated.
         :return: Guest
         """
-        if self.physical_topology_manager is None:
-            raise ArgMismatchException("Cannot create a VM without a ptm")
+        if not self.underlay_system:
+            raise exceptions.ArgMismatchException(
+                "Can't create VM without an underlay system")
+        vm_underlay = self.underlay_system.create_vm(
+            ip_addr=ip_addr, mac=mac,
+            gw_ip=gw_ip, hv_host=hv_host, name=name)
+        return Guest(vm_underlay=vm_underlay)
 
-        new_vm = self.physical_topology_manager.create_vm(
-            ip, mac, gw_ip, hv_host, name)
-        if not new_vm:
-            raise ObjectNotFoundException("VM not created: " + ip)
+    def read_underlay_config(self, config_json):
+        """
+        All underlay configs MUST name a 'underlay_system' class, which
+        will be used to select which type of underlay to use for zephyr.
+        The read config will then be delegated to that class, which will
+        read the subsequent specific configuration for that underlay type.
+        """
+        self.LOG.info('Loading underlay config from: ' + config_json)
 
-        return Guest(new_vm)
+        with open(config_json, 'r') as cfg:
+            config_map = json.load(cfg)
+
+        und_sys_class = 'zephyr.vtm.underlay.direct_underlay_system'
+        if 'underlay_system' in config_map:
+            und_sys_class = config_map['underlay_system']
+        self.underlay_system = utils.get_class_from_fqn(und_sys_class)(
+            debug=self.debug,
+            logger=self.LOG)
+
+        """ :type: zephyr.vtm.underlay.underlay_system.UnderlaySystem"""
+        self.underlay_system.read_config(config_map)

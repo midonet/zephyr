@@ -14,6 +14,7 @@
 
 import datetime
 import logging
+from zephyr.common import zephyr_constants
 from zephyr_ptm.ptm import ptm_constants
 
 APPLICATION_TYPE_UNKNOWN = 0
@@ -72,7 +73,7 @@ class Application(object):
         """ :type bool"""
         self.log_level = logging.INFO
         self.unique_id = app_id
-        self.log_file_name = ptm_constants.ZEPHYR_LOG_FILE_NAME
+        self.log_file_name = zephyr_constants.ZEPHYR_LOG_FILE_NAME
 
     def configure(self, host_cfg, app_config):
         pass

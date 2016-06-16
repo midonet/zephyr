@@ -14,7 +14,6 @@
 
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.vtm.guest import Guest
 
 from collections import namedtuple
 
@@ -201,8 +200,8 @@ class TestVPNaaSSingleSite(NeutronTestCase):
             self.LOG.info('Created port 1 on right net: ' + str(portR1))
             self.LOG.info("Got VM R1 IP: " + str(ipR1))
 
-            vmL1 = self.vtm.create_vm(ip=ipL1, mac=portL1['mac_address'])
-            vmR1 = self.vtm.create_vm(ip=ipR1, mac=portR1['mac_address'])
+            vmL1 = self.vtm.create_vm(ip_addr=ipL1, mac=portL1['mac_address'])
+            vmR1 = self.vtm.create_vm(ip_addr=ipR1, mac=portR1['mac_address'])
 
             vmL1.plugin_vm('eth0', portL1['id'])
             vmR1.plugin_vm('eth0', portR1['id'])

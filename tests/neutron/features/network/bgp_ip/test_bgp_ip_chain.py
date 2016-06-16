@@ -73,8 +73,10 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
         self.add_bgp_speaker_peer(a_bgp_speaker['id'], a_peer['id'])
         self.add_bgp_speaker_peer(b_bgp_speaker['id'], b_peer['id'])
 
-        vma.vm_host.reset_default_route(aa_port['fixed_ips'][0]['ip_address'])
-        vmb.vm_host.reset_default_route(bb_port['fixed_ips'][0]['ip_address'])
+        vma.vm_underlay.reset_default_route(
+            aa_port['fixed_ips'][0]['ip_address'])
+        vmb.vm_underlay.reset_default_route(
+            bb_port['fixed_ips'][0]['ip_address'])
 
         (portb, vmb, ipb) = self.create_vm_server(
             "B", b_net['id'], b_sub['gateway_ip'])
@@ -111,7 +113,8 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
 
         (portd, vmd, ipd) = self.create_vm_server(
             "LAST", d_net['id'], d_sub['gateway_ip'])
-        vmd.vm_host.reset_default_route(cd_port['fixed_ips'][0]['ip_address'])
+        vmd.vm_underlay.reset_default_route(
+            cd_port['fixed_ips'][0]['ip_address'])
 
         vmd.start_echo_server(ip=ipd)
         self.verify_connectivity(vmd, ipa)

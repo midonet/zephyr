@@ -12,74 +12,73 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
+import json
 import os
 import time
 import unittest
 
 from zephyr.common.cli import LinuxCLI
-from zephyr.common.log_manager import LogManager
+from zephyr.common import log_manager
 from zephyr.common.utils import run_unit_test
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
-from zephyr_ptm.ptm.application.midolman import Midolman
+from zephyr_ptm.ptm.config import version_config
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
-from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
+from zephyr_ptm.ptm import physical_topology_manager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
+
+
+def print_json(json_out_file, ptm_imp, debug, log_dir):
+    config_map = {
+        'debug': debug,
+        'log_dir': log_dir,
+        'ptm_log_file': ptm_imp.log_file_name,
+        'underlay_system':
+            "zephyr_ptm.ptm.underlay.ptm_underlay_system.PTMUnderlaySystem",
+        'topology_config_file': ptm_imp.topo_file,
+        'root_dir': ptm_imp.root_dir,
+        'api_url':
+            version_config.ConfigMap.get_configured_parameter(
+                'param_midonet_api_url')
+    }
+    out_str = json.dumps(config_map)
+    with open(json_out_file, 'w') as fp:
+        fp.write(out_str)
 
 
 class MNAPITest(unittest.TestCase):
     def __init__(self, method_name):
         super(MNAPITest, self).__init__(methodName=method_name)
-        self.ptm = None
         self.vtm = None
+        self.ptm = None
         self.main_bridge = None
 
     def setUp(self):
         try:
-            lm = LogManager('./test-logs')
-            self.ptm = PhysicalTopologyManager(
-                root_dir=ROOT_DIR,
-                log_manager=lm)
-            self.ptm.configure_logging(log_file_name='test-ptm.log',
-                                       debug=True)
             path = os.path.abspath(__file__)
             dir_path = os.path.dirname(path)
+
+            lm = log_manager.LogManager('./test-logs')
+
+            self.ptm = physical_topology_manager.PhysicalTopologyManager(
+                root_dir=ROOT_DIR,
+                log_manager=lm)
+            self.ptm.configure_logging(
+                log_file_name="test-ptm.log", debug=True)
             self.ptm.configure(
-                config_file='test-basic-ptm.json',
-                config_dir=dir_path + '/..')
-            logging.getLogger("midonetclient.api_lib").addHandler(
-                logging.StreamHandler())
+                "test-basic-ptm.json", config_dir=dir_path + '/..')
             self.ptm.startup()
 
+            print_json('./underlay-config.json', self.ptm, True, './test-logs')
+
             self.vtm = VirtualTopologyManager(
-                client_api_impl=midonet_setup_fixture.create_midonet_client(),
-                physical_topology_manager=self.ptm)
+                client_api_impl=midonet_setup_fixture.create_midonet_client())
+            self.vtm.configure_logging(debug=True)
+            self.vtm.read_underlay_config('./underlay-config.json')
 
             # Set up virtual topology
             api = self.vtm.get_client()
             """ :type: MidonetApi"""
-
-            logger = self.ptm.log_manager.add_tee_logger(
-                'MNAPITest', 'mnapi-test-logger',
-                file_log_level=logging.DEBUG,
-                stdout_log_level=logging.DEBUG)
-
-            tunnel_zone_host_map = {}
-            for host_name, host in self.ptm.hosts_by_name.iteritems():
-                # On each host, check if there is at least one
-                # Midolman app running
-                for app in host.applications:
-                    if isinstance(app, Midolman):
-                        # If so, add the host and its eth0 interface
-                        # to the tunnel zone map and move on to next host
-                        tunnel_zone_host_map[host.name] = (
-                            host.interfaces['eth0'].ip_list[0].ip)
-                        break
-            midonet_setup_fixture.setup_main_tunnel_zone(
-                api,
-                tunnel_zone_host_map,
-                logger)
 
             self.main_bridge = midonet_setup_fixture.setup_main_bridge(api)
             """ :type: Bridge"""
@@ -89,14 +88,13 @@ class MNAPITest(unittest.TestCase):
             raise
 
     def test_midonet_api_ping_two_hosts_same_hv(self):
-
         port1 = self.main_bridge.add_port().create()
         """ :type: Port"""
         port2 = self.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = self.vtm.create_vm(ip='10.1.1.2', hv_host='cmp1')
-        vm2 = self.vtm.create_vm(ip='10.1.1.3', hv_host='cmp1')
+        vm1 = self.vtm.create_vm(ip_addr='10.1.1.2', hv_host='cmp1')
+        vm2 = self.vtm.create_vm(ip_addr='10.1.1.3', hv_host='cmp1')
 
         try:
             vm1.plugin_vm('eth0', port1.get_id())
@@ -112,14 +110,13 @@ class MNAPITest(unittest.TestCase):
             port2.delete()
 
     def test_midonet_api_ping_two_hosts_diff_hv(self):
-
         port1 = self.main_bridge.add_port().create()
         """ :type: Port"""
         port2 = self.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = self.vtm.create_vm(ip='172.16.55.2', hv_host='cmp1')
-        vm2 = self.vtm.create_vm(ip='172.16.55.3', hv_host='cmp2')
+        vm1 = self.vtm.create_vm(ip_addr='172.16.55.2', hv_host='cmp1')
+        vm2 = self.vtm.create_vm(ip_addr='172.16.55.3', hv_host='cmp2')
 
         try:
             vm1.plugin_vm('eth0', port1.get_id())

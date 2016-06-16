@@ -14,18 +14,19 @@
 # limitations under the License.
 
 import getopt
+import os
 import sys
 import traceback
 
-from zephyr.common.cli import LinuxCLI
 from zephyr.common.exceptions import ArgMismatchException
 from zephyr.common.exceptions import ExitCleanException
 from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr.common.exceptions import SubprocessFailedException
 from zephyr.common.exceptions import TestException
 from zephyr.common.log_manager import LogManager
+from zephyr.common import zephyr_constants
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
-from zephyr_ptm.ptm import ptm_constants
+from zephyr_ptm.ptm import ptm_utils
 
 
 def usage(except_obj):
@@ -75,14 +76,18 @@ try:
     if not command:
         usage(ArgMismatchException('Must specify at least one command'))
 
-    root_dir = LinuxCLI().cmd('pwd').stdout.strip()
+    ptm_ctl_dir = os.path.dirname(os.path.abspath(__file__))
+
+    zephyr_constants.ZephyrInit.init(ptm_ctl_dir + "/../zephyr.conf")
+    root_dir = zephyr_constants.ZephyrInit.BIN_ROOT_DIR
+    print('Setting root dir to: ' + root_dir)
 
     log_manager = LogManager(root_dir=log_dir)
 
     ptm = PhysicalTopologyManager(root_dir=root_dir,
                                   log_manager=log_manager)
     ptm.configure_logging(
-        log_file_name=ptm_constants.ZEPHYR_LOG_FILE_NAME, debug=True)
+        log_file_name=zephyr_constants.ZEPHYR_LOG_FILE_NAME, debug=True)
 
     ptm.configure(ptm_config_file)
 
@@ -137,9 +142,18 @@ try:
         ip = params[2]
         port = params[3] if len(params) > 3 else None
 
-        new_vm = ptm.create_vm(ip_addr=ip,
-                               requested_hv_host=host,
-                               requested_vm_name=name)
+        if not host_obj.is_hypervisor():
+            raise ArgMismatchException(
+                "Must select a hypervisor to start VM")
+
+        new_vm = ptm_utils.create_vm(
+            hv_host_obj=host_obj,
+            ip_addr=ip,
+            mac=None,
+            gw_ip=None,
+            name=name,
+            log=ptm.LOG)
+
         if port:
             so, se = host_obj.run_app_command(
                 'bind_port', app_obj,

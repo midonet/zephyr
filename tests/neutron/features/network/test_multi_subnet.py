@@ -61,10 +61,10 @@ class TestMultiSubnet(NeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'],
+            vm1 = self.vtm.create_vm(ip_addr=ip1, mac=port1['mac_address'],
                                      gw_ip=subnet1['gateway_ip'])
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip=ip2, mac=port2['mac_address'],
+            vm2 = self.vtm.create_vm(ip_addr=ip2, mac=port2['mac_address'],
                                      gw_ip=subnet2['gateway_ip'])
             """ :type: Guest"""
 

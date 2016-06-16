@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from zephyr.tsm import test_case
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
 
-from zephyr.tsm.midonet_test_case import MidonetTestCase
 
-
-class TestBasicPing(MidonetTestCase):
+class TestBasicPing(test_case.TestCase):
     api = None
     """ :type: MidonetApi """
     main_bridge = None
@@ -25,7 +24,7 @@ class TestBasicPing(MidonetTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.api = cls.vtm.get_client()
+        cls.api = midonet_setup_fixture.create_midonet_client()
         cls.main_bridge = midonet_setup_fixture.setup_main_bridge(cls.api)
 
     def test_ping_two_vms_same_hv(self):

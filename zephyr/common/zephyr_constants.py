@@ -12,8 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import os
 
-CONTROL_CMD_NAME = 'ptm-ctl.py'
-HOST_CONTROL_CMD_NAME = 'ptm-host-ctl.py'
+ZEPHYR_LOG_FILE_NAME = 'zephyr-output.log'
 
-APPLICATION_START_TIMEOUT = 45
+
+class ZephyrInit(object):
+    CONFIG_FILE = 'zephyr.conf'
+    BIN_ROOT_DIR = '.'
+
+    @classmethod
+    def init(cls, config_file=None):
+        if not config_file:
+            config_file = cls.CONFIG_FILE
+
+        with open(config_file, "r") as f:
+            config = json.load(f)
+
+        if 'root_dir' not in config:
+            raise ValueError("root_dir not found in config")
+
+        cls.BIN_ROOT_DIR = os.path.abspath(config['root_dir'])

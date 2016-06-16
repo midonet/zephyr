@@ -28,6 +28,7 @@ from zephyr.common.tcp_dump import TCPDump
 from zephyr.common.tcp_sender import TCPSender
 from zephyr.common.utils import get_class_from_fqn
 from zephyr.common.utils import terminate_process
+from zephyr.common import zephyr_constants
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.host.bridge import Bridge
 from zephyr_ptm.ptm.host.interface import Interface
@@ -90,7 +91,7 @@ class Host(PTMObject):
         self.echo_server_procs = {}
         """ :type: dict[int, CommandStatus]"""
         self.on_namespace = False
-        self.log_file_name = ptm_constants.ZEPHYR_LOG_FILE_NAME
+        self.log_file_name = zephyr_constants.ZEPHYR_LOG_FILE_NAME
         self.main_ip = '127.0.0.1'
 
     def configure_logging(self,
@@ -201,8 +202,9 @@ class Host(PTMObject):
             self.applications_by_type[app_type].append(a)
 
     def is_hypervisor(self):
-        return (application.APPLICATION_TYPE_HYPERVISOR
-                in self.applications_by_type)
+        app_type = application.APPLICATION_TYPE_HYPERVISOR
+        return (app_type in self.applications_by_type
+                and len(self.applications_by_type[app_type]) > 0)
 
     def fetch_resources_from_apps(
             self, resource_name, app_types=None,
@@ -394,13 +396,13 @@ class Host(PTMObject):
             self.cli.cmd('ip addr add ' + str(ip) + ' dev lo')
         self.cli.cmd('ip link set dev lo up')
 
-    def reset_default_route(self, ip):
+    def reset_default_route(self, ip_addr):
         self.cli.cmd('ip route del default')
-        self.cli.cmd('ip route add default via ' + ip)
+        self.cli.cmd('ip route add default via ' + ip_addr)
 
     def add_route(self, route_ip='default', gw_ip=None, dev=None):
         """
-        :type route_ip: IP
+        :type route_ip: IP|str
         :type gw_ip: IP
         :type dev: str
         :return:
@@ -463,7 +465,8 @@ class Host(PTMObject):
 
         return LinuxCLI().cmd(cmd, blocking=False).process
 
-    def start_echo_server(self, ip='localhost', port=DEFAULT_ECHO_PORT,
+    def start_echo_server(self, ip_addr='localhost',
+                          port=DEFAULT_ECHO_PORT,
                           echo_data="echo-reply", protocol='tcp'):
         """
         Start an echo server listening on given ip/port (default to
@@ -477,12 +480,12 @@ class Host(PTMObject):
         """
         if (port in self.echo_server_procs and
                 self.echo_server_procs[port] is not None):
-            self.stop_echo_server(ip, port)
+            self.stop_echo_server(ip_addr, port)
         proc_name = self.ptm.root_dir + '/echo-server.py'
         self.LOG.debug('Starting echo server: ' + proc_name + ' on: ' +
-                       ip + ':' + str(port))
+                       ip_addr + ':' + str(port))
         cmd0 = [proc_name,
-                '-i', ip,
+                '-i', ip_addr,
                 '-p', str(port),
                 '-d', echo_data,
                 '-r', protocol]
@@ -502,14 +505,14 @@ class Host(PTMObject):
                 raise SubprocessTimeoutException(
                     'Echo server listener failed to bind to port '
                     'within timeout')
-            conn_resp = self.send_echo_request(dest_ip=ip, dest_port=port,
+            conn_resp = self.send_echo_request(dest_ip=ip_addr, dest_port=port,
                                                echo_request='connect-test',
                                                protocol=protocol)
 
         self.echo_server_procs[port] = proc
         return proc
 
-    def stop_echo_server(self, ip='localhost', port=DEFAULT_ECHO_PORT):
+    def stop_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT):
         """
         Stop an echo server that has been started on given ip/port (defaults to
         localhost:80).  If echo service has not been started, do nothing.
@@ -519,7 +522,8 @@ class Host(PTMObject):
         """
         if (port in self.echo_server_procs and
                 self.echo_server_procs[port] is not None):
-            self.LOG.debug('Stopping echo server on: ' + ip + ':' + str(port))
+            self.LOG.debug('Stopping echo server on: ' + str(ip_addr) +
+                           ':' + str(port))
             proc = self.echo_server_procs[port]
             proc.process_array[0].poll()
             terminate_process(proc.process, signal='TERM')

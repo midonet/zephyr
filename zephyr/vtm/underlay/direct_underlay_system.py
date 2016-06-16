@@ -12,19 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from zephyr.common import exceptions
+from zephyr.vtm.underlay import underlay_system
 
-class UnderlayHost(object):
-    def __init__(self, name):
-        self.name = name
-        self.underlay_host_obj = None
-        self.underlay_type = None
 
-    def attach_underlay_host(self, type, host_obj):
-        self.underlay_host_obj = host_obj
-        self.underlay_type = type
+class DirectUnderlaySystem(underlay_system.UnderlaySystem):
+    def read_config(self, config_map):
+        super(DirectUnderlaySystem, self).read_config(config_map)
+        if 'hosts' not in config_map:
+            raise exceptions.ArgMismatchException(
+                "'hosts' MUST be specified in direct underlay config")
 
-    def get_resource(self):
+    def get_topology_feature(self, name):
         pass
 
-    def create_vm(self):
+    def create_vm(self, ip_addr, mac=None,
+                  gw_ip=None, hv_host=None, name=None):
         pass

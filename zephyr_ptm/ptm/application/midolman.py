@@ -229,8 +229,8 @@ class Midolman(application.Application):
     def is_virtual_network_host():
         return True
 
-    def connect_iface_to_port(self, vm_host, iface, port_id):
-        near_if_name = vm_host.name + iface.name
+    def connect_iface_to_port(self, vm_host_name, iface, port_id):
+        near_if_name = vm_host_name + iface
         self.LOG.debug('Binding interface: ' + near_if_name +
                        ' to port ID: ' + port_id)
         proc = self.host.run_app_command(

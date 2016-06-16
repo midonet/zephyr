@@ -21,9 +21,18 @@ from zephyr.tsm.test_case import require_topology_feature
 from zephyr.tsm.test_case import TestCase
 
 
-class SamplePTM(object):
-    def get_topology_features(self):
+class SampleVTM(object):
+    def __init__(self):
+        self.underlay_system = SampleUnderlay()
+
+
+class SampleUnderlay(object):
+    @staticmethod
+    def get_topology_features():
         return {'test_feature': True, 'test_number': 2}
+
+    def get_topology_feature(self, name):
+        return self.get_topology_features().get(name, None)
 
 
 class SampleTestCase(TestCase):
@@ -104,14 +113,14 @@ class TestCaseTest(unittest.TestCase):
 
     def test_test_case_run(self):
         tc1 = SampleTestCase('test_basic')
-        tc1._prepare_class(None, None, None)
+        tc1._prepare_class(None, None)
         tr = unittest.TestResult()
         tc1.run(tr)
         self.assertEqual(0, len(tr.errors))
         self.assertEqual(0, len(tr.failures))
 
         tc2 = SampleTestCase('test_a_failure')
-        tc2._prepare_class(None, None, None)
+        tc2._prepare_class(None, None)
         tr = unittest.TestResult()
         tc2.run(tr)
         self.assertEqual(0, len(tr.errors))
@@ -119,7 +128,7 @@ class TestCaseTest(unittest.TestCase):
 
     def test_expected_failures(self):
         tc1 = SampleTestCase('test_expected_failure')
-        tc1._prepare_class(None, None, None)
+        tc1._prepare_class(None, None)
         tr1 = unittest.TestResult()
         tc1.run(tr1)
         self.assertEqual(0, len(tr1.errors))
@@ -130,7 +139,7 @@ class TestCaseTest(unittest.TestCase):
         self.assertEqual('FOO', res_tc.expected_failure_issue_ids[0])
 
         tc2 = SampleTestCase('test_expected_failure_func')
-        tc2._prepare_class(None, None, None)
+        tc2._prepare_class(None, None)
         tr2 = unittest.TestResult()
         tc2.run(tr2)
         self.assertEqual(0, len(tr2.errors))
@@ -141,7 +150,7 @@ class TestCaseTest(unittest.TestCase):
         self.assertEqual('BAR', res_tc2.expected_failure_issue_ids[0])
 
         tc3 = SampleTestCase('test_expected_failure_func_multi')
-        tc3._prepare_class(None, None, None)
+        tc3._prepare_class(None, None)
         tr3 = unittest.TestResult()
         tc3.run(tr3)
         self.assertEqual(0, len(tr3.errors))
@@ -153,7 +162,7 @@ class TestCaseTest(unittest.TestCase):
         self.assertEqual('BAMF', tc3.expected_failure_issue_ids[2])
 
         tc4 = SampleTestCase('test_expected_failure_func_with_fail')
-        tc4._prepare_class(None, None, None)
+        tc4._prepare_class(None, None)
         tr4 = unittest.TestResult()
         tc4.run(tr4)
         self.assertEqual(0, len(tr4.errors))
@@ -163,7 +172,7 @@ class TestCaseTest(unittest.TestCase):
         self.assertEqual('BAR', tc4.expected_failure_issue_ids[0])
 
         tc4 = SampleTestCase('test_expected_failure_func_stop_on_fail')
-        tc4._prepare_class(None, None, None)
+        tc4._prepare_class(None, None)
         tr4 = unittest.TestResult()
         tc4.run(tr4)
         self.assertEqual(0, len(tr4.errors))
@@ -197,7 +206,7 @@ class TestCaseTest(unittest.TestCase):
                     'test_topology_feature_func_fails_int')])
 
         for t in test_list:
-            t._prepare_class(SamplePTM(), None, None)
+            t._prepare_class(SampleVTM(), None)
 
         tr = unittest.TestResult()
 

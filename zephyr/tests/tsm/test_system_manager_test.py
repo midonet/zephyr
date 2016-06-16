@@ -24,7 +24,7 @@ class TestSystemManagerTest(unittest.TestCase):
     def test_add_test_from_pkg_module_class(self):
 
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.add_test(
@@ -37,7 +37,7 @@ class TestSystemManagerTest(unittest.TestCase):
     def test_add_test_from_pkg_module_class_multi(self):
 
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.add_test(
@@ -70,7 +70,7 @@ class TestSystemManagerTest(unittest.TestCase):
     def test_add_test_from_pkg_module_class_func(self):
 
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.add_test("zephyr.tests.tsm.sample.test_sample_cases."
@@ -86,7 +86,7 @@ class TestSystemManagerTest(unittest.TestCase):
     def test_add_test_from_pkg_module_class_func_multi(self):
 
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.add_test("zephyr.tests.tsm.sample.test_sample_cases."
@@ -111,7 +111,7 @@ class TestSystemManagerTest(unittest.TestCase):
     def test_add_test_from_pkg_module(self):
 
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.add_test("zephyr.tests.tsm.sample.test_sample_cases")
@@ -125,7 +125,7 @@ class TestSystemManagerTest(unittest.TestCase):
 
     def test_add_test_from_pkg(self):
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.add_test("zephyr.tests.tsm.sample")
@@ -139,7 +139,7 @@ class TestSystemManagerTest(unittest.TestCase):
 
     def test_load_tests_from_classes_fqn(self):
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.load_tests(
@@ -152,7 +152,7 @@ class TestSystemManagerTest(unittest.TestCase):
     def test_run_all_tests(self):
 
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.load_tests(
@@ -169,7 +169,7 @@ class TestSystemManagerTest(unittest.TestCase):
     def test_multi_suite_run(self):
 
         lm = LogManager(root_dir="test-logs")
-        tsm = TestSystemManager(None, None, log_manager=lm)
+        tsm = TestSystemManager(None, log_manager=lm)
         tsm.configure_logging(debug=True)
 
         tsm.add_test(

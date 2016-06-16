@@ -14,14 +14,14 @@
 # limitations under the License.
 
 import getopt
+import json
 import os
 import sys
 import traceback
 
-from zephyr.common.cli import LinuxCLI
 from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
-from zephyr_ptm.ptm.application import netns_hv
+from zephyr.common import zephyr_constants
 from zephyr_ptm.ptm.config import version_config
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr_ptm.ptm import ptm_constants
@@ -36,27 +36,25 @@ def usage(except_obj):
         raise except_obj
 
 
-def print_json(pt_imp):
-    print ("{")
-    print ("api_url: " +
-           version_config.ConfigMap.get_configured_parameter(
-               'param_midonet_api_url'))
-    print ("hypervisors: [")
-    for h in pt_imp.hosts_by_name.itervalues():
-        for app in h.applications:
-            if isinstance(app, netns_hv.NetnsHV):
-                print("  {")
-                print("    host: " + h.name + ",")
-                print("    ip: " + app.get_communication_ip() + ",")
-                print("    class: " + app.get_class_name())
-                print("    method: connect_iface_to_port")
-                print("  },")
-    print("]")
-    print("}")
+def print_json(json_out_file, ptm_imp, debug, log_dir):
+    config_map = {
+        'debug': debug,
+        'log_dir': log_dir,
+        'ptm_log_file': ptm_imp.log_file_name,
+        'underlay_system':
+            "zephyr_ptm.ptm.underlay.ptm_underlay_system.PTMUnderlaySystem",
+        'topology_config_file': ptm_imp.topo_file,
+        'root_dir': ptm_imp.root_dir,
+        'api_url':
+            version_config.ConfigMap.get_configured_parameter(
+                'param_midonet_api_url')
+    }
+    out_str = json.dumps(config_map)
+    with open(json_out_file, 'w') as fp:
+        fp.write(out_str)
 
 
 try:
-
     arg_map, extra_args = getopt.getopt(
         sys.argv[1:], 'hdpc:l:fj',
         ['help', 'debug', 'startup', 'shutdown',
@@ -69,6 +67,7 @@ try:
     neutron_command = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False
+    json_out_file = 'underlay-config.json'
 
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
@@ -97,8 +96,10 @@ try:
         usage(exceptions.ArgMismatchException(
             'Must specify at least one command option'))
 
-    root_dir = os.getenv("PYTHONPATH", LinuxCLI().cmd('pwd').stdout.strip())
-    LinuxCLI().cmd('pwd').stdout.strip()
+    ptm_ctl_dir = os.path.dirname(os.path.abspath(__file__))
+
+    zephyr_constants.ZephyrInit.init(ptm_ctl_dir + "/../zephyr.conf")
+    root_dir = zephyr_constants.ZephyrInit.BIN_ROOT_DIR
 
     log_manager = LogManager(root_dir=log_dir)
     if command == 'startup':
@@ -111,7 +112,7 @@ try:
 
     if command == 'startup':
         ptm.startup()
-        print_json(ptm)
+        print_json(json_out_file, ptm, debug, log_dir)
     elif command == 'shutdown':
         ptm.shutdown()
     elif command == 'print':
@@ -119,7 +120,7 @@ try:
     elif command == 'features':
         ptm.print_features()
     elif command == 'json':
-        print_json(ptm)
+        print_json(json_out_file, ptm, debug, log_dir)
     else:
         usage(exceptions.ArgMismatchException(
             'Command option not recognized: ' + command))

@@ -74,7 +74,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         a_net = self.create_network('EAST')
         a_sub = self.create_subnet('EAST', a_net['id'], a_cidr)
         a_pub_net = self.create_network('PUB_EAST', external=True)
-        a_pub_sub = self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
+        self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
         a_tenant_router = self.create_router('EAST',
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
@@ -86,7 +86,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_net = self.create_network('WEST')
         b_sub = self.create_subnet('WEST', b_net['id'], b_cidr)
         b_pub_net = self.create_network('PUB_WEST', external=True)
-        b_pub_sub = self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
+        self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
         b_tenant_router = self.create_router('WEST',
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
@@ -160,12 +160,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_router_mac = b_top['az_iface_port']['mac_address']
         a_router_mac = a_top['az_iface_port']['mac_address']
 
-        a_rme = self.add_peer(
+        self.add_peer(
             a_top, a_tenant_router['id'], "100",
             "192.168.200.3", b_router_mac, b_cidr,
             b_top['az_iface_port']['id'], "2.2.2.2")
 
-        b_rme = self.add_peer(
+        self.add_peer(
             b_top, b_tenant_router['id'], "100",
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
@@ -179,7 +179,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         a_net = self.create_network('EAST')
         a_sub = self.create_subnet('EAST', a_net['id'], a_cidr)
         a_pub_net = self.create_network('PUB_EAST', external=True)
-        a_pub_sub = self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
+        self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
         a_tenant_router = self.create_router('EAST',
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
@@ -191,7 +191,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_net = self.create_network('WEST')
         b_sub = self.create_subnet('WEST', b_net['id'], b_cidr)
         b_pub_net = self.create_network('PUB_WEST', external=True)
-        b_pub_sub = self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
+        self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
         b_tenant_router = self.create_router('WEST',
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
@@ -265,12 +265,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_router_mac = b_top['az_iface_port']['mac_address']
         a_router_mac = a_top['az_iface_port']['mac_address']
 
-        a_rme = self.add_peer(
+        self.add_peer(
             a_top, a_tenant_router['id'], "100",
             "192.168.200.3", b_router_mac, b_cidr,
             b_top['az_iface_port']['id'], "2.2.2.2")
 
-        b_rme = self.add_peer(
+        self.add_peer(
             b_top, b_tenant_router['id'], "100",
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
@@ -292,7 +292,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         vmc.start_echo_server(ip=ipc)
         self.verify_connectivity(vmd, ipc)
 
-        vmb.vm_host.reboot()
+        vmb.vm_underlay.reboot()
 
         vmb.start_echo_server(ip=ipb)
         self.verify_connectivity(vma, ipb)
@@ -303,7 +303,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         a_net = self.create_network('EAST')
         a_sub = self.create_subnet('EAST', a_net['id'], a_cidr)
         a_pub_net = self.create_network('PUB_EAST', external=True)
-        a_pub_sub = self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
+        self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
         a_tenant_router = self.create_router('EAST',
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
@@ -315,7 +315,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_net = self.create_network('WEST')
         b_sub = self.create_subnet('WEST', b_net['id'], b_cidr)
         b_pub_net = self.create_network('PUB_WEST', external=True)
-        b_pub_sub = self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
+        self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
         b_tenant_router = self.create_router('WEST',
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
@@ -348,12 +348,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_router_mac = b_top['az_iface_port']['mac_address']
         a_router_mac = a_top['az_iface_port']['mac_address']
 
-        a_rme = self.add_peer(
+        self.add_peer(
             a_top, a_tenant_router['id'], "100",
             "192.168.200.3", b_router_mac, b_cidr,
             b_top['az_iface_port']['id'], "2.2.2.2")
 
-        b_rme = self.add_peer(
+        self.add_peer(
             b_top, b_tenant_router['id'], "100",
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
@@ -383,7 +383,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         a_net = self.create_network('EAST')
         a_sub = self.create_subnet('EAST', a_net['id'], a_cidr)
         a_pub_net = self.create_network('PUB_EAST', external=True)
-        a_pub_sub = self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
+        self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
         a_tenant_router = self.create_router('EAST',
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
@@ -395,7 +395,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_net = self.create_network('WEST')
         b_sub = self.create_subnet('WEST', b_net['id'], b_cidr)
         b_pub_net = self.create_network('PUB_WEST', external=True)
-        b_pub_sub = self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
+        self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
         b_tenant_router = self.create_router('WEST',
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
@@ -428,12 +428,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_router_mac = b_top['az_iface_port']['mac_address']
         a_router_mac = a_top['az_iface_port']['mac_address']
 
-        a_rme = self.add_peer(
+        self.add_peer(
             a_top, a_tenant_router['id'], "100",
             "192.168.200.3", b_router_mac, b_cidr,
             b_top['az_iface_port']['id'], "2.2.2.2")
 
-        b_rme = self.add_peer(
+        self.add_peer(
             b_top, b_tenant_router['id'], "100",
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
@@ -461,7 +461,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         a_net = self.create_network('EAST')
         a_sub = self.create_subnet('EAST', a_net['id'], a_cidr)
         a_pub_net = self.create_network('PUB_EAST', external=True)
-        a_pub_sub = self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
+        self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
         a_tenant_router = self.create_router('EAST',
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
@@ -473,7 +473,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         b_net = self.create_network('WEST')
         b_sub = self.create_subnet('WEST', b_net['id'], b_cidr)
         b_pub_net = self.create_network('PUB_WEST', external=True)
-        b_pub_sub = self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
+        self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
         b_tenant_router = self.create_router('WEST',
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
@@ -511,7 +511,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "192.168.200.3", b_router_mac, b_cidr,
             b_top['az_iface_port']['id'], "2.2.2.2")
 
-        b_rme = self.add_peer(
+        self.add_peer(
             b_top, b_tenant_router['id'], "100",
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
@@ -536,7 +536,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "WEST", b_top['vtep_net']['id'], "tun1", "eth1",
             b_top['vtep_sub']['id'], new_tunnel_ip)
 
-        vtep_tun_if = self.create_router_interface(
+        self.create_router_interface(
             b_top['vtep_router']['id'], tun_port['id'])
 
         route = {u'destination': u'0.0.0.0/0', u'nexthop': u'2.2.2.3'}

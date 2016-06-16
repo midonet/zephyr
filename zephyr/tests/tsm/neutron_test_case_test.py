@@ -19,7 +19,6 @@ from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.vtm import neutron_api
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
-from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 
 class SampleTestCase(NeutronTestCase):
@@ -34,11 +33,10 @@ class SampleTestCase(NeutronTestCase):
 
 class NeutronTestCaseTest(unittest.TestCase):
     def test_require_extension(self):
-        ptm = PhysicalTopologyManager()
         vtm = VirtualTopologyManager(
-            None, neutron_api.create_neutron_client(), None)
+            client_api_impl=neutron_api.create_neutron_client())
 
-        SampleTestCase._prepare_class(ptm, vtm)
+        SampleTestCase._prepare_class(vtm)
         tc = SampleTestCase('test_needs_agent')
         tr = unittest.TestResult()
         tc.init_networks = False

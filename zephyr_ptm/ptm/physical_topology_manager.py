@@ -16,19 +16,16 @@ import json
 import logging
 
 from zephyr.common import exceptions
-from zephyr.common import ip
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import get_class_from_fqn
+from zephyr.common import zephyr_constants
 from zephyr_ptm.ptm.application.netns_hv import NetnsHV
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
 from zephyr_ptm.ptm.fixtures import neutron_setup_fixture
 from zephyr_ptm.ptm.physical_topology_config import PhysicalTopologyConfig
-from zephyr_ptm.ptm import ptm_constants
 
 
 class PhysicalTopologyManager(object):
-    global_vm_id = 0
-
     def __init__(self, root_dir='.', log_manager=None, log_root_dir=None):
         self.hosts_by_name = {}
         """ :type: dict[str, ptm.host.host.Host]"""
@@ -40,6 +37,8 @@ class PhysicalTopologyManager(object):
         """ :type dict[str, ptm.host.host.Host]"""
         self.neutron_setup = neutron_setup_fixture.NeutronSetupFixture(
             self)
+        # TODO(micucci) Remove this from base PTM.  This needs to be
+        # an extension.
         self.midonet_setup = midonet_setup_fixture.MidonetSetupFixture(
             self)
         self.root_dir = root_dir
@@ -55,10 +54,12 @@ class PhysicalTopologyManager(object):
                             if log_manager is not None
                             else LogManager(root_dir=log_root_dir))
         """ :type: LogManager"""
-        self.log_file_name = ptm_constants.ZEPHYR_LOG_FILE_NAME
+        self.log_file_name = zephyr_constants.ZEPHYR_LOG_FILE_NAME
         self.fixtures = {}
         """ :type: dict[str, ServiceFixture]"""
         self.config_file = None
+        self.hosts = []
+        self.topo_file = None
 
     def configure_logging(self, log_file_name=None,
                           log_name='ptm-root', debug=False):
@@ -117,6 +118,7 @@ class PhysicalTopologyManager(object):
             '/' + config_file)
 
         config_obj = None
+        self.topo_file = full_path_config_file
         with open(full_path_config_file, 'r') as f:
             if file_type == 'json':
                 config_obj = json.load(f)
@@ -307,6 +309,8 @@ class PhysicalTopologyManager(object):
 
         # Must go through and set up both neutron and
         # midonet for use by zephyr.
+        # TODO(micucci) Remove the midonet-specific setup and put it in an
+        # extension
         self.midonet_setup.setup()
         self.neutron_setup.setup()
 
@@ -388,11 +392,11 @@ class PhysicalTopologyManager(object):
         host_impl_class = get_class_from_fqn(host_cfg_map['impl'])
         host_log_file = host_cfg_map.get(
             'log_file_name',
-            ptm_constants.ZEPHYR_LOG_FILE_NAME)
+            zephyr_constants.ZEPHYR_LOG_FILE_NAME)
         app_impl_class = get_class_from_fqn(app_cfg_map['class'])
         app_log_file = app_cfg_map.get(
             'log_file_name',
-            ptm_constants.ZEPHYR_LOG_FILE_NAME)
+            zephyr_constants.ZEPHYR_LOG_FILE_NAME)
 
         h = host_impl_class(host_name, self)
         """ :type: Host"""
@@ -446,101 +450,6 @@ class PhysicalTopologyManager(object):
         if feature in feat_map:
             return feat_map[feature]
         return None
-
-    def create_vm(self, ip_addr, mac=None, gw_ip=None,
-                  requested_hv_host=None, requested_vm_name=None):
-        """
-        Creates a guest VM on the Physical Topology and returns the Guest
-        object representing the VM as part of the virtual topology.
-        :param ip_addr: str IP Address to use for the VM (required)
-        :param mac: str Ether Address to use for the VM (required)
-        :param gw_ip: str GW IP to use for the VM (required)
-        :param requested_hv_host: str: Hypervisor to use, otherwise the
-        least-loaded HV host is chosen.
-        :param requested_vm_name: str: Name to use for the VM.  Otherwise one
-        is generated.
-        :return: Guest
-        """
-        self.LOG.debug("Provisioning VM with IP: " + str(ip_addr) +
-                       (' on host: ' + requested_hv_host
-                        if requested_hv_host
-                        else '') +
-                       (' with name: ' + requested_vm_name
-                        if requested_vm_name
-                        else ''))
-        start_hv_app = None
-        start_hv_host = None
-
-        if requested_hv_host and requested_hv_host not in self.hypervisors:
-            raise exceptions.ObjectNotFoundException(
-                'Requested host to start VM: ' + requested_hv_host +
-                ' not found')
-
-        for hv_host, hv_app_list in (
-                self.hypervisors.iteritems()
-                if requested_hv_host is None
-                else [(requested_hv_host,
-                       self.hypervisors[requested_hv_host])]):
-            for hv_app in hv_app_list:
-                if (start_hv_app is None or
-                        start_hv_app.get_vm_count() > hv_app.get_vm_count()):
-                    start_hv_app = hv_app
-                    start_hv_host = hv_host
-
-        if not start_hv_host or not start_hv_app:
-            raise exceptions.ObjectNotFoundException(
-                'No suitable hypervisor service application '
-                'found to launch VM')
-
-        if requested_vm_name is not None:
-            requested_vm_name = requested_vm_name
-        else:
-            requested_vm_name = 'vm_' + str(self.global_vm_id)
-            self.global_vm_id += 1
-
-        self.LOG.debug("Starting VM with name: " + requested_vm_name +
-                       " and IP: " + str(ip_addr) + " on hypervisor host: " +
-                       start_hv_host +
-                       ' using hypervisor service application: ' +
-                       start_hv_app.name)
-        new_vm = start_hv_app.create_vm(requested_vm_name)
-        """ :type: VMHost """
-
-        real_ip = ip.IP.make_ip(ip_addr)
-        new_vm.create_interface('eth0', ip_list=[real_ip], mac=mac)
-        if gw_ip is None:
-            # Figure out a default gw based on IP, usually
-            # (IP & subnet_mask + 1)
-            subnet_mask = [255, 255, 255, 255]
-            if real_ip.subnet != "":
-                smask = int(real_ip.subnet)
-                subnet_mask = []
-
-                current_mask = smask
-                for i in range(0, 4):
-                    if current_mask > 8:
-                        subnet_mask.append(255)
-                    else:
-                        lastmask = 0
-                        for j in range(0, current_mask):
-                            lastmask += pow(2, 8 - (j + 1))
-                        subnet_mask.append(lastmask)
-                    current_mask -= 8
-
-            split_ip = real_ip.ip.split(".")
-            gw_ip_split = []
-            for ip_part in split_ip:
-                gw_ip_split.append(int(ip_part) &
-                                   subnet_mask[len(gw_ip_split)])
-
-            gw_ip_split[3] += 1
-            gw_ip = '.'.join(map(lambda x: str(x), gw_ip_split))
-
-        self.LOG.debug("Adding default route for VM: " + gw_ip)
-
-        new_vm.add_route(gw_ip=ip.IP.make_ip(gw_ip))
-
-        return new_vm
 
     def print_features(self, logger=None):
         print_list = []
