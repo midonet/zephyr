@@ -54,11 +54,17 @@ class NeutronTestCase(TestCase):
     nsubs = list()
     nrouters = list()
     nr_ifaces = list()
+    logging_resources = list()
+    firewall_logs = list()
 
     def clean_topo(self):
-        topo_info =\
+        topo_info = \
             [(self.sgrs, 'security group rule',
               self.api.delete_security_group_rule),
+             (self.logging_resources, 'log resource',
+              self.delete_logging_resource),
+             (self.firewall_logs, 'fw logging object',
+              self.delete_firewall_log),
              (self.bgp_peers, 'bgp peer', self.delete_bgp_peer_curl),
              (self.bgp_speakers, 'bgp speaker', self.delete_bgp_speaker_curl),
              (self.fw_ras, 'firewall policy rule', self.delete_fpr),
@@ -382,6 +388,56 @@ class NeutronTestCase(TestCase):
         data = {"firewall_rule_id": fw_rule_id}
         self.api.firewall_policy_remove_rule(fw_policy_id, data)
 
+    def create_logging_resource(
+            self, name, description='Logger resource', enabled=True):
+        data = {
+            'name': name,
+            'description': description,
+            'enabled': enabled}
+
+        logr = self.api.create_logging_resource({'logging_resource': data})
+        self.LOG.debug('Created logging resource: ' + str(logr))
+        self.logging_resources.append(logr['logging_resource']['id'])
+        return logr['logging_resource']
+
+    def delete_logging_resource(self, lgr_id):
+        self.logging_resources.remove(lgr_id)
+        self.api.delete_logging_resource(lgr_id)
+        self.LOG.debug('Deleted logging resource: ' + str(lgr_id))
+
+    def create_firewall_log(self, res_id, fw_event, fw_id,
+                            description="Firewall log object"):
+        data = {
+            'fw_event': fw_event,
+            'description': description,
+            'firewall_id': fw_id}
+
+        fwlog = self.api.create_firewall_log(
+            res_id,
+            {'firewall_log': data})
+        self.LOG.debug('Created firewall log: ' + str(fwlog))
+        self.logging_resources.append(fwlog['firewall_log']['id'])
+        return fwlog['firewall_log']
+
+    def update_firewall_log(self, fwlog_id, res_id, fw_event, fw_id,
+                            description="Firewall log object"):
+        data = {
+            'fw_event': fw_event,
+            'description': description,
+            'firewall_id': fw_id}
+
+        fwlog = self.api.update_firewall_log(
+            fwlog_id,
+            res_id,
+            {'firewall_log': data})
+        self.LOG.debug('Updated firewall log: ' + str(fwlog))
+        return fwlog['firewall_log']
+
+    def delete_firewall_log(self, fwlog_id):
+        self.firewall_logs.remove(fwlog_id)
+        self.api.delete_firewall_log(fwlog_id)
+        self.LOG.debug('Deleted firewall log object: ' + str(fwlog_id))
+
     def verify_tcp_connectivity(self, vm, dest_ip, dest_port):
         echo_response = vm.send_echo_request(dest_ip=dest_ip,
                                              dest_port=dest_port)
@@ -402,6 +458,9 @@ class NeutronTestCase(TestCase):
 
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
                          allowed_address_pairs=None, hv_host=None):
+        """
+        :rtype: (str, zephyr.vtm.guest.Guest, str)
+        """
         port_data = {'name': name,
                      'network_id': net_id,
                      'admin_state_up': True,
