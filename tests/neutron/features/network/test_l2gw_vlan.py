@@ -87,8 +87,8 @@ class TestL2GWVLAN(NeutronTestCase):
         (port2, vm2, ip2) = self.create_vm_server(
             "vm2", tenant2_net['id'], tenant2_sub['gateway_ip'])
 
-        ext2_host = self.ptm.impl_.hosts_by_name['ext2']
-        ext3_host = self.ptm.impl_.hosts_by_name['ext3']
+        ext2_host = self.ptm.hosts_by_name['ext2']
+        ext3_host = self.ptm.hosts_by_name['ext3']
 
         ext_ip = "172.20.100.224"
 

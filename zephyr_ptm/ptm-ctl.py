@@ -23,7 +23,6 @@ from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
 from zephyr_ptm.ptm.application import netns_hv
 from zephyr_ptm.ptm.config import version_config
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr_ptm.ptm import ptm_constants
 
@@ -105,16 +104,14 @@ try:
     if command == 'startup':
         log_manager.rollover_logs_fresh(file_filter='ptm*.log')
 
-    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir,
-                                     log_manager=log_manager)
-    ptm_impl.configure_logging(debug=debug)
-
-    ptm = PhysicalTopologyManager(ptm_impl)
+    ptm = PhysicalTopologyManager(root_dir=root_dir,
+                                  log_manager=log_manager)
+    ptm.configure_logging(debug=debug)
     ptm.configure(ptm_config_file)
 
     if command == 'startup':
         ptm.startup()
-        print_json(ptm_impl)
+        print_json(ptm)
     elif command == 'shutdown':
         ptm.shutdown()
     elif command == 'print':
@@ -122,7 +119,7 @@ try:
     elif command == 'features':
         ptm.print_features()
     elif command == 'json':
-        print_json(ptm_impl)
+        print_json(ptm)
     else:
         usage(exceptions.ArgMismatchException(
             'Command option not recognized: ' + command))

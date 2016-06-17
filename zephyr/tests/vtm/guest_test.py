@@ -25,7 +25,6 @@ from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
 from zephyr.vtm.guest import Guest
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
@@ -67,17 +66,15 @@ class MockClient(object):
 
 class GuestTest(unittest.TestCase):
     lm = None
-    ptm_i = None
     ptm = None
 
     @classmethod
     def setUpClass(cls):
         cls.lm = LogManager('test-logs')
-        cls.ptm_i = ConfiguredHostPTMImpl(
+        cls.ptm = PhysicalTopologyManager(
             root_dir=ROOT_DIR,
             log_manager=cls.lm)
-        cls.ptm_i.configure_logging(debug=True)
-        cls.ptm = PhysicalTopologyManager(cls.ptm_i)
+        cls.ptm.configure_logging(debug=True)
         cls.ptm.configure(
             config_file='test-basic-config.json',
             config_dir=os.path.dirname(os.path.abspath(__file__)))
@@ -87,7 +84,7 @@ class GuestTest(unittest.TestCase):
         VirtualTopologyManager(client_api_impl=MockClient,
                                physical_topology_manager=self.ptm)
 
-        hv = self.ptm_i.hypervisors['cmp1'][0]
+        hv = self.ptm.hypervisors['cmp1'][0]
         """ :type hv: Midolman """
 
         vm = hv.create_vm('vm1')
@@ -115,9 +112,9 @@ class GuestTest(unittest.TestCase):
         VirtualTopologyManager(client_api_impl=MockClient,
                                physical_topology_manager=self.ptm)
 
-        hv1 = self.ptm_i.hypervisors['cmp1'][0]
+        hv1 = self.ptm.hypervisors['cmp1'][0]
         """ :type hv1: Midolman """
-        hv2 = self.ptm_i.hypervisors['cmp2'][0]
+        hv2 = self.ptm.hypervisors['cmp2'][0]
         """ :type hv2: Midolman """
 
         vm1 = hv1.create_vm('vm1')
@@ -157,7 +154,7 @@ class GuestTest(unittest.TestCase):
         VirtualTopologyManager(client_api_impl=MockClient,
                                physical_topology_manager=self.ptm)
 
-        hv1 = self.ptm_i.hypervisors['cmp1'][0]
+        hv1 = self.ptm.hypervisors['cmp1'][0]
         """ :type hv1: Midolman """
 
         vm1 = hv1.create_vm('vm1')
@@ -190,7 +187,7 @@ class GuestTest(unittest.TestCase):
     #     vtm = VirtualTopologyManager(client_api_impl=MockClient,
     #                                  physical_topology_manager=self.ptm)
     #
-    #     hv1 = self.ptm_i.hypervisors['cmp1'][0]
+    #     hv1 = self.ptm.hypervisors['cmp1'][0]
     #     """ :type hv1: Midolman """
     #
     #     vm1 = hv1.create_vm('vm1')

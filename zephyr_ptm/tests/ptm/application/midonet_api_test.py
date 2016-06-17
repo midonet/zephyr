@@ -22,7 +22,6 @@ from zephyr.common.utils import run_unit_test
 from zephyr_ptm.ptm.config import version_config
 from zephyr_ptm.ptm.host.ip_netns_host import IPNetNSHost
 from zephyr_ptm.ptm.host.root_host import RootHost
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_config import ApplicationDef
 from zephyr_ptm.ptm.physical_topology_config import BridgeDef
 from zephyr_ptm.ptm.physical_topology_config import HostDef
@@ -36,11 +35,10 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
 class MidonetAPITest(unittest.TestCase):
     def test_startup(self):
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(
+        ptm = PhysicalTopologyManager(
             root_dir=ROOT_DIR,
             log_manager=lm)
-        ptm_i.configure_logging(log_file_name="test-ptm.log", debug=True)
-        ptm = PhysicalTopologyManager(ptm_i)
+        ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
         root_cfg = HostDef('root',
                            bridges={
@@ -69,9 +67,9 @@ class MidonetAPITest(unittest.TestCase):
                 'zephyr_ptm.ptm.application.midonet_api.MidonetAPI',
                 zookeeper_ips=['10.0.0.2'])])
 
-        root = RootHost('root', ptm_i)
-        zoo1 = IPNetNSHost(zoo1_cfg.name, ptm_i)
-        net = IPNetNSHost(net_cfg.name, ptm_i)
+        root = RootHost('root', ptm)
+        zoo1 = IPNetNSHost(zoo1_cfg.name, ptm)
+        net = IPNetNSHost(net_cfg.name, ptm)
 
         root.configure_logging(log_file_name="test-ptm.log", debug=True)
         zoo1.configure_logging(log_file_name="test-ptm.log", debug=True)
@@ -85,13 +83,13 @@ class MidonetAPITest(unittest.TestCase):
         root.link_interface(root.interfaces['zoo1eth0'],
                             zoo1, zoo1.interfaces['eth0'])
 
-        ptm_i.hosts_by_name['root'] = root
-        ptm_i.hosts_by_name['zoo1'] = zoo1
-        ptm_i.hosts_by_name['net'] = net
-        ptm_i.host_by_start_order.append([root])
-        ptm_i.host_by_start_order.append([zoo1])
-        ptm_i.host_by_start_order.append([net])
-        ptm_i.startup()
+        ptm.hosts_by_name['root'] = root
+        ptm.hosts_by_name['zoo1'] = zoo1
+        ptm.hosts_by_name['net'] = net
+        ptm.host_by_start_order.append([root])
+        ptm.host_by_start_order.append([zoo1])
+        ptm.host_by_start_order.append([net])
+        ptm.startup()
 
         self.assertTrue(LinuxCLI().cmd(
             'midonet-cli --midonet-url="' +
@@ -99,7 +97,7 @@ class MidonetAPITest(unittest.TestCase):
                 'param_midonet_api_url') +
             '" -A -e "host list"').ret_code == 0)
 
-        ptm_i.shutdown()
+        ptm.shutdown()
 
         self.assertFalse(LinuxCLI().cmd(
             'midonet-cli --midonet-url="' +

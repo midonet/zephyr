@@ -23,7 +23,6 @@ from zephyr.vtm import neutron_api
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 from zephyr_ptm.ptm.application.midolman import Midolman
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
@@ -31,7 +30,6 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
 
 class NeutronAPITest(unittest.TestCase):
     lm = LogManager('test-logs')
-    ptm_i = None
     ptm = None
     vtm = None
     api = None
@@ -44,11 +42,10 @@ class NeutronAPITest(unittest.TestCase):
     public_router_iface = None
 
     def setUp(self):
-        self.ptm_i = ConfiguredHostPTMImpl(
+        self.ptm = PhysicalTopologyManager(
             root_dir=ROOT_DIR,
             log_manager=self.lm)
-        self.ptm_i.configure_logging(debug=True)
-        self.ptm = PhysicalTopologyManager(self.ptm_i)
+        self.ptm.configure_logging(debug=True)
         self.ptm.configure(
             config_file='test-basic-ptm.json',
             config_dir=os.path.dirname(os.path.abspath(__file__)))
@@ -69,7 +66,7 @@ class NeutronAPITest(unittest.TestCase):
             log.setLevel(logging.DEBUG)
 
             tunnel_zone_host_map = {}
-            for host_name, host in self.ptm.impl_.hosts_by_name.iteritems():
+            for host_name, host in self.ptm.hosts_by_name.iteritems():
                 # On each host, check if there is at least one Midolman
                 # app running
                 for app in host.applications:
@@ -144,8 +141,8 @@ class NeutronAPITest(unittest.TestCase):
             port2 = self.api.create_port(port2def)['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            self.ptm_i.LOG.info("Got port 1 IP: " + str(ip1))
-            self.ptm_i.LOG.info("Got port 2 IP: " + str(ip2))
+            self.ptm.LOG.info("Got port 1 IP: " + str(ip1))
+            self.ptm.LOG.info("Got port 2 IP: " + str(ip2))
 
             vm1 = self.vtm.create_vm(ip=ip1, mac=port1['mac_address'],
                                      hv_host='cmp2')
@@ -190,8 +187,8 @@ class NeutronAPITest(unittest.TestCase):
             port2 = self.api.create_port(port2def)['port']
             ip2 = port2['fixed_ips'][0]['ip_address']
 
-            self.ptm_i.LOG.info("Got port 1 IP: " + str(ip1))
-            self.ptm_i.LOG.info("Got port 2 IP: " + str(ip2))
+            self.ptm.LOG.info("Got port 1 IP: " + str(ip1))
+            self.ptm.LOG.info("Got port 2 IP: " + str(ip2))
 
             vm1 = self.vtm.create_vm(ip1, mac=port1['mac_address'],
                                      hv_host='cmp1', name='vm1')

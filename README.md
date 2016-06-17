@@ -131,7 +131,7 @@ etc. to connect to).
 ##### Sample ptm Configuration
 
 This [example configuration file](config/physical_topologies/2z-2c.json) is specific
-to the `ConfiguredHostPTMImpl` ptm implementation.  Other ptm implementations may
+to the `PhysicalTopologyManager` ptm implementation.  Other ptm implementations may
 use a different configuration schema.
 
 This configuration creates a root host, two zookeeper hosts, two compute nodes, and a
@@ -169,10 +169,10 @@ The command options are:
 
 | Command             | Description                                                            |
 | ------------------- | ---------------------------------------------------------------------- |
-| --startup           | Start a ConfiguredHostPTMImpl based on the config                      |
-| --shutdown          | Shutdown the ConfiguredHostPTMImpl based on the config                 |
+| --startup           | Start a PTM based on the config                      |
+| --shutdown          | Shutdown the PTM based on the config                 |
 | --print             | Print the topology specified in the config (do nothing otherwise)      |
-| --features          | Print the topology features supported and set by ConfiguredHostPTMImpl |
+| --features          | Print the topology features supported and set by PTM |
 | --config-file FILE  | Specify the topology file to use                                       |
 | -d                  | Turn on debug mode for logging                                         |
 | -h                  | Print out help, including a full list of options                       |
@@ -192,7 +192,6 @@ Zephyr for the majority of cases.
 | -c CLIENT             | Specify the client API to use ('neutron', 'midonet')              | 'neutron'                                     |
 | -a AUTH               | Specify authentication scheme to use ('keystone', 'noauth')       | 'noauth'                                      |
 | --client-args ARGS    | Specify client params (see below)                                 | None                                          |
-| -p CLASS              | Specify the PTMImpl class to use as the ptm implementation        | 'zephyr_ptm.ptm.impl.ConfiguredHostPTMImpl'              |
 | -o <topology>         | Specify the topology config file to use                           | 'config/physical_topologies/2z-3c-2edge.json' |
 | -d                    | Turn on debug mode for logging                                    | False                                         |
 | -l                    | Specify the logging directory                                     | '/tmp/zephyr/logs'                            |

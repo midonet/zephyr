@@ -801,7 +801,7 @@ class NeutronTestCase(TestCase):
         self.LOG.info('Added default route to edge router: ' +
                       str(edge_router))
 
-        router_host = self.ptm.impl_.hosts_by_name[router_host_name]
+        router_host = self.ptm.hosts_by_name[router_host_name]
         """ :type: Host"""
         for sub in pub_subnets:
             router_host.add_route(

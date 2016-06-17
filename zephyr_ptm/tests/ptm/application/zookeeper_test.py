@@ -21,7 +21,6 @@ from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
 from zephyr_ptm.ptm.host.ip_netns_host import IPNetNSHost
 from zephyr_ptm.ptm.host.root_host import RootHost
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_config import ApplicationDef
 from zephyr_ptm.ptm.physical_topology_config import BridgeDef
 from zephyr_ptm.ptm.physical_topology_config import HostDef
@@ -35,11 +34,10 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
 class ZookeeperTest(unittest.TestCase):
     def test_startup(self):
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(
+        ptm = PhysicalTopologyManager(
             root_dir=ROOT_DIR,
             log_manager=lm)
-        ptm_i.configure_logging(log_file_name="test-ptm.log", debug=True)
-        ptm = PhysicalTopologyManager(ptm_i)
+        ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
         root_cfg = HostDef('root',
                            bridges={
@@ -62,8 +60,8 @@ class ZookeeperTest(unittest.TestCase):
         root_icfg = ImplementationDef(
             'zoo1', 'zephyr_ptm.ptm.host.root_host.RootHost', [])
 
-        root = RootHost('root', ptm_i)
-        zoo_host1 = IPNetNSHost('zoo1', ptm_i)
+        root = RootHost('root', ptm)
+        zoo_host1 = IPNetNSHost('zoo1', ptm)
 
         root.configure_logging(log_file_name="test-ptm.log", debug=True)
         zoo_host1.configure_logging(log_file_name="test-ptm.log", debug=True)
@@ -75,10 +73,10 @@ class ZookeeperTest(unittest.TestCase):
         root.link_interface(root.interfaces['zoo1eth0'],
                             zoo_host1, zoo_host1.interfaces['eth0'])
 
-        ptm_i.hosts_by_name['root'] = root
-        ptm_i.hosts_by_name['zoo1'] = zoo_host1
-        ptm_i.host_by_start_order.append([root])
-        ptm_i.host_by_start_order.append([zoo_host1])
+        ptm.hosts_by_name['root'] = root
+        ptm.hosts_by_name['zoo1'] = zoo_host1
+        ptm.host_by_start_order.append([root])
+        ptm.host_by_start_order.append([zoo_host1])
 
         try:
             root.create()

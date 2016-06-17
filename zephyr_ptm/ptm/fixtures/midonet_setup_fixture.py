@@ -122,7 +122,6 @@ class MidonetSetupFixture(object):
     def __init__(self, ptm_impl):
         """
         Sets up everything all tests will need to run Neutron.
-        :type ptm_impl: ptm.impl.configured_host_ptm_impl.ConfiguredHostPTMImpl
         """
         super(MidonetSetupFixture, self).__init__()
         self.ptm_impl = ptm_impl

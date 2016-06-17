@@ -27,27 +27,11 @@ class MidonetTestCase(TestCase):
         self.api = None
         """ :type: MidonetApi"""
 
-    @classmethod
-    def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
-        """
-        :param ptm: PhysicalTopologyManager
-        :param vtm: VirtualTopologyManager
-        :type test_case_logger: logging.logger
-        """
-        super(MidonetTestCase, cls)._prepare_class(ptm, vtm, test_case_logger)
-
-        # Only add the midonet-setup fixture once for each scenario.
-        if 'midonet-setup' not in ptm.fixtures:
-            test_case_logger.debug('Adding midonet-setup fixture')
-            midonet_fixture = midonet_setup_fixture.MidonetSetupFixture(
-                cls.ptm, test_case_logger)
-            ptm.add_fixture('midonet-setup', midonet_fixture)
-
     def run(self, result=None):
         """
         Special run override to make sure to set up neutron data
         prior to running the test case function.
         """
-        self.midonet_fixture = self.ptm.get_fixture('midonet-setup')
+        self.midonet_fixture = self.ptm.midonet_setup
         self.api = self.midonet_fixture.api
         super(MidonetTestCase, self).run(result)

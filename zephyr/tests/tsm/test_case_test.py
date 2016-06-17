@@ -19,12 +19,9 @@ from zephyr.common.utils import run_unit_test
 from zephyr.tsm.test_case import expected_failure
 from zephyr.tsm.test_case import require_topology_feature
 from zephyr.tsm.test_case import TestCase
-from zephyr_ptm.ptm.impl.physical_topology_manager_impl import (
-    PhysicalTopologyManagerImpl)
-from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 
-class SamplePTM(PhysicalTopologyManagerImpl):
+class SamplePTM(object):
     def get_topology_features(self):
         return {'test_feature': True, 'test_number': 2}
 
@@ -200,7 +197,7 @@ class TestCaseTest(unittest.TestCase):
                     'test_topology_feature_func_fails_int')])
 
         for t in test_list:
-            t._prepare_class(PhysicalTopologyManager(SamplePTM()), None, None)
+            t._prepare_class(SamplePTM(), None, None)
 
         tr = unittest.TestResult()
 

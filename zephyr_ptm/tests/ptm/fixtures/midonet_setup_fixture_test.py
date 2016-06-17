@@ -23,7 +23,6 @@ from zephyr.common.utils import run_unit_test
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 from zephyr_ptm.ptm.application.midolman import Midolman
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
@@ -32,7 +31,6 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
 class MNAPITest(unittest.TestCase):
     def __init__(self, method_name):
         super(MNAPITest, self).__init__(methodName=method_name)
-        self.ptm_i = None
         self.ptm = None
         self.vtm = None
         self.main_bridge = None
@@ -40,12 +38,11 @@ class MNAPITest(unittest.TestCase):
     def setUp(self):
         try:
             lm = LogManager('./test-logs')
-            self.ptm_i = ConfiguredHostPTMImpl(
+            self.ptm = PhysicalTopologyManager(
                 root_dir=ROOT_DIR,
                 log_manager=lm)
-            self.ptm_i.configure_logging(log_file_name='test-ptm.log',
-                                         debug=True)
-            self.ptm = PhysicalTopologyManager(self.ptm_i)
+            self.ptm.configure_logging(log_file_name='test-ptm.log',
+                                       debug=True)
             path = os.path.abspath(__file__)
             dir_path = os.path.dirname(path)
             self.ptm.configure(
@@ -69,7 +66,7 @@ class MNAPITest(unittest.TestCase):
                 stdout_log_level=logging.DEBUG)
 
             tunnel_zone_host_map = {}
-            for host_name, host in self.ptm.impl_.hosts_by_name.iteritems():
+            for host_name, host in self.ptm.hosts_by_name.iteritems():
                 # On each host, check if there is at least one
                 # Midolman app running
                 for app in host.applications:

@@ -20,7 +20,7 @@ import traceback
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.exceptions import *
 from zephyr.common.log_manager import LogManager
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
+from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr_ptm.ptm import ptm_constants
 
 
@@ -80,11 +80,11 @@ try:
 
     log_manager = LogManager(root_dir=log_dir)
 
-    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir,
-                                     log_manager=log_manager)
-    ptm_impl.configure_logging(
+    ptm = PhysicalTopologyManager(root_dir=root_dir,
+                                  log_manager=log_manager)
+    ptm.configure_logging(
         log_file_name=log_file, debug=debug)
-    ptm_impl.ptm_host_app_control(host_cmd, host_json, app_json, arg_list)
+    ptm.ptm_host_app_control(host_cmd, host_json, app_json, arg_list)
 
 except ExitCleanException:
     exit(1)

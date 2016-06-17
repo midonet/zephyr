@@ -24,7 +24,6 @@ from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr.common.exceptions import SubprocessFailedException
 from zephyr.common.exceptions import TestException
 from zephyr.common.log_manager import LogManager
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 from zephyr_ptm.ptm import ptm_constants
 
@@ -80,12 +79,11 @@ try:
 
     log_manager = LogManager(root_dir=log_dir)
 
-    ptm_impl = ConfiguredHostPTMImpl(root_dir=root_dir,
-                                     log_manager=log_manager)
-    ptm_impl.configure_logging(
+    ptm = PhysicalTopologyManager(root_dir=root_dir,
+                                  log_manager=log_manager)
+    ptm.configure_logging(
         log_file_name=ptm_constants.ZEPHYR_LOG_FILE_NAME, debug=True)
 
-    ptm = PhysicalTopologyManager(ptm_impl)
     ptm.configure(ptm_config_file)
 
     print("Running command: " + command)
@@ -94,7 +92,7 @@ try:
         if len(params) == 0:
             raise ArgMismatchException(
                 "The 'host' parameter is required for restart-apps command")
-        host_obj = ptm_impl.hosts_by_name[params[0]]
+        host_obj = ptm.hosts_by_name[params[0]]
         for app in host_obj.applications:
 
             so, se = host_obj.run_app_command('stop', app).communicate()
@@ -105,7 +103,7 @@ try:
         if len(params) == 0:
             raise ArgMismatchException(
                 "The 'host' parameter is required for start-apps command")
-        host_obj = ptm_impl.hosts_by_name[params[0]]
+        host_obj = ptm.hosts_by_name[params[0]]
         for app in host_obj.applications:
             so, se = host_obj.run_app_command('start', app).communicate()
             print("--\n" + so + "--\n" + se + "==")
@@ -113,7 +111,7 @@ try:
         if len(params) == 0:
             raise ArgMismatchException(
                 "The 'host' parameter is required for stop-apps command")
-        host_obj = ptm_impl.hosts_by_name[params[0]]
+        host_obj = ptm.hosts_by_name[params[0]]
         for app in host_obj.applications:
             so, se = host_obj.run_app_command('stop', app).communicate()
             print("--\n" + so + "--\n" + se + "==")
@@ -122,7 +120,7 @@ try:
             raise ArgMismatchException(
                 "The 'host', 'iface', and 'port' parameters are required for "
                 "bind-port command")
-        host_obj = ptm_impl.hosts_by_name[params[0]]
+        host_obj = ptm.hosts_by_name[params[0]]
         app_obj = host_obj.applications[0]
         so, se = host_obj.run_app_command('bind_port', app_obj,
                                           params[1:]).communicate()
@@ -133,13 +131,15 @@ try:
                 "The 'compute', 'vm_name' and 'ip' parameters "
                 "are required for add-vm command")
         host = params[0]
-        host_obj = ptm_impl.hosts_by_name[host]
+        host_obj = ptm.hosts_by_name[host]
         app_obj = host_obj.applications[0]
         name = params[1]
         ip = params[2]
         port = params[3] if len(params) > 3 else None
 
-        new_vm = ptm.create_vm(ip=ip, hv_host=host, name=name)
+        new_vm = ptm.create_vm(ip_addr=ip,
+                               requested_hv_host=host,
+                               requested_vm_name=name)
         if port:
             so, se = host_obj.run_app_command(
                 'bind_port', app_obj,

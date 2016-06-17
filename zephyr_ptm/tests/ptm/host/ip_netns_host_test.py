@@ -21,7 +21,6 @@ from zephyr.common.utils import run_unit_test
 from zephyr_ptm.ptm.host.interface import Interface
 from zephyr_ptm.ptm.host.ip_netns_host import *
 from zephyr_ptm.ptm.host.root_host import RootHost
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_config import *
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
@@ -43,11 +42,10 @@ class DummyInterface(Interface):
 class IPNetNSHostTest(unittest.TestCase):
     def test_configure(self):
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(
+        ptm = PhysicalTopologyManager(
             root_dir=ROOT_DIR,
             log_manager=lm)
-        ptm_i.configure_logging(log_file_name="test-ptm.log", debug=True)
-        ptm = PhysicalTopologyManager(ptm_i)
+        ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
         hcfg = HostDef('test',
                        bridges={'br0': BridgeDef('br0')},
@@ -70,10 +68,9 @@ class IPNetNSHostTest(unittest.TestCase):
     def test_boot_shutdown(self):
 
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(
+        ptm = PhysicalTopologyManager(
             root_dir=ROOT_DIR, log_manager=lm)
-        ptm_i.configure_logging(log_file_name="test-ptm.log", debug=True)
-        ptm = PhysicalTopologyManager(ptm_i)
+        ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
         hcfg = HostDef('test',
                        bridges={'br0': BridgeDef('br0')},
@@ -116,11 +113,10 @@ class IPNetNSHostTest(unittest.TestCase):
 
     def test_veth_connection_between_two_hosts(self):
         lm = LogManager('./test-logs')
-        ptm_i = ConfiguredHostPTMImpl(
+        ptm = PhysicalTopologyManager(
             root_dir=ROOT_DIR,
             log_manager=lm)
-        ptm_i.configure_logging(log_file_name="test-ptm.log", debug=True)
-        ptm = PhysicalTopologyManager(ptm_i)
+        ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
         h1cfg = HostDef('test1',
                         interfaces={

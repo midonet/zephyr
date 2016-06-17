@@ -29,7 +29,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'])
 
-        ext_host = self.ptm.impl_.hosts_by_name['ext1']
+        ext_host = self.ptm.hosts_by_name['ext1']
         """:type: zephyr.ptm.host.host.Host"""
         ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
         ext_host.add_route(
@@ -52,7 +52,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'])
 
-        ext_host = self.ptm.impl_.hosts_by_name['ext1']
+        ext_host = self.ptm.hosts_by_name['ext1']
         """:type: Host"""
         ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
         ext_host.add_route(
@@ -90,7 +90,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             self.main_subnet['gateway_ip'])
         """:type: (str, zephyr.vtm.guest.Guest, str)"""
 
-        ext_host = self.ptm.impl_.hosts_by_name['ext1']
+        ext_host = self.ptm.hosts_by_name['ext1']
         """:type: Host"""
         ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
         ext_host.add_route(

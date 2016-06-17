@@ -57,7 +57,9 @@ class Host(PTMObject):
                  host_create_func=None, host_remove_func=None):
         super(Host, self).__init__(name, cli)
         self.ptm = ptm
-        """ :type: ConfiguredHostPTMImpl"""
+        """
+        :type: zephyr_ptm.ptm.physical_topology_manager.PhysicalTopologyManager
+        """
         self.bridges = {}
         """ :type: dict[str, Bridge]"""
         self.interfaces = {}

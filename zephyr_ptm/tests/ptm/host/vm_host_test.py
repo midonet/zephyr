@@ -22,7 +22,6 @@ from zephyr.vtm import virtual_topology_manager
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.application import midolman
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
-from zephyr_ptm.ptm.impl.configured_host_ptm_impl import ConfiguredHostPTMImpl
 from zephyr_ptm.ptm.physical_topology_config import *
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
@@ -30,7 +29,6 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
 
 
 class VMHostTest(unittest.TestCase):
-    ptm_i = None
     ptm = None
     vtm = None
     hv_app = None
@@ -41,12 +39,12 @@ class VMHostTest(unittest.TestCase):
     def setUpClass(cls):
         try:
             lm = LogManager('./test-logs')
-            cls.ptm_i = ConfiguredHostPTMImpl(
+            cls.ptm = PhysicalTopologyManager(
                 root_dir=ROOT_DIR,
                 log_manager=lm)
-            cls.ptm_i.configure_logging(log_file_name='test-ptm.log',
-                                        debug=True)
-            cls.ptm = PhysicalTopologyManager(cls.ptm_i)
+            cls.ptm.configure_logging(log_file_name='test-ptm.log',
+                                      debug=True)
+
             path = os.path.abspath(__file__)
             dir_path = os.path.dirname(path)
             cls.ptm.configure(
@@ -63,7 +61,7 @@ class VMHostTest(unittest.TestCase):
             """ :type: MidonetApi"""
 
             tunnel_zone_host_map = {}
-            for host_name, host in cls.ptm.impl_.hosts_by_name.iteritems():
+            for host_name, host in cls.ptm.hosts_by_name.iteritems():
                 # On each host, check if there is at least one
                 # Midolman app running
                 for app in host.applications:
@@ -76,11 +74,11 @@ class VMHostTest(unittest.TestCase):
             midonet_setup_fixture.setup_main_tunnel_zone(
                 api,
                 tunnel_zone_host_map,
-                cls.ptm_i.LOG)
+                cls.ptm.LOG)
 
             cls.main_bridge = midonet_setup_fixture.setup_main_bridge(api)
             """ :type: Bridge"""
-            cls.hypervisor = cls.ptm_i.hosts_by_name['cmp1']
+            cls.hypervisor = cls.ptm.hosts_by_name['cmp1']
             hv_app_type = application.APPLICATION_TYPE_HYPERVISOR
             cls.hv_app = cls.hypervisor.applications_by_type[hv_app_type][0]
 

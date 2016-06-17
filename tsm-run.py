@@ -27,7 +27,6 @@ from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr.common.exceptions import SubprocessFailedException
 from zephyr.common.exceptions import TestException
 from zephyr.common.log_manager import LogManager
-from zephyr.common.utils import get_class_from_fqn
 from zephyr.tsm.test_case import TestCase
 from zephyr.tsm.test_system_manager import TestSystemManager
 from zephyr.vtm.neutron_api import create_neutron_client
@@ -59,11 +58,7 @@ def usage(except_obj):
     print('         List of arguments to give the selected client.  These')
     print('         should be key=value pairs, separated by commas, with no')
     print('         spaces.')
-    print('   Physical Topology Management Options:')
-    print('     -p, --ptm <ptm-class>')
-    print('         Use the specified ptm implementation class')
-    print('         (ConfiguredHostPTMImpl is the default).')
-    print('   ConfiguredHostPTMImpl Specific Options:')
+    print('   PTM Options:')
     print('     -o, --topology <topo>')
     print('         State which physical topologys to configure and run.')
     print('         Topologies are defined in config/physical_topologies.')
@@ -95,7 +90,6 @@ try:
             'n:'
             'o:'
             'c:'
-            'p:'
             'l:'
             'r:'
             'a:'
@@ -108,7 +102,6 @@ try:
             'client=',
             'client-auth=',
             'client-args=',
-            'ptm=',
             'log-dir=',
             'debug',
             'results-dir=',
@@ -125,8 +118,6 @@ try:
     test_debug = False
     log_dir = '/tmp/zephyr/logs'
     results_dir = '/tmp/zephyr/results'
-    ptm_impl_type = (
-        'zephyr_ptm.ptm.impl.configured_host_ptm_impl.ConfiguredHostPTMImpl')
     topology = '2z-3c-2edge.json'
     name = datetime.datetime.utcnow().strftime('%Y_%m_%d_%H-%M-%S')
 
@@ -148,8 +139,6 @@ try:
             client_impl_type = value
         elif arg in ('-a', '--client-auth'):
             client_auth_type = value
-        elif arg in ('-p', '--ptm'):
-            ptm_impl_type = value
         elif arg in ('-l', '--log-dir'):
             log_dir = value
         elif arg in ('-d', '--debug'):
@@ -213,13 +202,9 @@ try:
     # This would be an output of the PTM, or can be created by the user
     # to represent an existing model (or can be an output of a devstack).
 
-    console_log.debug('Setting up ptm from impl: ' + ptm_impl_type)
-    ptm_impl = get_class_from_fqn(ptm_impl_type)(
+    ptm = PhysicalTopologyManager(
         root_dir=root_dir, log_manager=log_manager)
-    console_log.debug('Using PTM impl class: ' +
-                      str(type(ptm_impl).__name__))
-    ptm_impl.configure_logging(debug=debug)
-    ptm = PhysicalTopologyManager(ptm_impl)
+    ptm.configure_logging(debug=debug)
 
     # TODO(micucci): This will take a map specifying how to create VMs
     # instead of a PTM
