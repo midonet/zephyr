@@ -83,7 +83,7 @@ class Midolman(application.Application):
             if 'uuid' not in kwargs:
                 # Get ALL firewall logs as a dict of filename -> contents
                 files = {}
-                fwaas_logs = LinuxCLI().ls('fw-*.log')
+                fwaas_logs = LinuxCLI().ls('firewall-*.log')
                 for log in fwaas_logs:
                     floc = FileLocation(log)
                     self.LOG.debug("Fetching fwaas log from: " +
@@ -91,7 +91,7 @@ class Midolman(application.Application):
                     files[floc.filename] = floc.fetch_file()
                 return files
             else:
-                log_name = (self.log_dir + '/fw-' +
+                log_name = (self.log_dir + '/firewall-' +
                             str(kwargs['uuid']) + '.log')
                 self.LOG.debug("Fetching fwaas log from: " +
                                log_name)

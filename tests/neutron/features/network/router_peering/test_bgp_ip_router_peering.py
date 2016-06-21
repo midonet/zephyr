@@ -12,16 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
+
 from router_peering_utils import L2GWNeutronTestCase
 import time
-from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm import neutron_test_case
+from zephyr.tsm import test_case
 
 
 class TestRouterPeeringBGP(L2GWNeutronTestCase):
 
-    @require_extension('extraroute')
-    @require_extension('gateway-device')
-    @require_extension('l2-gateway')
+    @neutron_test_case.require_extension('extraroute')
+    @neutron_test_case.require_extension('gateway-device')
+    @neutron_test_case.require_extension('l2-gateway')
+    @test_case.require_topology_feature(
+        'config_file', lambda a, b: a in b, ['2z-1c-root-2tun.json'])
+    @unittest.skip("TODO: Topology loading does not work.")
     def test_bgp_ip_router_peering(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
@@ -84,13 +90,13 @@ class TestRouterPeeringBGP(L2GWNeutronTestCase):
         a_as = 64512
         b_as = 64513
 
-        a_bgp_speaker = self.create_bgp_speaker('A_BGP', a_as,
-                                                a_tenant_router['id'])
-        b_bgp_speaker = self.create_bgp_speaker('B_BGP', b_as,
-                                                b_tenant_router['id'])
+        a_bgp_speaker = self.create_bgp_speaker_curl(
+            'A_BGP', a_as, a_tenant_router['id'])
+        b_bgp_speaker = self.create_bgp_speaker_curl(
+            'B_BGP', b_as, b_tenant_router['id'])
 
-        a_peer = self.create_bgp_peer('A_PEER', '192.168.200.3', b_as)
-        b_peer = self.create_bgp_peer('B_PEER', '192.168.200.2', a_as)
+        a_peer = self.create_bgp_peer_curl('A_PEER', '192.168.200.3', b_as)
+        b_peer = self.create_bgp_peer_curl('B_PEER', '192.168.200.2', a_as)
 
         self.add_bgp_speaker_peer(a_bgp_speaker['id'], a_peer['id'])
         self.add_bgp_speaker_peer(b_bgp_speaker['id'], b_peer['id'])

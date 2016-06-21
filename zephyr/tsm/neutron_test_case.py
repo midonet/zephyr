@@ -64,7 +64,7 @@ class NeutronTestCase(TestCase):
              (self.logging_resources, 'log resource',
               self.delete_logging_resource),
              (self.firewall_logs, 'fw logging object',
-              self.delete_firewall_log),
+              self.remove_firewall_logs),
              (self.bgp_peers, 'bgp peer', self.delete_bgp_peer_curl),
              (self.bgp_speakers, 'bgp speaker', self.delete_bgp_speaker_curl),
              (self.fw_ras, 'firewall policy rule', self.delete_fpr),
@@ -354,7 +354,8 @@ class NeutronTestCase(TestCase):
 
     # TODO(Joe): Move to firewall specific helper file
     def create_firewall_rule(self, source_ip=None, dest_ip=None,
-                             dest_port=None, action='allow', protocol='tcp',
+                             src_port=None, dest_port=None,
+                             action='allow', protocol='tcp',
                              tenant_id='admin'):
 
         fwpr_data = {'action': action,
@@ -367,6 +368,8 @@ class NeutronTestCase(TestCase):
 
         if dest_port is not None:
             fwpr_data['destination_port'] = dest_port
+        if src_port is not None:
+            fwpr_data['source_port'] = src_port
         fwpr = self.api.create_firewall_rule({'firewall_rule': fwpr_data})
         self.fwprs.append(fwpr['firewall_rule']['id'])
         return fwpr['firewall_rule']
@@ -390,53 +393,94 @@ class NeutronTestCase(TestCase):
 
     def create_logging_resource(
             self, name, description='Logger resource', enabled=True):
-        data = {
-            'name': name,
-            'description': description,
-            'enabled': enabled}
 
-        logr = self.api.create_logging_resource({'logging_resource': data})
-        self.LOG.debug('Created logging resource: ' + str(logr))
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/logging/logging_resources')
+        curl_data = {
+            'logging_resource': {
+                'name': name,
+                'description': description,
+                'enabled': enabled,
+                'tenant_id': 'admin'
+            }
+        }
+
+        self.LOG.debug("Log Resource JSON: " + str(curl_data))
+        json_ret = curl_post(curl_url, curl_data)
+
+        self.LOG.debug('Adding Log Resource: ' + str(json_ret))
+
+        logr = json.loads(json_ret)
         self.logging_resources.append(logr['logging_resource']['id'])
+        self.LOG.debug('Created logging resource: ' + str(logr))
         return logr['logging_resource']
 
     def delete_logging_resource(self, lgr_id):
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/logging/logging_resources/' + str(lgr_id))
+        curl_delete(curl_url)
         self.logging_resources.remove(lgr_id)
-        self.api.delete_logging_resource(lgr_id)
         self.LOG.debug('Deleted logging resource: ' + str(lgr_id))
 
     def create_firewall_log(self, res_id, fw_event, fw_id,
                             description="Firewall log object"):
-        data = {
-            'fw_event': fw_event,
-            'description': description,
-            'firewall_id': fw_id}
 
-        fwlog = self.api.create_firewall_log(
-            res_id,
-            {'firewall_log': data})
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/logging/logging_resources/' + str(res_id) +
+                    '/firewall_logs')
+        curl_data = {
+            'firewall_log': {
+                'fw_event': fw_event,
+                'description': description,
+                'firewall_id': fw_id,
+                'tenant_id': 'admin'
+            }
+        }
+
+        self.LOG.debug("FW log JSON: " + str(curl_data))
+        json_ret = curl_post(curl_url, curl_data)
+
+        self.LOG.debug('Adding FW log: ' + str(json_ret))
+
+        fwlog = json.loads(json_ret)
         self.LOG.debug('Created firewall log: ' + str(fwlog))
-        self.logging_resources.append(fwlog['firewall_log']['id'])
+        self.firewall_logs.append(
+            (res_id, fwlog['firewall_log']['id']))
         return fwlog['firewall_log']
 
-    def update_firewall_log(self, fwlog_id, res_id, fw_event, fw_id,
+    def update_firewall_log(self, fwlog_id, res_id, fw_event,
                             description="Firewall log object"):
-        data = {
-            'fw_event': fw_event,
-            'description': description,
-            'firewall_id': fw_id}
 
-        fwlog = self.api.update_firewall_log(
-            fwlog_id,
-            res_id,
-            {'firewall_log': data})
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/logging/logging_resources/' + str(res_id) +
+                    '/firewall_logs/' + str(fwlog_id))
+        curl_data = {
+            'firewall_log': {
+                'fw_event': fw_event,
+                'description': description
+            }
+        }
+
+        self.LOG.debug("FW log JSON: " + str(curl_data))
+        json_ret = curl_put(curl_url, curl_data)
+
+        self.LOG.debug('Adding FW log: ' + str(json_ret))
+
+        fwlog = json.loads(json_ret)
+
         self.LOG.debug('Updated firewall log: ' + str(fwlog))
         return fwlog['firewall_log']
 
-    def delete_firewall_log(self, fwlog_id):
-        self.firewall_logs.remove(fwlog_id)
-        self.api.delete_firewall_log(fwlog_id)
+    def delete_firewall_log(self, res_id, fwlog_id):
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/logging/logging_resources/' + str(res_id) +
+                    '/firewall_logs/' + str(fwlog_id))
+        curl_delete(curl_url)
+        self.firewall_logs.remove((res_id, fwlog_id))
         self.LOG.debug('Deleted firewall log object: ' + str(fwlog_id))
+
+    def remove_firewall_logs(self, id_tuple):
+        self.delete_firewall_log(*id_tuple)
 
     def verify_tcp_connectivity(self, vm, dest_ip, dest_port):
         echo_response = vm.send_echo_request(dest_ip=dest_ip,
@@ -457,13 +501,15 @@ class NeutronTestCase(TestCase):
         #     self.assertEqual('ping:echo-reply', echo_response)
 
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
-                         allowed_address_pairs=None, hv_host=None):
+                         allowed_address_pairs=None, hv_host=None,
+                         port_security_enabled=True):
         """
         :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
         """
         port_data = {'name': name,
                      'network_id': net_id,
                      'admin_state_up': True,
+                     'port_security_enabled': port_security_enabled,
                      'tenant_id': 'admin'}
         if sgs:
             port_data['security_groups'] = sgs

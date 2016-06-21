@@ -56,7 +56,8 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             edge_iface_name='eth1',
             edge_subnet_cidr='172.17.2.0/24')
         (porta, vma, ipa) = self.create_vm_server(
-            "A", a_net['id'], a_sub['gateway_ip'])
+            "A", a_net['id'], a_sub['gateway_ip'],
+            port_security_enabled=False)
         a_fip = self.create_floating_ip(
             pub_net_id=a_pub_net['id'],
             port_id=porta['id'])
@@ -77,7 +78,8 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             edge_iface_name='eth1',
             edge_subnet_cidr='172.16.2.0/24')
         (portb, vmb, ipb) = self.create_vm_server(
-            "B", b_net['id'], b_sub['gateway_ip'])
+            "B", b_net['id'], b_sub['gateway_ip'],
+            port_security_enabled=False)
         b_fip = self.create_floating_ip(
             pub_net_id=b_pub_net['id'],
             port_id=portb['id'])
@@ -117,7 +119,6 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
-        exterior_ip = "172.20.1.1"
         vmb.start_echo_server(ip_addr=ipb)
 
         self.verify_connectivity(vma, ipb)
@@ -126,8 +127,6 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
         vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
         self.verify_connectivity(vmb, a_fip['floating_ip_address'])
-
-        self.assertTrue(vma.ping(target_ip=exterior_ip))
 
     def connect_through_vtep_router(self):
         a_cidr = "192.168.20.0/24"
@@ -140,7 +139,8 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
         (porta, vma, ipa) = self.create_vm_server(
-            "A", a_net['id'], a_sub['gateway_ip'])
+            "A", a_net['id'], a_sub['gateway_ip'],
+            port_security_enabled=False)
 
         b_cidr = "192.168.30.0/24"
         b_pub_cidr = "200.200.130.0/24"
@@ -152,7 +152,8 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
         (portb, vmb, ipb) = self.create_vm_server(
-            "B", b_net['id'], b_sub['gateway_ip'])
+            "B", b_net['id'], b_sub['gateway_ip'],
+            port_security_enabled=False)
         a_peer_topo = self.create_router_peering_topo(
             name="EAST",
             az_cidr="192.168.200.0/24",

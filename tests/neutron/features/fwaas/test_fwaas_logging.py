@@ -12,9 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import operator
+
 from zephyr.common import utils
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm import test_case
+from zephyr.vtm import fwaas_fixture
 
 
 class TestFWaaSLogging(NeutronTestCase):
@@ -27,7 +31,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.fw = None
         self.near_far_router = None
 
-    def setUp(self):
+    def make_simple_topology(self, name='A'):
         near_net = self.create_network('near_net')
         near_sub = self.create_subnet(
             'near_sub',
@@ -40,28 +44,47 @@ class TestFWaaSLogging(NeutronTestCase):
             net_id=far_net['id'],
             cidr='192.179.200.0/24')
 
-        self.near_far_router = self.create_router(
+        near_far_router = self.create_router(
             'near_far_router',
             priv_sub_ids=[far_sub['id'], near_sub['id']])
 
-        (port1, self.vm1, self.ip1) = self.create_vm_server(
-            'vm1',
+        second_vm = "cmp1"
+        if (self._testMethodName ==
+                "test_logging_basic_accept_two_computes"):
+            second_vm = "cmp2"
+
+        (port1, vm1, ip1) = self.create_vm_server(
+            'vm1' + name,
             net_id=near_net['id'],
             gw_ip=near_sub['gateway_ip'],
-            hv_host='cmp1')
-        (port2, self.vm2, self.ip2) = self.create_vm_server(
-            'vm2',
+            hv_host='cmp1',
+            port_security_enabled=False)
+        (port2, vm2, ip2) = self.create_vm_server(
+            'vm2' + name,
             net_id=far_net['id'],
             gw_ip=far_sub['gateway_ip'],
-            hv_host='cmp2')
+            hv_host=second_vm,
+            port_security_enabled=False)
 
         fwp = self.create_firewall_policy('POLICY')
-        self.fw = self.create_firewall(
-            fwp['id'], router_ids=[self.near_far_router['id']])
-        self.create_firewall_rule(
+        fw = self.create_firewall(
+            fwp['id'], router_ids=[near_far_router['id']])
+        fwr_accept = self.create_firewall_rule(
             action='allow', protocol='tcp', dest_port=7777)
+        fwr_accept_ret = self.create_firewall_rule(
+            action='allow', protocol='tcp', src_port=7777)
+        self.insert_firewall_rule(
+            fw_policy_id=fwp['id'], fw_rule_id=fwr_accept['id'])
+        self.insert_firewall_rule(
+            fw_policy_id=fwp['id'], fw_rule_id=fwr_accept_ret['id'])
+        return vm1, ip1, vm2, ip2, fw, near_far_router
 
-    def check_fwaas_logs(self, uuid, accept, drop, host='cmp1'):
+    def setUp(self):
+        fwaas_fixture.FWaaSFixture().setup()
+        (self.vm1, self.ip1, self.vm2, self.ip2, self.fw,
+         self.near_far_router) = self.make_simple_topology()
+
+    def check_fwaas_logs(self, uuid, accept, drop, host='cmp1', exact=False):
         cmp_host = self.vtm.get_host(host)
         """
         :type: zephyr.underlay.underlay_host.UnderlayHost
@@ -70,9 +93,9 @@ class TestFWaaSLogging(NeutronTestCase):
             file_type='fwaas_log', uuid=uuid)
         self.assertEqual(1, len(fwaas_logs))
         self.assertTrue(
-            utils.check_string_for_tag(fwaas_logs[0], 'ACCEPT', accept))
+            utils.check_string_for_tag(fwaas_logs[0], 'ACCEPT', accept, exact))
         self.assertTrue(
-            utils.check_string_for_tag(fwaas_logs[0], 'DROP', drop))
+            utils.check_string_for_tag(fwaas_logs[0], 'DROP', drop, exact))
 
     @require_extension("fwaas")
     def test_logging_basic_accept(self):
@@ -82,14 +105,34 @@ class TestFWaaSLogging(NeutronTestCase):
         fw_log_obj = self.create_firewall_log(
             fw_event='ACCEPT', res_id=log_res['id'], fw_id=self.fw['id'])
 
-        self.vm2.start_echo_server(port=7777, echo_data='pong')
+        self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
+        self.vm2.start_echo_server(ip=self.ip2, port=8888, echo_data='pong2')
+
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
+
+    @require_extension("fwaas")
+    @test_case.require_topology_feature('compute_hosts', operator.gt, 1)
+    def test_logging_basic_accept_two_computes(self):
+        log_res = self.create_logging_resource(
+            name='fw_logging',
+            enabled=True)
+        fw_log_obj = self.create_firewall_log(
+            fw_event='ACCEPT', res_id=log_res['id'], fw_id=self.fw['id'])
+
+        self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
+        self.assertEqual('ping:pong', reply)
+
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
+        self.assertEqual('', reply)
+
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
     @require_extension("fwaas")
     def test_logging_basic_drop(self):
@@ -99,7 +142,7 @@ class TestFWaaSLogging(NeutronTestCase):
         fw_log_obj = self.create_firewall_log(
             fw_event='DROP', res_id=log_res['id'], fw_id=self.fw['id'])
 
-        self.vm2.start_echo_server(port=7777, echo_data='pong')
+        self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
@@ -116,63 +159,7 @@ class TestFWaaSLogging(NeutronTestCase):
         fw_log_obj = self.create_firewall_log(
             fw_event='ALL', res_id=log_res['id'], fw_id=self.fw['id'])
 
-        self.vm2.start_echo_server(port=7777, echo_data='pong')
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
-        self.assertEqual('ping:pong', reply)
-
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
-
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=1)
-
-    @require_extension("fwaas")
-    def test_logging_two_fw(self):
-        fwp2 = self.create_firewall_policy('POLICY')
-        fw2 = self.create_firewall(
-            fwp2['id'], router_ids=[self.near_far_router['id']])
-        self.create_firewall_rule(
-            action='allow', protocol='tcp', dest_port=8888)
-
-        log_res = self.create_logging_resource(
-            name='fw_logging',
-            enabled=True)
-
-        fw_log_obj = self.create_firewall_log(
-            fw_event='ALL', res_id=log_res['id'], fw_id=self.fw['id'])
-        fw_log_obj2 = self.create_firewall_log(
-            fw_event='ALL', res_id=log_res['id'], fw_id=fw2['id'])
-
-        self.vm2.start_echo_server(port=7777, echo_data='pong')
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
-        self.assertEqual('ping:pong', reply)
-
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
-
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=1)
-        self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=1, drop=1)
-
-    @require_extension("fwaas")
-    def test_logging_update_event(self):
-        log_res = self.create_logging_resource(
-            name='fw_logging',
-            enabled=True)
-        fw_log_obj = self.create_firewall_log(
-            fw_event='ACCEPT', res_id=log_res['id'], fw_id=self.fw['id'])
-
-        self.vm2.start_echo_server(port=7777, echo_data='pong')
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
-        self.assertEqual('ping:pong', reply)
-
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
-
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=0)
-
-        self.update_firewall_log(
-            fwlog_id=fw_log_obj['id'],
-            fw_event='ALL', res_id=log_res['id'], fw_id=self.fw['id'])
-
+        self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
@@ -182,52 +169,115 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
 
     @require_extension("fwaas")
-    def test_logging_update_fw_id(self):
-        fwp2 = self.create_firewall_policy('POLICY')
-        fw2 = self.create_firewall(
-            fwp2['id'], router_ids=[self.near_far_router['id']])
-        self.create_firewall_rule(
-            action='allow', protocol='tcp', dest_port=8888)
+    def test_logging_two_fw(self):
+        (vm1_2, ip1_2, vm2_2,
+         ip2_2, fw_2,
+         near_far_router_2) = self.make_simple_topology(name='b')
 
+        log_res = self.create_logging_resource(
+            name='fw_logging',
+            enabled=True)
+
+        log_res_2 = self.create_logging_resource(
+            name='fw_logging',
+            enabled=True)
+
+        fw_log_obj = self.create_firewall_log(
+            fw_event='ALL', res_id=log_res['id'], fw_id=self.fw['id'])
+        fw_log_obj2 = self.create_firewall_log(
+            fw_event='ALL', res_id=log_res_2['id'], fw_id=fw_2['id'])
+
+        self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
+        self.assertEqual('ping:pong', reply)
+
+        vm2_2.start_echo_server(
+            ip_addr=ip2_2, port=7777, echo_data='pong')
+        reply = vm1_2.send_echo_request(dest_ip=ip2_2, dest_port=7777)
+        self.assertEqual('ping:pong', reply)
+
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
+        self.assertEqual('', reply)
+
+        reply = vm1_2.send_echo_request(dest_ip=ip2_2, dest_port=8888)
+        self.assertEqual('', reply)
+
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
+        self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=2, drop=1)
+
+    @require_extension("fwaas")
+    def test_logging_update_event(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
             enabled=True)
         fw_log_obj = self.create_firewall_log(
             fw_event='ACCEPT', res_id=log_res['id'], fw_id=self.fw['id'])
 
-        self.vm2.start_echo_server(port=7777, echo_data='pong')
+        self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
         self.update_firewall_log(
             fwlog_id=fw_log_obj['id'],
-            fw_event='ACCEPT', res_id=log_res['id'], fw_id=fw2['id'])
+            fw_event='ALL', res_id=log_res['id'])
+
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
+        self.assertEqual('ping:pong', reply)
+
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
+        self.assertEqual('', reply)
+
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=4, drop=1)
+
+    @require_extension("fwaas")
+    def test_logging_fail_two_log_res(self):
+        log_res = self.create_logging_resource(
+            name='fw_logging',
+            enabled=True)
+
+        log_res2 = self.create_logging_resource(
+            name='fw_logging2',
+            enabled=True)
+
+        fw_log_obj = self.create_firewall_log(
+            fw_event='ACCEPT', res_id=log_res['id'], fw_id=self.fw['id'])
+        fw_log_obj2 = self.create_firewall_log(
+            fw_event='DROP', res_id=log_res2['id'], fw_id=self.fw['id'])
+
+        self.vm2.start_echo_server(
+            ip_addr=self.ip2, port=7777, echo_data='pong')
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
+        self.assertEqual('ping:pong', reply)
 
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=0, drop=1)
 
     @require_extension("fwaas")
     def test_logging_fail_two_fw_loggers(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
             enabled=True)
-        fw_log_obj = self.create_firewall_log(
-            fw_event='ALL', res_id=log_res['id'], fw_id=self.fw['id'])
 
-        log_res2 = self.create_logging_resource(
-            name='fw_logging2',
-            enabled=True)
-        try:
-            fw_log_obj2 = self.create_firewall_log(
-                fw_event='ALL', res_id=log_res2['id'], fw_id=self.fw['id'])
-        except Exception:
-            pass
-        else:
-            self.fail('Attaching two logs to one firewall should error.')
+        fw_log_obj = self.create_firewall_log(
+            fw_event='ACCEPT', res_id=log_res['id'], fw_id=self.fw['id'])
+        fw_log_obj2 = self.create_firewall_log(
+            fw_event='DROP', res_id=log_res['id'], fw_id=self.fw['id'])
+
+        self.vm2.start_echo_server(
+            ip_addr=self.ip2, port=7777, echo_data='pong')
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
+        self.assertEqual('ping:pong', reply)
+
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
+        self.assertEqual('', reply)
+
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=0, drop=1)

@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import time
-from zephyr.common.ip import IP
 from zephyr.tsm import neutron_test_case
-from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.tsm.test_case import require_topology_feature
+from zephyr.tsm import test_case
 
 
 class TestBGPIPChain(neutron_test_case.NeutronTestCase):
 
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['2z-1c.json'])
+    @test_case.require_topology_feature('config_file', lambda a, b: a in b,
+                                        ['2z-1c.json'])
+    @neutron_test_case.require_extension('bgp-speaker-router-insertion')
     def test_bgp_ip_2_router(self):
         a_as = 64512
         b_as = 64513
@@ -38,7 +37,7 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
 
         c_cidr = "192.168.40.0/24"
         c_net = self.create_network('C_NET')
-        c_sub = self.create_subnet('C_NET', c_net['id'], c_cidr)
+        self.create_subnet('C_NET', c_net['id'], c_cidr)
 
         a_router = self.create_router('A_ROUTER')
         aa_port = self.create_port('A_IFACE', a_net['id'],
@@ -75,11 +74,14 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
 
         vma.vm_underlay.reset_default_route(
             aa_port['fixed_ips'][0]['ip_address'])
-        vmb.vm_underlay.reset_default_route(
-            bb_port['fixed_ips'][0]['ip_address'])
 
         (portb, vmb, ipb) = self.create_vm_server(
             "B", b_net['id'], b_sub['gateway_ip'])
+
+        vmb.vm_underlay.reset_default_route(
+            bb_port['fixed_ips'][0]['ip_address'])
+
+        time.sleep(30)
 
         vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
@@ -116,6 +118,7 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
         vmd.vm_underlay.reset_default_route(
             cd_port['fixed_ips'][0]['ip_address'])
 
+        time.sleep(30)
         vmd.start_echo_server(ip_addr=ipd)
         self.verify_connectivity(vmd, ipa)
         self.verify_connectivity(vma, ipd)

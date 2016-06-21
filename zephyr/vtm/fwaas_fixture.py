@@ -15,13 +15,12 @@
 from zephyr.common.cli import LinuxCLI
 
 
-class L2GWFixture(object):
+class FWaaSFixture(object):
     def __init__(self):
-        super(L2GWFixture, self).__init__()
+        super(FWaaSFixture, self).__init__()
 
     def setup(self):
-        LinuxCLI().cmd("neutron-l2gw-db-manage --config-file "
-                       "/etc/neutron/neutron.conf upgrade head")
+        LinuxCLI().cmd("neutron-db-manage --service fwaas upgrade heads")
 
     def teardown(self):
         pass
