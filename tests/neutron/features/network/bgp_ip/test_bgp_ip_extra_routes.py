@@ -21,7 +21,7 @@ from zephyr.tsm.test_case import require_topology_feature
 class TestBGPIPExtraRoutes(NeutronTestCase):
 
     @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['config/physical_topologies/2z-1c.json'])
+                              ['2z-1c.json'])
     def test_bgp_ip_2_router(self):
         a_as = 64512
         b_as = 64513
@@ -65,11 +65,14 @@ class TestBGPIPExtraRoutes(NeutronTestCase):
         b_bgp_speaker = self.create_bgp_speaker_curl(
             'B_BGP', b_as, b_router['id'])
 
-        a2_router = self.create_router('A2_ROUTER',
-                                       priv_sub_ids=[a2_sub['id']])
+        a2_router = self.create_router('A2_ROUTER')
+        a2a2_port = self.create_port('A2A2_IFACE', a2_net['id'],
+                                     port_security_enabled=False)
+
         a2a_port = self.create_port('A2A_IFACE', a_net['id'],
                                     port_security_enabled=False)
         self.create_router_interface(a2_router['id'], port_id=a2a_port['id'])
+        self.create_router_interface(a2_router['id'], port_id=a2a2_port['id'])
 
         aa_peer_ip = aa_port['fixed_ips'][0]['ip_address']
         a2a_peer_ip = a2a_port['fixed_ips'][0]['ip_address']
@@ -81,8 +84,6 @@ class TestBGPIPExtraRoutes(NeutronTestCase):
 
         (porta, vma, ipa) = self.create_vm_server(
             "A", a2_net['id'], a2_sub['gateway_ip'])
-        """ :type vma: zephyr.vtm.guest.Guest """
-        vma.vm_host.add_route(gw_ip='192.168.50.1')
 
         a_peer_ip = bc_port['fixed_ips'][0]['ip_address']
         b_peer_ip = ac_port['fixed_ips'][0]['ip_address']
@@ -98,7 +99,8 @@ class TestBGPIPExtraRoutes(NeutronTestCase):
         (portb, vmb, ipb) = self.create_vm_server(
             "B", b_net['id'], b_sub['gateway_ip'])
 
-        vma.vm_host.reset_default_route(aa_port['fixed_ips'][0]['ip_address'])
+        vma.vm_host.reset_default_route(
+            a2a2_port['fixed_ips'][0]['ip_address'])
         vmb.vm_host.reset_default_route(bb_port['fixed_ips'][0]['ip_address'])
 
         time.sleep(60)
