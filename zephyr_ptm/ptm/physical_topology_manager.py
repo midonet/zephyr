@@ -108,6 +108,7 @@ class PhysicalTopologyManager(object):
         self.LOG.debug('Configuring ptm with file: ' + config_file)
         # TODO(micucci): Enable multiple config files to define roots
         # across several Linux hosts
+        self.config_file = config_file
         default_cfg_path = '/zephyr_ptm/ptm/config/physical_topologies'
         full_path_config_file = (
             (config_dir
