@@ -97,11 +97,19 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
                          linked_bridge=None, vlans=None):
         pass
 
+    def interface_down(self, iface):
+        self.cli.cmd('ip link set dev ' + iface + ' down')
+
+    def interface_up(self, iface):
+        self.cli.cmd('ip link set dev ' + iface + ' up')
+
     def add_ip(self, iface_name, ip_addr):
-        pass
+        self.cli.cmd('ip addr add ' + str(ip_addr) + ' dev ' + iface_name)
 
     def get_ip(self, iface_name):
-        pass
+        return self.cli.cmd(
+            'ip addr show dev ' + iface_name +
+            " | grep -w inet | awk '{print $2}'").stdout
 
     def reset_default_route(self, ip_addr):
         pass

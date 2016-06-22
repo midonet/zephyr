@@ -45,9 +45,9 @@ class TestLBaaSSessionPersistence(LBaaSTestCase):
                                ip_addr=g2.ip)
 
             g1.vm.start_echo_server(ip_addr=g1.ip,
-                                    echo_data=g1.vm.vm_host.name)
+                                    echo_data=g1.vm.vm_underlay.name)
             g2.vm.start_echo_server(ip_addr=g2.ip,
-                                    echo_data=g2.vm.vm_host.name)
+                                    echo_data=g2.vm.vm_underlay.name)
 
             pinger_data = []
             for i in range(0, 20):

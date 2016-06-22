@@ -336,8 +336,8 @@ class LBaaSTestCase(NeutronTestCase):
             for g in member_list:
                 g.vm.start_echo_server(
                     ip_addr=g.ip, port=to_port,
-                    echo_data=g.vm.vm_host.name)
-                host_replies[g.vm.vm_host.name] = 0
+                    echo_data=g.vm.vm_underlay.name)
+                host_replies[g.vm.vm_underlay.name] = 0
             host_replies["NO_RESPONSE"] = 0
 
             time.sleep(1)
@@ -427,7 +427,7 @@ class LBaaSTestCase(NeutronTestCase):
                                  float(2 * len(member_list)))
 
         for h in member_list:
-            name = h.vm.vm_host.name
+            name = h.vm.vm_underlay.name
             count = host_replies[name]
             self.LOG.debug("Got " + str(count) + " packets on VM: " + name)
 

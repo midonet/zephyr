@@ -84,7 +84,7 @@ class Interface(PTMObject):
         """
         self.cli.cmd('ip addr del ' + str(new_ip) +
                      ' dev ' + self.get_name())
-        self.ip_list.append(new_ip)
+        self.ip_list.remove(new_ip)
 
     def start_vlans(self):
         if self.vlans is not None:

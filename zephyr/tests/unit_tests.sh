@@ -14,7 +14,7 @@ sudo pip -q install xmlrunner
 export ZEPHYR_TEST_JUNIT_OUTDIR=${ZEPHYR_ROOT}/test-results
 
 # Run all tests in each package's tests directory
-ZEPHYR_TEST_PACKAGES="common tsm vtm"
+ZEPHYR_TEST_PACKAGES="common tsm vtm underlay"
 
 PYTHONPATH=${ZEPHYR_SOURCE_ROOT} ${ZEPHYR_PTM_ROOT}/ptm-ctl.py --startup -d
 

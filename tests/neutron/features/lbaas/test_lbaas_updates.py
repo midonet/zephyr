@@ -114,7 +114,7 @@ class TestLBaaSUpdates(LBaaSTestCase):
                 [g2], repliesa,
                 total_expected=PACKETS_TO_SEND)
 
-            self.assertFalse(g1.vm.vm_host.name in repliesa)
+            self.assertFalse(g1.vm.vm_underlay.name in repliesa)
 
             self.create_member(pool_id=poola['id'],
                                ip_addr=g2.ip)
@@ -318,10 +318,10 @@ class TestLBaaSUpdates(LBaaSTestCase):
             self.api.disassociate_health_monitor(poola['id'], hm['id'])
 
             self.LOG.debug("Bringing down eth0 on VM: " +
-                           str(g1.vm.vm_host.name))
+                           str(g1.vm.vm_underlay.name))
             # Kill one member's TCP interface and make sure no more
             # packets get sent there
-            g1.vm.vm_host.interfaces['eth0'].down()
+            g1.vm.vm_underlay.interface_down('eth0')
 
             time.sleep(10)
 
@@ -330,8 +330,8 @@ class TestLBaaSUpdates(LBaaSTestCase):
                 num_packets=PACKETS_TO_SEND)
 
             num_misses = replies['NO_RESPONSE']
-            num_g1_hits = replies[g1.vm.vm_host.name]
-            num_g2_hits = replies[g2.vm.vm_host.name]
+            num_g1_hits = replies[g1.vm.vm_underlay.name]
+            num_g2_hits = replies[g2.vm.vm_underlay.name]
             self.assertEqual(PACKETS_TO_SEND - num_g2_hits, num_misses)
             self.assertEqual(0, num_g1_hits)
 

@@ -119,4 +119,6 @@ class PTMUnderlaySystem(underlay_system.UnderlaySystem):
             ip_addr=ip_addr, mac=mac, gw_ip=gw_ip, name=requested_vm_name)
 
     def get_topology_feature(self, name):
+        if name == "underlay_type":
+            return "ptm"
         return self.ptm.get_topology_feature(name)

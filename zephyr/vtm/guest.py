@@ -29,26 +29,26 @@ class Guest(object):
         self.open_ports_by_id = set()
         """ :type: set[str]"""
 
-    def plugin_vm(self, iface, port):
+    def plugin_vm(self, iface, port_id):
         """Links an interface on this VM to a virtual network port
             * bind interface to MidoNet with mm-ctl
             * set iface to the indicated mac address (if provided)
         :type iface: str
-        :type port: str
+        :type port_id: str
         :type port: str
         """
         self.vm_underlay.LOG.debug("Plugging in VM interface: " + iface +
-                                   " to port: " + str(port))
-        self.vm_underlay.plugin_iface(iface, port)
-        self.open_ports_by_id.add(port)
+                                   " to port: " + str(port_id))
+        self.vm_underlay.plugin_iface(iface, port_id)
+        self.open_ports_by_id.add(port_id)
 
-    def unplug_vm(self, port):
+    def unplug_vm(self, port_id):
         """Unlinks a port on this VM from the virtual network
-        :type port: str
+        :type port_id: str
         """
-        self.vm_underlay.LOG.debug("Unplugging VM port: " + str(port))
-        self.vm_underlay.unplug_iface(port)
-        self.open_ports_by_id.remove(port)
+        self.vm_underlay.LOG.debug("Unplugging VM port: " + str(port_id))
+        self.vm_underlay.unplug_iface(port_id)
+        self.open_ports_by_id.remove(port_id)
 
     def clear_arp(self):
         return self.vm_underlay.flush_arp()

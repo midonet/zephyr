@@ -104,7 +104,9 @@ class VirtualTopologyManager(object):
         with open(config_json, 'r') as cfg:
             config_map = json.load(cfg)
 
-        und_sys_class = 'zephyr.vtm.underlay.direct_underlay_system'
+        und_sys_pkg = 'zephyr.vtm.underlay.direct_underlay_system'
+        und_sys_class = und_sys_pkg + '.DirectUnderlaySystem'
+
         if 'underlay_system' in config_map:
             und_sys_class = config_map['underlay_system']
         self.underlay_system = utils.get_class_from_fqn(und_sys_class)(

@@ -79,10 +79,10 @@ class TestLBaaSHealthMonitor(LBaaSTestCase):
                 replies,
                 total_expected=PACKETS_TO_SEND)
             self.LOG.debug("Bringing down eth0 on VM: " +
-                           str(g1.vm.vm_host.name))
+                           str(g1.vm.vm_underlay.name))
             # Kill one member's TCP interface and make sure no
             # more packets get sent there
-            g1.vm.vm_host.interfaces['eth0'].down()
+            g1.vm.vm_underlay.interface_down('eth0')
 
             time.sleep(10)
 
@@ -248,10 +248,10 @@ class TestLBaaSHealthMonitor(LBaaSTestCase):
                 total_expected=PACKETS_TO_SEND)
 
             self.LOG.debug("Bringing down eth0 on VM: " +
-                           str(g1.vm.vm_host.name))
+                           str(g1.vm.vm_underlay.name))
             # Kill one member's TCP interface and make sure no
             # more packets get sent there
-            g1.vm.vm_host.interfaces['eth0'].down()
+            g1.vm.vm_underlay.interface_down('eth0')
 
             time.sleep(10)
 
@@ -263,9 +263,9 @@ class TestLBaaSHealthMonitor(LBaaSTestCase):
                 total_expected=PACKETS_TO_SEND)
 
             self.LOG.debug("Bringing back up eth0 on VM: " +
-                           str(g1.vm.vm_host.name))
+                           str(g1.vm.vm_underlay.name))
             # Reinstate interface so packets can reach member again
-            g1.vm.vm_host.interfaces['eth0'].up()
+            g1.vm.vm_underlay.interface_up('eth0')
 
             time.sleep(10)
 
