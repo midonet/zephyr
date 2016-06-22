@@ -23,6 +23,7 @@ from zephyr.common.cli import LinuxCLI
 from zephyr.common.ip import IP
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
+from zephyr.common import zephyr_constants as z_con
 from zephyr.vtm.guest import Guest
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 
@@ -39,7 +40,7 @@ class GuestTest(unittest.TestCase):
 
     def test_host_plugin_vm(self):
         vtm = VirtualTopologyManager()
-        vtm.read_underlay_config('underlay-config.json')
+        vtm.read_underlay_config()
 
         vm = vtm.create_vm(name='vm1', ip_addr="10.3.3.3", hv_host='cmp1')
         try:
@@ -60,7 +61,7 @@ class GuestTest(unittest.TestCase):
     def test_host_cross_vm_communication(self):
         vtm = VirtualTopologyManager()
         vtm.configure_logging(debug=True)
-        vtm.read_underlay_config('underlay-config.json')
+        vtm.read_underlay_config()
 
         vm1 = vtm.create_vm(name='vm1', ip_addr="10.3.3.3", hv_host='cmp1')
         vm2 = vtm.create_vm(name='vm2', ip_addr="10.55.55.55", hv_host='cmp2')
@@ -88,7 +89,7 @@ class GuestTest(unittest.TestCase):
     def test_echo_server_tcp(self):
         vtm = VirtualTopologyManager()
         vtm.configure_logging(debug=True)
-        vtm.read_underlay_config('underlay-config.json')
+        vtm.read_underlay_config()
 
         vm1 = vtm.create_vm(name='vm1', ip_addr="10.3.3.3", hv_host='cmp1')
 

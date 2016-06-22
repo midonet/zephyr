@@ -16,6 +16,7 @@ import json
 import os
 
 ZEPHYR_LOG_FILE_NAME = 'zephyr-output.log'
+DEFAULT_UNDERLAY_CONFIG = 'underlay-config.json'
 
 
 class ZephyrInit(object):

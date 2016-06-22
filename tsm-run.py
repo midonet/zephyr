@@ -26,7 +26,7 @@ from zephyr.common.exceptions import ObjectNotFoundException
 from zephyr.common.exceptions import SubprocessFailedException
 from zephyr.common.exceptions import TestException
 from zephyr.common.log_manager import LogManager
-from zephyr.common import zephyr_constants
+from zephyr.common import zephyr_constants as z_con
 from zephyr.tsm.test_case import TestCase
 from zephyr.tsm.test_system_manager import TestSystemManager
 from zephyr.vtm.neutron_api import create_neutron_client
@@ -47,7 +47,7 @@ def usage(except_obj):
     print('   Underlay Options:')
     print('     -u, --underlay_config <config>')
     print('         Load the underlay from the given config file. ')
-    print('         ("underlay-config.json" by default)')
+    print('         ("' + z_con.DEFAULT_UNDERLAY_CONFIG + '" by default)')
     print('   Client API Options:')
     print('     -c, --client <client>')
     print('         OpenStack Network client to use.  Currently can be')
@@ -108,7 +108,7 @@ try:
     client_auth_type = 'noauth'
     client_args = {}
     tests = ''
-    underlay_config = 'underlay-config.json'
+    underlay_config = z_con.DEFAULT_UNDERLAY_CONFIG
     debug = False
     test_debug = False
     log_dir = '/tmp/zephyr/logs'
@@ -164,8 +164,8 @@ try:
 
     tsm_run_dir = os.path.dirname(os.path.abspath(__file__))
 
-    zephyr_constants.ZephyrInit.init(tsm_run_dir + "/zephyr.conf")
-    root_dir = zephyr_constants.ZephyrInit.BIN_ROOT_DIR
+    z_con.ZephyrInit.init(tsm_run_dir + "/zephyr.conf")
+    root_dir = z_con.ZephyrInit.BIN_ROOT_DIR
     print('Setting root dir to: ' + root_dir)
 
     client_impl = None

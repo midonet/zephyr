@@ -90,7 +90,9 @@ class VirtualTopologyManager(object):
             gw_ip=gw_ip, hv_host=hv_host, name=name)
         return Guest(vm_underlay=vm_underlay)
 
-    def read_underlay_config(self, config_json):
+    def read_underlay_config(
+            self,
+            config_json=zephyr_constants.DEFAULT_UNDERLAY_CONFIG):
         """
         All underlay configs MUST name a 'underlay_system' class, which
         will be used to select which type of underlay to use for zephyr.

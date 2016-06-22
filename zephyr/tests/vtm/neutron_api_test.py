@@ -19,6 +19,7 @@ import unittest
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
+from zephyr.common import zephyr_constants as z_con
 from zephyr.vtm import neutron_api
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 
@@ -43,7 +44,7 @@ class NeutronAPITest(unittest.TestCase):
             self.vtm = VirtualTopologyManager(
                 client_api_impl=neutron_api.create_neutron_client())
             self.vtm.configure_logging(debug=True)
-            self.vtm.read_underlay_config('underlay-config.json')
+            self.vtm.read_underlay_config(z_con.DEFAULT_UNDERLAY_CONFIG)
             self.api = self.vtm.get_client()
             """ :type: neutron_client.Client"""
 

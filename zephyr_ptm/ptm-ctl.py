@@ -67,7 +67,7 @@ try:
     neutron_command = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False
-    json_out_file = 'underlay-config.json'
+    json_out_file = zephyr_constants.DEFAULT_UNDERLAY_CONFIG
 
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
