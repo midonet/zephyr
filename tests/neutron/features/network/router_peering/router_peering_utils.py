@@ -35,21 +35,15 @@ L2GWPeeredTopo = namedtuple("L2GWPeeredTopo", "east west")
 
 
 class L2GWNeutronTestCase(NeutronTestCase):
+    l2_setup = False
 
     @classmethod
-    def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
-        """
-
-        :param ptm:
-        :type test_case_logger: logging.logger
-        """
-        super(L2GWNeutronTestCase, cls)._prepare_class(ptm, vtm,
+    def _prepare_class(cls, vtm, test_case_logger=logging.getLogger()):
+        super(L2GWNeutronTestCase, cls)._prepare_class(vtm,
                                                        test_case_logger)
-
-        # Add the l2gw fixture if it's not already added
-        if 'l2gw-setup' not in ptm.fixtures:
-            test_case_logger.debug('Adding l2gw-setup fixture')
-            ptm.add_fixture('l2gw-setup', L2GWFixture())
+        if not cls.l2_setup:
+            L2GWFixture().setup()
+            cls.l2_setup = True
 
     def create_ghost_port(self, az_net_id, ip, mac, other_port_id):
         ghost_port = self.create_port(
@@ -67,7 +61,7 @@ class L2GWNeutronTestCase(NeutronTestCase):
                                       port_security_enabled=False)
         iface = self.create_router_interface(tenant_router_id,
                                              iface_port['id'])
-        return (iface_port, iface)
+        return iface_port, iface
 
     def hook_vtep_to_uplink_net(self, name, vtep_router_id, vtep_net_id,
                                 tun_host, tun_iface, vtep_sub_id, tun_ip,
@@ -120,14 +114,6 @@ class L2GWNeutronTestCase(NeutronTestCase):
 
     def setup_peer_l2gw(self, tun_cidr, tun_ip, tun_gw, tun_host, tun_iface,
                         az_cidr, az_gw, segment_id, peer_router, peer_name):
-        """
-        Setup a single site, ready for peering
-        :type l2gw_site_data: L2GWSiteData
-        :type segment_id: str
-        :type peer_router: dict[str, str]
-        :type peer_name: str
-        """
-
         tun_network = None
         tun_subnet = None
         vtep_router = None
@@ -312,7 +298,6 @@ class L2GWNeutronTestCase(NeutronTestCase):
                                           "to be valid")
 
         try:
-            curl_url = get_neutron_api_url(self.api)
             # Unified set up ************************************************
             # Add the route to the east side private subnet through the
             # west side gateway on the shared subnet
