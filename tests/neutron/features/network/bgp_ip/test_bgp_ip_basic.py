@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import time
-from zephyr.tsm.neutron_test_case import NeutronTestCase
-from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.tsm.test_case import require_topology_feature
+from zephyr.tsm import neutron_test_case
+from zephyr.tsm import test_case
 
 
-class TestBGPIPBasic(NeutronTestCase):
+class TestBGPIPBasic(neutron_test_case.NeutronTestCase):
 
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['2z-1c.json'])
-    @require_extension('bgp-speaker-router-insertion')
+    @test_case.require_topology_feature('config_file', lambda a, b: a in b,
+                                        ['2z-1c.json'])
+    @neutron_test_case.require_extension('bgp-speaker-router-insertion')
     def test_bgp_ip_2_router(self):
         a_as = 64512
         b_as = 64513
