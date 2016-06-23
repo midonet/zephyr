@@ -20,20 +20,21 @@ from zephyr.vtm.l2gw_fixture import L2GWFixture
 
 
 class TestL2GWVLAN(NeutronTestCase):
+    l2_setup = False
+
     @classmethod
-    def _prepare_class(cls, ptm, vtm, test_case_logger=logging.getLogger()):
+    def _prepare_class(cls, vtm, test_case_logger=logging.getLogger()):
         """
 
         :param ptm:
         :type test_case_logger: logging.logger
         """
-        super(TestL2GWVLAN, cls)._prepare_class(ptm, vtm,
+        super(TestL2GWVLAN, cls)._prepare_class(vtm,
                                                 test_case_logger)
 
-        # Add the l2gw fixture if it's not already added
-        if 'l2gw-setup' not in ptm.fixtures:
-            test_case_logger.debug('Adding l2gw-setup fixture')
-            ptm.add_fixture('l2gw-setup', L2GWFixture())
+        if not cls.l2_setup:
+            L2GWFixture().setup()
+            cls.l2_setup = True
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
