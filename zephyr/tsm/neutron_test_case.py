@@ -354,7 +354,8 @@ class NeutronTestCase(TestCase):
 
     # TODO(Joe): Move to firewall specific helper file
     def create_firewall_rule(self, source_ip=None, dest_ip=None,
-                             dest_port=None, action='allow', protocol='tcp',
+                             src_port=None, dest_port=None,
+                             action='allow', protocol='tcp',
                              tenant_id='admin'):
 
         fwpr_data = {'action': action,
@@ -367,6 +368,8 @@ class NeutronTestCase(TestCase):
 
         if dest_port is not None:
             fwpr_data['destination_port'] = dest_port
+        if src_port is not None:
+            fwpr_data['source_port'] = src_port
         fwpr = self.api.create_firewall_rule({'firewall_rule': fwpr_data})
         self.fwprs.append(fwpr['firewall_rule']['id'])
         return fwpr['firewall_rule']

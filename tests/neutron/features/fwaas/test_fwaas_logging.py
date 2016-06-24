@@ -66,8 +66,14 @@ class TestFWaaSLogging(NeutronTestCase):
         fwp = self.create_firewall_policy('POLICY')
         self.fw = self.create_firewall(
             fwp['id'], router_ids=[self.near_far_router['id']])
-        self.create_firewall_rule(
+        fwr_accept = self.create_firewall_rule(
             action='allow', protocol='tcp', dest_port=7777)
+        fwr_accept_ret = self.create_firewall_rule(
+            action='allow', protocol='tcp', src_port=7777)
+        self.insert_firewall_rule(
+            fw_policy_id=fwp['id'], fw_rule_id=fwr_accept['id'])
+        self.insert_firewall_rule(
+            fw_policy_id=fwp['id'], fw_rule_id=fwr_accept_ret['id'])
 
     def check_fwaas_logs(self, uuid, accept, drop, host='cmp1'):
         cmp_host = self.ptm.hosts_by_name[host]
@@ -96,7 +102,7 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
     @require_extension("fwaas")
     @test_case.require_topology_feature('compute_hosts', operator.gt, 1)
@@ -114,7 +120,7 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
     @require_extension("fwaas")
     def test_logging_basic_drop(self):
@@ -148,7 +154,7 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=1)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
 
     @require_extension("fwaas")
     def test_logging_two_fw(self):
@@ -174,8 +180,8 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=1)
-        self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=1, drop=1)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
+        self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=2, drop=1)
 
     @require_extension("fwaas")
     def test_logging_update_event(self):
@@ -192,7 +198,7 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
         self.update_firewall_log(
             fwlog_id=fw_log_obj['id'],
@@ -204,7 +210,7 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=4, drop=1)
 
     @require_extension("fwaas")
     def test_logging_update_fw_id(self):
@@ -236,7 +242,7 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=4, drop=0)
 
     @require_extension("fwaas")
     def test_logging_fail_two_log_res(self):
@@ -260,7 +266,7 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
         self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=0, drop=1)
 
     @require_extension("fwaas")
@@ -281,5 +287,5 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
         self.assertEqual('', reply)
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=1, drop=0)
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
         self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=0, drop=1)
