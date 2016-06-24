@@ -22,123 +22,105 @@ class EchoServerTest(unittest.TestCase):
     def test_echo_tcp(self):
         es = EchoServer()
         try:
-            es.start(create_pid_file=False)
+            es.start()
 
-            ret = EchoServer.send(es.ip, es.port)
+            ret = EchoServer.send(es.ip_addr, es.port)
             self.assertEqual('ping:pong', ret)
-        except Exception:
-            raise
         finally:
             es.stop()
-
-        self.assertTrue(es.server_done.is_set())
 
     # TODO(micucci): Get UDP working
     @unittest.skip("UDP is still not working right")
     def test_echo_udp(self):
         es = EchoServer(protocol='udp')
         try:
-            es.start(create_pid_file=False)
-            ret = EchoServer.send(es.ip, es.port, protocol='udp')
+            es.start()
+            ret = EchoServer.send(es.ip_addr, es.port, protocol='udp')
             self.assertEqual('ping:pong', ret)
         except Exception:
             raise
         finally:
             es.stop()
 
-        self.assertTrue(es.server_done.is_set())
-
     def test_customized_echo(self):
         es = EchoServer(echo_data='test-back')
         try:
-            es.start(create_pid_file=False)
-            ret = es.send(es.ip, es.port, 'test-send')
+            es.start()
+            ret = es.send(es.ip_addr, es.port, 'test-send')
             self.assertEqual('test-send:test-back', ret)
 
         finally:
             es.stop()
 
-        self.assertTrue(es.server_done.is_set())
-
     def test_multiple_pings_tcp(self):
         es = EchoServer()
         try:
-            es.start(create_pid_file=False)
-            ret = es.send(es.ip, es.port)
+            es.start()
+            ret = es.send(es.ip_addr, es.port)
             self.assertEqual('ping:pong', ret)
 
-            ret2 = es.send(es.ip, es.port, 'ping2')
+            ret2 = es.send(es.ip_addr, es.port, 'ping2')
             self.assertEqual('ping2:pong', ret2)
 
         finally:
             es.stop()
-
-        self.assertTrue(es.server_done.is_set())
 
     # TODO(micucci): Get UDP working
     @unittest.skip("UDP is still not working right")
     def test_multiple_pings_udp(self):
         es = EchoServer(protocol='udp')
         try:
-            es.start(create_pid_file=False)
-            ret = es.send(es.ip, es.port)
+            es.start()
+            ret = es.send(es.ip_addr, es.port)
             self.assertEqual('ping:pong', ret)
 
-            ret2 = es.send(es.ip, es.port, 'ping2')
+            ret2 = es.send(es.ip_addr, es.port, 'ping2')
             self.assertEqual('ping2:pong', ret2)
 
         finally:
             es.stop()
 
-        self.assertTrue(es.server_done.is_set())
-
     def test_long_data_tcp(self):
         es = EchoServer()
         try:
-            es.start(create_pid_file=False)
+            es.start()
             data = 300 * '0123456789'
-            ret = es.send(es.ip, es.port, echo_request=data)
+            ret = es.send(es.ip_addr, es.port, echo_request=data)
             self.assertEqual(data + ':pong', ret)
 
         finally:
             es.stop()
-
-        self.assertTrue(es.server_done.is_set())
 
     # TODO(micucci): Get UDP working
     @unittest.skip("UDP is still not working right")
     def test_long_data_udp(self):
         es = EchoServer(protocol='udp')
         try:
-            es.start(create_pid_file=False)
+            es.start()
             data = 300 * '0123456789'
-            ret = es.send(es.ip, es.port, echo_request=data)
+            ret = es.send(es.ip_addr, es.port, echo_request=data)
             self.assertEqual(data + ':pong', ret)
 
         finally:
             es.stop()
 
-        self.assertTrue(es.server_done.is_set())
-
     def test_multiple_restarts(self):
         es = EchoServer()
         try:
-            es.start(create_pid_file=False)
-            ret = es.send(es.ip, es.port)
+            es.start()
+            ret = es.send(es.ip_addr, es.port)
             self.assertEqual('ping:pong', ret)
 
             es.stop()
 
-            self.assertTrue(es.server_done.is_set())
-
-            es.start(create_pid_file=False)
-
-            ret2 = es.send(es.ip, es.port, 'ping2')
-            self.assertEqual('ping2:pong', ret2)
+            try:
+                es.start()
+            except exceptions.SubprocessFailedException:
+                pass
+            else:
+                self.fail("Should have thrown SubprocessFailedException")
 
         finally:
             es.stop()
-
-        self.assertTrue(es.server_done.is_set())
 
 run_unit_test(EchoServerTest)

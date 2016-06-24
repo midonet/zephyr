@@ -15,19 +15,15 @@
 import datetime
 import json
 import logging
-import time
 import uuid
+
 from zephyr.common.cli import LinuxCLI
-from zephyr.common.echo_server import DEFAULT_ECHO_PORT
-from zephyr.common.echo_server import TERMINATION_STRING
-from zephyr.common.exceptions import ArgMismatchException
-from zephyr.common.exceptions import SubprocessFailedException
-from zephyr.common.exceptions import SubprocessTimeoutException
+from zephyr.common import echo_server
+from zephyr.common import exceptions
 from zephyr.common.ip import IP
 from zephyr.common.tcp_dump import TCPDump
 from zephyr.common.tcp_sender import TCPSender
 from zephyr.common.utils import get_class_from_fqn
-from zephyr.common.utils import terminate_process
 from zephyr.common import zephyr_constants
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.host.bridge import Bridge
@@ -36,21 +32,6 @@ from zephyr_ptm.ptm.host.virtual_interface import VirtualInterface
 from zephyr_ptm.ptm.physical_topology_config import *
 from zephyr_ptm.ptm import ptm_constants
 from zephyr_ptm.ptm.ptm_object import PTMObject
-
-ECHO_SERVER_TIMEOUT = 3
-
-# TODO(micucci): Extrapolate the host access from the host operations
-# So we can have IPNetNSHost and "VMSSHHost", etc. and also have
-# Cassandra, etc. which supports Cassandra functionality but using
-# a flexible accessor so it can run on IPNetNS or VMSSH, etc. without
-# having to do multiple inheritance.
-# TODO(micucci): [PRIORITY] Furthermore, we should extrapolate all
-# process control completely, as the boot and network characterization
-# of a host is only superficially linked to the process and its attendant
-# configuration which will be running on it.  We should really only
-# have a small number of host types, with many processes that can
-# run on any kind of host.  This will help resolve the above issue
-# as well.
 
 
 class Host(PTMObject):
@@ -193,7 +174,7 @@ class Host(PTMObject):
             else:
                 # Check if multiple copies of this app type are allowed
                 if app_type not in application.APPLICATION_MULTI_ALLOWED:
-                    raise ArgMismatchException(
+                    raise exceptions.ArgMismatchException(
                         "Cannot run more than one application of type: " +
                         a.type_as_str(app_type) + " on a single host")
             self.LOG.debug(
@@ -203,8 +184,8 @@ class Host(PTMObject):
 
     def is_hypervisor(self):
         app_type = application.APPLICATION_TYPE_HYPERVISOR
-        return (app_type in self.applications_by_type
-                and len(self.applications_by_type[app_type]) > 0)
+        return (app_type in self.applications_by_type and
+                len(self.applications_by_type[app_type]) > 0)
 
     def fetch_resources_from_apps(
             self, resource_name, app_types=None,
@@ -409,7 +390,7 @@ class Host(PTMObject):
         """
         if gw_ip is None:
             if dev is None:
-                raise ArgMismatchException(
+                raise exceptions.ArgMismatchException(
                     'Must specify either next-hop GW or device to add a route')
             self.cli.cmd('ip route add ' + str(route_ip) + ' dev ' + str(dev))
         else:
@@ -466,57 +447,35 @@ class Host(PTMObject):
         return LinuxCLI().cmd(cmd, blocking=False).process
 
     def start_echo_server(self, ip_addr='localhost',
-                          port=DEFAULT_ECHO_PORT,
+                          port=echo_server.DEFAULT_ECHO_PORT,
                           echo_data="echo-reply", protocol='tcp'):
         """
         Start an echo server listening on given ip/port (default to
         localhost:80) which returns the echo_data on any TCP
         connection made to the port.
-        :param ip: str
+        :param ip_addr: str
         :param port: int
         :param echo_data: str
         :param protocol: str
         :return: CommandStatus
         """
+        es = echo_server.EchoServer(
+            ip_addr=ip_addr, port=port,
+            echo_data=echo_data, protocol=protocol)
+        es.start()
         if (port in self.echo_server_procs and
                 self.echo_server_procs[port] is not None):
             self.stop_echo_server(ip_addr, port)
-        proc_name = self.ptm.root_dir + '/echo-server.py'
-        self.LOG.debug('Starting echo server: ' + proc_name + ' on: ' +
-                       ip_addr + ':' + str(port))
-        cmd0 = [proc_name,
-                '-i', ip_addr,
-                '-p', str(port),
-                '-d', echo_data,
-                '-r', protocol]
-        proc = self.cli.cmd_pipe(commands=[cmd0], blocking=False)
-        timeout = time.time() + ECHO_SERVER_TIMEOUT
 
-        conn_resp = ''
-        while conn_resp != 'connect-test:' + echo_data:
-            proc.process_array[0].poll()
-            if proc.process_array[0].returncode is not None:
-                out, err = proc.process.communicate()
-                self.LOG.error('Error starting echo server: ' +
-                               str(out) + '/' + str(err))
-                raise SubprocessFailedException(
-                    'Error starting echo server: ' + str(out) + '/' + str(err))
-            if time.time() > timeout:
-                raise SubprocessTimeoutException(
-                    'Echo server listener failed to bind to port '
-                    'within timeout')
-            conn_resp = self.send_echo_request(dest_ip=ip_addr, dest_port=port,
-                                               echo_request='connect-test',
-                                               protocol=protocol)
+        self.echo_server_procs[port] = es
+        return es
 
-        self.echo_server_procs[port] = proc
-        return proc
-
-    def stop_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT):
+    def stop_echo_server(self, ip_addr='localhost',
+                         port=echo_server.DEFAULT_ECHO_PORT):
         """
         Stop an echo server that has been started on given ip/port (defaults to
         localhost:80).  If echo service has not been started, do nothing.
-        :param ip: str
+        :param ip_addr: str
         :param port: int
         :return:
         """
@@ -524,22 +483,11 @@ class Host(PTMObject):
                 self.echo_server_procs[port] is not None):
             self.LOG.debug('Stopping echo server on: ' + str(ip_addr) +
                            ':' + str(port))
-            proc = self.echo_server_procs[port]
-            proc.process_array[0].poll()
-            terminate_process(proc.process, signal='TERM')
-
-            timeout = time.time() + ECHO_SERVER_TIMEOUT
-            pid_file = '/run/zephyr_echo_server.' + str(port) + '.pid'
-            while self.cli.exists(pid_file):
-                time.sleep(1)
-                if time.time() > timeout:
-                    terminate_process(proc.process, signal='KILL')
-                    break
-            self.cli.rm(pid_file)
-            self.echo_server_procs[port] = None
+            es = self.echo_server_procs[port]
+            es.stop()
 
     def send_echo_request(self, dest_ip='localhost',
-                          dest_port=DEFAULT_ECHO_PORT,
+                          dest_port=echo_server.DEFAULT_ECHO_PORT,
                           echo_request='ping', source_ip=None,
                           protocol='tcp'):
         """
@@ -554,21 +502,13 @@ class Host(PTMObject):
         """
         self.LOG.debug('Sending echo command ' + echo_request + ' to: ' +
                        str(dest_ip) + ' ' + str(dest_port))
-        echo_request += TERMINATION_STRING
-        cmd0 = ['echo', '-n', echo_request]
-        cmd1 = ['nc']
-        if protocol == 'udp':
-            cmd1 += ['-u']
-        if source_ip:
-            cmd1 += ['-s', source_ip]
-        cmd1 += ['-w', '20']
-        cmd1 += [dest_ip, str(dest_port)]
-        ret = self.cli.cmd_pipe(commands=[cmd0, cmd1])
-        out_str = ret.stdout
-        pos = out_str.find(TERMINATION_STRING)
-        if pos != -1:
-            out_str = out_str[0:pos]
-        self.LOG.debug('Received echo response: ' + out_str)
+        es = self.echo_server_procs.get(dest_port, None)
+        if not es:
+            raise exceptions.ObjectNotFoundException(
+                "No Echo Server found running on port: " + str(dest_port))
+        out_str = es.send(
+            ip_addr=dest_ip, port=dest_port,
+            echo_request=echo_request, protocol=protocol)
         return out_str
 
     @staticmethod

@@ -12,28 +12,64 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-from zephyr.common.cli import LinuxCLI
+import logging
+
+from zephyr.common import cli
 from zephyr.common import echo_server
 from zephyr.common import exceptions
 from zephyr.common.ip import IP
 from zephyr.common.tcp_dump import TCPDump
 from zephyr.common.tcp_sender import TCPSender
-from zephyr.common.utils import terminate_process
+from zephyr.common import utils
 from zephyr.vtm.underlay import underlay_host
 
 ECHO_SERVER_TIMEOUT = 3
 
 
 class DirectUnderlayHost(underlay_host.UnderlayHost):
-    def __init__(self, name):
+    def __init__(self, name, overlay,
+                 vm_type='zephyr.vtm.underlay.ipnetns_vm.IPNetnsVM',
+                 hypervisor=True, logger=None):
         super(DirectUnderlayHost, self).__init__(name)
-        self.cli = LinuxCLI()
-        self.echo_server_procs = []
+        self.cli = cli.LinuxCLI()
+        self.overlay = overlay
+        self.echo_server_procs = {}
         self.packet_captures = []
+        self.vm_type = vm_type
+        self.vms = {}
+        self.hypervisor = hypervisor
+        if logger:
+            self.LOG = logger
+        else:
+            self.LOG = logging.getLogger("host-" + self.name)
+            self.LOG.addHandler(logging.NullHandler())
 
-    def create_vm(self, ip, mac, gw_ip, name):
-        pass
+    def create_vm(self, ip_addr, mac, gw_ip, name):
+        if not self.hypervisor:
+            raise exceptions.ArgMismatchException(
+                "Cannot start VM on: " + self.name + ", not a hypervisor.")
+
+        vm_class = utils.get_class_from_fqn(self.vm_type)
+        if not vm_class:
+            raise exceptions.ArgMismatchException(
+                "No such VM Type available to load: " + self.vm_type)
+
+        if name in self.vms:
+            raise exceptions.ArgMismatchException(
+                "VM already created: " + name)
+
+        new_vm = vm_class(name, self.overlay, self, logger=self.LOG)
+        new_vm.vm_startup(ip_addr, mac, gw_ip)
+        self.vms[name] = new_vm
+        return new_vm
+
+    def plugin_iface(self, iface, port_id):
+        raise exceptions.ArgMismatchException(
+            "Error; plugin_iface operation only valid on a VM host")
+
+    def unplug_iface(self, port_id):
+        raise exceptions.ArgMismatchException(
+            "Error; unplug_iface operation only valid on a VM host")
 
     def fetch_file(self, file_name, **kwargs):
         self.cli.cat(file_name)
@@ -49,13 +85,13 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
             if dev is None:
                 raise exceptions.ArgMismatchException(
                     'Must specify either next-hop GW or device to add a route')
-            self.cli.cmd('ip route add ' + str(route_ip) + ' dev ' + str(dev))
+            self.execute('ip route add ' + str(route_ip) + ' dev ' + str(dev))
         else:
-            self.cli.cmd('ip route add ' + str(route_ip) + ' via ' + gw_ip.ip +
+            self.execute('ip route add ' + str(route_ip) + ' via ' + gw_ip.ip +
                          (' dev ' + str(dev) if dev else ''))
 
     def del_route(self, route_ip):
-        self.cli.cmd('ip route del ' + str(route_ip.ip))
+        self.execute('ip route del ' + str(route_ip.ip))
 
     def create_interface(self, iface, mac=None, ip_list=None,
                          linked_bridge=None, vlans=None):
@@ -83,41 +119,16 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         :param protocol: str
         :return: CommandStatus
         """
+        es = echo_server.EchoServer(
+            ip_addr=ip_addr, port=port,
+            echo_data=echo_data, protocol=protocol)
+        es.start()
         if (port in self.echo_server_procs and
                 self.echo_server_procs[port] is not None):
             self.stop_echo_server(ip_addr, port)
-        proc_name = 'echo-server.py'
-        self.LOG.debug('Starting echo server: ' + proc_name + ' on: ' +
-                       ip_addr + ':' + str(port))
-        cmd0 = [proc_name,
-                '-i', ip_addr,
-                '-p', str(port),
-                '-d', echo_data,
-                '-r', protocol]
-        proc = self.cli.cmd_pipe(commands=[cmd0], blocking=False)
-        timeout = time.time() + ECHO_SERVER_TIMEOUT
 
-        conn_resp = ''
-        while conn_resp != 'connect-test:' + echo_data:
-            proc.process_array[0].poll()
-            if proc.process_array[0].returncode is not None:
-                out, err = proc.process.communicate()
-                self.LOG.error('Error starting echo server: ' +
-                               str(out) + '/' + str(err))
-                raise exceptions.SubprocessFailedException(
-                    'Error starting echo server: ' + str(out) + '/' +
-                    str(err))
-            if time.time() > timeout:
-                raise exceptions.SubprocessTimeoutException(
-                    'Echo server listener failed to bind to port '
-                    'within timeout')
-            conn_resp = self.send_echo_request(
-                dest_ip=ip_addr, dest_port=port,
-                echo_request='connect-test',
-                protocol=protocol)
-
-        self.echo_server_procs[port] = proc
-        return proc
+        self.echo_server_procs[port] = es
+        return es
 
     def stop_echo_server(self, ip_addr='localhost',
                          port=echo_server.DEFAULT_ECHO_PORT):
@@ -130,21 +141,10 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         """
         if (port in self.echo_server_procs and
                 self.echo_server_procs[port] is not None):
-            self.LOG.debug('Stopping echo server on: ' +
-                           ip_addr + ':' + str(port))
-            proc = self.echo_server_procs[port]
-            proc.process_array[0].poll()
-            terminate_process(proc.process, signal='TERM')
-
-            timeout = time.time() + ECHO_SERVER_TIMEOUT
-            pid_file = '/run/zephyr_echo_server.' + str(port) + '.pid'
-            while self.cli.exists(pid_file):
-                time.sleep(1)
-                if time.time() > timeout:
-                    terminate_process(proc.process, signal='KILL')
-                    break
-            self.cli.rm(pid_file)
-            self.echo_server_procs[port] = None
+            self.LOG.debug('Stopping echo server on: ' + str(ip_addr) +
+                           ':' + str(port))
+            es = self.echo_server_procs[port]
+            es.stop()
 
     def send_echo_request(self, dest_ip='localhost',
                           dest_port=echo_server.DEFAULT_ECHO_PORT,
@@ -162,21 +162,13 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         """
         self.LOG.debug('Sending echo command ' + echo_request + ' to: ' +
                        str(dest_ip) + ' ' + str(dest_port))
-        echo_request += echo_server.TERMINATION_STRING
-        cmd0 = ['echo', '-n', echo_request]
-        cmd1 = ['nc']
-        if protocol == 'udp':
-            cmd1 += ['-u']
-        if source_ip:
-            cmd1 += ['-s', source_ip]
-        cmd1 += ['-w', '20']
-        cmd1 += [dest_ip, str(dest_port)]
-        ret = self.cli.cmd_pipe(commands=[cmd0, cmd1])
-        out_str = ret.stdout
-        pos = out_str.find(echo_server.TERMINATION_STRING)
-        if pos != -1:
-            out_str = out_str[0:pos]
-        self.LOG.debug('Received echo response: ' + out_str)
+        es = self.echo_server_procs.get(dest_port, None)
+        if not es:
+            raise exceptions.ObjectNotFoundException(
+                "No Echo Server found running on port: " + str(dest_port))
+        out_str = es.send(
+            ip_addr=dest_ip, port=dest_port,
+            echo_request=echo_request, protocol=protocol)
         return out_str
 
     # Specialized host-testing methods
@@ -263,7 +255,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         timeout_str = (('-W ' + str(timeout) + ' ')
                        if timeout is not None
                        else '')
-        return self.cli.cmd('ping -n ' + iface_str +
+        return self.execute('ping -n ' + iface_str +
                             ' -c ' + str(count) + ' ' +
                             timeout_str +
                             target_ip).ret_code == 0
@@ -353,10 +345,10 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         Flush the ARP table on this Host
         :return:
         """
-        self.cli.cmd('ip neighbour flush all')
+        self.execute('ip neighbour flush all')
 
     def execute(self, cmd_line, timeout=None, blocking=True):
-        self.cli.cmd(cmd_line, timeout=timeout, blocking=blocking)
+        return self.cli.cmd(cmd_line, timeout=timeout, blocking=blocking)
 
     def terminate(self):
         """
