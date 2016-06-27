@@ -234,7 +234,8 @@ class EchoServer(object):
         new_socket.close()
 
         pos = data.find(TERMINATION_STRING)
+        out_str = data
         if pos != -1:
             out_str = data[0:pos]
 
-        return data
+        return out_str
