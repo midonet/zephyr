@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from zephyr.tsm import neutron_test_case
 from zephyr.tsm import test_case
 
@@ -78,6 +79,8 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
 
         vmb.vm_host.reset_default_route(bb_port['fixed_ips'][0]['ip_address'])
 
+        time.sleep(30)
+
         vmb.start_echo_server(ip=ipb)
         self.verify_connectivity(vma, ipb)
 
@@ -112,6 +115,7 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
             "LAST", d_net['id'], d_sub['gateway_ip'])
         vmd.vm_host.reset_default_route(cd_port['fixed_ips'][0]['ip_address'])
 
+        time.sleep(30)
         vmd.start_echo_server(ip=ipd)
         self.verify_connectivity(vmd, ipa)
         self.verify_connectivity(vma, ipd)
