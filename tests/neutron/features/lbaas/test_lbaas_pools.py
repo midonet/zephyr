@@ -38,7 +38,7 @@ class TestLBaaSPools(LBaaSTestCase):
             g1 = vms[0]
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
         finally:
             self.clean_vm_servers()
             self.clear_lbaas_data()
@@ -66,9 +66,9 @@ class TestLBaaSPools(LBaaSTestCase):
             g_pinger = self.create_pinger_vm()
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poola['id'],
-                               ip=g2.ip)
+                               ip_addr=g2.ip)
 
             repliesa = self.send_packets_to_vip(
                 [g1, g2], g_pinger, vipa['address'])
@@ -103,9 +103,9 @@ class TestLBaaSPools(LBaaSTestCase):
             g_pinger = self.create_pinger_vm()
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poola['id'],
-                               ip=g2.ip)
+                               ip_addr=g2.ip)
 
             repliesa = self.send_packets_to_vip(
                 [g1, g2], g_pinger, vipa['address'])
@@ -137,9 +137,9 @@ class TestLBaaSPools(LBaaSTestCase):
             g_pinger = self.create_pinger_vm()
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poola['id'],
-                               ip=g2.ip)
+                               ip_addr=g2.ip)
 
             repliesa = self.send_packets_to_vip(
                 [g1], g_pinger, g1.ip)

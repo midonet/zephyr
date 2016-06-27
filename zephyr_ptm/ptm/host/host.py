@@ -372,9 +372,10 @@ class Host(PTMObject):
         for app in self.applications:
             app.wait_for_process_stop()
 
-    def set_loopback(self, ip=IP('127.0.0.1', '8')):
-        if not self.cli.grep_cmd('ip addr | grep lo | grep inet', str(ip)):
-            self.cli.cmd('ip addr add ' + str(ip) + ' dev lo')
+    def set_loopback(self, ip_addr=IP('127.0.0.1', '8')):
+        if not self.cli.grep_cmd('ip addr | grep lo | grep inet',
+                                 str(ip_addr)):
+            self.cli.cmd('ip addr add ' + str(ip_addr) + ' dev lo')
         self.cli.cmd('ip link set dev lo up')
 
     def reset_default_route(self, ip_addr):

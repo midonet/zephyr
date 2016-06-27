@@ -301,12 +301,12 @@ class LBaaSTestCase(NeutronTestCase):
         self.api.delete_vip(vip_id)
         self.vip_ids.remove(vip_id)
 
-    def create_member(self, pool_id, ip,
+    def create_member(self, pool_id, ip_addr,
                       protocol_port=DEFAULT_POOL_PORT,
                       tenant_id='admin'):
 
         member = self.api.create_member(
-            {'member': {'address': ip,
+            {'member': {'address': ip_addr,
                         'protocol_port': protocol_port,
                         'pool_id': pool_id,
                         'tenant_id': tenant_id}})['member']
@@ -335,7 +335,7 @@ class LBaaSTestCase(NeutronTestCase):
         try:
             for g in member_list:
                 g.vm.start_echo_server(
-                    ip=g.ip, port=to_port,
+                    ip_addr=g.ip, port=to_port,
                     echo_data=g.vm.vm_host.name)
                 host_replies[g.vm.vm_host.name] = 0
             host_replies["NO_RESPONSE"] = 0
@@ -374,7 +374,7 @@ class LBaaSTestCase(NeutronTestCase):
                         break
         finally:
             for g in member_list:
-                g.vm.stop_echo_server(ip=g.ip, port=to_port)
+                g.vm.stop_echo_server(ip_addr=g.ip, port=to_port)
 
         return host_replies
 

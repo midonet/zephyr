@@ -77,7 +77,7 @@ class TestL2GWVLAN(NeutronTestCase):
 
         # Trunk Port for VLAN-aware bridge
         vlan_trunk_port = self.create_port(
-            "vlan_trunk", vlan_aware_net['id'], ip="10.0.250.240",
+            "vlan_trunk", vlan_aware_net['id'], ip_addr="10.0.250.240",
             host='cmp1', host_iface='eth1', port_security_enabled=False)
 
         # VLAN 100 VM
@@ -88,15 +88,17 @@ class TestL2GWVLAN(NeutronTestCase):
         (port2, vm2, ip2) = self.create_vm_server(
             "vm2", tenant2_net['id'], tenant2_sub['gateway_ip'])
 
-        ext2_host = self.ptm.hosts_by_name['ext2']
-        ext3_host = self.ptm.hosts_by_name['ext3']
+        ext2_host = self.vtm.get_host('ext2')
+        ext3_host = self.vtm.get_host('ext3')
 
         ext_ip = "172.20.100.224"
 
-        vm1.start_echo_server(ip=ip1, port=5080, echo_data="vm1")
-        vm2.start_echo_server(ip=ip2, port=5081, echo_data="vm2")
-        ext2_host.start_echo_server(ip=ext_ip, port=5082, echo_data="ext2")
-        ext3_host.start_echo_server(ip=ext_ip, port=5083, echo_data="ext3")
+        vm1.start_echo_server(ip_addr=ip1, port=5080, echo_data="vm1")
+        vm2.start_echo_server(ip_addr=ip2, port=5081, echo_data="vm2")
+        ext2_host.start_echo_server(ip_addr=ext_ip, port=5082,
+                                    echo_data="ext2")
+        ext3_host.start_echo_server(ip_addr=ext_ip, port=5083,
+                                    echo_data="ext3")
 
         try:
             # From VMs in VLAN to ext host in VLAN should work
@@ -129,7 +131,7 @@ class TestL2GWVLAN(NeutronTestCase):
                 vm1.send_echo_request(
                     dest_ip=ext_ip, dest_port=5083, echo_request='vm1'))
         finally:
-            ext2_host.stop_echo_server(ip=ext_ip, port=5082)
-            ext3_host.stop_echo_server(ip=ext_ip, port=5083)
-            vm1.stop_echo_server(ip=ip1, port=5080)
-            vm2.stop_echo_server(ip=ip2, port=5081)
+            ext2_host.stop_echo_server(ip_addr=ext_ip, port=5082)
+            ext3_host.stop_echo_server(ip_addr=ext_ip, port=5083)
+            vm1.stop_echo_server(ip_addr=ip1, port=5080)
+            vm2.stop_echo_server(ip_addr=ip2, port=5081)

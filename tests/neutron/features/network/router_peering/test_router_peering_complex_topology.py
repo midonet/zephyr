@@ -116,7 +116,7 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
 
         c_top['az_iface_port'] = self.create_port(
             "EAST_2", c_top['az_net']['id'], sub_id=c_top['az_sub']['id'],
-            ip="192.168.201.2")
+            ip_addr="192.168.201.2")
 
         c_top['az_iface'] = self.create_router_interface(
             c_tenant_router['id'], c_top['az_iface_port']['id'])
@@ -143,7 +143,7 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
 
         d_top['az_iface_port'] = self.create_port(
             "WEST_2", d_top['az_net']['id'], sub_id=d_top['az_sub']['id'],
-            ip="192.168.201.3")
+            ip_addr="192.168.201.3")
 
         d_top['az_iface'] = self.create_router_interface(
             d_tenant_router['id'], d_top['az_iface_port']['id'])
@@ -173,16 +173,16 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
             "192.168.201.2", c_router_mac, c_cidr,
             c_top['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
-        vmc.start_echo_server(ip=ipc)
+        vmc.start_echo_server(ip_addr=ipc)
         self.verify_connectivity(vmd, ipc)
 
-        vmd.start_echo_server(ip=ipd)
+        vmd.start_echo_server(ip_addr=ipd)
         self.verify_connectivity(vmc, ipd)
 
     def multiple_peers(self):
@@ -285,10 +285,10 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
                                    {'nexthop': "192.168.200.3",
                                     'destination': b_cidr}]}})
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
         self.delete_remote_mac_entry(b_top['gateway_device']['id'],
@@ -299,7 +299,7 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        vmc.start_echo_server(ip=ipc)
+        vmc.start_echo_server(ip_addr=ipc)
         self.verify_connectivity(vma, ipc)
 
         self.verify_connectivity(vmc, ipa)

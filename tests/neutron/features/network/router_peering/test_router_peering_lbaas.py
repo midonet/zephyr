@@ -52,9 +52,9 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
             g_pinger = self.create_pinger_vm()
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poola['id'],
-                               ip=g2.ip)
+                               ip_addr=g2.ip)
 
             repliesa = self.send_packets_to_vip(
                 [g1, g2], g_pinger, vipa['address'],
@@ -99,9 +99,9 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
                 gw_ip=a_topo['main_subnet']['gateway_ip']))
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poola['id'],
-                               ip=g2.ip)
+                               ip_addr=g2.ip)
 
             repliesa = self.send_packets_to_vip(
                 [g1, g2], g_pinger, vipa['address'],
@@ -146,9 +146,9 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
                 gw_ip=a_topo['main_subnet']['gateway_ip']))
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poola['id'],
-                               ip=g2.ip)
+                               ip_addr=g2.ip)
 
             repliesa = self.send_packets_to_vip(
                 [g1, g2], g_pinger, vipa['address'],
@@ -177,7 +177,7 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
             name='main_tr_port',
             net_id=a_net['id'],
             sub_id=a_sub['id'],
-            ip=a_sub['gateway_ip'])
+            ip_addr=a_sub['gateway_ip'])
         self.create_router_interface(
             router_id=a_tenant_router['id'],
             port_id=a_tenant_router_port['id'])
@@ -231,10 +231,10 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
         a_peer_topo['pub_network'] = a_pub_net
         a_peer_topo['pub_subnet'] = a_pub_sub

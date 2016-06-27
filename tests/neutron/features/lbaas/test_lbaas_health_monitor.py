@@ -148,9 +148,9 @@ class TestLBaaSHealthMonitor(LBaaSTestCase):
             g1 = self.create_member_vms(num_members=1,
                                         hv_host='cmp3')[0]
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poolb['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
 
             hma = self.create_health_monitor()
             hmb = self.create_health_monitor()
@@ -296,7 +296,7 @@ class TestLBaaSHealthMonitor(LBaaSTestCase):
         vms = self.create_member_vms(num_members=num_members)
         for i in vms:
             members.append(self.create_member(pool_id=pool1['id'],
-                                              ip=i.ip))
+                                              ip_addr=i.ip))
 
         hm = self.create_health_monitor()
         self.associate_health_monitor(hm_id=hm['id'],

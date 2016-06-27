@@ -125,7 +125,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         new_ip = '.'.join(ip2.split('.')[0:3]) + '.155'
         vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
 
-        vm2.start_echo_server(ip=new_ip)
+        vm2.start_echo_server(ip_addr=new_ip)
 
         # Echo request should work, but reply will be blocked
         echo_data = vm1.send_echo_request(dest_ip=new_ip)
@@ -171,7 +171,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         new_ip = '.'.join(ip2.split('.')[0:3]) + '.155'
         vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
 
-        vm2.start_echo_server(ip=new_ip)
+        vm2.start_echo_server(ip_addr=new_ip)
 
         # Echo request should work, but reply will be blocked
         echo_data = vm1.send_echo_request(dest_ip=new_ip)
@@ -234,7 +234,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         new_ip = '.'.join(ip2.split('.')[0:3]) + '.235'
         vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
 
-        vm2.start_echo_server(ip=new_ip)
+        vm2.start_echo_server(ip_addr=new_ip)
 
         # Echo request should work, but reply will be blocked
         echo_data = vm1.send_echo_request(dest_ip=new_ip)

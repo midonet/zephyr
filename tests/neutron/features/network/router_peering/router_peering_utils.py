@@ -47,7 +47,7 @@ class L2GWNeutronTestCase(NeutronTestCase):
 
     def create_ghost_port(self, az_net_id, ip, mac, other_port_id):
         ghost_port = self.create_port(
-            "ghost_port", az_net_id, ip=ip, mac=mac,
+            "ghost_port", az_net_id, ip_addr=ip, mac=mac,
             device_owner="network:remote_site", port_security_enabled=False,
             device_id=other_port_id)
         self.LOG.debug("Created ghost port on east network mimicking "
@@ -56,7 +56,7 @@ class L2GWNeutronTestCase(NeutronTestCase):
 
     def hook_tenant_router_to_az_net(self, name, tenant_router_id, az_net_id,
                                      az_sub_id, az_gw):
-        iface_port = self.create_port(name, az_net_id, ip=az_gw,
+        iface_port = self.create_port(name, az_net_id, ip_addr=az_gw,
                                       sub_id=az_sub_id,
                                       port_security_enabled=False)
         iface = self.create_router_interface(tenant_router_id,
@@ -68,7 +68,7 @@ class L2GWNeutronTestCase(NeutronTestCase):
                                 tun_gw):
         tun_port = self.create_port(
             name, vtep_net_id, host=tun_host,
-            host_iface=tun_iface, sub_id=vtep_sub_id, ip=tun_ip,
+            host_iface=tun_iface, sub_id=vtep_sub_id, ip_addr=tun_ip,
             port_security_enabled=False)
         vtep_tun_if = self.create_router_interface(vtep_router_id,
                                                    tun_port['id'])

@@ -40,12 +40,14 @@ class TestLBaaSSessionPersistence(LBaaSTestCase):
             g2 = vms[1]
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poola['id'],
-                               ip=g2.ip)
+                               ip_addr=g2.ip)
 
-            g1.vm.start_echo_server(ip=g1.ip, echo_data=g1.vm.vm_host.name)
-            g2.vm.start_echo_server(ip=g2.ip, echo_data=g2.vm.vm_host.name)
+            g1.vm.start_echo_server(ip_addr=g1.ip,
+                                    echo_data=g1.vm.vm_host.name)
+            g2.vm.start_echo_server(ip_addr=g2.ip,
+                                    echo_data=g2.vm.vm_host.name)
 
             pinger_data = []
             for i in range(0, 20):

@@ -118,12 +118,12 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
         exterior_ip = "172.20.1.1"
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
 
         self.verify_connectivity(vma, ipb)
         self.verify_connectivity(vma, b_fip['floating_ip_address'])
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
         self.verify_connectivity(vmb, a_fip['floating_ip_address'])
 
@@ -188,8 +188,8 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)

@@ -121,7 +121,7 @@ class TestPortSecurity(NeutronTestCase):
                     {'allowed_address_pairs':
                      [{"ip_address": new_ip1}]}})['port']
 
-            vm2.start_echo_server(ip=new_ip2)
+            vm2.start_echo_server(ip_addr=new_ip2)
 
             # Look for packets on the receiver from the spoofed new_ip1 address
             # to the new_ip2
@@ -145,7 +145,7 @@ class TestPortSecurity(NeutronTestCase):
             self.assertEqual(1, len(packets))
 
         finally:
-            vm2.stop_echo_server(ip=new_ip2)
+            vm2.stop_echo_server(ip_addr=new_ip2)
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
     @require_extension('port-security')

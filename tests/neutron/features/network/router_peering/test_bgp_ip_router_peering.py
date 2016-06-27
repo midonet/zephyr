@@ -98,8 +98,8 @@ class TestRouterPeeringBGP(L2GWNeutronTestCase):
         # bgpd takes about a minute to peer up and learn routes
         time.sleep(60)
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)

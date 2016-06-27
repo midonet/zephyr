@@ -79,7 +79,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(
-                ip=ip1, mac=port1['mac_address'],
+                ip_addr=ip1, mac=port1['mac_address'],
                 gw_ip=east_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
@@ -93,7 +93,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm2 = self.vtm.create_vm(
-                ip=ip2, mac=port2['mac_address'],
+                ip_addr=ip2, mac=port2['mac_address'],
                 gw_ip=west_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
@@ -132,7 +132,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             self.assertTrue(vm2.ping(target_ip=ip1))
 
             # TCP
-            vm2.start_echo_server(ip=ip2)
+            vm2.start_echo_server(ip_addr=ip2)
             echo_response = vm1.send_echo_request(dest_ip=ip2)
             self.assertEqual('ping:echo-reply', echo_response)
 
@@ -141,7 +141,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             self.assertEqual('ping:echo-reply', echo_response)
 
             # TCP
-            vm1.start_echo_server(ip=ip1)
+            vm1.start_echo_server(ip_addr=ip1)
             echo_response = vm2.send_echo_request(dest_ip=ip1)
             self.assertEqual('ping:echo-reply', echo_response)
 
@@ -151,10 +151,10 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
 
         finally:
             if vm2 and ip2:
-                vm2.stop_echo_server(ip=ip2)
+                vm2.stop_echo_server(ip_addr=ip2)
 
             if vm1 and ip1:
-                vm1.stop_echo_server(ip=ip1)
+                vm1.stop_echo_server(ip_addr=ip1)
 
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
@@ -220,7 +220,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(
-                ip=ip1, mac=port1['mac_address'],
+                ip_addr=ip1, mac=port1['mac_address'],
                 gw_ip=east_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
@@ -234,7 +234,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm2 = self.vtm.create_vm(
-                ip=ip2, mac=port2['mac_address'],
+                ip_addr=ip2, mac=port2['mac_address'],
                 gw_ip=west_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
@@ -267,10 +267,10 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
 
         finally:
             if vm2 and ip2:
-                vm2.stop_echo_server(ip=ip2)
+                vm2.stop_echo_server(ip_addr=ip2)
 
             if vm1 and ip1:
-                vm1.stop_echo_server(ip=ip1)
+                vm1.stop_echo_server(ip_addr=ip1)
 
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
@@ -342,7 +342,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(
-                ip=ip1, mac=port1['mac_address'],
+                ip_addr=ip1, mac=port1['mac_address'],
                 gw_ip=east_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
@@ -356,7 +356,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm2 = self.vtm.create_vm(
-                ip=ip2, mac=port2['mac_address'],
+                ip_addr=ip2, mac=port2['mac_address'],
                 gw_ip=west_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
@@ -407,8 +407,8 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             self.assertTrue(vm1.ping(target_ip=fip_w))
             self.assertTrue(vm2.ping(target_ip=fip_e))
 
-            vm1.start_echo_server(ip=ip1, echo_data='pong_e')
-            vm2.start_echo_server(ip=ip2, echo_data='pong_w')
+            vm1.start_echo_server(ip_addr=ip1, echo_data='pong_e')
+            vm2.start_echo_server(ip_addr=ip2, echo_data='pong_w')
 
             reply_e = vm1.send_echo_request(dest_ip=fip_w,
                                             echo_request='ping_e')
@@ -451,10 +451,10 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
                 self.api.delete_floatingip(floating_ip_west['id'])
 
             if vm2 and ip2:
-                vm2.stop_echo_server(ip=ip2)
+                vm2.stop_echo_server(ip_addr=ip2)
 
             if vm1 and ip1:
-                vm1.stop_echo_server(ip=ip1)
+                vm1.stop_echo_server(ip_addr=ip1)
 
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 
@@ -508,7 +508,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip1 = port1['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(
-                ip=ip1, mac=port1['mac_address'],
+                ip_addr=ip1, mac=port1['mac_address'],
                 gw_ip=east_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
@@ -522,7 +522,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             ip2 = port2['fixed_ips'][0]['ip_address']
 
             vm2 = self.vtm.create_vm(
-                ip=ip2, mac=port2['mac_address'],
+                ip_addr=ip2, mac=port2['mac_address'],
                 gw_ip=west_topo.main_net.subnet['gateway_ip'])
             """ :type: Guest"""
 
@@ -556,7 +556,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
             self.assertIsNotNone(peered_topo)
 
             # TCP with short data
-            vm2.start_echo_server(ip=ip2, echo_data='pong')
+            vm2.start_echo_server(ip_addr=ip2, echo_data='pong')
             echo_response = vm1.send_echo_request(dest_ip=ip2)
             self.assertEqual('ping:pong', echo_response)
 
@@ -589,7 +589,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
 
         finally:
             if vm2 and ip2:
-                vm2.stop_echo_server(ip=ip2)
+                vm2.stop_echo_server(ip_addr=ip2)
 
             self.cleanup_vms([(vm1, port1), (vm2, port2)])
 

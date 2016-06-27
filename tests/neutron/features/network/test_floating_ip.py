@@ -55,15 +55,15 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
 
         try:
-            vm1.start_echo_server(ip=ip1)
-            ext_host.start_echo_server(ip=ext_ip)
+            vm1.start_echo_server(ip_addr=ip1)
+            ext_host.start_echo_server(ip_addr=ext_ip)
 
             # Test that VM can still contact exterior host
             self.verify_connectivity(vm1, ext_ip)
             self.verify_connectivity(ext_host, fip1)
 
         finally:
-            ext_host.stop_echo_server(ip=ext_ip)
+            ext_host.stop_echo_server(ip_addr=ext_ip)
 
     @neutron_test_case.require_extension('extraroute')
     def test_external_connectivity_via_fip_assigned_during_creation(self):
@@ -87,13 +87,13 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
 
         try:
-            ext_host.start_echo_server(ip=ext_ip)
+            ext_host.start_echo_server(ip_addr=ext_ip)
 
             # Test that VM can still contact exterior host
             self.verify_connectivity(vm1, ext_ip)
 
         finally:
-            ext_host.stop_echo_server(ip=ext_ip)
+            ext_host.stop_echo_server(ip_addr=ext_ip)
 
     @test_case.expected_failure('MI-115')
     @neutron_test_case.require_extension('extraroute')
@@ -113,8 +113,8 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
         fip1 = floating_ip1['floating_ip_address']
         self.LOG.debug("Received floating IP1: " + str(fip1))
 
-        vm1.start_echo_server(ip=ip1)
-        vm2.start_echo_server(ip=ip2)
+        vm1.start_echo_server(ip_addr=ip1)
+        vm2.start_echo_server(ip_addr=ip2)
 
         # Test that VM can reach via internal IP
         self.verify_connectivity(vm1, ip2)
@@ -157,8 +157,8 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
         fip2 = floating_ip2['floating_ip_address']
         self.LOG.debug("Received floating IP2: " + str(fip2))
 
-        vm1.start_echo_server(ip=ip1)
-        vm2.start_echo_server(ip=ip2)
+        vm1.start_echo_server(ip_addr=ip1)
+        vm2.start_echo_server(ip_addr=ip2)
 
         # Test that VM can reach via internal IP
         self.verify_connectivity(vm1, ip2)
@@ -225,14 +225,14 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
         self.assertTrue(vm2.ping(target_ip=fip1))
 
         # TCP
-        vm2.start_echo_server(ip=ip2)
+        vm2.start_echo_server(ip_addr=ip2)
         echo_response = vm1.send_echo_request(dest_ip=fip2)
         self.assertEqual('ping:echo-reply', echo_response)
 
         # TODO(micucci): Fix UDP
         # UDP
-        # ext_host.stop_echo_server(ip=ip2)
-        # ext_host.start_echo_server(ip=ip2, protocol='udp')
+        # ext_host.stop_echo_server(ip_addr=ip2)
+        # ext_host.start_echo_server(ip_addr=ip2, protocol='udp')
         # echo_response = vm1.send_echo_request(
         #   dest_ip=fip2, protocol='udp')
         # self.assertEqual('ping:echo-reply', echo_response)
@@ -242,13 +242,13 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
         self.assertTrue(vm2.ping(target_ip=fip1))
 
         # TCP
-        vm1.start_echo_server(ip=ip1)
+        vm1.start_echo_server(ip_addr=ip1)
         echo_response = vm2.send_echo_request(dest_ip=fip1)
         self.assertEqual('ping:echo-reply', echo_response)
 
         # UDP
-        # vm1.stop_echo_server(ip=ip1)
-        # vm1.start_echo_server(ip=ip1, protocol='udp')
+        # vm1.stop_echo_server(ip_addr=ip1)
+        # vm1.start_echo_server(ip_addr=ip1, protocol='udp')
         # echo_response = vm2.send_echo_request(
         #   dest_ip=fip1, protocol='udp')
         # self.assertEqual('ping:echo-reply', echo_response)
@@ -325,7 +325,7 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
 
         try:
             # TCP
-            ext_host.start_echo_server(ip=ext_ip)
+            ext_host.start_echo_server(ip_addr=ext_ip)
             echo_response = vm1.send_echo_request(dest_ip=ext_ip)
             self.assertEqual('ping:echo-reply', echo_response)
 
@@ -333,4 +333,4 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
             self.assertEqual('ping:echo-reply', echo_response2)
 
         finally:
-            ext_host.stop_echo_server(ip=ext_ip)
+            ext_host.stop_echo_server(ip_addr=ext_ip)

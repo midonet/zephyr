@@ -60,12 +60,12 @@ class TestUpgradeScript(LBaaSTestCase):
             g_pinger = self.create_pinger_vm()
 
             self.create_member(pool_id=poola['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
             self.create_member(pool_id=poola['id'],
-                               ip=g2.ip)
+                               ip_addr=g2.ip)
 
             self.create_member(pool_id=poolb['id'],
-                               ip=g1.ip)
+                               ip_addr=g1.ip)
 
             self.create_health_monitor()
 

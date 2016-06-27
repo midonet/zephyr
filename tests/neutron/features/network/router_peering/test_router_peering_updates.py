@@ -129,10 +129,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
         self.api.update_router(a_tenant_router['id'],
@@ -234,10 +234,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
         self.api.update_router(a_tenant_router['id'],
@@ -275,26 +275,26 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
-        vma.stop_echo_server(ip=ipa)
-        vmb.stop_echo_server(ip=ipb)
+        vma.stop_echo_server(ip_addr=ipa)
+        vmb.stop_echo_server(ip_addr=ipb)
 
         (portc, vmc, ipc) = self.create_vm_server(
             "C", a_net['id'], a_sub['gateway_ip'])
         (portd, vmd, ipd) = self.create_vm_server(
             "D", b_net['id'], b_sub['gateway_ip'])
 
-        vmc.start_echo_server(ip=ipc)
+        vmc.start_echo_server(ip_addr=ipc)
         self.verify_connectivity(vmd, ipc)
 
         vmb.vm_underlay.reboot()
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
     def remove_readd_l2gw(self):
@@ -358,10 +358,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
         self.delete_l2_gw_conn(a_top['l2_gateway_conn']['id'])
@@ -438,10 +438,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
         self.delete_l2_gw_conn(a_top['l2_gateway_conn']['id'])
@@ -516,10 +516,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
         new_tunnel_ip = '2.2.2.6'

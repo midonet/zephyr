@@ -94,5 +94,5 @@ class TestRouterPeeringSecurityGroups(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)

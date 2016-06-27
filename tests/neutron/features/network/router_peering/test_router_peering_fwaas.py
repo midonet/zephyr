@@ -91,11 +91,11 @@ class TestRouterPeeringFWaaS(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip=ipb, port=7777)
+        vmb.start_echo_server(ip_addr=ipb, port=7777)
         self.assertTrue(vma.ping(target_ip=ipb, timeout=20))
         self.verify_tcp_connectivity(vma, ipb, 7777)
 
-        vma.start_echo_server(ip=ipa, port=8888)
+        vma.start_echo_server(ip_addr=ipa, port=8888)
         self.assertTrue(vmb.ping(target_ip=ipa, timeout=20))
         self.verify_tcp_connectivity(vmb, ipa, 8888)
 

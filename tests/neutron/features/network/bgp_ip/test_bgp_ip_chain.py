@@ -81,10 +81,10 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
         (portb, vmb, ipb) = self.create_vm_server(
             "B", b_net['id'], b_sub['gateway_ip'])
 
-        vmb.start_echo_server(ip=ipb)
+        vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-        vma.start_echo_server(ip=ipa)
+        vma.start_echo_server(ip_addr=ipa)
         self.verify_connectivity(vmb, ipa)
 
         d_cidr = "192.168.50.0/24"
@@ -116,6 +116,6 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
         vmd.vm_underlay.reset_default_route(
             cd_port['fixed_ips'][0]['ip_address'])
 
-        vmd.start_echo_server(ip=ipd)
+        vmd.start_echo_server(ip_addr=ipd)
         self.verify_connectivity(vmd, ipa)
         self.verify_connectivity(vma, ipd)
