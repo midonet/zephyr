@@ -18,6 +18,7 @@ from zephyr.common import utils
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.tsm import test_case
+from zephyr.vtm import fwaas_fixture
 
 
 class TestFWaaSLogging(NeutronTestCase):
@@ -31,6 +32,8 @@ class TestFWaaSLogging(NeutronTestCase):
         self.near_far_router = None
 
     def setUp(self):
+        fwaas_fixture.FWaaSFixture().setup()
+
         near_net = self.create_network('near_net')
         near_sub = self.create_subnet(
             'near_sub',
