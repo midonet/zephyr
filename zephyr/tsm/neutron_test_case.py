@@ -460,13 +460,15 @@ class NeutronTestCase(TestCase):
         #     self.assertEqual('ping:echo-reply', echo_response)
 
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
-                         allowed_address_pairs=None, hv_host=None):
+                         allowed_address_pairs=None, hv_host=None,
+                         port_security_enabled=True):
         """
         :rtype: (str, zephyr.vtm.guest.Guest, str)
         """
         port_data = {'name': name,
                      'network_id': net_id,
                      'admin_state_up': True,
+                     'port_security_enabled': port_security_enabled,
                      'tenant_id': 'admin'}
         if sgs:
             port_data['security_groups'] = sgs
