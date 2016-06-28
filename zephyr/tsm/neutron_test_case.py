@@ -448,7 +448,7 @@ class NeutronTestCase(TestCase):
             (res_id, fwlog['firewall_log']['id']))
         return fwlog['firewall_log']
 
-    def update_firewall_log(self, fwlog_id, res_id, fw_event, fw_id,
+    def update_firewall_log(self, fwlog_id, res_id, fw_event,
                             description="Firewall log object"):
 
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
@@ -457,8 +457,7 @@ class NeutronTestCase(TestCase):
         curl_data = {
             'firewall_log': {
                 'fw_event': fw_event,
-                'description': description,
-                'firewall_id': fw_id
+                'description': description
             }
         }
 
