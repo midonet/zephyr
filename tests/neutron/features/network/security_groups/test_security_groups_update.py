@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 
 
@@ -57,6 +59,8 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
         self.api.update_port(porta['id'],
                              {'port': {'security_groups': [sg2['id']]}})
 
+        # Allow time for topology changes to propagate to the agents
+        time.sleep(1)
         self.verify_connectivity(vmb, ipc)
         self.verify_connectivity(vmc, ipb)
 
@@ -67,4 +71,7 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
 
         self.api.update_port(porta['id'],
                              {'port': {'security_groups': [sg1['id']]}})
+
+        # Allow time for topology changes to propagate to the agents
+        time.sleep(1)
         self.verify_connectivity(vmb, ipa)
