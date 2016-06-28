@@ -95,7 +95,7 @@ class PTMUnderlaySystem(underlay_system.UnderlaySystem):
             start_hv_host = self.hypervisors[hv_host]
         else:
             for h, underlay_host in self.hypervisors.iteritems():
-                for hv_app in underlay_host.applications_by_type[
+                for hv_app in underlay_host.hv_host.applications_by_type[
                         application.APPLICATION_TYPE_HYPERVISOR]:
                     vm_count = hv_app.get_vm_count()
                     if (vm_count < current_least_vm_count or

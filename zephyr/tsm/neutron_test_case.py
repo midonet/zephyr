@@ -279,7 +279,7 @@ class NeutronTestCase(TestCase):
                            tun_sub_id, tunnel_ip):
         return self.create_port(name, tun_net_id, host=tun_host,
                                 host_iface=uplink_iface, sub_id=tun_sub_id,
-                                ip=tunnel_ip)
+                                ip_addr=tunnel_ip)
 
     def create_l2_gateway(self, name, gwdev_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
@@ -474,15 +474,15 @@ class NeutronTestCase(TestCase):
                  else {'ip_address': pair[0]}
                  for pair in allowed_address_pairs])
         port = self.api.create_port({'port': port_data})['port']
-        ip = port['fixed_ips'][0]['ip_address']
+        ip_addr = port['fixed_ips'][0]['ip_address']
         vm = self.vtm.create_vm(name=name,
-                                ip=ip,
+                                ip_addr=ip_addr,
                                 mac=port['mac_address'],
                                 gw_ip=gw_ip,
                                 hv_host=hv_host)
         vm.plugin_vm('eth0', port['id'])
-        self.servers.append((vm, ip, port))
-        return port, vm, ip
+        self.servers.append((vm, ip_addr, port))
+        return port, vm, ip_addr
 
     def clean_resource(self, items, res_name, del_func):
         for item in items:
@@ -498,10 +498,10 @@ class NeutronTestCase(TestCase):
             del items[:]
 
     def clean_vm_servers(self):
-        for (vm, ip, port) in self.servers:
+        for (vm, ip_addr, port) in self.servers:
             try:
-                self.LOG.debug('Deleting server ' + str((vm, ip, port)))
-                vm.stop_echo_server(ip=ip)
+                self.LOG.debug('Deleting server ' + str((vm, ip_addr, port)))
+                vm.stop_echo_server(ip_addr=ip_addr)
                 self.cleanup_vms([(vm, port)])
             except Exception:
                 traceback.print_exc()
@@ -559,7 +559,7 @@ class NeutronTestCase(TestCase):
         self.api.delete_floatingip(fip_id)
 
     def create_port(self, name, net_id, tenant_id='admin', host=None,
-                    host_iface=None, sub_id=None, ip=None, mac=None,
+                    host_iface=None, sub_id=None, ip_addr=None, mac=None,
                     port_security_enabled=True, device_owner=None,
                     device_id=None, sg_ids=None, allowed_address_pairs=None):
         port_data = {'name': name,
@@ -570,10 +570,11 @@ class NeutronTestCase(TestCase):
             port_data['binding:host_id'] = host
         if host_iface:
             port_data['binding:profile'] = {'interface_name': host_iface}
-        if ip and sub_id:
-            port_data['fixed_ips'] = [{'subnet_id': sub_id, 'ip_address': ip}]
-        elif ip:
-            port_data['fixed_ips'] = [{'ip_address': ip}]
+        if ip_addr and sub_id:
+            port_data['fixed_ips'] = [{'subnet_id': sub_id,
+                                       'ip_address': ip_addr}]
+        elif ip_addr:
+            port_data['fixed_ips'] = [{'ip_address': ip_addr}]
         if device_owner:
             port_data['device_owner'] = device_owner
         if device_id:
@@ -765,7 +766,7 @@ class NeutronTestCase(TestCase):
                                       host=edge_host_name,
                                       host_iface=edge_iface_name,
                                       sub_id=edge_subnet['id'],
-                                      ip=edge_ip)
+                                      ip_addr=edge_ip)
         # Bind port to edge router
         if_list = [self.create_router_interface(
             edge_router['id'], port_id=edge_port1['id'])]
