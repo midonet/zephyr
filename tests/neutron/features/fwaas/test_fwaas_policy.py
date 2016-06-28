@@ -14,9 +14,13 @@
 
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.vtm import fwaas_fixture
 
 
 class TestFWaaSPolicy(NeutronTestCase):
+    def setUp(self):
+        fwaas_fixture.FWaaSFixture().setup()
+
     @require_extension("fwaas")
     def test_basic_policy(self):
         near_net = self.create_network('near_net')
