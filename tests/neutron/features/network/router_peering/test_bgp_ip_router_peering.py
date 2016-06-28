@@ -25,6 +25,7 @@ class TestRouterPeeringBGP(L2GWNeutronTestCase):
     @neutron_test_case.require_extension('l2-gateway')
     @test_case.require_topology_feature(
         'config_file', lambda a, b: a in b, ['2z-1c-root-2tun.json'])
+    @unittest.skip("TODO: Topology loading does not work.")
     def test_bgp_ip_router_peering(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"

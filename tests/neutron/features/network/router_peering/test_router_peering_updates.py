@@ -31,6 +31,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
+    @unittest.skip("issue with echo server")
     def test_peered_routers_add_reboot_vms(self):
         try:
             self.add_reboot_vms()
