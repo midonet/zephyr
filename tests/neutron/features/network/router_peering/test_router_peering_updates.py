@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import unittest
+
 from router_peering_utils import L2GWNeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 
