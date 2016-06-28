@@ -31,9 +31,6 @@ class TestFWaaSLogging(NeutronTestCase):
         self.fw = None
         self.near_far_router = None
 
-    def setUp(self):
-        fwaas_fixture.FWaaSFixture().setup()
-
     def make_simple_topology(self, name='A'):
         near_net = self.create_network('near_net')
         near_sub = self.create_subnet(
@@ -80,9 +77,10 @@ class TestFWaaSLogging(NeutronTestCase):
             fw_policy_id=fwp['id'], fw_rule_id=fwr_accept['id'])
         self.insert_firewall_rule(
             fw_policy_id=fwp['id'], fw_rule_id=fwr_accept_ret['id'])
-        return (vm1, ip1, vm2, ip2, fw, near_far_router)
+        return vm1, ip1, vm2, ip2, fw, near_far_router
 
     def setUp(self):
+        fwaas_fixture.FWaaSFixture().setup()
         (self.vm1, self.ip1, self.vm2, self.ip2, self.fw,
          self.near_far_router) = self.make_simple_topology()
 
@@ -107,6 +105,8 @@ class TestFWaaSLogging(NeutronTestCase):
             fw_event='ACCEPT', res_id=log_res['id'], fw_id=self.fw['id'])
 
         self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
+        self.vm2.start_echo_server(ip=self.ip2, port=8888, echo_data='pong2')
+
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 

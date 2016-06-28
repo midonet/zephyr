@@ -20,7 +20,7 @@ class FWaaSFixture(object):
         super(FWaaSFixture, self).__init__()
 
     def setup(self):
-        LinuxCLI().cmd("neutron-db-manage --service fwaas upgrade head")
+        LinuxCLI().cmd("neutron-db-manage --service fwaas upgrade heads")
 
     def teardown(self):
         pass
