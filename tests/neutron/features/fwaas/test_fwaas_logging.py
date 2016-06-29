@@ -84,18 +84,23 @@ class TestFWaaSLogging(NeutronTestCase):
         (self.vm1, self.ip1, self.vm2, self.ip2, self.fw,
          self.near_far_router) = self.make_simple_topology()
 
-    def check_fwaas_logs(self, uuid, accept, drop, host='cmp1', exact=False):
+    def check_fwaas_logs(self, uuid, accept, drop, host='cmp1', exact=False,
+                         exist=True):
         cmp_host = self.vtm.get_host(host)
         """
         :type: zephyr.underlay.underlay_host.UnderlayHost
         """
         fwaas_logs = cmp_host.fetch_file(
             file_type='fwaas_log', uuid=uuid)
-        self.assertEqual(1, len(fwaas_logs))
-        self.assertTrue(
-            utils.check_string_for_tag(fwaas_logs[0], 'ACCEPT', accept, exact))
-        self.assertTrue(
-            utils.check_string_for_tag(fwaas_logs[0], 'DROP', drop, exact))
+        if exist:
+            self.assertEqual(1, len(fwaas_logs))
+            self.assertTrue(
+                utils.check_string_for_tag(fwaas_logs[0], 'ACCEPT', accept,
+                                           exact))
+            self.assertTrue(
+                utils.check_string_for_tag(fwaas_logs[0], 'DROP', drop, exact))
+        else:
+            self.assertEqual(0, len(fwaas_logs))
 
     @require_extension("fwaas")
     def test_logging_basic_accept(self):
@@ -160,6 +165,34 @@ class TestFWaaSLogging(NeutronTestCase):
             fw_event='ALL', res_id=log_res['id'], fw_id=self.fw['id'])
 
         self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
+        self.assertEqual('ping:pong', reply)
+
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
+        self.assertEqual('', reply)
+
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
+
+    @require_extension("fwaas")
+    def test_logging_update_enabled(self):
+        log_res = self.create_logging_resource(
+            name='fw_logging',
+            enabled=False)
+        fw_log_obj = self.create_firewall_log(
+            fw_event='ALL', res_id=log_res['id'], fw_id=self.fw['id'])
+
+        self.vm2.start_echo_server(ip=self.ip2, port=7777, echo_data='pong')
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
+        self.assertEqual('ping:pong', reply)
+
+        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
+        self.assertEqual('', reply)
+
+        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=0, drop=0,
+                              exact=True, exist=False)
+
+        self.update_logging_resource(log_res['id'], enabled=True)
+
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
