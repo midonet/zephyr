@@ -64,7 +64,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
                 "VM even get started?")
         hv_app = hv_host.applications_by_type[hv_app_type][0]
         """:type: zephyr_ptm.ptm.application.netns_hv.NetnsHV"""
-        hv_app.plugin_iface_to_network(
+        return hv_app.plugin_iface_to_network(
             vm_host_name=self.name, iface=iface, port_id=port_id)
 
     def unplug_iface(self, port_id):
@@ -88,39 +88,43 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
         if not self.vm_type:
             raise exceptions.ArgMismatchException(
                 "Error; create_interface operation only valid on a VM host")
-        self.underlay_host_obj.create_interface(
+        return self.underlay_host_obj.create_interface(
             iface=iface, mac=mac, ip_list=ip_list,
             linked_bridge=linked_bridge, vlans=vlans)
 
     def add_ip(self, iface_name, ip_addr):
-        self.underlay_host_obj.interfaces[iface_name].add_ip(
+        return self.underlay_host_obj.interfaces[iface_name].add_ip(
             ip.IP.make_ip(ip_addr))
 
+    def get_ip(self, iface_name):
+        iface = self.underlay_host_obj.interfaces[iface_name]
+        return iface.ip_list[0] if len(iface.ip_list) > 0 else None
+
     def reset_default_route(self, ip_addr):
-        self.underlay_host_obj.reset_default_route(ip_addr)
+        return self.underlay_host_obj.reset_default_route(ip_addr)
 
     def reboot(self):
-        self.underlay_host_obj.reboot()
+        return self.underlay_host_obj.reboot()
 
     def fetch_file(self, file_type, **kwargs):
         return self.underlay_host_obj.fetch_resources_from_apps(
             file_type, **kwargs)
 
     def add_route(self, route_ip='default', gw_ip=None, dev=None):
-        self.underlay_host_obj.add_route(route_ip, gw_ip, dev)
+        return self.underlay_host_obj.add_route(route_ip, gw_ip, dev)
 
     def del_route(self, route_ip):
-        self.underlay_host_obj.del_route(route_ip)
+        return self.underlay_host_obj.del_route(route_ip)
 
     def start_echo_server(self, ip_addr='localhost',
                           port=echo_server.DEFAULT_ECHO_PORT,
                           echo_data="echo-reply", protocol='tcp'):
-        self.underlay_host_obj.start_echo_server(
+        return self.underlay_host_obj.start_echo_server(
             ip_addr, port, echo_data, protocol)
 
     def stop_echo_server(self, ip_addr='localhost',
                          port=echo_server.DEFAULT_ECHO_PORT):
-        self.underlay_host_obj.stop_echo_server(ip_addr, port)
+        return self.underlay_host_obj.stop_echo_server(ip_addr, port)
 
     def send_echo_request(self, dest_ip='localhost',
                           dest_port=echo_server.DEFAULT_ECHO_PORT,
@@ -159,13 +163,14 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
             callback, callback_args, save_dump_file, save_dump_filename)
 
     def capture_packets(self, interface, count=1, timeout=None):
-        self.underlay_host_obj.capture_packets(interface, count, timeout)
+        return self.underlay_host_obj.capture_packets(
+            interface, count, timeout)
 
     def stop_capture(self, interface):
-        self.underlay_host_obj.stop_capture(interface)
+        return self.underlay_host_obj.stop_capture(interface)
 
     def flush_arp(self):
-        self.underlay_host_obj.flush_arp()
+        return self.underlay_host_obj.flush_arp()
 
     def execute(self, cmd_line, timeout=None, blocking=True):
         result = self.underlay_host_obj.cli.cmd(

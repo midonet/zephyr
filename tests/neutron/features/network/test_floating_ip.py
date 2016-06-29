@@ -47,9 +47,11 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
             fip_id=floating_ip1['id'],
             port_id=port1['id'])
 
-        ext_host = self.ptm.hosts_by_name['ext1']
-        """:type: Host"""
-        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+        ext_host = self.vtm.get_host('ext1')
+        """
+        :type: zephyr.underlay.underlay_host.UnderlayHost
+        """
+        ext_ip = ext_host.get_ip('eth0')
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
@@ -79,9 +81,11 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
         fip1 = floating_ip1['floating_ip_address']
         self.LOG.debug("Received floating IP: " + str(fip1))
 
-        ext_host = self.ptm.hosts_by_name['ext1']
-        """:type: Host"""
-        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+        ext_host = self.vtm.get_host('ext1')
+        """
+        :type: zephyr.underlay.underlay_host.UnderlayHost
+        """
+        ext_ip = ext_host.get_ip('eth0')
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
@@ -309,9 +313,11 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
             pub_net_id=new_pub['id'])
         self.assertEqual('200.200.10.6', fip_a['floating_ip_address'])
 
-        ext_host = self.ptm.hosts_by_name['ext1']
-        """:type: Host"""
-        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+        ext_host = self.vtm.get_host('ext1')
+        """
+        :type: zephyr.underlay.underlay_host.UnderlayHost
+        """
+        ext_ip = ext_host.get_ip('eth0')
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))

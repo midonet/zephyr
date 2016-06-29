@@ -30,7 +30,7 @@ class TestResultsProcessing(test_case):
 
     @classmethod
     def setUpClass(cls):
-        cls.testlog = cls.ptm.log_manager.add_file_logger(
+        cls.testlog = cls.vtm.log_manager.add_file_logger(
             file_name='test-' + cls.__name__ + '.log', name='tester',
             file_overwrite=True, log_level=logging.DEBUG)
 
@@ -64,7 +64,7 @@ class TestResultsProcessing(test_case):
         self.testlog.debug('test_log_splitting')
 
         for i in range(0, 10):
-            logger = self.ptm.log_manager.get_logger(name='tester')
+            logger = self.vtm.log_manager.get_logger(name='tester')
             logger.info('test_log_splitting')
             self.LOG.info('test_log_splitting_in_main ' + str(i))
             time.sleep(1)

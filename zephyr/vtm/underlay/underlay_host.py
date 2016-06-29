@@ -21,82 +21,85 @@ class UnderlayHost(object):
         self.LOG = None
 
     def create_vm(self, ip, mac, gw_ip, name):
-        pass
+        return None
 
     def fetch_file(self, file_name, **kwargs):
-        pass
+        return None
 
     def add_route(self, route_ip='default', gw_ip=None, dev=None):
-        pass
+        return None
 
     def del_route(self, route_ip):
-        pass
+        return None
 
     def create_interface(self, iface, mac=None, ip_list=None,
                          linked_bridge=None, vlans=None):
-        pass
+        return None
 
     def add_ip(self, iface_name, ip_addr):
-        pass
+        return None
+
+    def get_ip(self, iface_name):
+        return None
 
     def reset_default_route(self, ip_addr):
-        pass
+        return None
 
     def reboot(self):
-        pass
+        return None
 
     def start_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT,
                           echo_data="echo-reply", protocol='tcp'):
-        pass
+        return None
 
     def stop_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT):
-        pass
+        return None
 
     def send_echo_request(self, dest_ip='localhost',
                           dest_port=DEFAULT_ECHO_PORT,
                           echo_request='ping', source_ip=None,
                           protocol='tcp'):
-        pass
+        return None
 
     def send_custom_packet(self, iface, **kwargs):
-        pass
+        return None
 
     def send_arp_packet(self, iface, dest_ip, source_ip=None,
                         command='request',
                         source_mac=None, dest_mac=None,
                         packet_options=None, count=1):
-        pass
+        return None
 
     def send_tcp_packet(self, iface, dest_ip,
                         source_port, dest_port, data=None,
                         packet_options=None, count=1):
-        pass
+        return None
 
     def ping(self, target_ip, iface=None, count=1, timeout=None):
-        pass
+        return None
 
     def start_capture(self, interface, count=0, ptype='', pfilter=None,
                       callback=None, callback_args=None, save_dump_file=False,
                       save_dump_filename=None):
-        pass
+        return None
 
     def capture_packets(self, interface, count=1, timeout=None):
-        pass
+        return None
 
     def stop_capture(self, interface):
-        pass
+        return None
 
     def flush_arp(self):
-        pass
+        return None
 
     def plugin_iface(self, iface, port_id):
-        pass
+        return None
 
     def unplug_iface(self, port_id):
-        pass
+        return None
 
     def execute(self, cmd_line, timeout=None, blocking=True):
-        pass
+        return None
 
     def terminate(self):
-        pass
+        return None

@@ -29,9 +29,11 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'])
 
-        ext_host = self.ptm.hosts_by_name['ext1']
-        """:type: zephyr.ptm.host.host.Host"""
-        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+        ext_host = self.vtm.get_host('ext1')
+        """
+        :type: zephyr.underlay.underlay_host.UnderlayHost
+        """
+        ext_ip = ext_host.get_ip('eth0')
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
@@ -52,9 +54,11 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'])
 
-        ext_host = self.ptm.hosts_by_name['ext1']
-        """:type: Host"""
-        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+        ext_host = self.vtm.get_host('ext1')
+        """
+        :type: zephyr.underlay.underlay_host.UnderlayHost
+        """
+        ext_ip = ext_host.get_ip('eth0')
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
@@ -90,9 +94,11 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             self.main_subnet['gateway_ip'])
         """:type: (str, zephyr.vtm.guest.Guest, str)"""
 
-        ext_host = self.ptm.hosts_by_name['ext1']
-        """:type: Host"""
-        ext_ip = ext_host.interfaces['eth0'].ip_list[0].ip
+        ext_host = self.vtm.get_host('ext1')
+        """
+        :type: zephyr.underlay.underlay_host.UnderlayHost
+        """
+        ext_ip = ext_host.get_ip('eth0')
         ext_host.add_route(
             route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
             gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))

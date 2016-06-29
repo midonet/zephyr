@@ -62,11 +62,12 @@ class TestFWaaSLogging(NeutronTestCase):
             action='allow', protocol='tcp', dest_port=7777)
 
     def check_fwaas_logs(self, uuid, accept, drop, host='cmp1'):
-        cmp_host = self.ptm.hosts_by_name[host]
-        """ :type: zephyr_ptm.ptm.host.host.Host"""
-        fwaas_logs = cmp_host.fetch_resources_from_apps(
-            resource_name='fwaas_log',
-            uuid=uuid)
+        cmp_host = self.vtm.get_host(host)
+        """
+        :type: zephyr.underlay.underlay_host.UnderlayHost
+        """
+        fwaas_logs = cmp_host.fetch_file(
+            file_type='fwaas_log', uuid=uuid)
         self.assertEqual(1, len(fwaas_logs))
         self.assertTrue(
             utils.check_string_for_tag(fwaas_logs[0], 'ACCEPT', accept))

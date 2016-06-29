@@ -26,7 +26,7 @@ class TestL2GWVLAN(NeutronTestCase):
     def _prepare_class(cls, vtm, test_case_logger=logging.getLogger()):
         """
 
-        :param ptm:
+        :param vtm:
         :type test_case_logger: logging.logger
         """
         super(TestL2GWVLAN, cls)._prepare_class(vtm,

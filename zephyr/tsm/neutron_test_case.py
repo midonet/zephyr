@@ -459,7 +459,7 @@ class NeutronTestCase(TestCase):
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
                          allowed_address_pairs=None, hv_host=None):
         """
-        :rtype: (str, zephyr.vtm.guest.Guest, str)
+        :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
         """
         port_data = {'name': name,
                      'network_id': net_id,

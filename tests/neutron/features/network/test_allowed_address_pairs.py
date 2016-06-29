@@ -31,6 +31,7 @@ class TestAllowedAddressPairs(NeutronTestCase):
         """
 
         pcap_filter_list = [pcap.ICMPProto()]
+        """ :type: list[zephyr.common.pcap.Rule]"""
         if with_ip:
             pcap_filter_list.append(pcap.Host(spoof_ip, proto='ip',
                                               source=True, dest=False))

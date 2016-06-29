@@ -100,6 +100,9 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def add_ip(self, iface_name, ip_addr):
         pass
 
+    def get_ip(self, iface_name):
+        pass
+
     def reset_default_route(self, ip_addr):
         pass
 
