@@ -415,6 +415,23 @@ class NeutronTestCase(TestCase):
         self.LOG.debug('Created logging resource: ' + str(logr))
         return logr['logging_resource']
 
+    def update_logging_resource(self, res_id, enabled=True):
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/logging/logging_resources/' + res_id)
+        curl_data = {
+            'logging_resource': {
+                'enabled': enabled,
+            }
+        }
+        self.LOG.debug("Log Resource JSON: " + str(curl_data))
+        json_ret = curl_put(curl_url, curl_data)
+
+        self.LOG.debug('Updating Log Resource: ' + str(json_ret))
+
+        logr = json.loads(json_ret)
+        self.LOG.debug('Updated logging resource: ' + str(logr))
+        return logr['logging_resource']
+
     def delete_logging_resource(self, lgr_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/logging/logging_resources/' + str(lgr_id))
