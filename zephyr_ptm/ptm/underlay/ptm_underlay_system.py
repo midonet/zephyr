@@ -15,6 +15,7 @@
 import os
 
 from zephyr.common import exceptions
+from zephyr.common import zephyr_constants as z_con
 from zephyr.vtm.underlay import underlay_system
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm import physical_topology_manager
@@ -24,8 +25,10 @@ from zephyr_ptm.ptm.underlay import ptm_underlay_host
 class PTMUnderlaySystem(underlay_system.UnderlaySystem):
     global_vm_id = 0
 
-    def __init__(self, debug=False, logger=None):
-        super(PTMUnderlaySystem, self).__init__(debug=debug, logger=logger)
+    def __init__(self, debug=False, log_manager=None,
+                 log_file=z_con.ZEPHYR_LOG_FILE_NAME):
+        super(PTMUnderlaySystem, self).__init__(
+            debug=debug, log_manager=log_manager, log_file=log_file)
         self.ptm = None
         self.root_dir = '.'
         self.ptm_log_file = 'ptm-out.log'

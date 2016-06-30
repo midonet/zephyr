@@ -266,7 +266,7 @@ try:
 
     finally:
         rdir = results_dir + '/' + name
-        tsm.create_results(results_dir=rdir, leeway=3)
+        tsm.create_results(results_dir=rdir)
 
 except ExitCleanException:
     exit(1)

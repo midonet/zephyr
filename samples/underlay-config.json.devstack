@@ -1,6 +1,11 @@
 {
   "log_dir": "/tmp/zephyr/logs",
-  "overlay": "zephyr.midonet.midonet_overlay.MidonetOverlay",
+  "overlay": {
+    "class": "zephyr.midonet.midonet_overlay.MidonetOverlay",
+    "args": {
+      "midonet_api_url": "http://localhost:8181/midonet-api"
+    }
+  },
   "hosts": {
     "master-ds": {
       "host_type": "local",

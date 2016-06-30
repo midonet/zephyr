@@ -21,6 +21,7 @@ from zephyr.common.cli import LinuxCLI
 from zephyr.common import exceptions
 from zephyr.common.file_location import FileLocation
 from zephyr.common.ip import IP
+from zephyr.midonet import midonet_mm_ctl
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.application import configuration_handler
 from zephyr_ptm.ptm.config import version_config
@@ -45,7 +46,6 @@ class Midolman(application.Application):
         self.vms = {}
         """ :type: dict[str, VMHost]"""
         self.num_id = ''
-        self.unique_id = uuid.uuid4()
         self.zookeeper_ips = []
         self.cassandra_ips = []
         self.hv_active = True
@@ -133,6 +133,18 @@ class Midolman(application.Application):
         self.log_dir = '/var/log/midolman' + subdir
         self.runtime_dir = '/run/midolman' + subdir
 
+        if self.cli.exists(self.config_dir + '/host_uuid.properties'):
+            self.unique_id = self.cli.read_from_file(
+                self.config_dir + "/host_uuid.properties").replace(
+                'host_uuid=', '').strip()
+        else:
+            self.unique_id = uuid.uuid4()
+
+        log_dir = '/var/log/midolman' + subdir
+        self.host.log_manager.add_external_log_file(
+            FileLocation(log_dir + '/midolman.log'), self.num_id,
+            '%Y.%m.%d %H:%M:%S.%f')
+
     def print_config(self, indent=0):
         super(Midolman, self).print_config(indent)
         print(('    ' * (indent + 1)) + 'Num-id: ' + self.num_id)
@@ -150,17 +162,6 @@ class Midolman(application.Application):
         self.configurator.configure(self.num_id, self.unique_id,
                                     self.zookeeper_ips, self.cassandra_ips)
         self.cli.rm('/etc/midonet_host_id.properties')
-        subdir = '.' + self.num_id if self.num_id != '' else ''
-        log_dir = '/var/log/midolman' + subdir
-        log_manager.add_external_log_file(
-            FileLocation(log_dir + '/midolman.log'), self.num_id,
-            '%Y.%m.%d %H:%M:%S.%f')
-        log_manager.add_external_log_file(
-            FileLocation(log_dir + '/midolman.event.log'), self.num_id,
-            '%Y.%m.%d %H:%M:%S.%f')
-        log_manager.add_external_log_file(
-            FileLocation(log_dir + '/mm-trace.log'), self.num_id,
-            '%Y.%m.%d %H:%M:%S.%f')
 
     def create_cfg_map(self):
         return {'num_id': self.num_id,
@@ -233,16 +234,23 @@ class Midolman(application.Application):
         near_if_name = vm_host_name + iface
         self.LOG.debug('Binding interface: ' + near_if_name +
                        ' to port ID: ' + port_id)
-        proc = self.host.run_app_command(
-            'bind_port', self, [near_if_name, port_id])
-        stdout, stderr = proc.communicate()
-        self.LOG.debug("--\n" + stdout + "--\n" + stderr + "==")
+        midonet_mm_ctl.bind_port(
+            mn_api_url=version_config.ConfigMap.get_configured_parameter(
+                'param_midonet_api_url'),
+            host_id=str(self.unique_id),
+            port_id=port_id,
+            interface_name=near_if_name)
 
     def disconnect_port(self, port_id):
         self.LOG.debug('Unbinding port ID: ' + port_id)
-        proc = self.host.run_app_command('unbind_port', self, [port_id])
-        stdout, stderr = proc.communicate()
-        self.LOG.debug("--\n" + stdout + "--\n" + stderr + "==")
+        try:
+            midonet_mm_ctl.unbind_port(
+                mn_api_url=version_config.ConfigMap.get_configured_parameter(
+                    'param_midonet_api_url'),
+                host_id=str(self.unique_id),
+                port_id=port_id)
+        except exceptions.ObjectNotFoundException as e:
+            self.LOG.error('Exception unbinding port: ' + str(e))
 
     def control_start(self):
         if self.num_id == '1' or self.num_id == '':
@@ -297,14 +305,6 @@ class Midolman(application.Application):
                 self.cli.rm(pid_file)
 
             self.cli.rm('.mnconf.data')
-
-    def control_bind_port(self, near_if_name, port_id):
-        self.LOG.debug('binding port ' + port_id + ' to ' + near_if_name)
-        return self.cli.cmd(
-            'mm-ctl --bind-port ' + port_id + ' ' + near_if_name).stdout
-
-    def control_unbind_port(self, port_id):
-        return self.cli.cmd('mm-ctl --unbind-port ' + port_id).stdout
 
 
 # noinspection PyUnresolvedReferences

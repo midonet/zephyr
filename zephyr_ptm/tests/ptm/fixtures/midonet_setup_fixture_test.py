@@ -20,6 +20,7 @@ import unittest
 from zephyr.common.cli import LinuxCLI
 from zephyr.common import log_manager
 from zephyr.common.utils import run_unit_test
+from zephyr.midonet import mn_api_utils
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 from zephyr_ptm.ptm.config import version_config
 from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
@@ -72,7 +73,9 @@ class MNAPITest(unittest.TestCase):
             print_json('./underlay-config.json', self.ptm, True, './test-logs')
 
             self.vtm = VirtualTopologyManager(
-                client_api_impl=midonet_setup_fixture.create_midonet_client())
+                client_api_impl=mn_api_utils.create_midonet_client(
+                    version_config.ConfigMap.get_configured_parameter(
+                        'param_midonet_api_url')))
             self.vtm.configure_logging(debug=True)
             self.vtm.read_underlay_config('./underlay-config.json')
 

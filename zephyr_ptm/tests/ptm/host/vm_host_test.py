@@ -19,6 +19,7 @@ import unittest
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
+from zephyr.midonet import mn_api_utils
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.application import midolman
 from zephyr_ptm.ptm.config import version_config
@@ -73,7 +74,9 @@ class VMHostTest(unittest.TestCase):
             print_json('./underlay-config.json', cls.ptm, True, './test-logs')
 
             # Set up virtual topology
-            api = midonet_setup_fixture.create_midonet_client()
+            api = mn_api_utils.create_midonet_client(
+                version_config.ConfigMap.get_configured_parameter(
+                    'param_midonet_api_url'))
             """ :type: MidonetApi"""
 
             tunnel_zone_host_map = {}

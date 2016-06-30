@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import logging
-
+import uuid
 from zephyr.common import cli
 from zephyr.common import echo_server
 from zephyr.common import exceptions
@@ -27,7 +27,7 @@ ECHO_SERVER_TIMEOUT = 3
 
 
 class DirectUnderlayHost(underlay_host.UnderlayHost):
-    def __init__(self, name, overlay,
+    def __init__(self, name, unique_id=None, overlay=None,
                  vm_type='zephyr.vtm.underlay.ipnetns_vm.IPNetnsVM',
                  hypervisor=True, logger=None):
         super(DirectUnderlayHost, self).__init__(name)
@@ -38,6 +38,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         self.vm_type = vm_type
         self.vms = {}
         self.hypervisor = hypervisor
+        self.unique_id = unique_id if unique_id else uuid.uuid4()
         if logger:
             self.LOG = logger
         else:
@@ -58,7 +59,11 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
             raise exceptions.ArgMismatchException(
                 "VM already created: " + name)
 
-        new_vm = vm_class(name, self.overlay, self, logger=self.LOG)
+        new_vm = vm_class(
+            name=name,
+            overlay=self.overlay,
+            hypervisor=self,
+            logger=self.LOG)
         new_vm.vm_startup(ip_addr, mac, gw_ip)
         self.vms[name] = new_vm
         return new_vm

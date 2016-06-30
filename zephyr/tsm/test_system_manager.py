@@ -429,7 +429,7 @@ class TestSystemManager(object):
         self.result_map[suite_name] = result
         return result
 
-    def create_results(self, results_dir='./results', leeway=5):
+    def create_results(self, results_dir='./results'):
         self.LOG.debug("Creating test_results")
         cli = LinuxCLI(priv=False)
         cli.rm(results_dir)
@@ -439,20 +439,6 @@ class TestSystemManager(object):
 
             cli.write_to_file(wfile=results_out_dir + '/results.xml',
                               data=res.to_junit_xml())
+            cli.write_to_file(wfile=results_out_dir + '/results.json',
+                              data=res.to_json())
             self.log_manager.collate_logs(results_out_dir + '/full-logs')
-
-            for tc in res.all_tests():
-                if isinstance(tc, TestCase):
-                    tcname = tc.id().split('.')[-1]
-                    self.LOG.debug("Creating test_results for " + tcname)
-                    cli.mkdir(results_out_dir + '/' + tcname)
-                    self.log_manager.slice_log_files_by_time(
-                        results_out_dir + '/' + tcname,
-                        start_time=(tc.start_time
-                                    if tc.start_time is not None
-                                    else '0.0'),
-                        stop_time=(tc.stop_time
-                                   if tc.start_time is not None
-                                   else '0.0'),
-                        leeway=leeway,
-                        collated_only=True)

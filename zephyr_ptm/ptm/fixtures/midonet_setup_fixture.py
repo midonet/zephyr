@@ -19,15 +19,9 @@ from midonetclient.api import MidonetApi
 import time
 
 from zephyr.common import exceptions
+from zephyr.midonet import mn_api_utils
 from zephyr_ptm.ptm.application.midolman import Midolman
 from zephyr_ptm.ptm.config import version_config
-
-
-def create_midonet_client(
-        base_uri=version_config.ConfigMap.get_configured_parameter(
-            'param_midonet_api_url'),
-        username=None, password=None, project_id=None):
-    return MidonetApi(base_uri, username, password, project_id)
 
 
 def setup_main_tunnel_zone(api, host_ip_map, logger=None):
@@ -135,7 +129,9 @@ class MidonetSetupFixture(object):
             self.LOG.addHandler(logging.StreamHandler())
 
     def setup(self):
-        self.api = create_midonet_client()
+        self.api = mn_api_utils.create_midonet_client(
+            version_config.ConfigMap.get_configured_parameter(
+                'param_midonet_api_url'))
 
         tunnel_zone_host_map = {}
         mm_name_list = []

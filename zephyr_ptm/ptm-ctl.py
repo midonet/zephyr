@@ -19,6 +19,7 @@ import os
 import sys
 import traceback
 
+from zephyr.common import cli
 from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
 from zephyr.common import zephyr_constants
@@ -30,16 +31,17 @@ from zephyr_ptm.ptm import ptm_constants
 # noinspection PyUnresolvedReferences
 def usage(except_obj):
     print('Usage: ' + ptm_constants.CONTROL_CMD_NAME +
-          ' {--startup|--shutdown|--print|--features|--json} '
-          '[--config-file <JSON file>]')
+          ' {--startup|--shutdown|--print|--features|--json}'
+          ' [--config-file <config_file>]' +
+          ' [--underlay-output-file <out_file>]')
     if except_obj is not None:
         raise except_obj
 
 
-def print_json(json_out_file, ptm_imp, debug, log_dir):
+def print_json(output_file, ptm_imp, dbg_on, log_base_dir):
     config_map = {
-        'debug': debug,
-        'log_dir': log_dir,
+        'debug': dbg_on,
+        'log_dir': log_base_dir,
         'ptm_log_file': ptm_imp.log_file_name,
         'underlay_system':
             "zephyr_ptm.ptm.underlay.ptm_underlay_system.PTMUnderlaySystem",
@@ -50,20 +52,20 @@ def print_json(json_out_file, ptm_imp, debug, log_dir):
                 'param_midonet_api_url')
     }
     out_str = json.dumps(config_map)
-    with open(json_out_file, 'w') as fp:
+    with open(output_file, 'w') as fp:
         fp.write(out_str)
 
 
 try:
     arg_map, extra_args = getopt.getopt(
-        sys.argv[1:], 'hdpc:l:fj',
+        sys.argv[1:], 'hdpc:l:fju:',
         ['help', 'debug', 'startup', 'shutdown',
          'print', 'features', 'config-file=',
-         'log-dir=', 'json'])
+         'log-dir=', 'json', 'underlay-output-file='])
 
     # Defaults
     command = ''
-    ptm_config_file = '2z-3c-2edge.json'
+    ptm_config_file = '1z-2c-1edge.json'
     neutron_command = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False
@@ -81,6 +83,8 @@ try:
             command = 'shutdown'
         elif arg in ('-c', '--config-file'):
             ptm_config_file = value
+        elif arg in ('-u', '--underlay-output-file'):
+            json_out_file = value
         elif arg in ('-l', '--log-dir'):
             log_dir = value
         elif arg in ('-p', '--print'):
@@ -115,6 +119,7 @@ try:
         print_json(json_out_file, ptm, debug, log_dir)
     elif command == 'shutdown':
         ptm.shutdown()
+        cli.LinuxCLI().rm(json_out_file)
     elif command == 'print':
         ptm.print_config()
     elif command == 'features':

@@ -86,14 +86,23 @@ class MidonetAPI(application.Application):
         if 'url' in app_cfg.kwargs:
             self.ip = app_cfg.kwargs['url']
 
-    def prepare_config(self, log_manager):
-        self.configurator.configure(self.zookeeper_ips, self.unique_id)
-
         if self.use_cluster:
             log_dir = '/var/log/midonet-cluster'
-            log_manager.add_external_log_file(
+            self.host.log_manager.add_external_log_file(
                 FileLocation(log_dir + '/midonet-cluster.log'), '',
                 '%b %d, %Y %I:%M:%S %p')
+        else:
+            log_dir = '/var/log/tomcat7'
+            self.host.log_manager.add_external_log_file(
+                FileLocation(log_dir + '/catalina.out'), '',
+                '%b %d, %Y %I:%M:%S %p')
+            self.host.log_manager.add_external_log_file(
+                FileLocation(log_dir + '/midonet-api.log'), '',
+                '%Y.%m.%d %H:%M:%S.%f')
+
+    def prepare_config(self, log_manager):
+        self.configurator.configure(self.zookeeper_ips, self.unique_id)
+        if self.use_cluster:
             LinuxCLI().replace_text_in_file(
                 '/etc/midonet-cluster/logback.xml',
                 'root level="INFO"', 'root level="DEBUG"')
@@ -101,13 +110,6 @@ class MidonetAPI(application.Application):
             LinuxCLI().replace_text_in_file(
                 '/usr/share/midonet-api/WEB-INF/classes/logback.xml',
                 'root level="INFO"', 'root level="DEBUG"')
-            log_dir = '/var/log/tomcat7'
-            log_manager.add_external_log_file(
-                FileLocation(log_dir + '/catalina.out'), '',
-                '%b %d, %Y %I:%M:%S %p')
-            log_manager.add_external_log_file(
-                FileLocation(log_dir + '/midonet-api.log'), '',
-                '%Y.%m.%d %H:%M:%S.%f')
 
     def print_config(self, indent=0):
         super(MidonetAPI, self).print_config(indent)

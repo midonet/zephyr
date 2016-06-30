@@ -537,15 +537,23 @@ class NeutronTestCase(TestCase):
                  else {'ip_address': pair[0]}
                  for pair in allowed_address_pairs])
         port = self.api.create_port({'port': port_data})['port']
-        ip_addr = port['fixed_ips'][0]['ip_address']
-        vm = self.vtm.create_vm(name=name,
-                                ip_addr=ip_addr,
-                                mac=port['mac_address'],
-                                gw_ip=gw_ip,
-                                hv_host=hv_host)
-        vm.plugin_vm('eth0', port['id'])
-        self.servers.append((vm, ip_addr, port))
-        return port, vm, ip_addr
+        vm = None
+        try:
+            ip_addr = port['fixed_ips'][0]['ip_address']
+            vm = self.vtm.create_vm(name=name,
+                                    ip_addr=ip_addr,
+                                    mac=port['mac_address'],
+                                    gw_ip=gw_ip,
+                                    hv_host=hv_host)
+
+            vm.plugin_vm('eth0', port['id'])
+            self.servers.append((vm, ip_addr, port))
+            return port, vm, ip_addr
+        except Exception:
+            self.api.delete_port(port['id'])
+            if vm is not None:
+                vm.terminate()
+            raise
 
     def clean_resource(self, items, res_name, del_func):
         for item in items:

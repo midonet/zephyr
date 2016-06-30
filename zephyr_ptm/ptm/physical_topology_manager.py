@@ -15,7 +15,9 @@
 import json
 import logging
 
+from zephyr.common import cli
 from zephyr.common import exceptions
+from zephyr.common import file_location
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import get_class_from_fqn
 from zephyr.common import zephyr_constants
@@ -253,6 +255,12 @@ class PhysicalTopologyManager(object):
                         'Cannot set start order: host ' + name +
                         ' not found')
                 self.host_by_start_order.append([self.hosts_by_name[name]])
+
+        cli.LinuxCLI().cmd('chmod 755 /var/log/neutron')
+        cli.LinuxCLI().cmd('chmod 644 /var/log/neutron/neutron-server.log')
+        self.log_manager.add_external_log_file(
+            file_location.FileLocation('/var/log/neutron/neutron-server.log'),
+            '', '%Y-%m-%d %H:%M:%S.%f')
         self.LOG.debug('**ptm configuration finished**')
 
     def print_config(self, indent=0, logger=None):

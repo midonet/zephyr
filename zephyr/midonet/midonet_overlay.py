@@ -12,28 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.common import cli
-from zephyr.common import exceptions
+from zephyr.midonet import midonet_mm_ctl
 from zephyr.vtm.underlay import overlay_manager
 
 
 class MidonetOverlay(overlay_manager.OverlayManager):
-    def plugin_iface(self, hv_host, iface, port_id):
-        """
-        :type hv_host:
-        zephyr.vtm.underlay.direct_underlay_host.DirectUnderlayHost
-        :type iface: str
-        :type port: str
-        """
-        hv_host.execute(
-            'mm-ctl --bind-port ' + str(port_id) + ' ' + str(iface))
+    def __init__(self, midonet_api_url=None):
+        self.midonet_api_url = midonet_api_url
 
-    def unplug_iface(self, hv_host, port_id):
-        """
-        :type hv_host:
-        zephyr.vtm.underlay.direct_underlay_host.DirectUnderlayHost
-        :type iface: str
-        :type port: str
-        """
-        hv_host.execute(
-            'mm-ctl --unbind-port ' + str(port_id))
+    def plugin_iface(self, host_id, iface, port_id):
+        midonet_mm_ctl.bind_port(
+            mn_api_url=self.midonet_api_url,
+            host_id=host_id, port_id=port_id,
+            interface_name=iface)
+
+    def unplug_iface(self, host_id, port_id):
+        midonet_mm_ctl.unbind_port(
+            mn_api_url=self.midonet_api_url,
+            host_id=host_id, port_id=port_id)

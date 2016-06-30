@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import unittest
 
 from zephyr.tsm.test_case import TestCase
@@ -143,3 +144,74 @@ class TestResult(unittest.TestResult):
 
         ret_xml += '</testsuite>\n'
         return ret_xml
+
+    def to_json(self):
+        num_errors = len(self.errors)
+        num_failures = len(self.failures) + len(self.unexpectedSuccesses)
+        starttime = (self.start_time.isoformat()
+                     if self.start_time is not None
+                     else '0.0')
+        runtime = ('{0:d}.{1:d}'.format(self.run_time.seconds,
+                                        self.run_time.microseconds)
+                   if self.run_time is not None
+                   else '0.0')
+        ts_map = {
+            'testsuite': {
+                'errors': num_errors,
+                'failures': num_failures,
+                'name': self.suite_name,
+                'tests': self.testsRun,
+                'timestamp': starttime,
+                'time': runtime,
+                'testcases': []
+            }}
+
+        tc_type_map = {
+            'success': self.successes,
+            'failure': self.failures,
+            'skipped': self.skipped,
+            'expected_failure': self.expectedFailures,
+            'error': self.errors,
+            'unexpected_success': self.unexpectedSuccesses
+        }
+
+        for ttype, tlist in tc_type_map.iteritems():
+            for tparams in tlist:
+                data = None
+                if isinstance(tparams, tuple):
+                    tc = tparams[0]
+                    data = tparams[1]
+                else:
+                    tc = tparams
+
+                if isinstance(tc, TestCase):
+                    tcclass = '.'.join(tc.id().split('.')[:-1])
+                    tcname = tc.id().split('.')[-1]
+                    tcruntime = (
+                        '{0:d}.{1:d}'.format(
+                            tc.run_time.seconds,
+                            tc.run_time.microseconds)
+                        if tc.run_time is not None
+                        else '0.0')
+                    tc_start = tc.start_time.strftime('%Y-%m-%d %H:%M:%S,%f')
+                    tc_stop = tc.stop_time.strftime('%Y-%m-%d %H:%M:%S,%f')
+                    tc_map = {'type': ttype,
+                              'classname': tcclass,
+                              'name': tcname,
+                              'runtime': tcruntime,
+                              'starttime': tc_start,
+                              'stoptime': tc_stop}
+                    if data:
+                        tc_map['data'] = data
+                    ts_map['testsuite']['testcases'].append(tc_map)
+                elif ttype == 'error':
+                    ts_map['testsuite']['testcases'].append(
+                        {'type': 'error',
+                         'classname': "FrameworkError",
+                         'name': "unknown-framework-error",
+                         'runtime': '0.0',
+                         'starttime': '0.0',
+                         'stoptime': '0.0',
+                         'data': data})
+
+        return json.dumps(ts_map)

@@ -14,6 +14,7 @@
 
 from zephyr.common import exceptions
 from zephyr.common import utils
+from zephyr.common import zephyr_constants as z_con
 from zephyr.vtm.underlay import direct_underlay_host
 from zephyr.vtm.underlay import underlay_system
 
@@ -21,8 +22,10 @@ from zephyr.vtm.underlay import underlay_system
 class DirectUnderlaySystem(underlay_system.UnderlaySystem):
     global_vm_id = 0
 
-    def __init__(self, debug=False, logger=None):
-        super(DirectUnderlaySystem, self).__init__(debug, logger)
+    def __init__(self, debug=False, log_manager=None,
+                 log_file=z_con.ZEPHYR_LOG_FILE_NAME):
+        super(DirectUnderlaySystem, self).__init__(
+            debug, log_manager, log_file)
         self.hosts = {}
         self.overlay_manager = None
         self.features = {
@@ -33,8 +36,16 @@ class DirectUnderlaySystem(underlay_system.UnderlaySystem):
         if 'overlay' not in config_map:
             raise exceptions.ArgMismatchException(
                 "'overlay' MUST be specified in direct underlay config")
-        ov_class = utils.get_class_from_fqn(config_map['overlay'])
-        self.overlay_manager = ov_class()
+        overlay_map = config_map['overlay']
+        if 'class' not in overlay_map:
+            raise exceptions.ArgMismatchException(
+                "'overlay' MUST have a 'class' specified in"
+                " direct underlay config")
+
+        ov_classname = overlay_map['class']
+        ov_classargs = overlay_map.get('args', {})
+        ov_class = utils.get_class_from_fqn(ov_classname)
+        self.overlay_manager = ov_class(**ov_classargs)
 
         if 'hosts' not in config_map:
             raise exceptions.ArgMismatchException(
@@ -50,19 +61,26 @@ class DirectUnderlaySystem(underlay_system.UnderlaySystem):
             if "vm_type" not in host:
                 raise exceptions.ArgMismatchException(
                     "Each host should have a 'vm_type' field.")
+            if "uuid" not in host:
+                raise exceptions.ArgMismatchException(
+                    "Each host should have a 'uuid' field.")
+
             host_type = host["host_type"]
             vm_type = host["vm_type"]
             hypervisor = host.get("hypervisor", True)
+            unique_id = host['uuid']
 
             if host_type == "local":
                 new_host = direct_underlay_host.DirectUnderlayHost(
-                    name=name, overlay=self.overlay_manager,
+                    name=name, unique_id=unique_id,
+                    overlay=self.overlay_manager,
                     vm_type=vm_type, hypervisor=hypervisor,
                     logger=self.LOG)
             elif host_type == "remote":
                 # TODO(micucci): Make this a RemoteUnderlayHost
                 new_host = direct_underlay_host.DirectUnderlayHost(
-                    name=name, overlay=self.overlay_manager,
+                    name=name, unique_id=unique_id,
+                    overlay=self.overlay_manager,
                     vm_type=vm_type, hypervisor=hypervisor,
                     logger=self.LOG)
             else:

@@ -164,9 +164,9 @@ class Host(PTMObject):
             app_id = uuid.uuid4()
             a = app_class(self, app_id)
             """ :type: ptm.application.application.Application"""
-            a.configure(cfg, app_cfg)
             a.configure_logging(log_file_name=self.log_file_name,
                                 debug=self.debug)
+            a.configure(cfg, app_cfg)
             self.applications.append(a)
             app_type = a.get_type()
             if app_type not in self.applications_by_type:

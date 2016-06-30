@@ -13,20 +13,34 @@
 # limitations under the License.
 
 import logging
+from zephyr.common import zephyr_constants as z_con
 
 
 class UnderlaySystem(object):
-    def __init__(self, debug=False, logger=None):
+    def __init__(self, debug=False, log_manager=None,
+                 log_file=z_con.ZEPHYR_LOG_FILE_NAME):
         self.hosts = {}
         self.log_dir = '.'
         self.debug = debug
-        self.log_manager = None
+        self.log_manager = log_manager
         self.hypervisors = {}
-        if logger:
-            self.LOG = logger
+        self.log_file_name = log_file
+        self.log_level = (logging.DEBUG
+                          if debug is True
+                          else logging.INFO)
+
+        if debug is True:
+            self.LOG = self.log_manager.add_tee_logger(
+                file_name=self.log_file_name,
+                name='underlay-system-debug',
+                file_log_level=self.log_level,
+                stdout_log_level=self.log_level)
+            self.LOG.info("Turning on debug logs")
         else:
-            logging.getLogger('vtm-null-root')
-            self.LOG.addHandler(logging.NullHandler())
+            self.LOG = self.log_manager.add_file_logger(
+                file_name=self.log_file_name,
+                name='underlay-system',
+                log_level=self.log_level)
 
     def read_config(self, config_map):
         self.log_dir = config_map.get('log_dir', '.')

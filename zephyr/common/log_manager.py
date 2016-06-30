@@ -319,69 +319,6 @@ class LogManager(object):
                 (FileLocation(dest_path + '/' + new_file_name),
                  date_format, date_pos))
 
-    def slice_log_files_by_time(self, new_dir, start_time=None,
-                                stop_time=None, leeway=0,
-                                collated_only=True,
-                                ext='.slice'):
-        """
-        Slice a log file using timestamps and copy the slice to a new file.
-        The default is to start at the beginning and slice all the way to
-        the end.  The leeway parameter will move the slice to n seconds
-        before start and n seconds after the end time.  The collated_only
-        parameter (defaults to True) will limit the slicing to pre-collated
-        log files only, so calling the 'collate_logs' function is a
-        pre-requisite in this case (False will slice all known logs files).
-        Use 'ext' to set the extension on the slice files (defaults to .slice)
-        :type new_dir: str
-        :type start_time: datetime.datetime
-        :type stop_time: datetime.datetime
-        :type leeway: int
-        :type collated_only: bool
-        :type ext: str
-        :return:
-        """
-
-        concrete_start_time = start_time - datetime.timedelta(seconds=leeway)
-        concrete_stop_time = stop_time + datetime.timedelta(seconds=leeway)
-
-        log_file_set = set()
-        if collated_only:
-            log_file_set = self.collated_log_files
-        else:
-            for f, logger_infos in self.open_log_files.iteritems():
-                (l, fh, df, dp) = logger_infos[0]
-                log_file_set.add((f, df, dp))
-            for f, nid, df, dp in self.external_log_files:
-                log_file_set.add((f, df, dp))
-
-        for f, df, dp in log_file_set:
-            lines_to_write = []
-            if LinuxCLI(priv=False).exists(f.full_path()):
-                with open(f.full_path(), 'r') as cf:
-                    for line in cf.readlines():
-                        dateline = ' '.join(line.split(' ')[dp:dp + 2])
-                        try:
-                            current_time = datetime.datetime.strptime(
-                                dateline, df)
-                            if current_time < concrete_start_time:
-                                continue
-                            elif current_time > concrete_stop_time:
-                                break
-                            else:
-                                lines_to_write.append(line)
-                        except ValueError:
-                            continue
-
-                if len(lines_to_write) != 0:
-                    filename = new_dir + '/' + f.filename + ext
-                    LinuxCLI(priv=False).write_to_file(
-                        filename,
-                        'SLICE OF LOG [' + f.full_path() + '] FROM [' +
-                        str(concrete_start_time) + '] TO [' +
-                        str(concrete_stop_time) + ']\n')
-                    LinuxCLI(priv=False).write_to_file(
-                        filename, ''.join(lines_to_write), append=True)
-
     def _rollover_file(self, file_path, backup_dir=None,
                        date_pattern='%Y%m%d%H%M%S', zip_file=True):
         cli = LinuxCLI(priv=False)

@@ -22,6 +22,7 @@ import os
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
+from zephyr.vtm import neutron_api
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
@@ -30,30 +31,52 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../..'
 class GuestTest(unittest.TestCase):
     lm = None
     vtm = None
+    api = None
+    main_network = None
+    main_subnet = None
 
     @classmethod
     def setUpClass(cls):
         cls.lm = LogManager('test-logs')
-        cls.vtm = VirtualTopologyManager(log_manager=cls.lm)
+        cls.vtm = VirtualTopologyManager(
+            client_api_impl=neutron_api.create_neutron_client())
         cls.vtm.configure_logging(debug=True)
         cls.vtm.read_underlay_config()
+        cls.api = cls.vtm.get_client()
+        """ :type: neutron_client.Client"""
+
+        cls.main_network = cls.api.create_network(
+            {'network': {
+                'name': 'main',
+                'tenant_id': 'admin'}})['network']
+        cls.main_subnet = cls.api.create_subnet(
+            {'subnet': {
+                'name': 'main_sub',
+                'ip_version': 4,
+                'network_id': cls.main_network['id'],
+                'cidr': '192.168.10.0/24',
+                'tenant_id': 'admin'}})['subnet']
 
     def test_host_plugin_vm(self):
         vm = self.vtm.create_vm(
             name='vm1', ip_addr="10.3.3.3")
+        port1def = {'port': {'name': 'port1',
+                             'network_id': self.main_network['id'],
+                             'admin_state_up': True,
+                             'tenant_id': 'admin'}}
+        port1 = self.api.create_port(port1def)['port']
+        ip1 = port1['fixed_ips'][0]['ip_address']
         try:
-            # Normally we get this from network, but just go with a mocked
-            # up port for this test
-            port = "fe6707e3-9c99-4529-b059-aa669d1463bb"
+            vm.plugin_vm('eth0', port1['id'])
 
-            vm.plugin_vm('eth0', port)
+            self.assertTrue(port1['id'] in vm.open_ports_by_id)
 
-            self.assertTrue(port in vm.open_ports_by_id)
+            vm.unplug_vm(port1['id'])
 
-            vm.unplug_vm(port)
-
-            self.assertFalse(port in vm.open_ports_by_id)
+            self.assertFalse(port1['id'] in vm.open_ports_by_id)
         finally:
+            if port1 is not None:
+                self.api.delete_port(port1['id'])
             vm.terminate()
 
     def test_echo_server_tcp(self):
@@ -72,5 +95,9 @@ class GuestTest(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         LinuxCLI().cmd('ip netns del vm1')
+        if cls.main_subnet:
+            cls.api.delete_subnet(cls.main_subnet['id'])
+        if cls.main_network:
+            cls.api.delete_network(cls.main_network['id'])
 
 run_unit_test(GuestTest)

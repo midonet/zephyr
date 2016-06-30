@@ -40,6 +40,7 @@ class VirtualTopologyManager(object):
         """
         :type: zephyr.vtm.underlay.underlay_system.UnderlaySystem
         """
+        self.log_file_name = zephyr_constants.ZEPHYR_LOG_FILE_NAME
 
     def configure_logging(
             self, log_name='vtm-root',
@@ -49,6 +50,7 @@ class VirtualTopologyManager(object):
                           if debug is True
                           else logging.INFO)
         self.debug = debug
+        self.log_file_name = log_file_name
 
         if debug is True:
             self.LOG = self.log_manager.add_tee_logger(
@@ -111,7 +113,8 @@ class VirtualTopologyManager(object):
             und_sys_class = config_map['underlay_system']
         self.underlay_system = utils.get_class_from_fqn(und_sys_class)(
             debug=self.debug,
-            logger=self.LOG)
+            log_manager=self.log_manager,
+            log_file=self.log_file_name)
 
         """ :type: zephyr.vtm.underlay.underlay_system.UnderlaySystem"""
         self.underlay_system.read_config(config_map)

@@ -60,13 +60,14 @@ class Cassandra(application.Application):
         if 'id' in app_cfg.kwargs:
             self.num_id = app_cfg.kwargs['id']
 
+        log_dir = '/var/log/cassandra.' + self.num_id
+        self.host.log_manager.add_external_log_file(
+            FileLocation(log_dir + '/system.log'), self.num_id,
+            '%Y-%m-%d %H:%M:%S,%f', 2)
+
     def prepare_config(self, log_manager):
         self.configurator.configure(
             self.num_id, self.cassandra_ips, self.init_token, self.ip)
-        log_dir = '/var/log/cassandra.' + self.num_id
-        log_manager.add_external_log_file(
-            FileLocation(log_dir + '/system.log'), self.num_id,
-            '%Y-%m-%d %H:%M:%S,%f', 2)
 
     def print_config(self, indent=0):
         super(Cassandra, self).print_config(indent)

@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from midonetclient.api import MidonetApi
 
-class OverlayManager(object):
-    def plugin_iface(self, host_id, iface, port_id):
-        pass
 
-    def unplug_iface(self, host_id, port_id):
-        pass
+def create_midonet_client(
+        base_uri, username=None, password=None, project_id=None):
+    return MidonetApi(base_uri, username, password, project_id)

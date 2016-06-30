@@ -66,10 +66,11 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost):
             "Cannot create a VM inside a VM.")
 
     def plugin_iface(self, iface, port_id):
-        self.overlay.plugin_iface(self.host, self.name + iface, port_id)
+        self.overlay.plugin_iface(self.host.unique_id,
+                                  self.name + iface, port_id)
 
     def unplug_iface(self, port_id):
-        self.overlay.unplug_iface(self.host, port_id)
+        self.overlay.unplug_iface(self.host.unique_id, port_id)
 
     def terminate(self):
         """

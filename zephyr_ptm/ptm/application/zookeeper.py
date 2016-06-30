@@ -74,6 +74,11 @@ class Zookeeper(application.Application):
         if 'id' in app_cfg.kwargs:
             self.num_id = app_cfg.kwargs['id']
 
+        log_dir = '/var/log/zookeeper.' + self.num_id
+        self.host.log_manager.add_external_log_file(
+            FileLocation(log_dir + '/zookeeper.log'), self.num_id,
+            '%Y-%m-%d %H:%M:%S,%f')
+
     def create_cfg_map(self):
         return {'num_id': self.num_id, 'ip': self.ip.to_map()}
 
@@ -83,10 +88,6 @@ class Zookeeper(application.Application):
 
     def prepare_config(self, log_manager):
         self.configurator.configure(self.num_id, self.zookeeper_ips, self.LOG)
-        log_dir = '/var/log/zookeeper.' + self.num_id
-        log_manager.add_external_log_file(
-            FileLocation(log_dir + '/zookeeper.log'), self.num_id,
-            '%Y-%m-%d %H:%M:%S,%f')
 
     def print_config(self, indent=0):
         super(Zookeeper, self).print_config(indent)
