@@ -14,7 +14,7 @@
 
 from zephyr.midonet import mn_api_utils
 from zephyr.tsm import test_case
-from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
+from zephyr_ptm.ptm.config import version_config
 
 
 class TestBasicPing(test_case.TestCase):
@@ -28,7 +28,7 @@ class TestBasicPing(test_case.TestCase):
         cls.api = mn_api_utils.create_midonet_client(
             version_config.ConfigMap.get_configured_parameter(
                 'param_midonet_api_url'))
-        cls.main_bridge = midonet_setup_fixture.setup_main_bridge(cls.api)
+        cls.main_bridge = mn_api_utils.setup_main_bridge(cls.api)
 
     def test_ping_two_vms_same_hv(self):
 

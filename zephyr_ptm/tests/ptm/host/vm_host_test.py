@@ -23,7 +23,6 @@ from zephyr.midonet import mn_api_utils
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.application import midolman
 from zephyr_ptm.ptm.config import version_config
-from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
 from zephyr_ptm.ptm.physical_topology_config import *
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
 
@@ -90,12 +89,12 @@ class VMHostTest(unittest.TestCase):
                         tunnel_zone_host_map[host.name] = (
                             host.interfaces['eth0'].ip_list[0].ip)
                         break
-            midonet_setup_fixture.setup_main_tunnel_zone(
+            mn_api_utils.setup_main_tunnel_zone(
                 api,
                 tunnel_zone_host_map,
                 cls.ptm.LOG)
 
-            cls.main_bridge = midonet_setup_fixture.setup_main_bridge(api)
+            cls.main_bridge = mn_api_utils.setup_main_bridge(api)
             """ :type: Bridge"""
             cls.hypervisor = cls.ptm.hosts_by_name['cmp1']
             hv_app_type = application.APPLICATION_TYPE_HYPERVISOR

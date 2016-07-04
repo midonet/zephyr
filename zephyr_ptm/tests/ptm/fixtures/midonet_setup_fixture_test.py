@@ -23,7 +23,6 @@ from zephyr.common.utils import run_unit_test
 from zephyr.midonet import mn_api_utils
 from zephyr.vtm.virtual_topology_manager import VirtualTopologyManager
 from zephyr_ptm.ptm.config import version_config
-from zephyr_ptm.ptm.fixtures import midonet_setup_fixture
 from zephyr_ptm.ptm import physical_topology_manager
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__)) + '/../../../..'
@@ -83,7 +82,7 @@ class MNAPITest(unittest.TestCase):
             api = self.vtm.get_client()
             """ :type: MidonetApi"""
 
-            self.main_bridge = midonet_setup_fixture.setup_main_bridge(api)
+            self.main_bridge = mn_api_utils.setup_main_bridge(api)
             """ :type: Bridge"""
 
         except (KeyboardInterrupt, Exception):
