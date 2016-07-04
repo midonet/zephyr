@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import operator
-
 from zephyr.common import utils
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
@@ -103,6 +101,7 @@ class TestFWaaSLogging(NeutronTestCase):
             self.assertEqual(0, len(fwaas_logs))
 
     @require_extension("fwaas")
+    @test_case.require_hosts(['cmp1'])
     def test_logging_basic_accept(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
@@ -122,7 +121,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
     @require_extension("fwaas")
-    @test_case.require_topology_feature('compute_hosts', operator.gt, 1)
+    @test_case.require_hosts(['cmp1', 'cmp2'])
     def test_logging_basic_accept_two_computes(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
@@ -140,6 +139,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
     @require_extension("fwaas")
+    @test_case.require_hosts(['cmp1'])
     def test_logging_basic_drop(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
@@ -157,6 +157,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=0, drop=1)
 
     @require_extension("fwaas")
+    @test_case.require_hosts(['cmp1'])
     def test_logging_all(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
@@ -174,6 +175,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
 
     @require_extension("fwaas")
+    @test_case.require_hosts(['cmp1'])
     def test_logging_update_enabled(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
@@ -202,6 +204,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
 
     @require_extension("fwaas")
+    @test_case.require_hosts(['cmp1'])
     def test_logging_two_fw(self):
         (vm1_2, ip1_2, vm2_2,
          ip2_2, fw_2,
@@ -239,6 +242,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=2, drop=1)
 
     @require_extension("fwaas")
+    @test_case.require_hosts(['cmp1'])
     def test_logging_update_event(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
@@ -268,6 +272,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=4, drop=1)
 
     @require_extension("fwaas")
+    @test_case.require_hosts(['cmp1'])
     def test_logging_fail_two_log_res(self):
         log_res = self.create_logging_resource(
             name='fw_logging',
@@ -294,6 +299,7 @@ class TestFWaaSLogging(NeutronTestCase):
         self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=0, drop=1)
 
     @require_extension("fwaas")
+    @test_case.require_hosts(['cmp1'])
     def test_logging_fail_two_fw_loggers(self):
         log_res = self.create_logging_resource(
             name='fw_logging',

@@ -16,6 +16,7 @@ import unittest
 
 from router_peering_utils import L2GWNeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm import test_case
 
 
 class TestRouterPeeringUpdates(L2GWNeutronTestCase):
@@ -23,55 +24,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
+    @test_case.require_hosts(['tun1', 'tun2'])
     def test_peered_routers_router_restart(self):
-        try:
-            self.router_restart()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    @require_extension('extraroute')
-    @require_extension('gateway-device')
-    @require_extension('l2-gateway')
-    @unittest.skip("issue with echo server")
-    def test_peered_routers_add_reboot_vms(self):
-        try:
-            self.add_reboot_vms()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    @require_extension('extraroute')
-    @require_extension('gateway-device')
-    @require_extension('l2-gateway')
-    def test_peered_routers_remove_readd_l2gw(self):
-        try:
-            self.remove_readd_l2gw()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    @require_extension('extraroute')
-    @require_extension('gateway-device')
-    @require_extension('l2-gateway')
-    def test_peered_routers_remove_readd_l2gwconn(self):
-        try:
-            self.remove_readd_l2gwconn()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    @require_extension('extraroute')
-    @require_extension('gateway-device')
-    @require_extension('l2-gateway')
-    def test_peered_routers_update_tunnel_ip(self):
-        try:
-            self.update_tunnel_ip()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    def router_restart(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
         a_net = self.create_network('EAST')
@@ -176,7 +130,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         self.verify_connectivity(vma, ipb)
         self.verify_connectivity(vmb, ipa)
 
-    def add_reboot_vms(self):
+    @require_extension('extraroute')
+    @require_extension('gateway-device')
+    @require_extension('l2-gateway')
+    @unittest.skip("issue with echo server")
+    @test_case.require_hosts(['tun1', 'tun2'])
+    def test_peered_routers_add_reboot_vms(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
         a_net = self.create_network('EAST')
@@ -300,7 +259,11 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         vmb.start_echo_server(ip_addr=ipb)
         self.verify_connectivity(vma, ipb)
 
-    def remove_readd_l2gw(self):
+    @require_extension('extraroute')
+    @require_extension('gateway-device')
+    @require_extension('l2-gateway')
+    @test_case.require_hosts(['tun1', 'tun2'])
+    def test_peered_routers_remove_readd_l2gw(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
         a_net = self.create_network('EAST')
@@ -380,7 +343,11 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         self.verify_connectivity(vma, ipb)
         self.verify_connectivity(vmb, ipa)
 
-    def remove_readd_l2gwconn(self):
+    @require_extension('extraroute')
+    @require_extension('gateway-device')
+    @require_extension('l2-gateway')
+    @test_case.require_hosts(['tun1', 'tun2'])
+    def test_peered_routers_remove_readd_l2gwconn(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
         a_net = self.create_network('EAST')
@@ -458,7 +425,11 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         self.verify_connectivity(vma, ipb)
         self.verify_connectivity(vmb, ipa)
 
-    def update_tunnel_ip(self):
+    @require_extension('extraroute')
+    @require_extension('gateway-device')
+    @require_extension('l2-gateway')
+    @test_case.require_hosts(['tun1', 'tun2'])
+    def test_peered_routers_update_tunnel_ip(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
         a_net = self.create_network('EAST')

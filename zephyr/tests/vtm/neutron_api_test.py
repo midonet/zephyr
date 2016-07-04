@@ -110,16 +110,15 @@ class NeutronAPITest(unittest.TestCase):
             self.vtm.LOG.info("Got port 2 IP: " + str(ip2))
 
             vm1 = self.vtm.create_vm(ip_addr=ip1, mac=port1['mac_address'],
-                                     hv_host='cmp2')
+                                     hv_host='cmp1')
             vm2 = self.vtm.create_vm(ip_addr=ip2, mac=port2['mac_address'],
-                                     hv_host='cmp2')
+                                     hv_host='cmp1')
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
 
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
             self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
-
         finally:
             if vm1 is not None:
                 vm1.terminate()
@@ -164,7 +163,6 @@ class NeutronAPITest(unittest.TestCase):
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
-
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
         finally:

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm import test_case
 from zephyr.vtm import neutron_api
 
 from router_peering_utils import L2GWNeutronTestCase
@@ -41,6 +42,7 @@ class TestRouterPeeringConnectivity(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
+    @test_case.require_hosts(['tun1', 'tun2'])
     def test_peered_routers_large_data(self):
         vm1 = None
         vm2 = None

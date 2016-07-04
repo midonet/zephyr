@@ -17,10 +17,10 @@ import unittest
 from router_peering_utils import L2GWNeutronTestCase
 from zephyr.tsm.neutron_test_case import GuestData
 from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm import test_case
 
 from tests.neutron.features.lbaas.lbaas_test_utils import DEFAULT_POOL_PORT
 from tests.neutron.features.lbaas.lbaas_test_utils import LBaaSTestCase
-
 
 PACKETS_TO_SEND = 20
 EGI = 'external_gateway_info'
@@ -32,141 +32,129 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
     @unittest.skip("failing for unknown reasons: MI-1139")
+    @test_case.require_hosts(['tun1', 'tun2'])
     def test_peered_routers_with_lbaas_members_same_side_az(self):
-        try:
-            a_topo, b_topo = self.connect_through_vtep_router()
+        a_topo, b_topo = self.connect_through_vtep_router()
 
-            self.create_member_net()
-            self.create_lbaas_net()
-            self.create_pinger_net()
-            self.create_lb_router(gw_net_id=a_topo['pub_network']['id'])
+        self.create_member_net()
+        self.create_lbaas_net()
+        self.create_pinger_net()
+        self.create_lb_router(gw_net_id=a_topo['pub_network']['id'])
 
-            poola = self.create_pool(
-                subnet_id=self.topos['main']['lbaas']['subnet']['id'])
+        poola = self.create_pool(
+            subnet_id=self.topos['main']['lbaas']['subnet']['id'])
 
-            vipa = self.create_vip(subnet_id=a_topo['pub_subnet']['id'],
-                                   protocol_port=DEFAULT_POOL_PORT,
-                                   name='poola-vip1',
-                                   pool_id=poola['id'])
-            vms = self.create_member_vms(num_members=2)
-            g1 = vms[0]
-            g2 = vms[1]
+        vipa = self.create_vip(subnet_id=a_topo['pub_subnet']['id'],
+                               protocol_port=DEFAULT_POOL_PORT,
+                               name='poola-vip1',
+                               pool_id=poola['id'])
+        vms = self.create_member_vms(num_members=2)
+        g1 = vms[0]
+        g2 = vms[1]
 
-            g_pinger = self.create_pinger_vm()
+        g_pinger = self.create_pinger_vm()
 
-            self.create_member(pool_id=poola['id'],
-                               ip_addr=g1.ip)
-            self.create_member(pool_id=poola['id'],
-                               ip_addr=g2.ip)
+        self.create_member(pool_id=poola['id'],
+                           ip_addr=g1.ip)
+        self.create_member(pool_id=poola['id'],
+                           ip_addr=g2.ip)
 
-            repliesa = self.send_packets_to_vip(
-                [g1, g2], g_pinger, vipa['address'],
-                num_packets=PACKETS_TO_SEND)
+        repliesa = self.send_packets_to_vip(
+            [g1, g2], g_pinger, vipa['address'],
+            num_packets=PACKETS_TO_SEND)
 
-            self.check_host_replies_against_rr_baseline(
-                [g1, g2], repliesa,
-                total_expected=PACKETS_TO_SEND,
-                identifier="poolA")
-        finally:
-            self.clear_lbaas_data()
-            self.clean_vm_servers()
-            self.clean_topo()
+        self.check_host_replies_against_rr_baseline(
+            [g1, g2], repliesa,
+            total_expected=PACKETS_TO_SEND,
+            identifier="poolA")
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
     @unittest.skip("failing for unknown reasons: MI-1139")
+    @test_case.require_hosts(['tun1', 'tun2'])
     def test_peered_routers_with_lbaas_members_far_side_az(self):
-        try:
-            a_topo, b_topo = self.connect_through_vtep_router()
+        a_topo, b_topo = self.connect_through_vtep_router()
 
-            poola = self.create_pool(
-                subnet_id=a_topo['main_subnet']['id'])
+        poola = self.create_pool(
+            subnet_id=a_topo['main_subnet']['id'])
 
-            vipa = self.create_vip(subnet_id=a_topo['pub_subnet']['id'],
-                                   protocol_port=DEFAULT_POOL_PORT,
-                                   name='poola-vip1',
-                                   pool_id=poola['id'])
+        vipa = self.create_vip(subnet_id=a_topo['pub_subnet']['id'],
+                               protocol_port=DEFAULT_POOL_PORT,
+                               name='poola-vip1',
+                               pool_id=poola['id'])
 
-            g1 = GuestData(*self.create_vm_server(
-                name='m_mn_0',
-                net_id=b_topo['main_network']['id'],
-                gw_ip=b_topo['main_subnet']['gateway_ip']))
-            g2 = GuestData(*self.create_vm_server(
-                name='m_mn_1',
-                net_id=b_topo['main_network']['id'],
-                gw_ip=b_topo['main_subnet']['gateway_ip']))
+        g1 = GuestData(*self.create_vm_server(
+            name='m_mn_0',
+            net_id=b_topo['main_network']['id'],
+            gw_ip=b_topo['main_subnet']['gateway_ip']))
+        g2 = GuestData(*self.create_vm_server(
+            name='m_mn_1',
+            net_id=b_topo['main_network']['id'],
+            gw_ip=b_topo['main_subnet']['gateway_ip']))
 
-            g_pinger = GuestData(*self.create_vm_server(
-                name='p_mn',
-                net_id=a_topo['main_network']['id'],
-                gw_ip=a_topo['main_subnet']['gateway_ip']))
+        g_pinger = GuestData(*self.create_vm_server(
+            name='p_mn',
+            net_id=a_topo['main_network']['id'],
+            gw_ip=a_topo['main_subnet']['gateway_ip']))
 
-            self.create_member(pool_id=poola['id'],
-                               ip_addr=g1.ip)
-            self.create_member(pool_id=poola['id'],
-                               ip_addr=g2.ip)
+        self.create_member(pool_id=poola['id'],
+                           ip_addr=g1.ip)
+        self.create_member(pool_id=poola['id'],
+                           ip_addr=g2.ip)
 
-            repliesa = self.send_packets_to_vip(
-                [g1, g2], g_pinger, vipa['address'],
-                num_packets=PACKETS_TO_SEND)
+        repliesa = self.send_packets_to_vip(
+            [g1, g2], g_pinger, vipa['address'],
+            num_packets=PACKETS_TO_SEND)
 
-            self.check_host_replies_against_rr_baseline(
-                [g1, g2], repliesa,
-                total_expected=PACKETS_TO_SEND,
-                identifier="poolA")
-        finally:
-            self.clean_vm_servers()
-            self.clear_lbaas_data()
-            self.clean_topo()
+        self.check_host_replies_against_rr_baseline(
+            [g1, g2], repliesa,
+            total_expected=PACKETS_TO_SEND,
+            identifier="poolA")
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
     @unittest.skip("failing for unknown reasons: MI-1139")
+    @test_case.require_hosts(['tun1', 'tun2'])
     def test_peered_routers_with_lbaas_members_both_sides_az(self):
-        try:
-            a_topo, b_topo = self.connect_through_vtep_router()
+        a_topo, b_topo = self.connect_through_vtep_router()
 
-            poola = self.create_pool(
-                subnet_id=a_topo['main_subnet']['id'])
+        poola = self.create_pool(
+            subnet_id=a_topo['main_subnet']['id'])
 
-            vipa = self.create_vip(subnet_id=a_topo['pub_subnet']['id'],
-                                   protocol_port=DEFAULT_POOL_PORT,
-                                   name='poola-vip1',
-                                   pool_id=poola['id'])
+        vipa = self.create_vip(subnet_id=a_topo['pub_subnet']['id'],
+                               protocol_port=DEFAULT_POOL_PORT,
+                               name='poola-vip1',
+                               pool_id=poola['id'])
 
-            g1 = GuestData(*self.create_vm_server(
-                name='m_mn_0',
-                net_id=a_topo['main_network']['id'],
-                gw_ip=a_topo['main_subnet']['gateway_ip']))
-            g2 = GuestData(*self.create_vm_server(
-                name='m_mn_1',
-                net_id=b_topo['main_network']['id'],
-                gw_ip=b_topo['main_subnet']['gateway_ip']))
+        g1 = GuestData(*self.create_vm_server(
+            name='m_mn_0',
+            net_id=a_topo['main_network']['id'],
+            gw_ip=a_topo['main_subnet']['gateway_ip']))
+        g2 = GuestData(*self.create_vm_server(
+            name='m_mn_1',
+            net_id=b_topo['main_network']['id'],
+            gw_ip=b_topo['main_subnet']['gateway_ip']))
 
-            g_pinger = GuestData(*self.create_vm_server(
-                name='p_mn',
-                net_id=a_topo['main_network']['id'],
-                gw_ip=a_topo['main_subnet']['gateway_ip']))
+        g_pinger = GuestData(*self.create_vm_server(
+            name='p_mn',
+            net_id=a_topo['main_network']['id'],
+            gw_ip=a_topo['main_subnet']['gateway_ip']))
 
-            self.create_member(pool_id=poola['id'],
-                               ip_addr=g1.ip)
-            self.create_member(pool_id=poola['id'],
-                               ip_addr=g2.ip)
+        self.create_member(pool_id=poola['id'],
+                           ip_addr=g1.ip)
+        self.create_member(pool_id=poola['id'],
+                           ip_addr=g2.ip)
 
-            repliesa = self.send_packets_to_vip(
-                [g1, g2], g_pinger, vipa['address'],
-                num_packets=PACKETS_TO_SEND)
+        repliesa = self.send_packets_to_vip(
+            [g1, g2], g_pinger, vipa['address'],
+            num_packets=PACKETS_TO_SEND)
 
-            self.check_host_replies_against_rr_baseline(
-                [g1, g2], repliesa,
-                total_expected=PACKETS_TO_SEND,
-                identifier="poolA")
-        finally:
-            self.clean_vm_servers()
-            self.clear_lbaas_data()
-            self.clean_topo()
+        self.check_host_replies_against_rr_baseline(
+            [g1, g2], repliesa,
+            total_expected=PACKETS_TO_SEND,
+            identifier="poolA")
 
     def connect_through_vtep_router(self):
         a_cidr = "192.168.20.0/24"

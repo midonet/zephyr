@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 from zephyr.common import exceptions
 from zephyr.midonet import mn_api_utils
 
@@ -27,6 +29,16 @@ def bind_port(mn_api_url, host_id, port_id, interface_name):
     (bind_host.add_host_interface_port()
      .port_id(port_id)
      .interface_name(interface_name).create())
+
+    deadline = time.time() + 10
+
+    new_port = mn_api.get_port(port_id)
+    while not new_port.get_active():
+        if time.time() > deadline:
+            raise exceptions.SubprocessTimeoutException(
+                "Port binding did not finish within 10 seconds")
+        time.sleep(0)
+        new_port = mn_api.get_port(port_id)
 
 
 def unbind_port(mn_api_url, host_id, port_id):

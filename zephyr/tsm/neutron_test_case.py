@@ -57,6 +57,67 @@ class NeutronTestCase(TestCase):
     logging_resources = list()
     firewall_logs = list()
 
+    def __init__(self, method_name='runTest'):
+        super(NeutronTestCase, self).__init__(method_name)
+        self.main_subnet = None
+        self.pub_network = None
+        self.pub_subnet = None
+        self.init_networks = True
+
+    @classmethod
+    def _prepare_class(cls, vtm, test_case_logger=logging.getLogger()):
+        super(NeutronTestCase, cls)._prepare_class(vtm, test_case_logger)
+
+        cls.api = cls.vtm.get_client()
+        """ :type: neutron_client.Client """
+
+        ext_list = cls.api.list_extensions()['extensions']
+        cls.api_extension_map = {v['alias']: v for v in ext_list}
+
+    def run(self, result=None):
+        """
+        Special run override to make sure to set up neutron data
+        prior to running the test case function.
+        """
+        try:
+            if self.init_networks is True:
+                self.init_main_pub_networks()
+            super(NeutronTestCase, self).run(result)
+        finally:
+            self.clean_vm_servers()
+            self.clean_topo()
+
+    def init_main_pub_networks(self):
+        self.LOG.debug(
+            "Initializing Main and Public Networks")
+        self.main_network = self.create_network('main')
+        self.main_subnet = self.create_subnet(
+            'main_sub', net_id=self.main_network['id'], cidr=MAIN_NET_CIDR)
+        self.pub_network = self.create_network('public', external=True)
+        self.pub_subnet = self.create_subnet(
+            'public_sub', net_id=self.pub_network['id'], cidr=PUB_NET_CIDR)
+        self.public_router = self.create_router(
+            'main_pub_router', pub_net_id=self.pub_network['id'],
+            priv_sub_ids=[self.main_subnet['id']])
+
+    def verify_tcp_connectivity(self, vm, dest_ip, dest_port):
+        echo_response = vm.send_echo_request(dest_ip=dest_ip,
+                                             dest_port=dest_port)
+        self.assertEqual('ping:echo-reply', echo_response)
+
+    def verify_connectivity(self, vm, dest_ip, count=2):
+        self.assertTrue(vm.ping(target_ip=dest_ip, count=count, timeout=20))
+
+        for i in range(0, count):
+            echo_response = vm.send_echo_request(dest_ip=dest_ip)
+            self.assertEqual('ping:echo-reply', echo_response)
+
+            # TODO(micucci): Fix UDP
+            # for i in range(0, count):
+            #     echo_response = vm.send_echo_request(dest_ip=dest_ip,
+            #                                          protocol='udp')
+            #     self.assertEqual('ping:echo-reply', echo_response)
+
     def clean_topo(self):
         topo_info = \
             [(self.sgrs, 'security group rule',
@@ -87,6 +148,386 @@ class NeutronTestCase(TestCase):
 
         for (items, res_name, del_func) in topo_info:
             self.clean_resource(items, res_name, del_func)
+
+    def clean_resource(self, items, res_name, del_func):
+        for item in items:
+            try:
+                self.LOG.debug('Deleting ' + res_name + ' ' + str(item))
+                if isinstance(item, basestring):
+                    del_func(item)
+                else:
+                    del_func(*item)
+            except Exception:
+                traceback.print_exc()
+        if res_name != 'router route':
+            del items[:]
+
+    # TODO(micucci): Change this to use the GuestData namedtuple
+    def cleanup_vms(self, vm_port_list):
+        """
+        :type vm_port_list: list[(Guest, port)]
+        """
+        for vm, port in vm_port_list:
+            try:
+                self.LOG.debug('Shutting down vm on port: ' + str(port))
+                if vm is not None:
+                    vm.stop_capture(on_iface='eth0')
+                    if port is not None:
+                        vm.unplug_vm(port['id'])
+                if port is not None:
+                    self.api.delete_port(port['id'])
+            finally:
+                if vm is not None:
+                    vm.terminate()
+
+    def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
+                         allowed_address_pairs=None, hv_host=None,
+                         port_security_enabled=True):
+        """
+        :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
+        """
+        port_data = {'name': name,
+                     'network_id': net_id,
+                     'admin_state_up': True,
+                     'port_security_enabled': port_security_enabled,
+                     'tenant_id': 'admin'}
+        if sgs:
+            port_data['security_groups'] = sgs
+        if allowed_address_pairs:
+            port_data['allowed_address_pairs'] = (
+                [{'ip_address': pair[0],
+                  'mac_address': pair[1]} if len(pair) > 1
+                 else {'ip_address': pair[0]}
+                 for pair in allowed_address_pairs])
+        port = self.api.create_port({'port': port_data})['port']
+        vm = None
+        try:
+            ip_addr = port['fixed_ips'][0]['ip_address']
+            vm = self.vtm.create_vm(name=name,
+                                    ip_addr=ip_addr,
+                                    mac=port['mac_address'],
+                                    gw_ip=gw_ip,
+                                    hv_host=hv_host)
+
+            vm.plugin_vm('eth0', port['id'])
+            self.servers.append((vm, ip_addr, port))
+            return port, vm, ip_addr
+        except Exception:
+            self.api.delete_port(port['id'])
+            if vm is not None:
+                vm.terminate()
+            raise
+
+    def clean_vm_servers(self):
+        for (vm, ip_addr, port) in self.servers:
+            try:
+                self.LOG.debug('Deleting server ' + str((vm, ip_addr, port)))
+                vm.stop_echo_server(ip_addr=ip_addr)
+                self.cleanup_vms([(vm, port)])
+            except Exception:
+                traceback.print_exc()
+        del self.servers[:]
+
+    def create_security_group(self, name, tenant_id='admin'):
+        sg_data = {'name': name,
+                   'tenant_id': tenant_id}
+        sg = self.api.create_security_group({'security_group': sg_data})
+        self.LOG.debug('Created security group: ' + str(sg))
+        self.sgs.append(sg['security_group']['id'])
+        return sg['security_group']
+
+    def delete_security_group(self, sg_id):
+        self.sgs.remove(sg_id)
+        self.api.delete_security_group(sg_id)
+
+    def create_security_group_rule(self, sg_id, remote_group_id=None,
+                                   tenant_id='admin', direction='ingress',
+                                   protocol=None, port_range_min=None,
+                                   port_range_max=None, ethertype='IPv4',
+                                   remote_ip_prefix=None):
+        sgr_data = {'security_group_id': sg_id,
+                    'remote_group_id': remote_group_id,
+                    'direction': direction,
+                    'protocol': protocol,
+                    'port_range_min': port_range_min,
+                    'port_range_max': port_range_max,
+                    'ethertype': ethertype,
+                    'remote_ip_prefix': remote_ip_prefix,
+                    'tenant_id': tenant_id}
+        sgr = self.api.create_security_group_rule(
+            {'security_group_rule': sgr_data})
+        self.LOG.debug('Created security group rule: ' + str(sgr))
+        self.sgrs.append(sgr['security_group_rule']['id'])
+        return sgr['security_group_rule']
+
+    def delete_security_group_rule(self, sgr_id):
+        self.sgrs.remove(sgr_id)
+        self.api.delete_security_group_rule(sgr_id)
+
+    def create_floating_ip(self, pub_net_id, port_id=None, tenant_id='admin'):
+        fip_data = {
+            'tenant_id': tenant_id,
+            'floating_network_id': pub_net_id}
+        if port_id:
+            fip_data['port_id'] = port_id
+        fip = self.api.create_floatingip({'floatingip': fip_data})
+        self.fips.append(fip['floatingip']['id'])
+        self.LOG.debug('Created Neutron FIP: ' + str(fip))
+        return fip['floatingip']
+
+    def update_floating_ip(self, fip_id,
+                           pub_net_id=None, port_id=None):
+        fip_data = {}
+        if pub_net_id:
+            fip_data['floating_network_id'] = pub_net_id
+        if port_id:
+            fip_data['port_id'] = port_id
+        fip = self.api.update_floatingip(fip_id, {'floatingip': fip_data})
+        self.LOG.debug('Updated Neutron FIP: ' + str(fip))
+        return fip['floatingip']
+
+    def delete_floating_ip(self, fip_id):
+        self.fips.remove(fip_id)
+        self.api.delete_floatingip(fip_id)
+
+    def create_port(self, name, net_id, tenant_id='admin', host=None,
+                    host_iface=None, sub_id=None, ip_addr=None, mac=None,
+                    port_security_enabled=True, device_owner=None,
+                    device_id=None, sg_ids=None, allowed_address_pairs=None):
+        port_data = {'name': name,
+                     'network_id': net_id,
+                     'port_security_enabled': port_security_enabled,
+                     'tenant_id': tenant_id}
+        if host:
+            port_data['binding:host_id'] = host
+        if host_iface:
+            port_data['binding:profile'] = {'interface_name': host_iface}
+        if ip_addr and sub_id:
+            port_data['fixed_ips'] = [{'subnet_id': sub_id,
+                                       'ip_address': ip_addr}]
+        elif ip_addr:
+            port_data['fixed_ips'] = [{'ip_address': ip_addr}]
+        if device_owner:
+            port_data['device_owner'] = device_owner
+        if device_id:
+            port_data['device_id'] = device_id
+        if mac:
+            port_data['mac_address'] = mac
+        if sg_ids:
+            port_data['security_groups'] = sg_ids
+        if allowed_address_pairs:
+            port_data['allowed_address_pairs'] = (
+                [{'ip_address': pair[0],
+                  'mac_address': pair[1]} if len(pair) > 1
+                 else {'ip_address': pair[0]}
+                 for pair in allowed_address_pairs])
+
+        port = self.api.create_port({'port': port_data})
+        self.nports.append(port['port']['id'])
+        self.LOG.debug('Created Neutron port: ' + str(port))
+        return port['port']
+
+    def delete_port(self, port_id):
+        self.nports.remove(port_id)
+        self.api.delete_port(port_id)
+
+    def create_network(self, name, admin_state_up=True, tenant_id='admin',
+                       external=False, uplink=False,
+                       port_security_enabled=True):
+        net_data = {'name': 'net_' + name,
+                    'admin_state_up': admin_state_up,
+                    'tenant_id': tenant_id}
+        if external:
+            net_data['router:external'] = True
+        if uplink:
+            net_data['provider:network_type'] = 'uplink'
+        if not port_security_enabled:
+            net_data['port_security_enabled'] = False
+
+        net = self.api.create_network({'network': net_data})
+        self.nnets.append(net['network']['id'])
+        self.LOG.debug('Created Neutron network: ' + str(net))
+        return net['network']
+
+    def delete_network(self, net_id):
+        self.nnets.remove(net_id)
+        self.api.delete_network(net_id)
+
+    def create_subnet(self, name, net_id, cidr, tenant_id='admin',
+                      enable_dhcp=True):
+        sub_data = {'name': 'sub_' + name,
+                    'network_id': net_id,
+                    'ip_version': 4,
+                    'enable_dhcp': enable_dhcp,
+                    'cidr': cidr,
+                    'tenant_id': tenant_id}
+        sub = self.api.create_subnet({'subnet': sub_data})
+        self.nsubs.append(sub['subnet']['id'])
+        self.LOG.debug('Created Neutron subnet: ' + str(sub))
+        return sub['subnet']
+
+    def delete_subnet(self, sub_id):
+        self.nsubs.remove(sub_id)
+        self.api.delete_subnet(sub_id)
+
+    def create_router(self, name, tenant_id='admin', pub_net_id=None,
+                      admin_state_up=True, priv_sub_ids=list()):
+        router_data = {'name': name,
+                       'admin_state_up': admin_state_up,
+                       'tenant_id': tenant_id}
+        if pub_net_id:
+            router_data['external_gateway_info'] = {'network_id': pub_net_id}
+        router = self.api.create_router({'router': router_data})['router']
+        for sub_id in priv_sub_ids:
+            self.create_router_interface(router['id'], sub_id=sub_id)
+        self.nrouters.append(router['id'])
+        self.LOG.debug('Created Neutron router: ' + str(router))
+        return router
+
+    def delete_router(self, rid):
+        self.nrouters.remove(rid)
+        self.api.delete_router(rid)
+
+    def create_router_interface(self, router_id, port_id=None, sub_id=None):
+        data = {}
+        if port_id:
+            data = {'port_id': port_id}
+        elif sub_id:
+            data = {'subnet_id': sub_id}
+        iface = self.api.add_interface_router(router_id, data)
+        self.nr_ifaces.append((router_id, iface))
+        self.LOG.debug('Added Neutron interface: ' + str(iface) +
+                       ' to router: ' + str(router_id))
+        return iface
+
+    def remove_router_interface(self, router_id, iface):
+        self.nr_ifaces.remove((router_id, iface))
+        self.nports.remove(iface['port_id'])
+        self.api.remove_interface_router(router_id, iface)
+
+    def remove_interface_router(self, rid, iface):
+        if iface['port_id'] in self.nports:
+            self.nports.remove(iface['port_id'])
+        self.api.remove_interface_router(rid, iface)
+
+    def add_routes(self, rid, route_dest_gw_pairs):
+        if 'extraroute' in self.api_extension_map:
+            route_list = []
+            for route_pair in route_dest_gw_pairs:
+                route_dest = route_pair[0]
+                route_gw = route_pair[1]
+                route_list.append({'destination': route_dest,
+                                   'nexthop': route_gw})
+            new_router = self.api.update_router(
+                rid,
+                {'router': {'routes': route_list}})['router']
+            self.LOG.info('Added routes to router: ' +
+                          str(new_router))
+            return new_router
+        return None
+
+    def clear_route(self, rid):
+        if 'extraroute' in self.api_extension_map:
+            self.api.update_router(rid, {'router': {'routes': None}})
+
+    def create_edge_router(self, pub_subnets=None, router_host_name='router1',
+                           edge_host_name='edge1', edge_iface_name='eth1',
+                           edge_subnet_cidr='172.16.2.0/24', gateway=True,
+                           gateway_networks=None):
+
+        if not pub_subnets:
+            pub_subnets = [self.pub_subnet]
+
+        if not gateway_networks:
+            gateway_networks = [self.pub_network]
+
+        # Create an uplink network (Midonet-specific extension used for
+        # provider:network_type)
+        edge_network = self.create_network(edge_host_name, uplink=True)
+
+        # Create uplink network's subnet
+        edge_ip = '.'.join(edge_subnet_cidr.split('.')[:-1]) + '.2'
+        edge_gw = '.'.join(edge_subnet_cidr.split('.')[:-1]) + '.1'
+
+        edge_subnet = self.create_subnet(edge_host_name, edge_network['id'],
+                                         edge_subnet_cidr, enable_dhcp=False)
+
+        # Create edge router
+        edge_router = self.create_router('edge_router')
+
+        # Create "port" on router by creating a port on the special uplink
+        # network bound to the physical interface on the physical host,
+        # and then linking that network port to the router's interface.
+        edge_port1 = self.create_port(edge_host_name, edge_network['id'],
+                                      host=edge_host_name,
+                                      host_iface=edge_iface_name,
+                                      sub_id=edge_subnet['id'],
+                                      ip_addr=edge_ip)
+        # Bind port to edge router
+        if_list = [self.create_router_interface(
+            edge_router['id'], port_id=edge_port1['id'])]
+
+        if gateway:
+            for sub in pub_subnets:
+                # Bind public network to edge router
+                if_list.append(self.create_router_interface(
+                    edge_router['id'], sub_id=sub['id']))
+        else:
+            for net in gateway_networks:
+                pub_port = self.create_port(net['name'] + '_gwport',
+                                            net['id'])
+                if_list.append(self.create_router_interface(
+                    edge_router['id'],
+                    port_id=pub_port['id']))
+
+        # Add the default route
+        edge_router = self.api.update_router(
+            edge_router['id'],
+            {'router': {'routes': [{'destination': '0.0.0.0/0',
+                                    'nexthop': edge_gw}]}})['router']
+        self.LOG.info('Added default route to edge router: ' +
+                      str(edge_router))
+
+        router_host = self.vtm.get_host(router_host_name)
+        """ :type: Host"""
+        for sub in pub_subnets:
+            router_host.add_route(
+                IP.make_ip(sub['cidr']), IP(edge_ip, '24'))
+        self.LOG.info('Added return routes to host router')
+
+        return EdgeData(
+            neutron_api.NetData(
+                edge_network,
+                edge_subnet),
+            neutron_api.RouterData(edge_router, if_list))
+
+    def delete_edge_router(self, edge_data):
+        """
+        :type edge_data: EdgeData
+        :return:
+        """
+        # Create a public network
+        if edge_data:
+            if edge_data.router:
+                er = edge_data.router.router
+                self.LOG.debug("Removing routes from router: " + str(er))
+                self.clear_route(er['id'])
+                if edge_data.router.if_list:
+                    for iface in edge_data.router.if_list:
+                        self.LOG.debug("Removing interface: " +
+                                       str(iface) + " from router: " +
+                                       str(er))
+                        self.remove_interface_router(er['id'], iface)
+                self.LOG.debug("Deleting router: " + str(er))
+                self.delete_router(er['id'])
+            if edge_data.edge_net.subnet:
+                es = edge_data.edge_net.subnet
+                self.LOG.debug("Deleting subnet: " + str(es))
+                self.delete_subnet(es['id'])
+            if edge_data.edge_net.network:
+                en = edge_data.edge_net.network
+                self.LOG.debug("Deleting network: " + str(en))
+                self.delete_network(en['id'])
 
     def add_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
@@ -151,46 +592,6 @@ class NeutronTestCase(TestCase):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/bgp-peers.json/')
         curl_delete(curl_url + bgp_peer_id)
-
-    def create_security_group(self, name, tenant_id='admin'):
-        sg_data = {'name': name,
-                   'tenant_id': tenant_id}
-        sg = self.api.create_security_group({'security_group': sg_data})
-        self.LOG.debug('Created security group: ' + str(sg))
-        self.sgs.append(sg['security_group']['id'])
-        return sg['security_group']
-
-    def delete_security_group(self, sg_id):
-        self.sgs.remove(sg_id)
-        self.api.delete_security_group(sg_id)
-
-    def create_security_group_rule(self, sg_id, remote_group_id=None,
-                                   tenant_id='admin', direction='ingress',
-                                   protocol=None, port_range_min=None,
-                                   port_range_max=None, ethertype='IPv4',
-                                   remote_ip_prefix=None):
-        sgr_data = {'security_group_id': sg_id,
-                    'remote_group_id': remote_group_id,
-                    'direction': direction,
-                    'protocol': protocol,
-                    'port_range_min': port_range_min,
-                    'port_range_max': port_range_max,
-                    'ethertype': ethertype,
-                    'remote_ip_prefix': remote_ip_prefix,
-                    'tenant_id': tenant_id}
-        sgr = self.api.create_security_group_rule(
-            {'security_group_rule': sgr_data})
-        self.LOG.debug('Created security group rule: ' + str(sgr))
-        self.sgrs.append(sgr['security_group_rule']['id'])
-        return sgr['security_group_rule']
-
-    def delete_fpr(self, fw_policy_id, fw_rule_id):
-        data = {"firewall_rule_id": fw_rule_id}
-        self.api.firewall_policy_remove_rule(fw_policy_id, data)
-
-    def delete_security_group_rule(self, sgr_id):
-        self.sgrs.remove(sgr_id)
-        self.api.delete_security_group_rule(sgr_id)
 
     def create_remote_mac_entry(self, ip, mac, segment_id, gwdev_id):
         curl_url = neutron_api.get_neutron_api_url(self.api)
@@ -352,6 +753,10 @@ class NeutronTestCase(TestCase):
         self.fwps.remove(fw_id)
         self.api.delete_firewall_policy(fw_id)
 
+    def delete_fpr(self, fw_policy_id, fw_rule_id):
+        data = {"firewall_rule_id": fw_rule_id}
+        self.api.firewall_policy_remove_rule(fw_policy_id, data)
+
     # TODO(Joe): Move to firewall specific helper file
     def create_firewall_rule(self, source_ip=None, dest_ip=None,
                              src_port=None, dest_port=None,
@@ -498,411 +903,6 @@ class NeutronTestCase(TestCase):
 
     def remove_firewall_logs(self, id_tuple):
         self.delete_firewall_log(*id_tuple)
-
-    def verify_tcp_connectivity(self, vm, dest_ip, dest_port):
-        echo_response = vm.send_echo_request(dest_ip=dest_ip,
-                                             dest_port=dest_port)
-        self.assertEqual('ping:echo-reply', echo_response)
-
-    def verify_connectivity(self, vm, dest_ip, count=2):
-        self.assertTrue(vm.ping(target_ip=dest_ip, count=count, timeout=20))
-
-        for i in range(0, count):
-            echo_response = vm.send_echo_request(dest_ip=dest_ip)
-            self.assertEqual('ping:echo-reply', echo_response)
-
-        # TODO(micucci): Fix UDP
-        # for i in range(0, count):
-        #     echo_response = vm.send_echo_request(dest_ip=dest_ip,
-        #                                          protocol='udp')
-        #     self.assertEqual('ping:echo-reply', echo_response)
-
-    def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
-                         allowed_address_pairs=None, hv_host=None,
-                         port_security_enabled=True):
-        """
-        :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
-        """
-        port_data = {'name': name,
-                     'network_id': net_id,
-                     'admin_state_up': True,
-                     'port_security_enabled': port_security_enabled,
-                     'tenant_id': 'admin'}
-        if sgs:
-            port_data['security_groups'] = sgs
-        if allowed_address_pairs:
-            port_data['allowed_address_pairs'] = (
-                [{'ip_address': pair[0],
-                  'mac_address': pair[1]} if len(pair) > 1
-                 else {'ip_address': pair[0]}
-                 for pair in allowed_address_pairs])
-        port = self.api.create_port({'port': port_data})['port']
-        vm = None
-        try:
-            ip_addr = port['fixed_ips'][0]['ip_address']
-            vm = self.vtm.create_vm(name=name,
-                                    ip_addr=ip_addr,
-                                    mac=port['mac_address'],
-                                    gw_ip=gw_ip,
-                                    hv_host=hv_host)
-
-            vm.plugin_vm('eth0', port['id'])
-            self.servers.append((vm, ip_addr, port))
-            return port, vm, ip_addr
-        except Exception:
-            self.api.delete_port(port['id'])
-            if vm is not None:
-                vm.terminate()
-            raise
-
-    def clean_resource(self, items, res_name, del_func):
-        for item in items:
-            try:
-                self.LOG.debug('Deleting ' + res_name + ' ' + str(item))
-                if isinstance(item, basestring):
-                    del_func(item)
-                else:
-                    del_func(*item)
-            except Exception:
-                traceback.print_exc()
-        if res_name != 'router route':
-            del items[:]
-
-    def clean_vm_servers(self):
-        for (vm, ip_addr, port) in self.servers:
-            try:
-                self.LOG.debug('Deleting server ' + str((vm, ip_addr, port)))
-                vm.stop_echo_server(ip_addr=ip_addr)
-                self.cleanup_vms([(vm, port)])
-            except Exception:
-                traceback.print_exc()
-        del self.servers[:]
-
-    def clear_route(self, rid):
-        if 'extraroute' in self.api_extension_map:
-            self.api.update_router(rid, {'router': {'routes': None}})
-
-    def add_routes(self, rid, route_dest_gw_pairs):
-        if 'extraroute' in self.api_extension_map:
-            route_list = []
-            for route_pair in route_dest_gw_pairs:
-                route_dest = route_pair[0]
-                route_gw = route_pair[1]
-                route_list.append({'destination': route_dest,
-                                   'nexthop': route_gw})
-            new_router = self.api.update_router(
-                rid,
-                {'router': {'routes': route_list}})['router']
-            self.LOG.info('Added routes to router: ' +
-                          str(new_router))
-            return new_router
-        return None
-
-    def remove_interface_router(self, rid, iface):
-        if iface['port_id'] in self.nports:
-            self.nports.remove(iface['port_id'])
-        self.api.remove_interface_router(rid, iface)
-
-    def create_floating_ip(self, pub_net_id, port_id=None, tenant_id='admin'):
-        fip_data = {
-            'tenant_id': tenant_id,
-            'floating_network_id': pub_net_id}
-        if port_id:
-            fip_data['port_id'] = port_id
-        fip = self.api.create_floatingip({'floatingip': fip_data})
-        self.fips.append(fip['floatingip']['id'])
-        self.LOG.debug('Created Neutron FIP: ' + str(fip))
-        return fip['floatingip']
-
-    def update_floating_ip(self, fip_id,
-                           pub_net_id=None, port_id=None):
-        fip_data = {}
-        if pub_net_id:
-            fip_data['floating_network_id'] = pub_net_id
-        if port_id:
-            fip_data['port_id'] = port_id
-        fip = self.api.update_floatingip(fip_id, {'floatingip': fip_data})
-        self.LOG.debug('Updated Neutron FIP: ' + str(fip))
-        return fip['floatingip']
-
-    def delete_floating_ip(self, fip_id):
-        self.fips.remove(fip_id)
-        self.api.delete_floatingip(fip_id)
-
-    def create_port(self, name, net_id, tenant_id='admin', host=None,
-                    host_iface=None, sub_id=None, ip_addr=None, mac=None,
-                    port_security_enabled=True, device_owner=None,
-                    device_id=None, sg_ids=None, allowed_address_pairs=None):
-        port_data = {'name': name,
-                     'network_id': net_id,
-                     'port_security_enabled': port_security_enabled,
-                     'tenant_id': tenant_id}
-        if host:
-            port_data['binding:host_id'] = host
-        if host_iface:
-            port_data['binding:profile'] = {'interface_name': host_iface}
-        if ip_addr and sub_id:
-            port_data['fixed_ips'] = [{'subnet_id': sub_id,
-                                       'ip_address': ip_addr}]
-        elif ip_addr:
-            port_data['fixed_ips'] = [{'ip_address': ip_addr}]
-        if device_owner:
-            port_data['device_owner'] = device_owner
-        if device_id:
-            port_data['device_id'] = device_id
-        if mac:
-            port_data['mac_address'] = mac
-        if sg_ids:
-            port_data['security_groups'] = sg_ids
-        if allowed_address_pairs:
-            port_data['allowed_address_pairs'] = (
-                [{'ip_address': pair[0],
-                  'mac_address': pair[1]} if len(pair) > 1
-                 else {'ip_address': pair[0]}
-                 for pair in allowed_address_pairs])
-
-        port = self.api.create_port({'port': port_data})
-        self.nports.append(port['port']['id'])
-        self.LOG.debug('Created Neutron port: ' + str(port))
-        return port['port']
-
-    def delete_port(self, port_id):
-        self.nports.remove(port_id)
-        self.api.delete_port(port_id)
-
-    def create_network(self, name, admin_state_up=True, tenant_id='admin',
-                       external=False, uplink=False,
-                       port_security_enabled=True):
-        net_data = {'name': 'net_' + name,
-                    'admin_state_up': admin_state_up,
-                    'tenant_id': tenant_id}
-        if external:
-            net_data['router:external'] = True
-        if uplink:
-            net_data['provider:network_type'] = 'uplink'
-        if not port_security_enabled:
-            net_data['port_security_enabled'] = False
-
-        net = self.api.create_network({'network': net_data})
-        self.nnets.append(net['network']['id'])
-        self.LOG.debug('Created Neutron network: ' + str(net))
-        return net['network']
-
-    def delete_network(self, net_id):
-        self.nnets.remove(net_id)
-        self.api.delete_network(net_id)
-
-    def create_subnet(self, name, net_id, cidr, tenant_id='admin',
-                      enable_dhcp=True):
-        sub_data = {'name': 'sub_' + name,
-                    'network_id': net_id,
-                    'ip_version': 4,
-                    'enable_dhcp': enable_dhcp,
-                    'cidr': cidr,
-                    'tenant_id': tenant_id}
-        sub = self.api.create_subnet({'subnet': sub_data})
-        self.nsubs.append(sub['subnet']['id'])
-        self.LOG.debug('Created Neutron subnet: ' + str(sub))
-        return sub['subnet']
-
-    def delete_subnet(self, sub_id):
-        self.nsubs.remove(sub_id)
-        self.api.delete_subnet(sub_id)
-
-    def create_router_interface(self, router_id, port_id=None, sub_id=None):
-        data = {}
-        if port_id:
-            data = {'port_id': port_id}
-        elif sub_id:
-            data = {'subnet_id': sub_id}
-        iface = self.api.add_interface_router(router_id, data)
-        self.nr_ifaces.append((router_id, iface))
-        self.LOG.debug('Added Neutron interface: ' + str(iface) +
-                       ' to router: ' + str(router_id))
-        return iface
-
-    def remove_router_interface(self, router_id, iface):
-        self.nr_ifaces.remove((router_id, iface))
-        self.nports.remove(iface['port_id'])
-        self.api.remove_interface_router(router_id, iface)
-
-    def create_router(self, name, tenant_id='admin', pub_net_id=None,
-                      admin_state_up=True, priv_sub_ids=list()):
-        router_data = {'name': name,
-                       'admin_state_up': admin_state_up,
-                       'tenant_id': tenant_id}
-        if pub_net_id:
-            router_data['external_gateway_info'] = {'network_id': pub_net_id}
-        router = self.api.create_router({'router': router_data})['router']
-        for sub_id in priv_sub_ids:
-            self.create_router_interface(router['id'], sub_id=sub_id)
-        self.nrouters.append(router['id'])
-        self.LOG.debug('Created Neutron router: ' + str(router))
-        return router
-
-    def delete_router(self, rid):
-        self.nrouters.remove(rid)
-        self.api.delete_router(rid)
-
-    def __init__(self, method_name='runTest'):
-        super(NeutronTestCase, self).__init__(method_name)
-        self.main_subnet = None
-        self.pub_network = None
-        self.pub_subnet = None
-        self.init_networks = True
-
-    @classmethod
-    def _prepare_class(cls, vtm, test_case_logger=logging.getLogger()):
-        super(NeutronTestCase, cls)._prepare_class(vtm, test_case_logger)
-
-        cls.api = cls.vtm.get_client()
-        """ :type: neutron_client.Client """
-
-        ext_list = cls.api.list_extensions()['extensions']
-        cls.api_extension_map = {v['alias']: v for v in ext_list}
-
-    def init_main_pub_networks(self):
-        self.LOG.debug(
-            "Initializing Main and Public Networks")
-        self.main_network = self.create_network('main')
-        self.main_subnet = self.create_subnet(
-            'main_sub', net_id=self.main_network['id'], cidr=MAIN_NET_CIDR)
-        self.pub_network = self.create_network('public', external=True)
-        self.pub_subnet = self.create_subnet(
-            'public_sub', net_id=self.pub_network['id'], cidr=PUB_NET_CIDR)
-        self.public_router = self.create_router(
-            'main_pub_router', pub_net_id=self.pub_network['id'],
-            priv_sub_ids=[self.main_subnet['id']])
-
-    def run(self, result=None):
-        """
-        Special run override to make sure to set up neutron data
-        prior to running the test case function.
-        """
-        try:
-            if self.init_networks is True:
-                self.init_main_pub_networks()
-            super(NeutronTestCase, self).run(result)
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    # TODO(micucci): Change this to use the GuestData namedtuple
-    def cleanup_vms(self, vm_port_list):
-        """
-        :type vm_port_list: list[(Guest, port)]
-        """
-        for vm, port in vm_port_list:
-            try:
-                self.LOG.debug('Shutting down vm on port: ' + str(port))
-                if vm is not None:
-                    vm.stop_capture(on_iface='eth0')
-                    if port is not None:
-                        vm.unplug_vm(port['id'])
-                if port is not None:
-                    self.api.delete_port(port['id'])
-            finally:
-                if vm is not None:
-                    vm.terminate()
-
-    def create_edge_router(self, pub_subnets=None, router_host_name='router1',
-                           edge_host_name='edge1', edge_iface_name='eth1',
-                           edge_subnet_cidr='172.16.2.0/24', gateway=True,
-                           gateway_networks=None):
-
-        if not pub_subnets:
-            pub_subnets = [self.pub_subnet]
-
-        if not gateway_networks:
-            gateway_networks = [self.pub_network]
-
-        # Create an uplink network (Midonet-specific extension used for
-        # provider:network_type)
-        edge_network = self.create_network(edge_host_name, uplink=True)
-
-        # Create uplink network's subnet
-        edge_ip = '.'.join(edge_subnet_cidr.split('.')[:-1]) + '.2'
-        edge_gw = '.'.join(edge_subnet_cidr.split('.')[:-1]) + '.1'
-
-        edge_subnet = self.create_subnet(edge_host_name, edge_network['id'],
-                                         edge_subnet_cidr, enable_dhcp=False)
-
-        # Create edge router
-        edge_router = self.create_router('edge_router')
-
-        # Create "port" on router by creating a port on the special uplink
-        # network bound to the physical interface on the physical host,
-        # and then linking that network port to the router's interface.
-        edge_port1 = self.create_port(edge_host_name, edge_network['id'],
-                                      host=edge_host_name,
-                                      host_iface=edge_iface_name,
-                                      sub_id=edge_subnet['id'],
-                                      ip_addr=edge_ip)
-        # Bind port to edge router
-        if_list = [self.create_router_interface(
-            edge_router['id'], port_id=edge_port1['id'])]
-
-        if gateway:
-            for sub in pub_subnets:
-                # Bind public network to edge router
-                if_list.append(self.create_router_interface(
-                    edge_router['id'], sub_id=sub['id']))
-        else:
-            for net in gateway_networks:
-                pub_port = self.create_port(net['name'] + '_gwport',
-                                            net['id'])
-                if_list.append(self.create_router_interface(
-                    edge_router['id'],
-                    port_id=pub_port['id']))
-
-        # Add the default route
-        edge_router = self.api.update_router(
-            edge_router['id'],
-            {'router': {'routes': [{'destination': '0.0.0.0/0',
-                                    'nexthop': edge_gw}]}})['router']
-        self.LOG.info('Added default route to edge router: ' +
-                      str(edge_router))
-
-        router_host = self.vtm.get_host(router_host_name)
-        """ :type: Host"""
-        for sub in pub_subnets:
-            router_host.add_route(
-                IP.make_ip(sub['cidr']), IP(edge_ip, '24'))
-        self.LOG.info('Added return routes to host router')
-
-        return EdgeData(
-            neutron_api.NetData(
-                edge_network,
-                edge_subnet),
-            neutron_api.RouterData(edge_router, if_list))
-
-    def delete_edge_router(self, edge_data):
-        """
-        :type edge_data: EdgeData
-        :return:
-        """
-        # Create a public network
-        if edge_data:
-            if edge_data.router:
-                er = edge_data.router.router
-                self.LOG.debug("Removing routes from router: " + str(er))
-                self.clear_route(er['id'])
-                if edge_data.router.if_list:
-                    for iface in edge_data.router.if_list:
-                        self.LOG.debug("Removing interface: " +
-                                       str(iface) + " from router: " +
-                                       str(er))
-                        self.remove_interface_router(er['id'], iface)
-                self.LOG.debug("Deleting router: " + str(er))
-                self.delete_router(er['id'])
-            if edge_data.edge_net.subnet:
-                es = edge_data.edge_net.subnet
-                self.LOG.debug("Deleting subnet: " + str(es))
-                self.delete_subnet(es['id'])
-            if edge_data.edge_net.network:
-                en = edge_data.edge_net.network
-                self.LOG.debug("Deleting network: " + str(en))
-                self.delete_network(en['id'])
 
 
 class require_extension(object):  # noqa

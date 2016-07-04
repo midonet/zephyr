@@ -13,33 +13,17 @@
 # limitations under the License.
 
 from zephyr.tsm.neutron_test_case import require_extension
+from zephyr.tsm import test_case
 
 from router_peering_utils import L2GWNeutronTestCase
 
 
 class TestRouterPeeringBasic(L2GWNeutronTestCase):
-
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
+    @test_case.require_hosts(['edge1', 'edge2', 'tun1', 'tun2'])
     def test_peered_routers_edge_and_vtep_router(self):
-        try:
-            self.connect_through_edge_and_vtep_router()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    @require_extension('extraroute')
-    @require_extension('gateway-device')
-    @require_extension('l2-gateway')
-    def test_peered_routers_vtep_router(self):
-        try:
-            self.connect_through_vtep_router()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    def connect_through_edge_and_vtep_router(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
         a_net = self.create_network('EAST')
@@ -128,7 +112,11 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
         self.verify_connectivity(vmb, ipa)
         self.verify_connectivity(vmb, a_fip['floating_ip_address'])
 
-    def connect_through_vtep_router(self):
+    @require_extension('extraroute')
+    @require_extension('gateway-device')
+    @require_extension('l2-gateway')
+    @test_case.require_hosts(['tun1', 'tun2'])
+    def test_peered_routers_vtep_router(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
         a_net = self.create_network('EAST')

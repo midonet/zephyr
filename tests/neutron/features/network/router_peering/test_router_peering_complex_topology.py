@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 from zephyr.tsm.neutron_test_case import require_extension
-from zephyr.tsm.test_case import require_topology_feature
+from zephyr.tsm import test_case
 
 from router_peering_utils import L2GWNeutronTestCase
 
@@ -24,16 +23,8 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
     @require_extension('extraroute')
     @require_extension('gateway-device')
     @require_extension('l2-gateway')
-    @require_topology_feature('config_file', lambda a, b: a in b,
-                              ['2z-3c-3tun.json'])
+    @test_case.require_hosts(['tun1', 'tun2', 'tun3'])
     def test_peered_routers_multiple_peers(self):
-        try:
-            self.multiple_peers()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    def multiple_peers(self):
         a_cidr = "192.168.20.0/24"
         a_pub_cidr = "200.200.120.0/24"
         a_net = self.create_network('EAST')

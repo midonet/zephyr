@@ -15,10 +15,11 @@
 import operator
 
 from zephyr.tsm.neutron_test_case import NeutronTestCase
-from zephyr.tsm.test_case import require_topology_feature
+from zephyr.tsm import test_case
 
 
 class TestBasicPing(NeutronTestCase):
+    @test_case.require_hosts(['cmp1'])
     def test_neutron_api_ping_two_hosts_same_hv(self):
         (port1, vm1, ip1) = self.create_vm_server(
             name='vm1',
@@ -37,7 +38,7 @@ class TestBasicPing(NeutronTestCase):
         self.LOG.info('Pinging from VM2 to VM1')
         self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
 
-    @require_topology_feature('compute_hosts', operator.gt, 1)
+    @test_case.require_hosts(['cmp1', 'cmp2'])
     def test_neutron_api_ping_two_hosts_diff_hv(self):
         (port1, vm1, ip1) = self.create_vm_server(
             name='vm1',
