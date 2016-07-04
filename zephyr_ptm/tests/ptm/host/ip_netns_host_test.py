@@ -72,7 +72,7 @@ class IPNetNSHostTest(unittest.TestCase):
             root_dir=ROOT_DIR, log_manager=lm)
         ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
-        hcfg = HostDef('test',
+        hcfg = HostDef('test_host',
                        bridges={'br0': BridgeDef('br0')},
                        interfaces={
                            'testi': InterfaceDef(
@@ -91,7 +91,7 @@ class IPNetNSHostTest(unittest.TestCase):
 
         h.create()
 
-        self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'test'))
+        self.assertTrue(LinuxCLI().grep_cmd('ip netns', hcfg.name))
 
         h.boot()
 
@@ -109,7 +109,7 @@ class IPNetNSHostTest(unittest.TestCase):
 
         h.remove()
 
-        self.assertFalse(LinuxCLI().grep_cmd('ip netns', 'test'))
+        self.assertFalse(LinuxCLI().grep_cmd('ip netns', hcfg.name))
 
     def test_veth_connection_between_two_hosts(self):
         lm = LogManager('./test-logs')

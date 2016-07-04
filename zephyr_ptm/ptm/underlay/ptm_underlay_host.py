@@ -86,6 +86,12 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
         """:type: zephyr_ptm.ptm.application.netns_hv.NetnsHV"""
         hv_app.disconnect_port(port_id=port_id)
 
+    def get_hypervisor_name(self):
+        if not self.vm_host:
+            raise exceptions.ArgMismatchException(
+                "Error; unplug_iface operation only valid on a VM host")
+        return self.parent_host.name
+
     def create_interface(self, iface, mac=None, ip_list=None,
                          linked_bridge=None, vlans=None):
         if not self.vm_host:

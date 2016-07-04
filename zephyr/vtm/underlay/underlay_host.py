@@ -26,6 +26,9 @@ class UnderlayHost(object):
     def fetch_file(self, file_name, **kwargs):
         return None
 
+    def get_hypervisor_name(self):
+        return None
+
     def add_route(self, route_ip='default', gw_ip=None, dev=None):
         return None
 

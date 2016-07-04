@@ -24,13 +24,12 @@ class TestBasicPing(NeutronTestCase):
         (port1, vm1, ip1) = self.create_vm_server(
             name='vm1',
             net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'],
-            hv_host='cmp1')
+            gw_ip=self.main_subnet['gateway_ip'])
         (port2, vm2, ip2) = self.create_vm_server(
             name='vm2',
             net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
-            hv_host='cmp1')
+            hv_host=vm1.get_hypervisor_name())
 
         self.LOG.info('Pinging from VM1 to VM2')
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -43,13 +42,12 @@ class TestBasicPing(NeutronTestCase):
         (port1, vm1, ip1) = self.create_vm_server(
             name='vm1',
             net_id=self.main_network['id'],
-            gw_ip=self.main_subnet['gateway_ip'],
-            hv_host='cmp1')
+            gw_ip=self.main_subnet['gateway_ip'])
         (port2, vm2, ip2) = self.create_vm_server(
             name='vm2',
             net_id=self.main_network['id'],
             gw_ip=self.main_subnet['gateway_ip'],
-            hv_host='cmp2')
+            hv_host='!' + vm1.get_hypervisor_name())
 
         self.LOG.info('Pinging from VM1 to VM2')
         self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))

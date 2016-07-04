@@ -134,12 +134,11 @@ class TestExtraRoutes(NeutronTestCase):
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'],
-                                     hv_host='cmp2')
+                                     gw_ip=td.subnet1['gateway_ip'])
             """ :type: Guest"""
             vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
                                      gw_ip=td.subnet2['gateway_ip'],
-                                     hv_host='cmp2')
+                                     hv_host=vm1.get_hypervisor_name())
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
@@ -200,12 +199,11 @@ class TestExtraRoutes(NeutronTestCase):
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'],
-                                     hv_host='cmp2')
+                                     gw_ip=td.subnet1['gateway_ip'])
             """ :type: Guest"""
             vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
                                      gw_ip=td.subnet2['gateway_ip'],
-                                     hv_host='cmp1')
+                                     hv_host='!' + vm1.get_hypervisor_name())
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
@@ -268,11 +266,9 @@ class TestExtraRoutes(NeutronTestCase):
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip_addr=ip1,
-                                     gw_ip=td.subnet1['gateway_ip'],
-                                     hv_host='cmp2')
+                                     gw_ip=td.subnet1['gateway_ip'])
             vm2 = self.vtm.create_vm(ip_addr=ip2,
-                                    gw_ip=td.subnet2['gateway_ip'],
-                                     hv_host='cmp1')
+                                    gw_ip=td.subnet2['gateway_ip'])
 
             vm1.plugin_vm('eth0', td.port1['id'])
             vm2.plugin_vm('eth0', td.port2['id'])
@@ -325,12 +321,10 @@ class TestExtraRoutes(NeutronTestCase):
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'],
-                                     hv_host='cmp2')
+                                     gw_ip=td.subnet1['gateway_ip'])
             """ :type: Guest"""
             vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
-                                     gw_ip=td.subnet2['gateway_ip'],
-                                     hv_host='cmp1')
+                                     gw_ip=td.subnet2['gateway_ip'])
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
@@ -410,12 +404,10 @@ class TestExtraRoutes(NeutronTestCase):
             ip2 = td.port2['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'],
-                                     hv_host='cmp2')
+                                     gw_ip=td.subnet1['gateway_ip'])
             """ :type: Guest"""
             vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
-                                     gw_ip=td.subnet2['gateway_ip'],
-                                     hv_host='cmp1')
+                                     gw_ip=td.subnet2['gateway_ip'])
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])
@@ -530,12 +522,10 @@ class TestExtraRoutes(NeutronTestCase):
             ip2extra = port2extra['fixed_ips'][0]['ip_address']
 
             vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'],
-                                     hv_host='cmp2')
+                                     gw_ip=td.subnet1['gateway_ip'])
             """ :type: Guest"""
             vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
-                                     gw_ip=td.subnet2['gateway_ip'],
-                                     hv_host='cmp1')
+                                     gw_ip=td.subnet2['gateway_ip'])
             """ :type: Guest"""
 
             vm1.plugin_vm('eth0', td.port1['id'])

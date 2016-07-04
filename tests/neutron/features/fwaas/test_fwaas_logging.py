@@ -46,22 +46,23 @@ class TestFWaaSLogging(NeutronTestCase):
             'near_far_router',
             priv_sub_ids=[far_sub['id'], near_sub['id']])
 
-        second_vm = "cmp1"
-        if (self._testMethodName ==
-                "test_logging_basic_accept_two_computes"):
-            second_vm = "cmp2"
-
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1' + name,
             net_id=near_net['id'],
             gw_ip=near_sub['gateway_ip'],
-            hv_host='cmp1',
             port_security_enabled=False)
+
+        second_vm = vm1.get_hypervisor_name()
+
+        if (self._testMethodName ==
+                "test_logging_basic_accept_two_computes"):
+            second_vm = '!' + second_vm
+
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2' + name,
             net_id=far_net['id'],
             gw_ip=far_sub['gateway_ip'],
-            hv_host=second_vm,
+            hv_host=[second_vm],
             port_security_enabled=False)
 
         fwp = self.create_firewall_policy('POLICY')

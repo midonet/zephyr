@@ -95,8 +95,9 @@ class MNAPITest(unittest.TestCase):
         port2 = self.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = self.vtm.create_vm(ip_addr='10.1.1.2', hv_host='cmp1')
-        vm2 = self.vtm.create_vm(ip_addr='10.1.1.3', hv_host='cmp1')
+        vm1 = self.vtm.create_vm(ip_addr='10.1.1.2')
+        vm2 = self.vtm.create_vm(ip_addr='10.1.1.3',
+                                 hv_host=vm1.get_hypervisor_name())
 
         try:
             vm1.plugin_vm('eth0', port1.get_id())
@@ -117,8 +118,9 @@ class MNAPITest(unittest.TestCase):
         port2 = self.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = self.vtm.create_vm(ip_addr='172.16.55.2', hv_host='cmp1')
-        vm2 = self.vtm.create_vm(ip_addr='172.16.55.3', hv_host='cmp2')
+        vm1 = self.vtm.create_vm(ip_addr='172.16.55.2')
+        vm2 = self.vtm.create_vm(ip_addr='172.16.55.3',
+                                 hv_host='!' + vm1.get_hypervisor_name())
 
         try:
             vm1.plugin_vm('eth0', port1.get_id())

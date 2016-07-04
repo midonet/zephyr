@@ -271,6 +271,42 @@ Midolman
                       | if "uuid" is not provided, map of each FWaaS
                       |     log's filename -> contents as a STRING
 
+# Test API
+
+## Creating a VM
+Create a VM with the VTM's `create_vm` command.  This will take the IP
+address, the desired MAC addres, the set gateway IP, and the name of
+the VM you wish to start.  All but the IP address are optional, and
+sensible defaults will be chosen if omitted (i.e. the VM's name will
+be set generically based upon an ever increasing integer).
+
+Another optional parameter is the `hv_host` option, which allows the
+user to directly control which compute host will get scheduled with the
+VM.  This is a list (or optionally a single string if only one host is
+to be specified) of hosts from which to choose to start the compute.
+At least one of the hosts specified must exist in the underlay.
+`!HOST` specifiers may also be used to prohibit a particular host from
+being considered for the VM.  THere are a couple of caveats to keep in
+mind, however:
+
+* If the `hv_host` parameter is omitted, a hypervisor will be chosen
+from _all_ available hypervisors, based on the hypervisor with the least
+number of currently running VMs.
+* If the `hv_host` is specified, but contians only negative specifiers
+(i.e. only `!HOST` constructs), the entire list of hypervisors will be
+considered, with the prohibited hosts ruled out.
+* If even a single positive host is specified (without a leading `!`),
+only the specified hosts will be considered.
+* If there are a mix of positive (`host`) and negative (`!host`)
+specifiers, the positive list will be built from the positive
+specifiers, and the negative specifiers will then preclude specific
+items from that list.  For example: ['foo', 'bar', 'baz', '!foo',
+'!baz'] would wield only 'bar' as a possible choice.
+
+The VM object will be created on the chosen hypervisor and returned to
+the user.  This VM object can then be used to issue commands, perform
+tasks, and finally, be terminated when it's time for the VM to shutdown.
+ 
 
 Improving Zephyr
 ----------------

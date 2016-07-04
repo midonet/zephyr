@@ -35,7 +35,6 @@ class Guest(object):
             * set iface to the indicated mac address (if provided)
         :type iface: str
         :type port_id: str
-        :type port: str
         """
         self.vm_underlay.LOG.debug("Plugging in VM interface: " + iface +
                                    " to port: " + str(port_id))
@@ -49,6 +48,9 @@ class Guest(object):
         self.vm_underlay.LOG.debug("Unplugging VM port: " + str(port_id))
         self.vm_underlay.unplug_iface(port_id)
         self.open_ports_by_id.remove(port_id)
+
+    def get_hypervisor_name(self):
+        return self.vm_underlay.get_hypervisor_name()
 
     def clear_arp(self):
         return self.vm_underlay.flush_arp()
@@ -144,7 +146,7 @@ class Guest(object):
         Start an echo server listening on given ip/port (default to
         localhost:80) with the given protocol, which returns the echo_data
         on any TCP connection made to the port.
-        :param ip: str
+        :param ip_addr: str
         :param port: int
         :param echo_data: str
         :param protocol: str
@@ -157,7 +159,7 @@ class Guest(object):
         """
         Stop an echo server that has been started on given ip/port (defaults to
         localhost:80).  If echo service has not been started, do nothing.
-        :param ip: str
+        :param ip_addr: str
         :param port: int
         :return:
         """

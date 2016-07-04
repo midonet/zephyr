@@ -17,9 +17,10 @@ from zephyr_ptm.ptm.host.ip_netns_host import IPNetNSHost
 
 
 class VMHost(IPNetNSHost):
-    def __init__(self, name, ptm, hypervisor_host):
-        super(VMHost, self).__init__(name, ptm)
-        self.hypervisor_host = hypervisor_host
+    def __init__(self, name, hypervisor_app):
+        super(VMHost, self).__init__(name, hypervisor_app.host.ptm)
+        self.hypervisor_app = hypervisor_app
+        self.hypervisor_host = hypervisor_app.host
 
     def wait_for_process_start(self):
         pass
@@ -35,6 +36,7 @@ class VMHost(IPNetNSHost):
                 near_if_name, None)
             """ :type: PTM.host.VirtualInterface.VirtualInterface """
             old_tap_iface.remove()
+        self.hypervisor_app.remove_vm(self.name)
 
     def create_interface(self, iface, mac=None, ip_list=None,
                          linked_bridge=None, vlans=None):

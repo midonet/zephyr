@@ -8,3 +8,4 @@ zephyr.egg-info/**
 test-logs/**
 test-results/**
 underlay-config.json
+.mnconf.data

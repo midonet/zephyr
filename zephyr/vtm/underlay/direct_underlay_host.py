@@ -76,6 +76,10 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         raise exceptions.ArgMismatchException(
             "Error; unplug_iface operation only valid on a VM host")
 
+    def get_hypervisor_name(self):
+        raise exceptions.ArgMismatchException(
+            "Error; getting hypervisor operation only valid on a VM host")
+
     def fetch_file(self, file_name, **kwargs):
         self.cli.cat(file_name)
 

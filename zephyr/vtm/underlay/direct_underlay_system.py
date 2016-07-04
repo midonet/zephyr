@@ -20,8 +20,6 @@ from zephyr.vtm.underlay import underlay_system
 
 
 class DirectUnderlaySystem(underlay_system.UnderlaySystem):
-    global_vm_id = 0
-
     def __init__(self, debug=False, log_manager=None,
                  log_file=z_con.ZEPHYR_LOG_FILE_NAME):
         super(DirectUnderlaySystem, self).__init__(
@@ -94,39 +92,10 @@ class DirectUnderlaySystem(underlay_system.UnderlaySystem):
 
     def create_vm(self, ip_addr, mac=None,
                   gw_ip=None, hv_host=None, name=None):
-        self.LOG.debug(
-            "Attempting to provision VM with IP: " + str(ip_addr) +
-            (' on host: ' + hv_host if hv_host else '') +
-            (' with name: ' + name if name else ''))
-        start_hv_host = None
-        """
-        :type: zephyr.vtm.underlay.direct_underlay_host.DirectUnderlayHost
-        """
-        if hv_host and hv_host not in self.hosts:
-            raise exceptions.ArgMismatchException(
-                "Cannot start VM, unknown hypervisor: " + hv_host)
+        def get_vm_count(item):
+            return len(item.vms)
 
-        current_least_vm_count = -1
-        if hv_host:
-            start_hv_host = self.hosts[hv_host]
-        else:
-            for h, underlay_host in self.hosts.iteritems():
-                vm_count = len(underlay_host.vms)
-                if (vm_count < current_least_vm_count or
-                        current_least_vm_count == -1):
-                    current_least_vm_count = vm_count
-                    start_hv_host = underlay_host
-
-        if not start_hv_host:
-            raise exceptions.ObjectNotFoundException(
-                'No suitable hypervisor service application '
-                'found to launch VM')
-
-        if name is not None:
-            requested_vm_name = name
-        else:
-            requested_vm_name = 'vm_' + str(self.global_vm_id)
-            self.global_vm_id += 1
-
-        return start_hv_host.create_vm(
-            ip_addr=ip_addr, mac=mac, gw_ip=gw_ip, name=requested_vm_name)
+        return self.provision_vm_on_most_open_hv(
+            hv_map=self.hosts, vm_count_fn=get_vm_count,
+            ip_addr=ip_addr, mac=mac, gw_ip=gw_ip, name=name,
+            requested_host=hv_host)

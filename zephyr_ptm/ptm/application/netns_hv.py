@@ -46,7 +46,7 @@ class NetnsHV(application.Application):
         :type name: str
         :return: VMHost
         """
-        new_host = vm_host.VMHost(name, self.host.ptm, self.host)
+        new_host = vm_host.VMHost(name, self)
         new_host.configure_logging(
             log_file_name=self.log_file_name, debug=self.host.debug)
         new_host.create()
@@ -56,6 +56,9 @@ class NetnsHV(application.Application):
         new_host.net_finalize()
         self.vms[name] = new_host
         return new_host
+
+    def remove_vm(self, name):
+        self.vms.pop(name)
 
     def get_vm(self, name):
         if name not in self.vms:

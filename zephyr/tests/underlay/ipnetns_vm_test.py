@@ -19,6 +19,7 @@ import unittest
 
 import os
 
+from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
 from zephyr.vtm import neutron_api
@@ -37,20 +38,151 @@ class IPNetnsVMTest(unittest.TestCase):
         cls.vtm.configure_logging(debug=True)
         cls.vtm.read_underlay_config()
 
+    def setUp(self):
+        self.vms = []
+
     def test_vm_create(self):
-        und_sys = self.vtm.underlay_system
-        und_type = und_sys.get_topology_feature("underlay_type")
-        if und_type != "direct":
-            unittest.skip("Not on a direct underlay")
         vm = self.vtm.create_vm(name='vm1', ip_addr="10.3.3.3")
-        vm.terminate()
-        self.assertTrue(True)
+        self.vms.append(vm)
+        self.assertIsNotNone(vm.get_hypervisor_name())
+
+    def test_vm_create_on_host_as_single_string(self):
+        vm = self.vtm.create_vm(name='vm1', ip_addr="10.3.3.3")
+        self.vms.append(vm)
+
+        vm2 = self.vtm.create_vm(name='vm2', ip_addr="10.3.3.4",
+                                 hv_host=vm.get_hypervisor_name())
+        self.vms.append(vm2)
+        self.assertEqual(vm.get_hypervisor_name(),
+                         vm2.get_hypervisor_name())
+
+    def test_vm_create_on_host_as_single_list(self):
+        vm = self.vtm.create_vm(name='vm1', ip_addr="10.3.3.3")
+        self.vms.append(vm)
+        vm2 = self.vtm.create_vm(name='vm2', ip_addr="10.3.3.4",
+                                 hv_host=[vm.get_hypervisor_name()])
+        self.vms.append(vm2)
+        self.assertEqual(vm.get_hypervisor_name(),
+                         vm2.get_hypervisor_name())
+
+    def test_vm_create_on_host_as_multi_list(self):
+        vm = self.vtm.create_vm(name='vm1', ip_addr="10.3.3.3")
+        self.vms.append(vm)
+        vm2 = self.vtm.create_vm(name='vm2', ip_addr="10.3.3.4")
+        self.vms.append(vm2)
+        vm3 = self.vtm.create_vm(name='vm3', ip_addr="10.3.3.5",
+                                 hv_host=[vm.get_hypervisor_name(),
+                                          vm2.get_hypervisor_name()])
+        self.vms.append(vm3)
+        self.assertIn(vm3.get_hypervisor_name(),
+                      [vm.get_hypervisor_name(),
+                       vm2.get_hypervisor_name()])
+
+    def test_vm_create_on_multi_host_natural_algorithm(self):
+        und_sys = self.vtm.underlay_system
+        if len(und_sys.hosts) < 2:
+            unittest.skip("Need more than one host")
+            return
+        vm = self.vtm.create_vm(name='vm1', ip_addr="10.3.3.3")
+        self.vms.append(vm)
+        vm2 = self.vtm.create_vm(name='vm2', ip_addr="10.3.3.4")
+        self.vms.append(vm2)
+        self.assertNotEqual(vm.get_hypervisor_name(),
+                            vm2.get_hypervisor_name())
+
+    def test_vm_create_not_on_host_list(self):
+        und_sys = self.vtm.underlay_system
+        if len(und_sys.hosts) < 2:
+            unittest.skip("Need more than one host")
+            return
+        vm = self.vtm.create_vm(name='vm1', ip_addr="10.3.3.3")
+        self.vms.append(vm)
+        vm2 = self.vtm.create_vm(name='vm2', ip_addr="10.3.3.4",
+                                 hv_host=['!' + vm.get_hypervisor_name()])
+        self.vms.append(vm2)
+        vm3 = self.vtm.create_vm(name='vm3', ip_addr="10.3.3.5",
+                                 hv_host=['!' + vm.get_hypervisor_name()])
+        self.vms.append(vm3)
+        vm4 = self.vtm.create_vm(name='vm4', ip_addr="10.3.3.6",
+                                 hv_host=['!' + vm.get_hypervisor_name()])
+        self.vms.append(vm4)
+        self.assertNotEqual(vm.get_hypervisor_name(),
+                            vm2.get_hypervisor_name())
+        self.assertNotEqual(vm.get_hypervisor_name(),
+                            vm3.get_hypervisor_name())
+        self.assertNotEqual(vm.get_hypervisor_name(),
+                            vm4.get_hypervisor_name())
+
+    def test_vm_create_not_on_host_single_string(self):
+        und_sys = self.vtm.underlay_system
+        if len(und_sys.hosts) < 2:
+            unittest.skip("Need more than one host")
+            return
+        vm = self.vtm.create_vm(name='vm1', ip_addr="10.3.3.3")
+        self.vms.append(vm)
+        vm2 = self.vtm.create_vm(name='vm2', ip_addr="10.3.3.4",
+                                 hv_host='!' + vm.get_hypervisor_name())
+        self.vms.append(vm2)
+        vm3 = self.vtm.create_vm(name='vm3', ip_addr="10.3.3.5",
+                                 hv_host='!' + vm.get_hypervisor_name())
+        self.vms.append(vm3)
+        vm4 = self.vtm.create_vm(name='vm4', ip_addr="10.3.3.6",
+                                 hv_host='!' + vm.get_hypervisor_name())
+        self.vms.append(vm4)
+        self.assertNotEqual(vm.get_hypervisor_name(),
+                            vm2.get_hypervisor_name())
+        self.assertNotEqual(vm.get_hypervisor_name(),
+                            vm3.get_hypervisor_name())
+        self.assertNotEqual(vm.get_hypervisor_name(),
+                            vm4.get_hypervisor_name())
+
+    def test_vm_create_on_bad_host(self):
+        try:
+            vm = self.vtm.create_vm(
+                name='vm2', ip_addr="10.3.3.4",
+                hv_host=["no_way_this_compute_exists"])
+            self.vms.append(vm)
+            self.fail('This should throw ArgMismatchException')
+        except exceptions.ArgMismatchException:
+            pass
+
+    def test_vm_create_not_on_any_host(self):
+        try:
+            vm = self.vtm.create_vm(
+                name='vm2', ip_addr="10.3.3.3")
+            self.vms.append(vm)
+            vm2 = self.vtm.create_vm(
+                name='vm2', ip_addr="10.3.3.4",
+                hv_host=['!' + vm.get_hypervisor_name()])
+            self.vms.append(vm2)
+            vm3 = self.vtm.create_vm(
+                name='vm3', ip_addr="10.3.3.5",
+                hv_host=['!' + vm.get_hypervisor_name(),
+                         '!' + vm2.get_hypervisor_name()])
+            self.vms.append(vm3)
+            vm4 = self.vtm.create_vm(
+                name='vm4', ip_addr="10.3.3.6",
+                hv_host=['!' + vm.get_hypervisor_name(),
+                         '!' + vm2.get_hypervisor_name(),
+                         '!' + vm3.get_hypervisor_name()])
+            self.vms.append(vm4)
+            vm5 = self.vtm.create_vm(
+                name='vm5', ip_addr="10.3.3.7",
+                hv_host=['!' + vm.get_hypervisor_name(),
+                         '!' + vm2.get_hypervisor_name(),
+                         '!' + vm3.get_hypervisor_name(),
+                         '!' + vm4.get_hypervisor_name()])
+            self.vms.append(vm5)
+            self.fail('This should throw ObjectNotFoundException')
+        except exceptions.ObjectNotFoundException:
+            pass
 
     def test_vm_plugin_to_overlay(self):
         und_sys = self.vtm.underlay_system
         und_type = und_sys.get_topology_feature("underlay_type")
         if und_type != "direct":
             unittest.skip("Not on a direct underlay")
+            return
 
         api = neutron_api.create_neutron_client(
             auth_strategy='keystone',
@@ -89,6 +221,7 @@ class IPNetnsVMTest(unittest.TestCase):
             vm = self.vtm.create_vm(
                 name='vm1', ip_addr=ip1,
                 gw_ip=main_subnet['gateway_ip'])
+            self.vms.append(vm)
             vm.plugin_vm('eth0', port1['id'])
             self.assertTrue(True)
         finally:
@@ -98,8 +231,6 @@ class IPNetnsVMTest(unittest.TestCase):
                 api.delete_subnet(main_subnet['id'])
             if main_network:
                 api.delete_network(main_network['id'])
-            if vm:
-                vm.terminate()
 
     def test_vm_communication(self):
         und_sys = self.vtm.underlay_system
@@ -154,9 +285,11 @@ class IPNetnsVMTest(unittest.TestCase):
             vm1 = self.vtm.create_vm(name='vm1', ip_addr=ip1,
                                      mac=port1['mac_address'],
                                      gw_ip=main_subnet['gateway_ip'])
+            self.vms.append(vm1)
             vm2 = self.vtm.create_vm(name='vm2', ip_addr=ip2,
                                      mac=port2['mac_address'],
                                      gw_ip=main_subnet['gateway_ip'])
+            self.vms.append(vm2)
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
@@ -171,9 +304,9 @@ class IPNetnsVMTest(unittest.TestCase):
                 api.delete_subnet(main_subnet['id'])
             if main_network:
                 api.delete_network(main_network['id'])
-            if vm1:
-                vm1.terminate()
-            if vm2:
-                vm2.terminate()
+
+    def tearDown(self):
+        for vm in self.vms:
+            vm.terminate()
 
 run_unit_test(IPNetnsVMTest)

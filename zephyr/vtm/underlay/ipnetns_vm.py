@@ -65,6 +65,9 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost):
         raise exceptions.ArgMismatchException(
             "Cannot create a VM inside a VM.")
 
+    def get_hypervisor_name(self):
+        return self.hypervisor.name
+
     def plugin_iface(self, iface, port_id):
         self.overlay.plugin_iface(self.host.unique_id,
                                   self.name + iface, port_id)
