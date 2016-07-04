@@ -22,7 +22,6 @@ import threading
 import time
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.pcap_packet import *
-from zephyr.common.utils import terminate_process
 
 TCPDUMP_LISTEN_START_TIMEOUT = 10
 
@@ -399,8 +398,7 @@ class TCPDump(object):
                     save_dump_filename if save_dump_filename is not None
                     else 'tcp.out.' + str(time.time()))
             LinuxCLI().rm(tmp_dump_filename)
-            for i in tcp_processes.process_array:
-                terminate_process(i, signal='KILL')
+            tcp_processes.terminate()
 
         status_queue.put({'success': '',
                           'returncode': tcp_piped_process.returncode,

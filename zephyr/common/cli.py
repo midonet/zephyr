@@ -16,6 +16,7 @@ import glob
 import os
 import pwd
 import subprocess
+import time
 from zephyr.common.exceptions import *
 
 
@@ -32,6 +33,34 @@ REMOVENSCMD = _remove_ns
 DEBUG = 0
 
 
+def terminate_process(process):
+    """
+    Poll and terminate a process if it is still running.  If it doesn't exit
+    within 5 seconds, send a SIGKILL signal to the process.
+    :type process: Popen
+    :return:
+    """
+    LinuxCLI().cmd('pkill -TERM -s ' + str(process.pid))
+    deadline = time.time() + 3
+    while not process.poll():
+        if time.time() > deadline:
+            break
+        time.sleep(0)
+
+    if not process.poll():
+        LinuxCLI().cmd('pkill -KILL -s ' + str(process.pid))
+        deadline = time.time() + 2
+        while not process.poll():
+            if time.time() > deadline:
+                break
+            time.sleep(0)
+
+    if not process.poll():
+        return None
+
+    return process.communicate()
+
+
 class CommandStatus(object):
     def __init__(self, process=None, command='', ret_code=0, stdout='',
                  stderr='', process_array=None):
@@ -45,11 +74,13 @@ class CommandStatus(object):
         :return:
         """
         self.process = process
+        """ :type: subprocess.Popen"""
         self.ret_code = ret_code
         self.command = command
         self.stdout = stdout
         self.stderr = stderr
         self.process_array = process_array
+        """ :type: list[subprocess.Popen]"""
 
     def __repr__(self):
         return 'PID: ' + str(self.process.pid) + '\n' + \
@@ -57,6 +88,16 @@ class CommandStatus(object):
                'CMD: ' + self.command + '\n' + \
                'STDOUT: [' + self.stdout + ']' + '\n' + \
                'STDERR: [' + self.stderr + ']'
+
+    def terminate(self):
+        out = None
+        if self.process_array:
+            for p in self.process_array:
+                out = terminate_process(p)
+        else:
+            out = terminate_process(self.process)
+
+        return out
 
 
 class LinuxCLI(object):
@@ -101,7 +142,7 @@ class LinuxCLI(object):
         :param stdin: int File descriptor for std in (PIPE by default)
         :param stdout: int File descriptor for std in (PIPE by default)
         :param stderr: int File descriptor for std in (PIPE by default)
-        :return CommandStatus:
+        :return: zephyr.common.cli.CommandStatus
         """
         ret = CommandStatus()
         if len(commands) == 0:
@@ -194,7 +235,7 @@ class LinuxCLI(object):
         :param stdin: int File descriptor for std in (PIPE by default)
         :param stdout: int File descriptor for std in (PIPE by default)
         :param stderr: int File descriptor for std in (PIPE by default)
-        :return CommandStatus:
+        :return: zephyr.common.cli.CommandStatus
         """
         cmd = (('timeout ' + str(timeout) + ' ' if timeout is not None
                 else '') +

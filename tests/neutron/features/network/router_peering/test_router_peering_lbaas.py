@@ -225,10 +225,10 @@ class TestRouterPeeringLBaaS(L2GWNeutronTestCase, LBaaSTestCase):
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
         a_peer_topo['pub_network'] = a_pub_net
         a_peer_topo['pub_subnet'] = a_pub_sub
         a_peer_topo['main_network'] = a_net

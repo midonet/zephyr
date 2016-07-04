@@ -41,7 +41,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         # Test VM -> exterior host
         try:
             ext_host.start_echo_server(ip_addr=ext_ip)
-            self.verify_connectivity(vm1, ext_ip)
+            self.check_ping_and_tcp(vm1, ext_ip)
         finally:
             ext_host.stop_echo_server(ip_addr=ext_ip)
 
@@ -65,7 +65,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         # Test VM -> exterior host
         try:
             ext_host.start_echo_server(ip_addr=ext_ip)
-            self.verify_connectivity(vm1, ext_ip)
+            self.check_ping_and_tcp(vm1, ext_ip)
         finally:
             ext_host.stop_echo_server(ip_addr=ext_ip)
 
@@ -77,7 +77,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
         # Test VM -> exterior host
         try:
             ext_host.start_echo_server(ip_addr=ext_ip)
-            self.verify_connectivity(vm1, ext_ip)
+            self.check_ping_and_tcp(vm1, ext_ip)
         finally:
             ext_host.stop_echo_server(ip_addr=ext_ip)
 
@@ -105,7 +105,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
 
         # Test Ping
         self.LOG.info('Pinging from VM1 to external')
-        self.assertTrue(vm1.ping(target_ip=ext_ip, count=1))
+        self.assertTrue(vm1.verify_connection_to_host(ext_host))
 
         vm1.start_capture('eth0', pfilter=pcap.ICMPProto(),
                           save_dump_file=True,

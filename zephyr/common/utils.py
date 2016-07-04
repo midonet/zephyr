@@ -17,23 +17,9 @@ import json
 import os
 import pycurl
 from StringIO import StringIO
-from subprocess import Popen
 import unittest
 
 import xmlrunner
-
-from zephyr.common.cli import LinuxCLI
-
-
-def terminate_process(process, signal='TERM'):
-    """
-    Poll and terminate a process if it is still running.  If it doesn't exit
-    within 5 seconds, send a SIGKILL signal to the process.
-    :type process: Popen
-    :type signal: str
-    :return:
-    """
-    LinuxCLI().cmd('pkill -s ' + str(process.pid) + ' -' + signal)
 
 
 def get_class_from_fqn(fqn):

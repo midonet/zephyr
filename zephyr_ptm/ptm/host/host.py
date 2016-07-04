@@ -15,10 +15,10 @@
 import datetime
 import json
 import logging
+import time
 import uuid
 
 from zephyr.common.cli import LinuxCLI
-from zephyr.common import echo_server
 from zephyr.common import exceptions
 from zephyr.common.ip import IP
 from zephyr.common.tcp_dump import TCPDump
@@ -70,7 +70,7 @@ class Host(PTMObject):
         """ :type bool"""
         self.log_level = logging.INFO
         self.echo_server_procs = {}
-        """ :type: dict[int, CommandStatus]"""
+        """ :type: dict[int, zephyr.common.cli.CommandStatus]"""
         self.on_namespace = False
         self.log_file_name = zephyr_constants.ZEPHYR_LOG_FILE_NAME
         self.main_ip = '127.0.0.1'
@@ -448,8 +448,8 @@ class Host(PTMObject):
         return LinuxCLI().cmd(cmd, blocking=False).process
 
     def start_echo_server(self, ip_addr='localhost',
-                          port=echo_server.DEFAULT_ECHO_PORT,
-                          echo_data="echo-reply", protocol='tcp'):
+                          port=zephyr_constants.DEFAULT_ECHO_PORT,
+                          echo_data="pong", protocol='tcp'):
         """
         Start an echo server listening on given ip/port (default to
         localhost:80) which returns the echo_data on any TCP
@@ -460,19 +460,49 @@ class Host(PTMObject):
         :param protocol: str
         :return: CommandStatus
         """
-        es = echo_server.EchoServer(
-            ip_addr=ip_addr, port=port,
-            echo_data=echo_data, protocol=protocol)
-        es.start()
+        echo_log = self.log_manager.add_tee_logger(
+            file_name=zephyr_constants.ZEPHYR_LOG_FILE_NAME,
+            name=self.name + '-echo_server',
+            file_log_level=self.log_level,
+            stdout_log_level=self.log_level)
+
+        cmd = [self.ptm.root_dir + '/echo-server.py',
+               '-i', ip_addr,
+               '-p', str(port),
+               '-l', self.log_file_name,
+               '-r', self.log_manager.root_dir,
+               '-o', echo_data,
+               '-c', protocol,
+               '-n', 'echo_server-' + self.name]
+        if self.debug:
+            cmd.append('-d')
+
         if (port in self.echo_server_procs and
                 self.echo_server_procs[port] is not None):
             self.stop_echo_server(ip_addr, port)
+        es_process = self.cli.cmd_pipe([cmd], blocking=False)
 
-        self.echo_server_procs[port] = es
-        return es
+        timeout = time.time() + 5
+        conn_resp = ''
+        while conn_resp != 'connect-test:' + echo_data:
+            try:
+                conn_resp = self.send_echo_request(
+                    dest_ip=ip_addr, dest_port=port,
+                    echo_request='connect-test',
+                    protocol=protocol)
+            except exceptions.SubprocessFailedException:
+                conn_resp = ''
+
+            if time.time() > timeout:
+                raise exceptions.SubprocessTimeoutException(
+                    'Echo server listener failed to bind to port '
+                    'within timeout')
+
+        self.echo_server_procs[port] = es_process
+        return es_process
 
     def stop_echo_server(self, ip_addr='localhost',
-                         port=echo_server.DEFAULT_ECHO_PORT):
+                         port=zephyr_constants.DEFAULT_ECHO_PORT):
         """
         Stop an echo server that has been started on given ip/port (defaults to
         localhost:80).  If echo service has not been started, do nothing.
@@ -484,13 +514,13 @@ class Host(PTMObject):
                 self.echo_server_procs[port] is not None):
             self.LOG.debug('Stopping echo server on: ' + str(ip_addr) +
                            ':' + str(port))
-            es = self.echo_server_procs[port]
-            es.stop()
+            es_proc = self.echo_server_procs[port]
+            es_proc.terminate()
 
     def send_echo_request(self, dest_ip='localhost',
-                          dest_port=echo_server.DEFAULT_ECHO_PORT,
+                          dest_port=zephyr_constants.DEFAULT_ECHO_PORT,
                           echo_request='ping', source_ip=None,
-                          protocol='tcp'):
+                          protocol='tcp', timeout=10):
         """
         Create a TCP connection to send specified request string to dest_ip
         on dest_port (defaults to localhost:80) and return the response.
@@ -499,18 +529,23 @@ class Host(PTMObject):
         :param echo_request: str
         :param source_ip: str
         :param protocol: str
+        :param timeout: int
         :return: str
         """
         self.LOG.debug('Sending echo command ' + echo_request + ' to: ' +
                        str(dest_ip) + ' ' + str(dest_port))
-        es = self.echo_server_procs.get(dest_port, None)
-        if not es:
-            raise exceptions.ObjectNotFoundException(
-                "No Echo Server found running on port: " + str(dest_port))
-        out_str = es.send(
-            ip_addr=dest_ip, port=dest_port,
-            echo_request=echo_request, protocol=protocol)
-        return out_str
+        cmd = [self.ptm.root_dir + '/echo-send.py',
+               '-i', dest_ip,
+               '-p', str(dest_port),
+               '-t', str(timeout),
+               '-o', echo_request,
+               '-c', protocol]
+
+        es_process = self.cli.cmd_pipe([cmd], blocking=True)
+        if es_process.ret_code != 0:
+            raise exceptions.SubprocessFailedException(
+                "Echo Send failed: " + es_process.stderr)
+        return es_process.stdout.strip()
 
     @staticmethod
     def is_virtual_network_host():

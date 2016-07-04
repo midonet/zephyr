@@ -100,23 +100,36 @@ class NeutronTestCase(TestCase):
             'main_pub_router', pub_net_id=self.pub_network['id'],
             priv_sub_ids=[self.main_subnet['id']])
 
-    def verify_tcp_connectivity(self, vm, dest_ip, dest_port):
+    def check_tcp(self, vm, dest_ip, dest_port):
         echo_response = vm.send_echo_request(dest_ip=dest_ip,
                                              dest_port=dest_port)
-        self.assertEqual('ping:echo-reply', echo_response)
+        self.assertEqual('ping:pong', echo_response)
 
-    def verify_connectivity(self, vm, dest_ip, count=2):
+    def check_ping_and_tcp(self, vm, dest_ip, count=2):
         self.assertTrue(vm.ping(target_ip=dest_ip, count=count, timeout=20))
 
         for i in range(0, count):
             echo_response = vm.send_echo_request(dest_ip=dest_ip)
-            self.assertEqual('ping:echo-reply', echo_response)
+            self.assertEqual('ping:pong', echo_response)
 
             # TODO(micucci): Fix UDP
             # for i in range(0, count):
             #     echo_response = vm.send_echo_request(dest_ip=dest_ip,
             #                                          protocol='udp')
-            #     self.assertEqual('ping:echo-reply', echo_response)
+            #     self.assertEqual('ping:pong', echo_response)
+
+    def verify_connection(self, vm, dest_ip, count=2):
+        self.assertTrue(vm.ping(target_ip=dest_ip, count=count, timeout=20))
+
+        for i in range(0, count):
+            echo_response = vm.send_echo_request(dest_ip=dest_ip)
+            self.assertEqual('ping:pong', echo_response)
+
+            # TODO(micucci): Fix UDP
+            # for i in range(0, count):
+            #     echo_response = vm.send_echo_request(dest_ip=dest_ip,
+            #                                          protocol='udp')
+            #     self.assertEqual('ping:pong', echo_response)
 
     def clean_topo(self):
         topo_info = \

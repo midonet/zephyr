@@ -90,4 +90,4 @@ class TestRouterPeeringSecurityGroups(L2GWNeutronTestCase):
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)

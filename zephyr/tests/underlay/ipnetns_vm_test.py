@@ -248,9 +248,6 @@ class IPNetnsVMTest(unittest.TestCase):
         """ :type: neutronclient.v2_0.client.Client"""
         self.vtm.client_api_impl = api
 
-        vm1 = None
-        vm2 = None
-
         main_network = None
         main_subnet = None
         port1 = None
@@ -293,7 +290,7 @@ class IPNetnsVMTest(unittest.TestCase):
 
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
-            self.assertTrue(vm1.ping(target_ip=ip2, timeout=30))
+            self.assertTrue(vm1.verify_connection_to_host(vm2))
 
         finally:
             if port1:

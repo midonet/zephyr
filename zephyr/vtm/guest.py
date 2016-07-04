@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.common.echo_server import DEFAULT_ECHO_PORT
+import time
 from zephyr.common import exceptions
+from zephyr.common.zephyr_constants import DEFAULT_ECHO_PORT
 
 PACKET_CAPTURE_TIMEOUT = 10
 
@@ -28,6 +29,7 @@ class Guest(object):
         """ :type: zephyr.vtm.underlay.underlay_host.UnderlayHost"""
         self.open_ports_by_id = set()
         """ :type: set[str]"""
+        self.main_ip = vm_underlay.get_ip('eth0')
 
     def plugin_vm(self, iface, port_id):
         """Links an interface on this VM to a virtual network port
@@ -127,6 +129,37 @@ class Guest(object):
         """
         self.vm_underlay.stop_capture(interface=on_iface)
 
+    def verify_connection_to_host(self, far_host,
+                                  target_ip_addr=None,
+                                  target_port=DEFAULT_ECHO_PORT,
+                                  use_icmp=True, use_tcp=True,
+                                  timeout=20):
+        if not target_ip_addr:
+            target_ip_addr = far_host.main_ip
+
+        deadline = time.time() + timeout
+        if use_tcp:
+            far_host.start_echo_server(
+                ip_addr="", port=target_port)
+            try:
+                while not self.send_echo_request(
+                        dest_ip=target_ip_addr,
+                        dest_port=target_port):
+                    if time.time() > deadline:
+                        return False
+            finally:
+                far_host.stop_echo_server(
+                    ip_addr="", port=target_port)
+
+        deadline = time.time() + timeout
+        if use_icmp:
+            while not self.ping(
+                    target_ip=target_ip_addr, count=1, timeout=3):
+                if time.time() > deadline:
+                    return False
+
+        return True
+
     def ping(self, target_ip, on_iface='eth0', count=3, timeout=None):
         """
         Ping the target_ip on given interface and return true if the ping
@@ -141,7 +174,7 @@ class Guest(object):
                                      count=count, timeout=timeout)
 
     def start_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT,
-                          echo_data="echo-reply", protocol='tcp'):
+                          echo_data="pong", protocol='tcp'):
         """
         Start an echo server listening on given ip/port (default to
         localhost:80) with the given protocol, which returns the echo_data

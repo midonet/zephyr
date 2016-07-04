@@ -84,10 +84,10 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
         time.sleep(30)
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         d_cidr = "192.168.50.0/24"
         d_net = self.create_network('D_NET')
@@ -120,5 +120,5 @@ class TestBGPIPChain(neutron_test_case.NeutronTestCase):
 
         time.sleep(30)
         vmd.start_echo_server(ip_addr=ipd)
-        self.verify_connectivity(vmd, ipa)
-        self.verify_connectivity(vma, ipd)
+        self.check_ping_and_tcp(vmd, ipa)
+        self.check_ping_and_tcp(vma, ipd)

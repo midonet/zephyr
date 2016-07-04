@@ -125,10 +125,10 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
                                     'destination': b_cidr}]}})
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         self.delete_remote_mac_entry(b_top['gateway_device']['id'],
                                      b_to_a_rme['remote_mac_entry']['id'])
@@ -139,6 +139,6 @@ class TestRouterPeeringComplexTopology(L2GWNeutronTestCase):
             a_top['az_iface_port']['id'], "1.1.1.2")
 
         vmc.start_echo_server(ip_addr=ipc)
-        self.verify_connectivity(vma, ipc)
+        self.check_ping_and_tcp(vma, ipc)
 
-        self.verify_connectivity(vmc, ipa)
+        self.check_ping_and_tcp(vmc, ipa)

@@ -87,10 +87,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             a_top['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         self.api.update_router(a_tenant_router['id'],
                                {'router': {'routes': None}})
@@ -127,8 +127,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "192.168.200.2", a_router_mac, a_cidr,
             a_top['az_iface_port']['id'], "1.1.1.2")
 
-        self.verify_connectivity(vma, ipb)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vma, ipb)
+        self.check_ping_and_tcp(vmb, ipa)
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
@@ -197,10 +197,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             a_top['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         self.api.update_router(a_tenant_router['id'],
                                {'router': {'routes': None}})
@@ -238,10 +238,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             a_top['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         vma.stop_echo_server(ip_addr=ipa)
         vmb.stop_echo_server(ip_addr=ipb)
@@ -252,12 +252,12 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             "D", b_net['id'], b_sub['gateway_ip'])
 
         vmc.start_echo_server(ip_addr=ipc)
-        self.verify_connectivity(vmd, ipc)
+        self.check_ping_and_tcp(vmd, ipc)
 
         vmb.vm_underlay.reboot()
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
@@ -325,10 +325,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             a_top['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         self.delete_l2_gw_conn(a_top['l2_gateway_conn']['id'])
         self.delete_l2_gateway(a_top['l2_gateway']['id'])
@@ -340,8 +340,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         self.create_l2_gateway_connection(a_top['az_net']['id'], "100",
                                           l2gw['id'])
 
-        self.verify_connectivity(vma, ipb)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vma, ipb)
+        self.check_ping_and_tcp(vmb, ipa)
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
@@ -409,10 +409,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             a_top['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         self.delete_l2_gw_conn(a_top['l2_gateway_conn']['id'])
 
@@ -422,8 +422,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         self.create_l2_gateway_connection(a_top['az_net']['id'], "100",
                                           a_top['l2_gateway']['id'])
 
-        self.verify_connectivity(vma, ipb)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vma, ipb)
+        self.check_ping_and_tcp(vmb, ipa)
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
@@ -491,10 +491,10 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
             a_top['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         new_tunnel_ip = '2.2.2.6'
 
@@ -524,5 +524,5 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
                                      b_top['az_iface_port']['mac_address'],
                                      "100", a_top['gateway_device']['id'])
 
-        self.verify_connectivity(vma, ipb)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vma, ipb)
+        self.check_ping_and_tcp(vmb, ipa)

@@ -31,11 +31,10 @@ class TestBasicPing(NeutronTestCase):
             gw_ip=self.main_subnet['gateway_ip'],
             hv_host=vm1.get_hypervisor_name())
 
-        self.LOG.info('Pinging from VM1 to VM2')
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
-
-        self.LOG.info('Pinging from VM2 to VM1')
-        self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
+        self.LOG.info('Verifying from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2))
+        self.LOG.info('Verifying from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1))
 
     @test_case.require_hosts(['cmp1', 'cmp2'])
     def test_neutron_api_ping_two_hosts_diff_hv(self):
@@ -49,8 +48,7 @@ class TestBasicPing(NeutronTestCase):
             gw_ip=self.main_subnet['gateway_ip'],
             hv_host='!' + vm1.get_hypervisor_name())
 
-        self.LOG.info('Pinging from VM1 to VM2')
-        self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
-
-        self.LOG.info('Pinging from VM2 to VM1')
-        self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
+        self.LOG.info('Verifying from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2))
+        self.LOG.info('Verifying from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1))

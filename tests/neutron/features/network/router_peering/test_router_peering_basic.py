@@ -105,12 +105,12 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
 
         vmb.start_echo_server(ip_addr=ipb)
 
-        self.verify_connectivity(vma, ipb)
-        self.verify_connectivity(vma, b_fip['floating_ip_address'])
+        self.check_ping_and_tcp(vma, ipb)
+        self.check_ping_and_tcp(vma, b_fip['floating_ip_address'])
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
-        self.verify_connectivity(vmb, a_fip['floating_ip_address'])
+        self.check_ping_and_tcp(vmb, ipa)
+        self.check_ping_and_tcp(vmb, a_fip['floating_ip_address'])
 
     @require_extension('extraroute')
     @require_extension('gateway-device')
@@ -178,7 +178,7 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)

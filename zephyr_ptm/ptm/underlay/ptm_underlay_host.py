@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from zephyr.common import echo_server
 from zephyr.common import exceptions
 from zephyr.common import ip
+from zephyr.common import zephyr_constants
 from zephyr.vtm.underlay import underlay_host
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm import ptm_utils
@@ -113,7 +112,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
 
     def get_ip(self, iface_name):
         iface = self.underlay_host_obj.interfaces[iface_name]
-        return iface.ip_list[0] if len(iface.ip_list) > 0 else None
+        return str(iface.ip_list[0].ip) if len(iface.ip_list) > 0 else None
 
     def reset_default_route(self, ip_addr):
         return self.underlay_host_obj.reset_default_route(ip_addr)
@@ -132,17 +131,17 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
         return self.underlay_host_obj.del_route(route_ip)
 
     def start_echo_server(self, ip_addr='localhost',
-                          port=echo_server.DEFAULT_ECHO_PORT,
-                          echo_data="echo-reply", protocol='tcp'):
+                          port=zephyr_constants.DEFAULT_ECHO_PORT,
+                          echo_data="pong", protocol='tcp'):
         return self.underlay_host_obj.start_echo_server(
             ip_addr, port, echo_data, protocol)
 
     def stop_echo_server(self, ip_addr='localhost',
-                         port=echo_server.DEFAULT_ECHO_PORT):
+                         port=zephyr_constants.DEFAULT_ECHO_PORT):
         return self.underlay_host_obj.stop_echo_server(ip_addr, port)
 
     def send_echo_request(self, dest_ip='localhost',
-                          dest_port=echo_server.DEFAULT_ECHO_PORT,
+                          dest_port=zephyr_constants.DEFAULT_ECHO_PORT,
                           echo_request='ping', source_ip=None,
                           protocol='tcp'):
         return self.underlay_host_obj.send_echo_request(

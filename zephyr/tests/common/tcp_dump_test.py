@@ -279,7 +279,6 @@ class TCPDumpTest(unittest.TestCase):
             ret = tcpd.wait_for_packets(count=1, timeout=3)
             self.assertEqual(1, len(ret))
 
-            self.assertTrue(not proc.is_alive())
         finally:
             tcpd.stop_capture()
 

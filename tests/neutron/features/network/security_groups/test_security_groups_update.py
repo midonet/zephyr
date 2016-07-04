@@ -48,21 +48,21 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
             "C", net['id'], sub['gateway_ip'], sgs=[sg1['id']])
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         vmc.start_echo_server(ip_addr=ipc)
-        self.verify_connectivity(vma, ipc)
+        self.check_ping_and_tcp(vma, ipc)
 
         self.api.update_port(porta['id'],
                              {'port': {'security_groups': [sg2['id']]}})
 
         # Allow time for topology changes to propagate to the agents
         time.sleep(1)
-        self.verify_connectivity(vmb, ipc)
-        self.verify_connectivity(vmc, ipb)
+        self.check_ping_and_tcp(vmb, ipc)
+        self.check_ping_and_tcp(vmc, ipb)
 
         self.assertFalse(vma.ping(ipb))
         self.assertFalse(vma.ping(ipc))
@@ -74,4 +74,4 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
 
         # Allow time for topology changes to propagate to the agents
         time.sleep(1)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)

@@ -12,586 +12,331 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import namedtuple
+import operator
 import unittest
+from zephyr.common import ip
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
-
-TopoData = namedtuple('TopoData',
-                      'net1 net2 subnet1 subnet2 port1 port2 if1 if2 router1')
+from zephyr.tsm import test_case
 
 
 class TestExtraRoutes(NeutronTestCase):
-    def setup_standard_neutron_topo(self):
-        try:
-            net1def = {'network': {'name': 'net1', 'admin_state_up': True,
-                                   'tenant_id': 'admin'}}
-            net2def = {'network': {'name': 'net2', 'admin_state_up': True,
-                                   'tenant_id': 'admin'}}
+    def __init__(self, run_method='runTest'):
+        super(TestExtraRoutes, self).__init__(run_method)
+        self.net1 = None
+        self.net2 = None
+        self.subnet1 = None
+        self.subnet2 = None
+        self.router = None
 
-            net1 = self.api.create_network(net1def)['network']
-            self.LOG.debug('Created net1: ' + str(net1))
-
-            net2 = self.api.create_network(net2def)['network']
-            self.LOG.debug('Created net2: ' + str(net2))
-
-            subnet1def = {'subnet': {'name': 'net1_sub',
-                                     'network_id': net1['id'],
-                                     'ip_version': 4, 'cidr': '192.168.1.0/24',
-                                     'tenant_id': 'admin'}}
-            subnet2def = {'subnet': {'name': 'net2_sub',
-                                     'network_id': net2['id'],
-                                     'ip_version': 4, 'cidr': '192.168.2.0/24',
-                                     'tenant_id': 'admin'}}
-
-            subnet1 = self.api.create_subnet(subnet1def)['subnet']
-            self.LOG.debug('Created subnet1: ' + str(subnet1))
-
-            subnet2 = self.api.create_subnet(subnet2def)['subnet']
-            self.LOG.debug('Created subnet2: ' + str(subnet2))
-
-            router1def = {'router': {
-                'name': 'router1to2',
-                'admin_state_up': True,
-                'external_gateway_info': {
-                    "network_id": self.pub_network['id']
-                },
-                'tenant_id': 'admin'
-            }}
-
-            router1 = self.api.create_router(router1def)['router']
-            self.LOG.debug('Created router1 from net1 to net2: ' +
-                           str(router1))
-
-            port1def = {'port': {'name': 'port1',
-                                 'network_id': net1['id'],
-                                 'admin_state_up': True,
-                                 'tenant_id': 'admin'}}
-            port1 = self.api.create_port(port1def)['port']
-            self.LOG.debug('Created port1: ' + str(port1))
-
-            port2def = {'port': {'name': 'port2',
-                                 'network_id': net2['id'],
-                                 'admin_state_up': True,
-                                 'tenant_id': 'admin'}}
-            port2 = self.api.create_port(port2def)['port']
-            self.LOG.debug('Created port2: ' + str(port2))
-
-            if1def = {'subnet_id': subnet1['id']}
-            if2def = {'subnet_id': subnet2['id']}
-
-            if1 = self.api.add_interface_router(router1['id'], if1def)
-            if2 = self.api.add_interface_router(router1['id'], if2def)
-
-            self.LOG.debug("Added interface to router: " + str(if1))
-            self.LOG.debug("Added interface to router: " + str(if2))
-
-            return TopoData(net1, net2, subnet1, subnet2, port1, port2, if1,
-                            if2, router1)
-        except Exception as e:
-            self.LOG.fatal('Error setting up topology: ' + str(e))
-            raise e
-
-    def clear_neutron_topo(self, td):
-        """
-        :type td: TopoData
-        :return:
-        """
-        if td is None:
-            return
-        if td.router1 is not None:
-            self.api.update_router(
-                td.router1['id'], {'router': {'routes': None}})
-        if td.if1 is not None:
-            self.api.remove_interface_router(td.router1['id'], td.if1)
-        if td.if2 is not None:
-            self.api.remove_interface_router(td.router1['id'], td.if2)
-        if td.router1 is not None:
-            self.api.delete_router(td.router1['id'])
-        if td.port1 is not None:
-            self.api.delete_port(td.port1['id'])
-        if td.port2 is not None:
-            self.api.delete_port(td.port2['id'])
-        if td.subnet1 is not None:
-            self.api.delete_subnet(td.subnet1['id'])
-        if td.subnet2 is not None:
-            self.api.delete_subnet(td.subnet2['id'])
-        if td.net1 is not None:
-            self.api.delete_network(td.net1['id'])
-        if td.net2 is not None:
-            self.api.delete_network(td.net2['id'])
+    def setUp(self):
+        self.net1 = self.create_network(name='net1')
+        self.net2 = self.create_network(name='net2')
+        self.subnet1 = self.create_subnet(
+            name='subnet1', net_id=self.net1['id'], cidr='192.168.1.0/24')
+        self.subnet2 = self.create_subnet(
+            name='subnet2', net_id=self.net2['id'], cidr='192.168.2.0/24')
+        self.router = self.create_router(
+            name='router', pub_net_id=self.pub_network['id'],
+            priv_sub_ids=[self.subnet1['id'], self.subnet2['id']])
 
     @require_extension("extraroute")
     @require_extension("allowed-address-pairs")
     def test_extra_routes_1R2SN_multi_ip_interface_ping_same_hv(self):
-        vm1 = None
-        vm2 = None
-        td = None
-        try:
-            td = self.setup_standard_neutron_topo()
+        port1, vm1, ip1 = self.create_vm_server(
+            name='vm1', net_id=self.net1['id'],
+            gw_ip=self.subnet1['gateway_ip'])
+        port2, vm2, ip2 = self.create_vm_server(
+            name='vm2', net_id=self.net2['id'],
+            gw_ip=self.subnet2['gateway_ip'],
+            hv_host=vm1.get_hypervisor_name())
 
-            ip1 = td.port1['fixed_ips'][0]['ip_address']
-            ip2 = td.port2['fixed_ips'][0]['ip_address']
+        self.api.update_port(
+            port1['id'],
+            {'port': {
+                'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
 
-            vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'])
-            """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
-                                     gw_ip=td.subnet2['gateway_ip'],
-                                     hv_host=vm1.get_hypervisor_name())
-            """ :type: Guest"""
+        # Add an extra IP addr to vm1's interface
+        vm1.execute('ip a add 172.16.0.2/32 dev eth0')
 
-            vm1.plugin_vm('eth0', td.port1['id'])
-            vm2.plugin_vm('eth0', td.port2['id'])
+        # Add extra route for router to route 172.16.0.2 to subnet1
+        updatedef = {'router': {
+            'routes': [
+                {
+                    'destination': '172.16.0.2/32',
+                    'nexthop': ip1
+                }
+            ]
+        }}
+        self.api.update_router(self.router['id'], updatedef)
 
-            self.api.update_port(
-                td.port1['id'],
-                {'port': {
-                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
+        self.LOG.info('Pinging from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
 
-            # Add an extra IP addr to vm1's interface
-            vm1.execute('ip a add 172.16.0.2/32 dev eth0')
+        self.LOG.info('Pinging from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1, use_tcp=False))
 
-            # Add extra route for router to route 172.16.0.2 to subnet1
-            updatedef = {'router': {
-                'routes': [
-                    {
-                        'destination': '172.16.0.2/32',
-                        'nexthop': ip1
-                    }
-                ]
-            }}
-            new_router1 = self.api.update_router(
-                td.router1['id'], updatedef)['router']
-
-            # Re-assign named tuple with "router1" field set to new value
-            # (must reset because named tuples are immutable).
-            self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1)
-                             for f, v in td._asdict().iteritems()})
-
-            self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
-
-            self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
-
-            self.LOG.info("Pinging from VM2 to VM1's extra address")
-            self.assertTrue(vm2.ping(target_ip='172.16.0.2', on_iface='eth0'))
-
-        finally:
-            if vm1 is not None:
-                vm1.terminate()
-            if vm2 is not None:
-                vm2.terminate()
-            self.clear_neutron_topo(td)
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.16.0.2'))
 
     @require_extension("extraroute")
     @require_extension("allowed-address-pairs")
+    @test_case.require_topology_feature('compute_hosts', operator.ge, 2)
     def test_extra_routes_1R2SN_multi_ip_interface_ping_diff_hv(self):
-        vm1 = None
-        vm2 = None
-        td = None
-        try:
-            td = self.setup_standard_neutron_topo()
+        port1, vm1, ip1 = self.create_vm_server(
+            name='vm1', net_id=self.net1['id'],
+            gw_ip=self.subnet1['gateway_ip'])
+        port2, vm2, ip2 = self.create_vm_server(
+            name='vm2', net_id=self.net2['id'],
+            gw_ip=self.subnet2['gateway_ip'],
+            hv_host='!' + vm1.get_hypervisor_name())
+        self.api.update_port(
+            port1['id'],
+            {'port': {
+                'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
 
-            ip1 = td.port1['fixed_ips'][0]['ip_address']
-            ip2 = td.port2['fixed_ips'][0]['ip_address']
+        # Add an extra IP addr to vm1's interface
+        vm1.execute('ip a add 172.16.0.2/32 dev eth0')
 
-            vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'])
-            """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
-                                     gw_ip=td.subnet2['gateway_ip'],
-                                     hv_host='!' + vm1.get_hypervisor_name())
-            """ :type: Guest"""
+        # Add extra route for router to route 172.16.0.2 to subnet1
+        updatedef = {'router': {
+            'routes': [
+                {
+                    'destination': '172.16.0.2/32',
+                    'nexthop': ip1
+                }
+            ]
+        }}
+        self.api.update_router(self.router['id'], updatedef)
 
-            vm1.plugin_vm('eth0', td.port1['id'])
-            vm2.plugin_vm('eth0', td.port2['id'])
+        self.LOG.info('Pinging from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
 
-            self.api.update_port(
-                td.port1['id'],
-                {'port': {
-                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
+        self.LOG.info('Pinging from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1, use_tcp=False))
 
-            # Add an extra IP addr to vm1's interface
-            vm1.execute('ip a add 172.16.0.2/32 dev eth0')
-
-            # Add extra route for router to route 172.16.0.2 to subnet1
-            updatedef = {'router': {
-                'routes': [
-                    {
-                        'destination': '172.16.0.2/32',
-                        'nexthop': ip1
-                    }
-                ]
-            }}
-            new_router1 = self.api.update_router(
-                td.router1['id'], updatedef)['router']
-
-            # Re-assign named tuple with "router1" field set to new value
-            # (must reset because named tuples are immutable).
-            self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1)
-                             for f, v in td._asdict().iteritems()})
-
-            self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
-
-            self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
-
-            self.LOG.info("Pinging from VM2 to VM1's extra address")
-            self.assertTrue(vm2.ping(target_ip='172.16.0.2', on_iface='eth0'))
-
-        finally:
-            if vm1 is not None:
-                vm1.terminate()
-            if vm2 is not None:
-                vm2.terminate()
-            self.clear_neutron_topo(td)
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.16.0.2'))
 
     @require_extension("extraroute")
     @require_extension("allowed-address-pairs")
+    @test_case.require_hosts(['ext1', 'router1', 'edge1'])
     def test_extra_routes_1R2SN_multi_ip_interface_ping_outside(self):
-        # skip for now
+        port1, vm1, ip1 = self.create_vm_server(
+            name='vm1', net_id=self.net1['id'],
+            gw_ip=self.subnet1['gateway_ip'],
+            allowed_address_pairs=[('172.16.0.2',)])
+        port2, vm2, ip2 = self.create_vm_server(
+            name='vm2', net_id=self.net2['id'],
+            gw_ip=self.subnet2['gateway_ip'])
+
+        self.create_edge_router()
+
+        # Add an extra IP addr to vm1's interface
+        vm1.execute('ip a add 172.16.0.2/32 dev eth0')
+
+        # Add extra route for router to route 172.16.0.2 to subnet1
+        updatedef = {'router': {
+            'routes': [
+                {
+                    'destination': '172.16.0.2/32',
+                    'nexthop': ip1
+                }
+            ]
+        }}
+        self.api.update_router(self.router['id'], updatedef)
+
+        ext_host = self.vtm.get_host('ext1')
         """
-        vm1 = None
-        vm2 = None
-        td = None
-        try:
-            td = self.setup_standard_neutron_topo()
-
-            ip1 = td.port1['fixed_ips'][0]['ip_address']
-            ip2 = td.port2['fixed_ips'][0]['ip_address']
-
-            vm1 = self.vtm.create_vm(ip_addr=ip1,
-                                     gw_ip=td.subnet1['gateway_ip'])
-            vm2 = self.vtm.create_vm(ip_addr=ip2,
-                                    gw_ip=td.subnet2['gateway_ip'])
-
-            vm1.plugin_vm('eth0', td.port1['id'])
-            vm2.plugin_vm('eth0', td.port2['id'])
-
-            # Add an extra IP addr to vm1's interface
-            vm1.execute('ip a add 172.16.0.2/32 dev eth0')
-
-            # Add extra route for router to route 172.16.0.2 to subnet1
-            updatedef = {'router': {
-                'routes': [
-                    {
-                        'destination': '172.16.0.2/32',
-                        'nexthop': ip1
-                    }
-                ]
-            }}
-            new_router1 = self.api.update_router(
-                td.router1['id'], updatedef)['router']
-
-            # Re-assign named tuple with "router1" field set to new value
-            # (must reset because named tuples are immutable).
-            self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1)
-                             for f, v in td._asdict().iteritems()})
-
-            self.LOG.info('Pinging from VM1 to 8.8.8.8')
-            self.assertTrue(vm1.ping(target_ip="8.8.8.8"))
-
-            self.LOG.info('Pinging from VM2 to 8.8.8.8')
-            self.assertTrue(vm2.ping(target_ip="8.8.8.8"))
-
-        finally:
-            raw_input("Pausing...")
-            if vm1 is not None:
-                vm1.terminate()
-            if vm2 is not None:
-                vm2.terminate()
-            self.clear_neutron_topo(td)
+        :type: zephyr.underlay.underlay_host.UnderlayHost
         """
+        ext_ip = ext_host.get_ip('eth0')
+        ext_host.add_route(
+            route_ip=ip.IP.make_ip(self.pub_subnet['cidr']),
+            gw_ip=ip.IP('.'.join(ext_ip.split('.')[:3]) + '.2'))
+
+        self.LOG.info('Pinging from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
+
+        self.LOG.info('Pinging from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1, use_tcp=False))
+
     @require_extension("extraroute")
     @require_extension("allowed-address-pairs")
     def test_extra_routes_1R2SN_multi_ip_interface_multiple_routes(self):
-        vm1 = None
-        vm2 = None
-        td = None
-        try:
-            td = self.setup_standard_neutron_topo()
+        port1, vm1, ip1 = self.create_vm_server(
+            name='vm1', net_id=self.net1['id'],
+            gw_ip=self.subnet1['gateway_ip'])
+        port2, vm2, ip2 = self.create_vm_server(
+            name='vm2', net_id=self.net2['id'],
+            gw_ip=self.subnet2['gateway_ip'])
 
-            ip1 = td.port1['fixed_ips'][0]['ip_address']
-            ip2 = td.port2['fixed_ips'][0]['ip_address']
+        self.api.update_port(
+            port1['id'],
+            {'port': {
+                'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
+                                          {"ip_address": "172.17.0.2"}]}})
 
-            vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'])
-            """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
-                                     gw_ip=td.subnet2['gateway_ip'])
-            """ :type: Guest"""
+        self.api.update_port(
+            port2['id'],
+            {'port': {
+                'allowed_address_pairs': [{"ip_address": "172.18.0.2"}]}})
 
-            vm1.plugin_vm('eth0', td.port1['id'])
-            vm2.plugin_vm('eth0', td.port2['id'])
+        # Add two extra IP addrs to vm1's interface and one to vm2
+        vm1.execute('ip a add 172.16.0.2/32 dev eth0')
+        vm1.execute('ip a add 172.17.0.2/32 dev eth0')
+        vm2.execute('ip a add 172.18.0.2/32 dev eth0')
 
-            self.api.update_port(
-                td.port1['id'],
-                {'port': {
-                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
-                                              {"ip_address": "172.17.0.2"}]}})
+        # Add extra route for router to route 172.16.0.2 to subnet1
+        updatedef = {'router': {
+            'routes': [
+                {
+                    'destination': '172.16.0.2/32',
+                    'nexthop': ip1
+                },
+                {
+                    'destination': '172.17.0.2/32',
+                    'nexthop': ip1
+                },
+                {
+                    'destination': '172.18.0.2/32',
+                    'nexthop': ip2
+                }
+            ]
+        }}
+        self.api.update_router(self.router['id'], updatedef)
 
-            self.api.update_port(
-                td.port2['id'],
-                {'port': {
-                    'allowed_address_pairs': [{"ip_address": "172.18.0.2"}]}})
+        self.LOG.info('Pinging from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
 
-            # Add two extra IP addrs to vm1's interface and one to vm2
-            vm1.execute('ip a add 172.16.0.2/32 dev eth0')
-            vm1.execute('ip a add 172.17.0.2/32 dev eth0')
-            vm2.execute('ip a add 172.18.0.2/32 dev eth0')
+        self.LOG.info('Pinging from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1, use_tcp=False))
 
-            # Add extra route for router to route 172.16.0.2 to subnet1
-            updatedef = {'router': {
-                'routes': [
-                    {
-                        'destination': '172.16.0.2/32',
-                        'nexthop': ip1
-                    },
-                    {
-                        'destination': '172.17.0.2/32',
-                        'nexthop': ip1
-                    },
-                    {
-                        'destination': '172.18.0.2/32',
-                        'nexthop': ip2
-                    }
-                ]
-            }}
-            new_router1 = self.api.update_router(
-                td.router1['id'], updatedef)['router']
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.16.0.2'))
 
-            # Re-assign named tuple with "router1" field set to new value
-            # (must reset because named tuples are immutable).
-            self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1)
-                             for f, v in td._asdict().iteritems()})
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.17.0.2'))
 
-            self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
-
-            self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
-
-            self.LOG.info("Pinging from VM2 to VM1's first extra address")
-            self.assertTrue(vm2.ping(target_ip='172.16.0.2', on_iface='eth0'))
-
-            self.LOG.info("Pinging from VM2 to VM1's second extra address")
-            self.assertTrue(vm2.ping(target_ip='172.17.0.2', on_iface='eth0'))
-
-            self.LOG.info("Pinging from VM1 to VM2's extra address")
-            self.assertTrue(vm2.ping(target_ip='172.18.0.2', on_iface='eth0'))
-
-        finally:
-            self.cleanup_vms([(vm1, None), (vm2, None)])
-            self.clear_neutron_topo(td)
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.18.0.2'))
 
     @require_extension("extraroute")
     @require_extension("allowed-address-pairs")
     def test_extra_routes_1R2SN_multi_ip_interface_ping_subnet_route(self):
-        vm1 = None
-        vm2 = None
-        td = None
-        try:
-            td = self.setup_standard_neutron_topo()
+        port1, vm1, ip1 = self.create_vm_server(
+            name='vm1', net_id=self.net1['id'],
+            gw_ip=self.subnet1['gateway_ip'])
+        port2, vm2, ip2 = self.create_vm_server(
+            name='vm2', net_id=self.net2['id'],
+            gw_ip=self.subnet2['gateway_ip'])
 
-            ip1 = td.port1['fixed_ips'][0]['ip_address']
-            ip2 = td.port2['fixed_ips'][0]['ip_address']
+        self.api.update_port(
+            port1['id'],
+            {'port': {
+                'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
+                                          {"ip_address": "172.16.0.3"}]}})
 
-            vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'])
-            """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
-                                     gw_ip=td.subnet2['gateway_ip'])
-            """ :type: Guest"""
+        # Add an extra IP addr to vm1's interface
+        vm1.execute('ip a add 172.16.0.2/32 dev eth0')
+        # Add another extra IP addr to vm1's interface
+        vm1.execute('ip a add 172.16.0.3/32 dev eth0')
 
-            vm1.plugin_vm('eth0', td.port1['id'])
-            vm2.plugin_vm('eth0', td.port2['id'])
+        # Add extra route for router to route 172.16.0.2 to subnet1
+        updatedef = {'router': {
+            'routes': [
+                {
+                    'destination': '172.16.0.0/24',
+                    'nexthop': ip1
+                }
+            ]
+        }}
+        self.api.update_router(self.router['id'], updatedef)
 
-            self.api.update_port(
-                td.port1['id'],
-                {'port': {
-                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"},
-                                              {"ip_address": "172.16.0.3"}]}})
+        self.LOG.info('Pinging from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
 
-            # Add an extra IP addr to vm1's interface
-            vm1.execute('ip a add 172.16.0.2/32 dev eth0')
-            # Add another extra IP addr to vm1's interface
-            vm1.execute('ip a add 172.16.0.3/32 dev eth0')
+        self.LOG.info('Pinging from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1, use_tcp=False))
 
-            # Add extra route for router to route 172.16.0.2 to subnet1
-            updatedef = {'router': {
-                'routes': [
-                    {
-                        'destination': '172.16.0.0/24',
-                        'nexthop': ip1
-                    }
-                ]
-            }}
-            new_router1 = self.api.update_router(
-                td.router1['id'], updatedef)['router']
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.16.0.2'))
 
-            # Re-assign named tuple with "router1" field set to new value
-            # (must reset because named tuples are immutable).
-            self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1)
-                             for f, v in td._asdict().iteritems()})
-
-            self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
-
-            self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(target_ip=ip1, on_iface='eth0'))
-
-            self.LOG.info("Pinging from VM2 to VM1's first extra address")
-            self.assertTrue(vm2.ping(target_ip='172.16.0.2', on_iface='eth0'))
-
-            self.LOG.info("Pinging from VM2 to VM1's second extra address")
-            self.assertTrue(vm2.ping(target_ip='172.16.0.3', on_iface='eth0'))
-
-        finally:
-            self.cleanup_vms([(vm1, None), (vm2, None)])
-            self.clear_neutron_topo(td)
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.16.0.3'))
 
     @unittest.expectedFailure
     @require_extension("extraroute")
     @require_extension("allowed-address-pairs")
     def test_extra_routes_2R21N_add_extra_route(self):
-        vm1 = None
-        vm2 = None
-        td = None
-        port1extra = None
-        port2extra = None
-        router1extra = None
-        if1 = None
-        if2 = None
+        port1, vm1, ip1 = self.create_vm_server(
+            name='vm1', net_id=self.net1['id'],
+            gw_ip=self.subnet1['gateway_ip'])
+        port2, vm2, ip2 = self.create_vm_server(
+            name='vm2', net_id=self.net2['id'],
+            gw_ip=self.subnet2['gateway_ip'])
 
-        try:
-            td = self.setup_standard_neutron_topo()
+        routerextra = self.create_router(name='routerextra')
 
-            router1extra = self.api.create_router(
-                {'router': {'name': 'router1extra',
-                            'admin_state_up': True,
-                            'tenant_id': 'admin'}})['router']
+        port1extra = self.create_port(
+            name='port1extra', net_id=self.net1['id'])
+        port2extra = self.create_port(
+            name='port1extra', net_id=self.net2['id'])
+        ip1extra = port1extra['fixed_ips'][0]['ip_address']
+        ip2extra = port2extra['fixed_ips'][0]['ip_address']
 
-            port1extra = self.api.create_port(
-                {'port': {'name': 'port1extra',
-                          'network_id': td.net1['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port1extra: ' + str(port1extra))
+        self.create_router_interface(
+            router_id=routerextra['id'], port_id=port1extra['id'])
+        self.create_router_interface(
+            router_id=routerextra['id'], port_id=port2extra['id'])
 
-            port2extra = self.api.create_port(
-                {'port': {'name': 'port2extra',
-                          'network_id': td.net2['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port2extra: ' + str(port2extra))
+        self.api.update_port(
+            port1['id'],
+            {'port': {
+                'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
 
-            try:
-                if1 = self.api.add_interface_router(
-                    router1extra['id'], {'port_id': port1extra['id']})
-                self.LOG.debug('Added port1extra port to router ' +
-                               'router1extra: ' + str(if1))
-            except Exception:
-                self.LOG.fatal('Exception raised trying to add interface ' +
-                               'for port1extra')
-                ports_list = self.api.list_ports(
-                    port_id=port1extra['id'])['ports']
-                ports = [i for i in ports_list if i['id'] == port1extra['id']]
-                self.LOG.debug('Got port list: ' + str(ports))
-                if len(ports) == 0:
-                    self.LOG.fatal('Port: ' + port1extra['id'] +
-                                   ' was incorrectly deleted when add ' +
-                                   'router interface failed!')
-                    port1extra = None
-                raise
-            if2 = self.api.add_interface_router(
-                router1extra['id'], {'port_id': port2extra['id']})
-            self.LOG.debug('Added port2extra port to router router2extra: ' +
-                           str(if2))
+        self.api.update_port(
+            port2['id'],
+            {'port': {
+                'allowed_address_pairs': [{"ip_address": "172.18.0.3"}]}})
 
-            ip1 = td.port1['fixed_ips'][0]['ip_address']
-            ip2 = td.port2['fixed_ips'][0]['ip_address']
-            ip1extra = port1extra['fixed_ips'][0]['ip_address']
-            ip2extra = port2extra['fixed_ips'][0]['ip_address']
+        # Add an extra IP addr to vm1's interface
+        vm1.execute('ip a add 172.16.0.2/32 dev eth0')
+        # Add another extra IP addr to vm2's interface
+        vm2.execute('ip a add 172.16.0.3/32 dev eth0')
 
-            vm1 = self.vtm.create_vm(ip_addr=ip1, mac=td.port1['mac_address'],
-                                     gw_ip=td.subnet1['gateway_ip'])
-            """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip_addr=ip2, mac=td.port2['mac_address'],
-                                     gw_ip=td.subnet2['gateway_ip'])
-            """ :type: Guest"""
+        # Add extra route for router to route extra-IPs to use extra ports
+        updatedef = {'router': {
+            'routes': [
+                {
+                    'destination': '172.16.0.3/32',
+                    'nexthop': ip1extra
+                },
+                {
+                    'destination': '172.16.0.2/32',
+                    'nexthop': ip2extra
+                }
+            ]
+        }}
+        self.api.update_router(self.router['id'], updatedef)
 
-            vm1.plugin_vm('eth0', td.port1['id'])
-            vm2.plugin_vm('eth0', td.port2['id'])
+        self.LOG.info('Pinging from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
 
-            self.api.update_port(
-                td.port1['id'],
-                {'port': {
-                    'allowed_address_pairs': [{"ip_address": "172.16.0.2"}]}})
+        self.LOG.info('Pinging from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1, use_tcp=False))
 
-            self.api.update_port(
-                td.port2['id'],
-                {'port': {
-                    'allowed_address_pairs': [{"ip_address": "172.18.0.3"}]}})
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.16.0.2'))
 
-            # Add an extra IP addr to vm1's interface
-            vm1.execute('ip a add 172.16.0.2/32 dev eth0')
-            # Add another extra IP addr to vm2's interface
-            vm2.execute('ip a add 172.16.0.3/32 dev eth0')
-
-            # Add extra route for router to route extra-IPs to use extra ports
-            updatedef = {'router': {
-                'routes': [
-                    {
-                        'destination': '172.16.0.3/32',
-                        'nexthop': ip1extra
-                    },
-                    {
-                        'destination': '172.16.0.2/32',
-                        'nexthop': ip2extra
-                    }
-                ]
-            }}
-            new_router1 = self.api.update_router(
-                td.router1['id'], updatedef)['router']
-
-            # Re-assign named tuple with "router1" field set to new value
-            # (must reset because named tuples are immutable).
-            self.LOG.debug('Added extra route to router: ' + str(new_router1))
-            td = TopoData(**{f: (v if f != 'router1' else new_router1)
-                             for f, v in td._asdict().iteritems()})
-
-            self.LOG.info('Pinging from VM1 to VM2')
-            self.assertTrue(vm1.ping(on_iface='eth0', target_ip=ip2))
-
-            self.LOG.info('Pinging from VM2 to VM1')
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip=ip1))
-
-            self.LOG.info("Pinging from VM2 to VM1's first extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.16.0.2'))
-
-            self.LOG.info("Pinging from VM2 to VM1's second extra address")
-            self.assertTrue(vm2.ping(on_iface='eth0', target_ip='172.16.0.3'))
-
-        finally:
-            if port1extra is not None:
-                self.api.delete_port(port1extra['id'])
-            if port2extra is not None:
-                self.api.delete_port(port2extra['id'])
-            if router1extra is not None:
-                self.api.update_router(
-                    router1extra['id'], {'router': {'routes': None}})
-                if if1 is not None:
-                    self.api.remove_interface_router(router1extra['id'], if1)
-                if if2 is not None:
-                    self.api.remove_interface_router(router1extra['id'], if2)
-                self.api.delete_router(router1extra['id'])
-            self.cleanup_vms([(vm1, None), (vm2, None)])
-            self.clear_neutron_topo(td)
+        self.LOG.info("Pinging from VM2 to VM1's extra address")
+        self.assertTrue(vm2.verify_connection_to_host(
+            vm1, use_tcp=False, target_ip_addr='172.16.0.3'))

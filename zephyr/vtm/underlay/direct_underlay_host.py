@@ -14,13 +14,14 @@
 
 import logging
 import uuid
+
 from zephyr.common import cli
-from zephyr.common import echo_server
 from zephyr.common import exceptions
 from zephyr.common.ip import IP
 from zephyr.common.tcp_dump import TCPDump
 from zephyr.common.tcp_sender import TCPSender
 from zephyr.common import utils
+from zephyr.common import zephyr_constants
 from zephyr.vtm.underlay import underlay_host
 
 ECHO_SERVER_TIMEOUT = 3
@@ -127,8 +128,8 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         pass
 
     def start_echo_server(self, ip_addr='localhost',
-                          port=echo_server.DEFAULT_ECHO_PORT,
-                          echo_data="echo-reply", protocol='tcp'):
+                          port=zephyr_constants.DEFAULT_ECHO_PORT,
+                          echo_data="pong", protocol='tcp'):
         """
         Start an echo server listening on given ip/port (default to
         localhost:80) which returns the echo_data on any TCP
@@ -139,19 +140,10 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         :param protocol: str
         :return: CommandStatus
         """
-        es = echo_server.EchoServer(
-            ip_addr=ip_addr, port=port,
-            echo_data=echo_data, protocol=protocol)
-        es.start()
-        if (port in self.echo_server_procs and
-                self.echo_server_procs[port] is not None):
-            self.stop_echo_server(ip_addr, port)
-
-        self.echo_server_procs[port] = es
-        return es
+        pass
 
     def stop_echo_server(self, ip_addr='localhost',
-                         port=echo_server.DEFAULT_ECHO_PORT):
+                         port=zephyr_constants.DEFAULT_ECHO_PORT):
         """
         Stop an echo server that has been started on given ip/port (defaults to
         localhost:80).  If echo service has not been started, do nothing.
@@ -159,15 +151,10 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         :param port: int
         :return:
         """
-        if (port in self.echo_server_procs and
-                self.echo_server_procs[port] is not None):
-            self.LOG.debug('Stopping echo server on: ' + str(ip_addr) +
-                           ':' + str(port))
-            es = self.echo_server_procs[port]
-            es.stop()
+        pass
 
     def send_echo_request(self, dest_ip='localhost',
-                          dest_port=echo_server.DEFAULT_ECHO_PORT,
+                          dest_port=zephyr_constants.DEFAULT_ECHO_PORT,
                           echo_request='ping', source_ip=None,
                           protocol='tcp'):
         """
@@ -180,15 +167,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         :param protocol: str
         :return: str
         """
-        self.LOG.debug('Sending echo command ' + echo_request + ' to: ' +
-                       str(dest_ip) + ' ' + str(dest_port))
-        es = self.echo_server_procs.get(dest_port, None)
-        if not es:
-            raise exceptions.ObjectNotFoundException(
-                "No Echo Server found running on port: " + str(dest_port))
-        out_str = es.send(
-            ip_addr=dest_ip, port=dest_port,
-            echo_request=echo_request, protocol=protocol)
+        out_str = ""
         return out_str
 
     # Specialized host-testing methods

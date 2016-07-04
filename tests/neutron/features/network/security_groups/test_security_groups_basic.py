@@ -45,12 +45,12 @@ class TestRouterPeeringSecurityGroups(NeutronTestCase):
             "C", net['id'], sub['gateway_ip'], sgs=[sg2['id']])
 
         vmb.start_echo_server(ip_addr=ipb)
-        self.verify_connectivity(vma, ipb)
+        self.check_ping_and_tcp(vma, ipb)
 
         vma.start_echo_server(ip_addr=ipa)
-        self.verify_connectivity(vmb, ipa)
+        self.check_ping_and_tcp(vmb, ipa)
 
         self.assertFalse(vmc.ping(ipa))
 
         vmc.start_echo_server(ip_addr=ipc)
-        self.verify_connectivity(vma, ipc)
+        self.check_ping_and_tcp(vma, ipc)

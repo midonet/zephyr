@@ -18,61 +18,35 @@ from zephyr.tsm.neutron_test_case import NeutronTestCase
 class TestMultiSubnet(NeutronTestCase):
     def test_multiple_subnets_one_network(self):
         # Allowed address pair must have IP address
-        port1 = None
-        port2 = None
-        vm1 = None
-        vm2 = None
-        try:
+        net1def = {'network': {'name': 'net1', 'admin_state_up': True,
+                               'tenant_id': 'admin'}}
 
-            net1def = {'network': {'name': 'net1', 'admin_state_up': True,
-                                   'tenant_id': 'admin'}}
+        net1 = self.api.create_network(net1def)['network']
+        self.LOG.debug('Created net1: ' + str(net1))
 
-            net1 = self.api.create_network(net1def)['network']
-            self.LOG.debug('Created net1: ' + str(net1))
+        subnet1def = {'subnet':
+                      {'name': 'net1_sub1',
+                       'network_id': net1['id'],
+                       'ip_version': 4, 'cidr': '172.168.10.8/29',
+                       'tenant_id': 'admin'}}
+        subnet2def = {'subnet': {'name': 'net1_sub2',
+                                 'network_id': net1['id'],
+                                 'ip_version': 4, 'cidr': '172.168.1.8/29',
+                                 'tenant_id': 'admin'}}
 
-            subnet1def = {'subnet':
-                          {'name': 'net1_sub1',
-                           'network_id': net1['id'],
-                           'ip_version': 4, 'cidr': '172.168.10.8/29',
-                           'tenant_id': 'admin'}}
-            subnet2def = {'subnet': {'name': 'net1_sub2',
-                                     'network_id': net1['id'],
-                                     'ip_version': 4, 'cidr': '172.168.1.8/29',
-                                     'tenant_id': 'admin'}}
+        subnet1 = self.api.create_subnet(subnet1def)['subnet']
+        self.LOG.debug('Created subnet1: ' + str(subnet1))
 
-            subnet1 = self.api.create_subnet(subnet1def)['subnet']
-            self.LOG.debug('Created subnet1: ' + str(subnet1))
+        subnet2 = self.api.create_subnet(subnet2def)['subnet']
+        self.LOG.debug('Created subnet2: ' + str(subnet2))
 
-            subnet2 = self.api.create_subnet(subnet2def)['subnet']
-            self.LOG.debug('Created subnet2: ' + str(subnet2))
+        (port1, vm1, ip1) = self.create_vm_server(
+            'vm2', self.main_network['id'],
+            subnet1['gateway_ip'])
+        (port2, vm2, ip2) = self.create_vm_server(
+            'vm2', self.main_network['id'],
+            subnet2['gateway_ip'])
+        """ :type: Guest"""
 
-            port1 = self.api.create_port(
-                {'port': {'name': 'port1',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-
-            port2 = self.api.create_port(
-                {'port': {'name': 'port2',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-
-            ip1 = port1['fixed_ips'][0]['ip_address']
-            ip2 = port2['fixed_ips'][0]['ip_address']
-
-            vm1 = self.vtm.create_vm(ip_addr=ip1, mac=port1['mac_address'],
-                                     gw_ip=subnet1['gateway_ip'])
-            """ :type: Guest"""
-            vm2 = self.vtm.create_vm(ip_addr=ip2, mac=port2['mac_address'],
-                                     gw_ip=subnet2['gateway_ip'])
-            """ :type: Guest"""
-
-            vm1.plugin_vm('eth0', port1['id'])
-            vm2.plugin_vm('eth0', port2['id'])
-
-            self.assertTrue(vm1.ping(target_ip=ip2))
-            self.assertTrue(vm2.ping(target_ip=ip1))
-
-        finally:
-            self.cleanup_vms([(vm1, port1), (vm2, port2)])
+        self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
+        self.assertTrue(vm2.verify_connection_to_host(vm1, use_tcp=False))

@@ -208,10 +208,12 @@ class TestVPNaaSSingleSite(NeutronTestCase):
             f = vmL1.execute('ls')
 
             self.LOG.info('Pinging from VM L1 to VM R1')
-            self.assertTrue(vmL1.ping(target_ip=ipR1, on_iface='eth0'))
+            self.assertTrue(vmL1.verify_connection_to_host(
+                vmR1, use_tcp=False))
 
             self.LOG.info('Pinging from VM R1 to VM L1')
-            self.assertTrue(vmR1.ping(target_ip=ipL1, on_iface='eth0'))
+            self.assertTrue(vmR1.verify_connection_to_host(
+                vmL1, use_tcp=False))
 
         finally:
             self.clear_neutron_topo(td)

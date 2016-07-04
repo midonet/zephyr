@@ -88,7 +88,7 @@ class TestPortSecurity(NeutronTestCase):
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
 
-            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+            self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
 
             # Default state should be PS enabled on net and any created ports
             # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
@@ -184,7 +184,7 @@ class TestPortSecurity(NeutronTestCase):
             vm1.plugin_vm('eth0', port1['id'])
             vm2.plugin_vm('eth0', port2['id'])
 
-            self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
+            self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
 
             # Disable port security
             self.api.update_network(

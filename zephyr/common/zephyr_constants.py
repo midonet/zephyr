@@ -35,3 +35,6 @@ class ZephyrInit(object):
             raise ValueError("root_dir not found in config")
 
         cls.BIN_ROOT_DIR = os.path.abspath(config['root_dir'])
+
+
+DEFAULT_ECHO_PORT = 5080

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.common.echo_server import DEFAULT_ECHO_PORT
+from zephyr.common.zephyr_constants import DEFAULT_ECHO_PORT
 
 
 class UnderlayHost(object):
@@ -52,7 +52,7 @@ class UnderlayHost(object):
         return None
 
     def start_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT,
-                          echo_data="echo-reply", protocol='tcp'):
+                          echo_data="pong", protocol='tcp'):
         return None
 
     def stop_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT):
