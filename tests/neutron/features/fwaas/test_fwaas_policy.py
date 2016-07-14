@@ -59,10 +59,10 @@ class TestFWaaSPolicy(NeutronTestCase):
         self.insert_firewall_rule(fw_policy_id=fwp['id'],
                                   fw_rule_id=fwr['id'])
 
-        vm2.start_echo_server(ip=ip2, port=7777, echo_data='pong')
+        vm2.start_echo_server(ip_addr=ip2, port=7777, echo_data='pong')
         reply = vm1.send_echo_request(dest_ip=ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        vm2.start_echo_server(ip=ip2, port=8888, echo_data='pong')
+        vm2.start_echo_server(ip_addr=ip2, port=8888, echo_data='pong')
         reply = vm1.send_echo_request(dest_ip=ip2, dest_port=8888)
         self.assertEqual('', reply)

@@ -94,7 +94,8 @@ class TestResult(unittest.TestResult):
                 ret_xml += format_tc(tc)
 
         for tc, data in self.failures:
-            reason = 'Trace [' + data + ']'
+            ready_data = data.replace('<', '&lt;').replace('>', '&gt;')
+            reason = 'Trace [' + ready_data + ']'
             if isinstance(tc, TestCase):
                 if hasattr(tc.failureException, "__name__"):
                     report_str = tc.failureException.__name__
@@ -110,7 +111,8 @@ class TestResult(unittest.TestResult):
                 ret_xml += format_tc_data(tc, reason)
 
         for tc, data in self.errors:
-            reason = 'Trace [' + data + ']'
+            ready_data = data.replace('<', '&lt;').replace('>', '&gt;')
+            reason = 'Trace [' + ready_data + ']'
             if isinstance(tc, TestCase):
                 if hasattr(tc.failureException, "__name__"):
                     report_str = tc.failureException.__name__
@@ -128,11 +130,13 @@ class TestResult(unittest.TestResult):
 
         for tc, data in self.skipped:
             if isinstance(tc, TestCase):
-                info = '<skipped>' + data + '</skipped>'
+                ready_data = data.replace('<', '&lt;').replace('>', '&gt;')
+                info = '<skipped>' + ready_data + '</skipped>'
                 ret_xml += format_tc_data(tc, info)
 
         for tc, data in self.expectedFailures:
-            reason = 'Trace [' + data + ']'
+            ready_data = data.replace('<', '&lt;').replace('>', '&gt;')
+            reason = 'Trace [' + ready_data + ']'
             if isinstance(tc, TestCase):
                 if hasattr(tc.failureException, "__name__"):
                     report_str = tc.failureException.__name__

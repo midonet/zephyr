@@ -31,6 +31,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
         self.vm_host = vm_host
         self.vm_type = vm_type
         self.parent_host = parent_host
+        self.main_ip = self.underlay_host_obj.main_ip
 
     def create_vm(self, ip_addr, mac, gw_ip, name):
         if self.vm_host:

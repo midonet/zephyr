@@ -19,6 +19,7 @@ class UnderlayHost(object):
     def __init__(self, name):
         self.name = name
         self.LOG = None
+        self.main_ip = None
 
     def create_vm(self, ip, mac, gw_ip, name):
         return None

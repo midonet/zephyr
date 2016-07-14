@@ -17,10 +17,12 @@ import time
 from zephyr.common import ip
 from zephyr.common import pcap
 from zephyr.tsm import neutron_test_case
+from zephyr.tsm import test_case
 
 
 class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
     @neutron_test_case.require_extension('extraroute')
+    @test_case.require_hosts(['edge1', 'ext1'])
     def test_neutron_api_ping_external(self):
         self.create_edge_router()
 
@@ -46,6 +48,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             ext_host.stop_echo_server(ip_addr=ext_ip)
 
     @neutron_test_case.require_extension('extraroute')
+    @test_case.require_hosts(['edge1', 'ext1'])
     def test_neutron_delete_readd_ext_router(self):
         edge_data = self.create_edge_router()
 
@@ -82,6 +85,7 @@ class TestExternalConnectivity(neutron_test_case.NeutronTestCase):
             ext_host.stop_echo_server(ip_addr=ext_ip)
 
     @neutron_test_case.require_extension('extraroute')
+    @test_case.require_hosts(['edge1', 'edge2', 'ext1'])
     def test_neutron_api_ping_with_high_id(self):
         self.create_edge_router(edge_host_name='edge1',
                                 edge_subnet_cidr='172.16.2.0/24')

@@ -27,6 +27,7 @@ from zephyr.vtm.underlay import underlay_host
 ECHO_SERVER_TIMEOUT = 3
 
 
+# noinspection PyUnresolvedReferences
 class DirectUnderlayHost(underlay_host.UnderlayHost):
     def __init__(self, name, unique_id=None, overlay=None,
                  vm_type='zephyr.vtm.underlay.ipnetns_vm.IPNetnsVM',
@@ -45,6 +46,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         else:
             self.LOG = logging.getLogger("host-" + self.name)
             self.LOG.addHandler(logging.NullHandler())
+        self.main_ip = '127.0.0.1'
 
     def create_vm(self, ip_addr, mac, gw_ip, name):
         if not self.hypervisor:
@@ -115,6 +117,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
 
     def add_ip(self, iface_name, ip_addr):
         self.cli.cmd('ip addr add ' + str(ip_addr) + ' dev ' + iface_name)
+        self.main_ip = ip_addr
 
     def get_ip(self, iface_name):
         return self.cli.cmd(
