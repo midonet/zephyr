@@ -37,17 +37,17 @@ def terminate_process(process):
     """
     Poll and terminate a process if it is still running.  If it doesn't exit
     within 5 seconds, send a SIGKILL signal to the process.
-    :type process: Popen
+    :type process: subprocess.Popen
     :return:
     """
     LinuxCLI().cmd('pkill -TERM -s ' + str(process.pid))
     deadline = time.time() + 3
-    while not process.poll():
+    while process.poll() is None:
         if time.time() > deadline:
             break
         time.sleep(0)
 
-    if not process.poll():
+    if process.poll() is None:
         LinuxCLI().cmd('pkill -KILL -s ' + str(process.pid))
         deadline = time.time() + 2
         while not process.poll():
@@ -55,10 +55,11 @@ def terminate_process(process):
                 break
             time.sleep(0)
 
-    if not process.poll():
-        return None
+    if (process.poll() and
+            (not process.stdin.closed and not process.stderr.closed)):
+        return process.communicate()
 
-    return process.communicate()
+    return None
 
 
 class CommandStatus(object):
@@ -97,6 +98,9 @@ class CommandStatus(object):
         else:
             out = terminate_process(self.process)
 
+        if out and len(out) >= 2:
+            self.stdout = out[0]
+            self.stderr = out[1]
         return out
 
 

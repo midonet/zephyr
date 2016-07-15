@@ -129,12 +129,15 @@ class TestAllowedAddressPairs(NeutronTestCase):
         vm2.start_echo_server(ip_addr=new_ip)
 
         # Echo request should work, but reply will be blocked
-        echo_data = vm1.send_echo_request(dest_ip=new_ip)
-        self.assertEqual('', echo_data)
+        try:
+            vm1.send_echo_request(dest_ip=new_ip, timeout=3)
+            self.fail("Should not have connected through anti-spoof")
+        except SubprocessFailedException:
+            pass
 
         # Ping to spoofed IP should work, but reply should be blocked
         self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0',
-                                  timeout=5))
+                                  timeout=3))
 
     def test_allowed_address_pairs_reply_antispoof_diff_network(self):
         aap_sg = self.create_security_group('aap_sg')
@@ -173,14 +176,16 @@ class TestAllowedAddressPairs(NeutronTestCase):
         vm2.execute('ip a add ' + new_ip + '/24 dev eth0')
 
         vm2.start_echo_server(ip_addr=new_ip)
-
         # Echo request should work, but reply will be blocked
-        echo_data = vm1.send_echo_request(dest_ip=new_ip)
-        self.assertEqual('', echo_data)
+        try:
+            vm1.send_echo_request(dest_ip=new_ip, timeout=3)
+            self.fail("Should not have connected through anti-spoof")
+        except SubprocessFailedException:
+            pass
 
         # Ping to spoofed IP should work, but reply should be blocked
         self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0',
-                                  timeout=5))
+                                  timeout=3))
 
     @require_extension("allowed-address-pairs")
     def test_allowed_address_pairs_single_ip(self):
@@ -238,12 +243,15 @@ class TestAllowedAddressPairs(NeutronTestCase):
         vm2.start_echo_server(ip_addr=new_ip)
 
         # Echo request should work, but reply will be blocked
-        echo_data = vm1.send_echo_request(dest_ip=new_ip)
-        self.assertEqual('', echo_data)
+        try:
+            vm1.send_echo_request(dest_ip=new_ip, timeout=3)
+            self.fail("Should not have connected through anti-spoof")
+        except SubprocessFailedException:
+            pass
 
         # Ping to spoofed IP should work, but reply should be blocked
         self.assertFalse(vm1.ping(target_ip=new_ip, on_iface='eth0',
-                                  timeout=5))
+                                  timeout=3))
 
         # Update with AAP
         port2 = self.api.update_port(port2['id'],

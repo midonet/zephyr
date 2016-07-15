@@ -32,6 +32,13 @@ TIMEOUT = 5
 TERMINATION_STRING = chr(0x03) + chr(0x04)
 ECHO_SERVER_TIMEOUT = 3
 
+
+def usage():
+    print('Usage: echo-server.py [-i <ip>] [-p <port>] [-d] [-c <protocol>]')
+    print('                      [-o <output_string>] [-t <timeout>]')
+    print('                      [-l <log_file>] [-r <log_root>]')
+
+
 arg_map, _ = getopt.getopt(
     sys.argv[1:],
     'i:'
@@ -42,8 +49,9 @@ arg_map, _ = getopt.getopt(
     't:'
     'l:'
     'r:'
-    'n:',
-    ['ip=', 'port=', 'debug', 'out-str=', 'protocol=',
+    'n:'
+    'h',
+    ['help', 'ip=', 'port=', 'debug', 'out-str=', 'protocol=',
      'timeout=', 'log-file=', 'log-dir=', 'log-name='])
 
 ip_addr = 'localhost'
@@ -75,7 +83,11 @@ for arg, value in arg_map:
         log_dir = value
     elif arg in ('-n', 'name'):
         log_name = value
+    elif arg in ('-h', 'help'):
+        usage()
+        exit(0)
     else:
+        usage()
         raise exceptions.ArgMismatchException(
             "Option not recognized: " + arg)
 

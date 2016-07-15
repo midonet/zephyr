@@ -134,16 +134,15 @@ class Guest(object):
                                   target_port=DEFAULT_ECHO_PORT,
                                   use_icmp=True, use_tcp=True,
                                   timeout=20):
-        if not target_ip_addr:
-            target_ip_addr = far_host.main_ip
+        target_ip = target_ip_addr if target_ip_addr else far_host.main_ip
 
-        deadline = time.time() + timeout
         if use_tcp:
+            deadline = time.time() + timeout
             far_host.start_echo_server(
                 ip_addr="", port=target_port)
             try:
                 while not self.send_echo_request(
-                        dest_ip=target_ip_addr,
+                        dest_ip=target_ip,
                         dest_port=target_port):
                     if time.time() > deadline:
                         return False
@@ -151,10 +150,10 @@ class Guest(object):
                 far_host.stop_echo_server(
                     ip_addr="", port=target_port)
 
-        deadline = time.time() + timeout
         if use_icmp:
+            deadline = time.time() + timeout
             while not self.ping(
-                    target_ip=target_ip_addr, count=1, timeout=3):
+                    target_ip=target_ip, count=1, timeout=3):
                 if time.time() > deadline:
                     return False
 
@@ -183,7 +182,7 @@ class Guest(object):
         :param port: int
         :param echo_data: str
         :param protocol: str
-        :return: CommandStatus
+        :return: bool
         """
         return self.vm_underlay.start_echo_server(
             ip_addr, port, echo_data, protocol)
@@ -194,14 +193,14 @@ class Guest(object):
         localhost:80).  If echo service has not been started, do nothing.
         :param ip_addr: str
         :param port: int
-        :return:
+        :return: (file, file) | None
         """
-        self.vm_underlay.stop_echo_server(ip_addr, port)
+        return self.vm_underlay.stop_echo_server(ip_addr, port)
 
     def send_echo_request(self, dest_ip='localhost',
                           dest_port=DEFAULT_ECHO_PORT,
-                          echo_request='ping',
-                          source_ip=None, protocol='tcp'):
+                          echo_request='ping', protocol='tcp',
+                          timeout=10):
         """
         Create a TCP connection to send specified request string over the
         specified protocol to dest_ip on dest_port (defaults to localhost:80)
@@ -209,12 +208,13 @@ class Guest(object):
         :param dest_ip: str
         :param dest_port: int
         :param echo_request: str
-        :param source_ip: str
         :param protocol: str
         :return: str
         """
         return self.vm_underlay.send_echo_request(
-            dest_ip, dest_port, echo_request, source_ip, protocol)
+            dest_ip=dest_ip, dest_port=dest_port,
+            echo_request=echo_request, protocol=protocol,
+            timeout=timeout)
 
     def execute(self, cmd_line, timeout=None, blocking=True):
         """

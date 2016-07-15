@@ -131,22 +131,24 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
     def del_route(self, route_ip):
         return self.underlay_host_obj.del_route(route_ip)
 
-    def start_echo_server(self, ip_addr='localhost',
-                          port=zephyr_constants.DEFAULT_ECHO_PORT,
-                          echo_data="pong", protocol='tcp'):
+    def do_start_echo_server(self, ip_addr='localhost',
+                             port=zephyr_constants.DEFAULT_ECHO_PORT,
+                             echo_data="pong", protocol='tcp'):
         return self.underlay_host_obj.start_echo_server(
             ip_addr, port, echo_data, protocol)
 
-    def stop_echo_server(self, ip_addr='localhost',
-                         port=zephyr_constants.DEFAULT_ECHO_PORT):
+    def do_stop_echo_server(self, ip_addr='localhost',
+                            port=zephyr_constants.DEFAULT_ECHO_PORT):
         return self.underlay_host_obj.stop_echo_server(ip_addr, port)
 
-    def send_echo_request(self, dest_ip='localhost',
-                          dest_port=zephyr_constants.DEFAULT_ECHO_PORT,
-                          echo_request='ping', source_ip=None,
-                          protocol='tcp'):
+    def do_send_echo_request(self, dest_ip='localhost',
+                             dest_port=zephyr_constants.DEFAULT_ECHO_PORT,
+                             echo_request='ping',
+                             protocol='tcp', timeout=10):
         return self.underlay_host_obj.send_echo_request(
-            dest_ip, dest_port, echo_request, source_ip, protocol)
+            dest_ip=dest_ip, dest_port=dest_port,
+            echo_request=echo_request, protocol=protocol,
+            timeout=timeout)
 
     def send_custom_packet(self, iface, **kwargs):
         return self.underlay_host_obj.send_custom_packet(iface, **kwargs)

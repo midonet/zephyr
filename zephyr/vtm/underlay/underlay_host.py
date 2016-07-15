@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import abc
+import time
+from zephyr.common import exceptions
 from zephyr.common.zephyr_constants import DEFAULT_ECHO_PORT
 
 
@@ -52,17 +55,98 @@ class UnderlayHost(object):
     def reboot(self):
         return None
 
-    def start_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT,
+    def start_echo_server(self, ip_addr='', port=DEFAULT_ECHO_PORT,
                           echo_data="pong", protocol='tcp'):
+        """
+        Start an echo server listening on given ip/port (default to
+        localhost:80) which returns the echo_data on any TCP
+        connection made to the port.
+        :param ip_addr: str
+        :param port: int
+        :param echo_data: str
+        :param protocol: str
+        :rtype: bool
+        """
+        self.LOG.debug('Starting echo server on host [' + self.name +
+                       '] on IP and port: ' +
+                       (str(ip_addr) if ip_addr != '' else '*') +
+                       ':' + str(port))
+        self.do_start_echo_server(ip_addr, port, echo_data, protocol)
+        timeout = time.time() + 5
+        conn_resp = ''
+        while conn_resp != 'connect-test:' + echo_data:
+            try:
+                conn_ip = ip_addr if ip_addr != '' else '127.0.0.1'
+                conn_resp = self.send_echo_request(
+                    dest_ip=conn_ip, dest_port=port,
+                    echo_request='connect-test', protocol=protocol)
+            except exceptions.SubprocessFailedException:
+                conn_resp = ''
+
+            if time.time() > timeout:
+                out = self.stop_echo_server(ip_addr, port)
+                stdout = out[0] if out else ''
+                stderr = out[1] if out else ''
+                self.LOG.error(
+                    'Echo server listener failed to bind to port '
+                    'within timeout (stdout/stderr): ' +
+                    str(stdout.replace('\\n', '\n')) + " / " +
+                    str(stderr.replace('\\n', '\n')))
+                raise exceptions.SubprocessTimeoutException(
+                    'Echo server listener failed to bind to port '
+                    'within timeout (stdout/stderr): ' +
+                    str(stdout.replace('\\n', '\n')) + " / " +
+                    str(stderr.replace('\\n', '\n')))
+        return True
+
+    @abc.abstractmethod
+    def do_start_echo_server(self, ip_addr='', port=DEFAULT_ECHO_PORT,
+                             echo_data="pong", protocol='tcp'):
         return None
 
-    def stop_echo_server(self, ip_addr='localhost', port=DEFAULT_ECHO_PORT):
+    def stop_echo_server(self, ip_addr='', port=DEFAULT_ECHO_PORT):
+        """
+        Stop an echo server that has been started on given ip/port (defaults to
+        localhost:80).  If echo service has not been started, do nothing.
+        :param ip_addr: str
+        :param port: int
+        :rtype: (file, file)
+        """
+        self.LOG.debug('Stopping echo server on host [' + self.name +
+                       '] on IP and port: ' +
+                       (str(ip_addr) if ip_addr != '' else '*') +
+                       ':' + str(port))
+        return self.do_stop_echo_server(ip_addr, port)
+
+    @abc.abstractmethod
+    def do_stop_echo_server(self, ip_addr='', port=DEFAULT_ECHO_PORT):
         return None
 
     def send_echo_request(self, dest_ip='localhost',
                           dest_port=DEFAULT_ECHO_PORT,
-                          echo_request='ping', source_ip=None,
-                          protocol='tcp'):
+                          echo_request='ping',
+                          protocol='tcp', timeout=10):
+        """
+        Create a TCP connection to send specified request string to dest_ip
+        on dest_port (defaults to localhost:80) and return the response.
+        :param dest_ip: str
+        :param dest_port: int
+        :param echo_request: str
+        :param protocol: str
+        :param timeout: int
+        :rtype: str
+        """
+        self.LOG.debug(
+            'Sending TCP echo [' + echo_request +
+            '] to far host IP: ' + dest_ip + ' on port: ' + str(dest_port))
+        return self.do_send_echo_request(dest_ip, dest_port, echo_request,
+                                         protocol, timeout)
+
+    @abc.abstractmethod
+    def do_send_echo_request(self, dest_ip='localhost',
+                             dest_port=DEFAULT_ECHO_PORT,
+                             echo_request='ping',
+                             protocol='tcp', timeout=10):
         return None
 
     def send_custom_packet(self, iface, **kwargs):

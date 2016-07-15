@@ -91,7 +91,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         :type route_ip: IP
         :type gw_ip: IP
         :type dev: str
-        :return:
+        :rtype:
         """
         if gw_ip is None:
             if dev is None:
@@ -130,46 +130,19 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def reboot(self):
         pass
 
-    def start_echo_server(self, ip_addr='localhost',
-                          port=zephyr_constants.DEFAULT_ECHO_PORT,
-                          echo_data="pong", protocol='tcp'):
-        """
-        Start an echo server listening on given ip/port (default to
-        localhost:80) which returns the echo_data on any TCP
-        connection made to the port.
-        :param ip_addr: str
-        :param port: int
-        :param echo_data: str
-        :param protocol: str
-        :return: CommandStatus
-        """
+    def do_start_echo_server(self, ip_addr='localhost',
+                             port=zephyr_constants.DEFAULT_ECHO_PORT,
+                             echo_data="pong", protocol='tcp'):
         pass
 
-    def stop_echo_server(self, ip_addr='localhost',
-                         port=zephyr_constants.DEFAULT_ECHO_PORT):
-        """
-        Stop an echo server that has been started on given ip/port (defaults to
-        localhost:80).  If echo service has not been started, do nothing.
-        :param ip_addr: str
-        :param port: int
-        :return:
-        """
-        pass
+    def do_stop_echo_server(self, ip_addr='localhost',
+                            port=zephyr_constants.DEFAULT_ECHO_PORT):
+        return None
 
-    def send_echo_request(self, dest_ip='localhost',
-                          dest_port=zephyr_constants.DEFAULT_ECHO_PORT,
-                          echo_request='ping', source_ip=None,
-                          protocol='tcp'):
-        """
-        Create a TCP connection to send specified request string to dest_ip
-        on dest_port (defaults to localhost:80) and return the response.
-        :param dest_ip: str
-        :param dest_port: int
-        :param echo_request: str
-        :param source_ip: str
-        :param protocol: str
-        :return: str
-        """
+    def do_send_echo_request(self, dest_ip='localhost',
+                             dest_port=zephyr_constants.DEFAULT_ECHO_PORT,
+                             echo_request='ping',
+                             protocol='tcp', timeout=10):
         out_str = ""
         return out_str
 
@@ -180,7 +153,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         TCPSender::send_packet()
         :type iface: str
         :type kwargs: dict[str, any]
-        :return:
+        :rtype:
         """
         tcps = TCPSender()
         return tcps.send_packet(self.cli, interface=iface, **kwargs).stdout
@@ -200,7 +173,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         :type dest_mac: str
         :type packet_options: dict[str, str]
         :type count: int
-        :return:
+        :rtype:
         """
         tcps = TCPSender()
         opt_map = {'command': command}
@@ -229,7 +202,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         :type data: str
         :type packet_options: dict[str,str]
         :type count: int
-        :return:
+        :rtype:
         """
         tcps = TCPSender()
         return tcps.send_packet(self.cli,
@@ -251,7 +224,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         :param iface: str: Interface or IP to act as source
         :param count: int: Number of pings to send
         :param timeout: int: Timeout before packets is marked as failed
-        :return: bool
+        :rtype: bool
         """
         iface_str = (('-I ' + iface) if iface is not None else '')
         timeout_str = (('-W ' + str(timeout) + ' ')
@@ -292,7 +265,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         packet capture file
         :param save_dump_filename: str: Filename to save temporary
         packet capture file
-        :return:
+        :rtype:
         """
         tcpd = (self.packet_captures[interface]
                 if interface in self.packet_captures
@@ -321,7 +294,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         return what is buffered)
         :param timeout: int: Upper bound on length of time to wait before
         exception is raised
-        :return: list [PCAPPacket]
+        :rtype: list [PCAPPacket]
         """
         if interface not in self.packet_captures:
             raise exceptions.ObjectNotFoundException(
@@ -336,7 +309,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         remaining packets can be accessed through the 'capture_packets'
         method.
         :param interface: str: Interface to stop capture on
-        :return:
+        :rtype:
         """
         if interface in self.packet_captures:
             tcpd = self.packet_captures[interface]
@@ -345,7 +318,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def flush_arp(self):
         """
         Flush the ARP table on this Host
-        :return:
+        :rtype:
         """
         self.execute('ip neighbour flush all')
 
@@ -355,6 +328,6 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def terminate(self):
         """
         Kill this Host.
-        :return:
+        :rtype:
         """
         pass

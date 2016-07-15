@@ -22,14 +22,21 @@ from zephyr.common import exceptions
 DEFAULT_ECHO_PORT = 5080
 TERMINATION_STRING = chr(0x03) + chr(0x04)
 
+
+def usage():
+    print('Usage: echo-send.py [-i <ip>] [-p <port>] [-d] [-c <protocol>]')
+    print('                    [-o <output_string>] [-t <timeout>]')
+
+
 arg_map, _ = getopt.getopt(
     sys.argv[1:],
     'i:'
     'p:'
     'c:'
     'o:'
-    't:',
-    ['ip', 'port', 'protocol', 'timeout', 'out-str'])
+    't:'
+    'h',
+    ['help', 'ip', 'port', 'protocol', 'timeout', 'out-str'])
 
 ip_addr = 'localhost'
 port = DEFAULT_ECHO_PORT
@@ -49,16 +56,18 @@ for arg, value in arg_map:
         timeout = float(value)
     elif arg in ('-o', 'out-str'):
         echo_request_string = value
+    elif arg in ('-h', 'help'):
+        usage()
+        exit(0)
     else:
+        usage()
         raise exceptions.ArgMismatchException(
             "Option not recognized: " + arg)
 
 try:
     req = echo_request_string + TERMINATION_STRING
     if protocol == 'tcp':
-        new_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        new_socket.settimeout(timeout)
-        new_socket.connect((ip_addr, port))
+        new_socket = socket.create_connection((ip_addr, port), timeout)
         new_socket.sendall(req)
     elif protocol == 'udp':
         new_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -67,6 +76,8 @@ try:
     else:
         raise exceptions.ArgMismatchException(
             'Unsupported self.protocol: ' + protocol)
+    new_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    new_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     data = ''
     if protocol == 'tcp':
         while True:

@@ -15,8 +15,8 @@
 from collections import namedtuple
 import json
 import logging
-import traceback
 
+from zephyr.common import exceptions
 from zephyr.common.ip import IP
 from zephyr.common.utils import curl_delete
 from zephyr.common.utils import curl_post
@@ -132,6 +132,7 @@ class NeutronTestCase(TestCase):
             #     self.assertEqual('ping:pong', echo_response)
 
     def clean_topo(self):
+        cleanup_errors = []
         topo_info = \
             [(self.sgrs, 'security group rule',
               self.api.delete_security_group_rule),
@@ -160,9 +161,17 @@ class NeutronTestCase(TestCase):
              (self.nnets, 'network', self.api.delete_network)]
 
         for (items, res_name, del_func) in topo_info:
-            self.clean_resource(items, res_name, del_func)
+            try:
+                self.clean_resource(items, res_name, del_func)
+            except exceptions.SubprocessFailedException as e:
+                cleanup_errors.append(e)
+
+        if len(cleanup_errors) > 0:
+            raise exceptions.SubprocessFailedException(
+                "Error(s) cleaning resources: " + str(cleanup_errors))
 
     def clean_resource(self, items, res_name, del_func):
+        cleanup_errors = []
         for item in items:
             try:
                 self.LOG.debug('Deleting ' + res_name + ' ' + str(item))
@@ -170,28 +179,61 @@ class NeutronTestCase(TestCase):
                     del_func(item)
                 else:
                     del_func(*item)
-            except Exception:
-                traceback.print_exc()
+            except Exception as e:
+                self.LOG.error(
+                    'Error cleaning: ' + str(item) + ': ' + str(e))
+                cleanup_errors.append(e)
+
         if res_name != 'router route':
             del items[:]
+
+        if len(cleanup_errors) > 0:
+            raise exceptions.SubprocessFailedException(
+                "Error(s) cleaning resource: " + str(res_name) + ': ' +
+                str(cleanup_errors))
 
     # TODO(micucci): Change this to use the GuestData namedtuple
     def cleanup_vms(self, vm_port_list):
         """
         :type vm_port_list: list[(Guest, port)]
         """
+        cleanup_errors = []
         for vm, port in vm_port_list:
-            try:
-                self.LOG.debug('Shutting down vm on port: ' + str(port))
-                if vm is not None:
+            self.LOG.debug('Shutting down vm on port: ' + str(port))
+            if vm is not None:
+                try:
                     vm.stop_capture(on_iface='eth0')
+                except Exception as e:
+                    self.LOG.error(
+                        "Error stopping TCP captures: " + str(e))
+                    cleanup_errors.append(e)
+                try:
                     if port is not None:
                         vm.unplug_vm(port['id'])
+                except Exception as e:
+                    self.LOG.error(
+                        "Error unplugging VM: " + str(e))
+                    cleanup_errors.append(e)
+
+            try:
                 if port is not None:
                     self.api.delete_port(port['id'])
-            finally:
+            except Exception as e:
+                self.LOG.error(
+                    "Error deleting port: " + str(e))
+                cleanup_errors.append(e)
+
+            try:
                 if vm is not None:
                     vm.terminate()
+            except Exception as e:
+                self.LOG.error(
+                    "Error terminating VM: " + str(e))
+                cleanup_errors.append(e)
+
+        if len(cleanup_errors) > 0:
+            raise exceptions.SubprocessFailedException(
+                "Error(s) cleaning up VM: " + str(cleanup_errors))
 
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
                          allowed_address_pairs=None, hv_host=None,
@@ -232,14 +274,24 @@ class NeutronTestCase(TestCase):
             raise
 
     def clean_vm_servers(self):
+        cleanup_errors = []
         for (vm, ip_addr, port) in self.servers:
             try:
                 self.LOG.debug('Deleting server ' + str((vm, ip_addr, port)))
                 vm.stop_echo_server(ip_addr=ip_addr)
+            except Exception as e:
+                self.LOG.error('Error stopping echo server: ' + str(e))
+                cleanup_errors.append(e)
+
+            try:
                 self.cleanup_vms([(vm, port)])
-            except Exception:
-                traceback.print_exc()
+            except exceptions.SubprocessFailedException as e:
+                cleanup_errors.append(e)
+
         del self.servers[:]
+        if len(cleanup_errors) > 0:
+            raise exceptions.SubprocessFailedException(
+                "Error(s) stopping VM servers: " + str(cleanup_errors))
 
     def create_security_group(self, name, tenant_id='admin'):
         sg_data = {'name': name,
