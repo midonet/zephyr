@@ -90,7 +90,9 @@ class NeutronTestCase(TestCase):
             if len(cleanup_errors) > 0:
                 error_list = ['Item (' + i + ') - Reason (' + r + ')'
                               for (i, r) in cleanup_errors]
-                result.successes.remove(self)
+                if self in result.successes:
+                    result.successes.remove(self)
+                    
                 result.failures.append(
                     (self,
                      'Error(s) cleaning up resources: [' +
