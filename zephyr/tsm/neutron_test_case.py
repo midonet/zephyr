@@ -956,7 +956,7 @@ class NeutronTestCase(TestCase):
         self.firewall_logs.remove((res_id, fwlog_id))
         self.LOG.debug('Deleted firewall log object: ' + str(fwlog_id))
 
-    def remove_firewall_logs(self, id_tuple):
+    def remove_firewall_logs(self, *id_tuple):
         self.delete_firewall_log(*id_tuple)
 
 

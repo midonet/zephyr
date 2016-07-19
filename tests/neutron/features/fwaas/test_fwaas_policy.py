@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from zephyr.common import exceptions
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
 from zephyr.vtm import fwaas_fixture
@@ -64,5 +65,8 @@ class TestFWaaSPolicy(NeutronTestCase):
         self.assertEqual('ping:pong', reply)
 
         vm2.start_echo_server(ip_addr=ip2, port=8888, echo_data='pong')
-        reply = vm1.send_echo_request(dest_ip=ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = vm1.send_echo_request(dest_ip=ip2, dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass

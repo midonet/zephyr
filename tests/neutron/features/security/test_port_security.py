@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr.common.exceptions import SubprocessTimeoutException
+from zephyr.common import exceptions
 from zephyr.common.ip import IP
 from zephyr.common import pcap
 from zephyr.tsm.neutron_test_case import NeutronTestCase
@@ -98,7 +98,7 @@ class TestPortSecurity(NeutronTestCase):
                                             with_mac=False,
                                             spoof_ip=new_ip1)
                 self.fail('Spoofed packet should not have been received!')
-            except SubprocessTimeoutException:
+            except exceptions.SubprocessTimeoutException:
                 pass
 
             # Next, add new IPs to the sender and receiver, and add an allowed
@@ -132,10 +132,13 @@ class TestPortSecurity(NeutronTestCase):
                                                 pcap.Host(new_ip2, proto='ip',
                                                           dest=True)]))
 
-            reply = vm1.send_echo_request(dest_ip=new_ip2)
+            try:
+                reply = vm1.send_echo_request(dest_ip=new_ip2)
 
-            # No reply should make it all the way back
-            self.assertEqual('', reply)
+                # No reply should make it all the way back
+                self.assertEqual('', reply)
+            except exceptions.SubprocessFailedException:
+                pass
 
             packets = vm2.capture_packets(on_iface='eth0', count=1, timeout=3)
             vm1.stop_capture(on_iface='eth0')
@@ -312,7 +315,7 @@ class TestPortSecurity(NeutronTestCase):
                 packets = self.send_and_capture_spoof(sender=vm1, receiver=vm2,
                                                       receiver_ip=ip2)
                 self.fail('Spoofed packet should not have been received!')
-            except SubprocessTimeoutException:
+            except exceptions.SubprocessTimeoutException:
                 pass
 
             self.assertEqual(0, len(packets))
@@ -332,7 +335,7 @@ class TestPortSecurity(NeutronTestCase):
                 packets = self.send_and_capture_spoof(sender=vm1, receiver=vm2,
                                                       receiver_ip=ip2)
                 self.fail('Spoofed packet should not have been received!')
-            except SubprocessTimeoutException:
+            except exceptions.SubprocessTimeoutException:
                 pass
 
             self.assertEqual(0, len(packets))

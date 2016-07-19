@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from zephyr.common import exceptions
 from zephyr.common import utils
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm.neutron_test_case import require_extension
@@ -118,8 +119,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
@@ -137,8 +142,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
@@ -156,8 +165,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=0, drop=1)
 
@@ -175,8 +188,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
 
@@ -194,8 +211,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=0, drop=0,
                               exact=True, exist=False)
@@ -205,8 +226,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
 
@@ -240,11 +265,19 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = vm1_2.send_echo_request(dest_ip=ip2_2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
-        reply = vm1_2.send_echo_request(dest_ip=ip2_2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = vm1_2.send_echo_request(dest_ip=ip2_2,
+                                            dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
         self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=2, drop=1)
@@ -263,8 +296,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
 
@@ -275,8 +312,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=4, drop=1)
 
@@ -301,8 +342,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
         self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=0, drop=1)
@@ -324,8 +369,12 @@ class TestFWaaSLogging(NeutronTestCase):
         reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=7777)
         self.assertEqual('ping:pong', reply)
 
-        reply = self.vm1.send_echo_request(dest_ip=self.ip2, dest_port=8888)
-        self.assertEqual('', reply)
+        try:
+            reply = self.vm1.send_echo_request(dest_ip=self.ip2,
+                                               dest_port=8888)
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
         self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=0)
         self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=0, drop=1)
