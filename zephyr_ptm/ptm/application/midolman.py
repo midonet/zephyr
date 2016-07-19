@@ -280,8 +280,8 @@ class Midolman(application.Application):
             self.cli.rm(pid_file)
             self.cli.write_to_file(pid_file, dnsm_real_pid)
 
-        self.cli.cmd('hostname ' + self.host.name)
-        self.cli.add_to_host_file(self.host.name, self.my_ip)
+        self.cli.cmd('hostname ' + self.host.proxy_name)
+        self.cli.add_to_host_file(self.host.proxy_name, self.my_ip)
 
         self.cli.cmd("sysctl -w net.ipv6.conf.default.disable_ipv6=1")
         process = self.cli.cmd(

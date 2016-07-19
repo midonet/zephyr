@@ -42,7 +42,7 @@ class MidonetSetupFixture(object):
 
         tunnel_zone_host_map = {}
         mm_name_list = []
-        for host_name, host in self.ptm_impl.hosts_by_name.iteritems():
+        for _, host in self.ptm_impl.hosts_by_name.iteritems():
             # On each host, check if there is at least one
             # Midolman app running
             for app in host.applications:
@@ -51,10 +51,10 @@ class MidonetSetupFixture(object):
                     # to the tunnel zone map and move on to next host
                     for iface in host.interfaces.values():
                         if len(iface.ip_list) is not 0:
-                            tunnel_zone_host_map[host.name] = (
+                            tunnel_zone_host_map[host.proxy_name] = (
                                 iface.ip_list[0].ip)
                             break
-                    mm_name_list.append(host_name)
+                    mm_name_list.append(host.proxy_name)
                     break
 
         mn_api_utils.wait_for_all_mn_apps(

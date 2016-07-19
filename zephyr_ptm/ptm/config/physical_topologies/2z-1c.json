@@ -99,7 +99,7 @@
       ]
     },
     { "host": "cmp1",
-      "impl": "zephyr_ptm.ptm.host.root_host.RootHost",
+      "impl": "zephyr_ptm.ptm.host.proxy_host.ProxyHost",
       "apps": [
         { "class": "zephyr_ptm.ptm.application.midolman.Midolman",
           "zookeeper_ips": ["10.1.0.2", "10.1.0.3"],
