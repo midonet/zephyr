@@ -81,7 +81,8 @@ def wait_for_all_mn_apps(api, mm_name_list, logger=None, timeout=10):
         raise exceptions.ArgMismatchException(
             'Need midonet client for this test')
 
-    logger.info('Waiting for hosts to all connect')
+    logger.info('Waiting for hosts [' + str(mm_name_list) +
+                '] to all connect')
     deadline = time.time() + timeout
     while True:
 

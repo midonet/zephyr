@@ -38,6 +38,7 @@ class Host(PTMObject):
     def __init__(self, name, ptm, cli=LinuxCLI(),
                  host_create_func=None, host_remove_func=None):
         super(Host, self).__init__(name, cli)
+        self.proxy_name = self.name
         self.ptm = ptm
         """
         :type: zephyr_ptm.ptm.physical_topology_manager.PhysicalTopologyManager
