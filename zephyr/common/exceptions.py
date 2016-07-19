@@ -67,9 +67,9 @@ class SocketException(TestException):
         super(SocketException, self).__init__(info)
 
 
-class InvallidConfigurationException(TestException):
+class InvalidConfigurationException(TestException):
     def __init__(self, config, reason):
-        super(InvallidConfigurationException, self).__init__(
+        super(InvalidConfigurationException, self).__init__(
             reason + " in config <" + str(config) + ">")
 
 

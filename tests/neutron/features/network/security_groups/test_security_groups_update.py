@@ -20,13 +20,6 @@ from zephyr.tsm.neutron_test_case import NeutronTestCase
 class TestRouterPeeringSecurityGroups(NeutronTestCase):
 
     def test_security_group_updates(self):
-        try:
-            self.security_group_updates()
-        finally:
-            self.clean_vm_servers()
-            self.clean_topo()
-
-    def security_group_updates(self):
         cidr = "192.168.20.0/24"
         net = self.create_network('SEC_GROUP_UPDATE')
         sub = self.create_subnet('SEC_GROUP_UPDATE', net['id'], cidr)

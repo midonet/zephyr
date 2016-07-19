@@ -16,7 +16,6 @@ from collections import namedtuple
 import json
 import logging
 
-from zephyr.common import exceptions
 from zephyr.common.ip import IP
 from zephyr.common.utils import curl_delete
 from zephyr.common.utils import curl_post
@@ -84,8 +83,12 @@ class NeutronTestCase(TestCase):
                 self.init_main_pub_networks()
             super(NeutronTestCase, self).run(result)
         finally:
-            self.clean_vm_servers()
-            self.clean_topo()
+            cleanup_errors = self.clean_vm_servers()
+            cleanup_errors += self.clean_topo()
+
+            if len(cleanup_errors) > 0:
+                self.fail('Error(s) cleaning up resources: [' +
+                          ',\n'.join(cleanup_errors) + ']')
 
     def init_main_pub_networks(self):
         self.LOG.debug(
@@ -133,42 +136,38 @@ class NeutronTestCase(TestCase):
 
     def clean_topo(self):
         cleanup_errors = []
-        topo_info = \
-            [(self.sgrs, 'security group rule',
-              self.api.delete_security_group_rule),
-             (self.logging_resources, 'log resource',
-              self.delete_logging_resource),
-             (self.firewall_logs, 'fw logging object',
-              self.remove_firewall_logs),
-             (self.bgp_peers, 'bgp peer', self.delete_bgp_peer_curl),
-             (self.bgp_speakers, 'bgp speaker', self.delete_bgp_speaker_curl),
-             (self.fw_ras, 'firewall policy rule', self.delete_fpr),
-             (self.fwprs, 'firewall rule', self.api.delete_firewall_rule),
-             (self.fws, 'firewall', self.api.delete_firewall),
-             (self.fwps, 'firewall policy', self.api.delete_firewall_policy),
-             (self.rmacs, 'remote mac entry', self.delete_rmac),
-             (self.l2gw_conns, 'l2 gateway conn', self.delete_l2_gateway_conn),
-             (self.l2gws, 'l2 gateway', self.delete_l2gw),
-             (self.fips, 'floating ips', self.api.delete_floatingip),
-             (self.nrouters, 'router route', self.clear_route),
-             (self.nr_ifaces, 'router interface',
-              self.remove_interface_router),
-             (self.gws, 'gateway', self.delete_gw_dev),
-             (self.nports, 'port', self.api.delete_port),
-             (self.sgs, 'security group', self.api.delete_security_group),
-             (self.nrouters, 'router', self.api.delete_router),
-             (self.nsubs, 'subnet', self.api.delete_subnet),
-             (self.nnets, 'network', self.api.delete_network)]
+        topo_info = [
+            (self.sgrs, 'security group rule',
+             self.api.delete_security_group_rule),
+            (self.logging_resources, 'log resource',
+             self.delete_logging_resource),
+            (self.firewall_logs, 'fw logging object',
+             self.remove_firewall_logs),
+            (self.bgp_peers, 'bgp peer', self.delete_bgp_peer_curl),
+            (self.bgp_speakers, 'bgp speaker', self.delete_bgp_speaker_curl),
+            (self.fw_ras, 'firewall policy rule', self.delete_fpr),
+            (self.fwprs, 'firewall rule', self.api.delete_firewall_rule),
+            (self.fws, 'firewall', self.api.delete_firewall),
+            (self.fwps, 'firewall policy', self.api.delete_firewall_policy),
+            (self.rmacs, 'remote mac entry', self.delete_rmac),
+            (self.l2gw_conns, 'l2 gateway conn', self.delete_l2_gateway_conn),
+            (self.l2gws, 'l2 gateway', self.delete_l2gw),
+            (self.fips, 'floating ips', self.api.delete_floatingip),
+            (self.nrouters, 'router route', self.clear_route),
+            (self.nr_ifaces, 'router interface',
+             self.remove_interface_router),
+            (self.gws, 'gateway', self.delete_gw_dev),
+            (self.nports, 'port', self.api.delete_port),
+            (self.sgs, 'security group', self.api.delete_security_group),
+            (self.nrouters, 'router', self.api.delete_router),
+            (self.nsubs, 'subnet', self.api.delete_subnet),
+            (self.nnets, 'network', self.api.delete_network)]
 
         for (items, res_name, del_func) in topo_info:
-            try:
-                self.clean_resource(items, res_name, del_func)
-            except exceptions.SubprocessFailedException as e:
-                cleanup_errors.append(e)
+            cleanup_errors += self.clean_resource(
+                items, res_name, del_func)
 
-        if len(cleanup_errors) > 0:
-            raise exceptions.SubprocessFailedException(
-                "Error(s) cleaning resources: " + str(cleanup_errors))
+        return cleanup_errors
 
     def clean_resource(self, items, res_name, del_func):
         cleanup_errors = []
@@ -181,16 +180,13 @@ class NeutronTestCase(TestCase):
                     del_func(*item)
             except Exception as e:
                 self.LOG.error(
-                    'Error cleaning: ' + str(item) + ': ' + str(e))
-                cleanup_errors.append(e)
+                    'Error cleaning: ' + str(item) + ': ' + str(e.message))
+                cleanup_errors.append(e.message)
 
         if res_name != 'router route':
             del items[:]
 
-        if len(cleanup_errors) > 0:
-            raise exceptions.SubprocessFailedException(
-                "Error(s) cleaning resource: " + str(res_name) + ': ' +
-                str(cleanup_errors))
+        return cleanup_errors
 
     # TODO(micucci): Change this to use the GuestData namedtuple
     def cleanup_vms(self, vm_port_list):
@@ -205,35 +201,33 @@ class NeutronTestCase(TestCase):
                     vm.stop_capture(on_iface='eth0')
                 except Exception as e:
                     self.LOG.error(
-                        "Error stopping TCP captures: " + str(e))
-                    cleanup_errors.append(e)
+                        "Error stopping TCP captures: " + str(e.message))
+                    cleanup_errors.append(e.message)
                 try:
                     if port is not None:
                         vm.unplug_vm(port['id'])
                 except Exception as e:
                     self.LOG.error(
-                        "Error unplugging VM: " + str(e))
-                    cleanup_errors.append(e)
+                        "Error unplugging VM: " + str(e.message))
+                    cleanup_errors.append(e.message)
 
             try:
                 if port is not None:
                     self.api.delete_port(port['id'])
             except Exception as e:
                 self.LOG.error(
-                    "Error deleting port: " + str(e))
-                cleanup_errors.append(e)
+                    "Error deleting port: " + str(e.message))
+                cleanup_errors.append(e.message)
 
             try:
                 if vm is not None:
                     vm.terminate()
             except Exception as e:
                 self.LOG.error(
-                    "Error terminating VM: " + str(e))
-                cleanup_errors.append(e)
+                    "Error terminating VM: " + str(e.message))
+                cleanup_errors.append(e.message)
 
-        if len(cleanup_errors) > 0:
-            raise exceptions.SubprocessFailedException(
-                "Error(s) cleaning up VM: " + str(cleanup_errors))
+        return cleanup_errors
 
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
                          allowed_address_pairs=None, hv_host=None,
@@ -280,18 +274,14 @@ class NeutronTestCase(TestCase):
                 self.LOG.debug('Deleting server ' + str((vm, ip_addr, port)))
                 vm.stop_echo_server(ip_addr=ip_addr)
             except Exception as e:
-                self.LOG.error('Error stopping echo server: ' + str(e))
-                cleanup_errors.append(e)
+                self.LOG.error(
+                    'Error stopping echo server: ' + str(e.message))
+                cleanup_errors.append(e.message)
 
-            try:
-                self.cleanup_vms([(vm, port)])
-            except exceptions.SubprocessFailedException as e:
-                cleanup_errors.append(e)
+            cleanup_errors += self.cleanup_vms([(vm, port)])
 
         del self.servers[:]
-        if len(cleanup_errors) > 0:
-            raise exceptions.SubprocessFailedException(
-                "Error(s) stopping VM servers: " + str(cleanup_errors))
+        return cleanup_errors
 
     def create_security_group(self, name, tenant_id='admin'):
         sg_data = {'name': name,

@@ -125,7 +125,7 @@ class PhysicalTopologyManager(object):
             if file_type == 'json':
                 config_obj = json.load(f)
             else:
-                raise exceptions.InvallidConfigurationException(
+                raise exceptions.InvalidConfigurationException(
                     full_path_config_file,
                     'Could not open file of type: ' + file_type)
 
