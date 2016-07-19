@@ -30,6 +30,7 @@ class Guest(object):
         self.open_ports_by_id = set()
         """ :type: set[str]"""
         self.main_ip = vm_underlay.get_ip('eth0')
+        self.name = vm_underlay.name
 
     def plugin_vm(self, iface, port_id):
         """Links an interface on this VM to a virtual network port

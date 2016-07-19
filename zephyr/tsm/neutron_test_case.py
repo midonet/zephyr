@@ -77,6 +77,7 @@ class NeutronTestCase(TestCase):
         """
         Special run override to make sure to set up neutron data
         prior to running the test case function.
+        :type result: zephyr.tsm.test_result.TestResult
         """
         try:
             if self.init_networks is True:
@@ -87,8 +88,13 @@ class NeutronTestCase(TestCase):
             cleanup_errors += self.clean_topo()
 
             if len(cleanup_errors) > 0:
-                self.fail('Error(s) cleaning up resources: [' +
-                          ',\n'.join(cleanup_errors) + ']')
+                error_list = ['Item (' + i + ') - Reason (' + r + ')'
+                              for (i, r) in cleanup_errors]
+                result.successes.remove(self)
+                result.failures.append(
+                    (self,
+                     'Error(s) cleaning up resources: [' +
+                     ',\n'.join(error_list) + ']'))
 
     def init_main_pub_networks(self):
         self.LOG.debug(
@@ -181,7 +187,7 @@ class NeutronTestCase(TestCase):
             except Exception as e:
                 self.LOG.error(
                     'Error cleaning: ' + str(item) + ': ' + str(e.message))
-                cleanup_errors.append(e.message)
+                cleanup_errors.append((res_name + ": " + item, e.message))
 
         if res_name != 'router route':
             del items[:]
@@ -191,7 +197,7 @@ class NeutronTestCase(TestCase):
     # TODO(micucci): Change this to use the GuestData namedtuple
     def cleanup_vms(self, vm_port_list):
         """
-        :type vm_port_list: list[(Guest, port)]
+        :type vm_port_list: list[(zephyr.vtm.guest.Guest, port)]
         """
         cleanup_errors = []
         for vm, port in vm_port_list:
@@ -202,14 +208,16 @@ class NeutronTestCase(TestCase):
                 except Exception as e:
                     self.LOG.error(
                         "Error stopping TCP captures: " + str(e.message))
-                    cleanup_errors.append(e.message)
+                    cleanup_errors.append(
+                        ('TCP Capture: ' + vm.name, e.message))
                 try:
                     if port is not None:
                         vm.unplug_vm(port['id'])
                 except Exception as e:
                     self.LOG.error(
                         "Error unplugging VM: " + str(e.message))
-                    cleanup_errors.append(e.message)
+                    cleanup_errors.append(
+                        ('Unplug: ' + port['id'], e.message))
 
             try:
                 if port is not None:
@@ -217,7 +225,7 @@ class NeutronTestCase(TestCase):
             except Exception as e:
                 self.LOG.error(
                     "Error deleting port: " + str(e.message))
-                cleanup_errors.append(e.message)
+                cleanup_errors.append((port['id'], e.message))
 
             try:
                 if vm is not None:
@@ -225,7 +233,7 @@ class NeutronTestCase(TestCase):
             except Exception as e:
                 self.LOG.error(
                     "Error terminating VM: " + str(e.message))
-                cleanup_errors.append(e.message)
+                cleanup_errors.append((vm.name, e.message))
 
         return cleanup_errors
 
@@ -276,7 +284,8 @@ class NeutronTestCase(TestCase):
             except Exception as e:
                 self.LOG.error(
                     'Error stopping echo server: ' + str(e.message))
-                cleanup_errors.append(e.message)
+                cleanup_errors.append(
+                    ('Echo Server: ' + vm.name, e.message))
 
             cleanup_errors += self.cleanup_vms([(vm, port)])
 
@@ -619,7 +628,7 @@ class NeutronTestCase(TestCase):
 
     def delete_bgp_speaker_curl(self, bgp_speaker_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
-                    '/bgp-speakers.json/')
+                    '/bgp-speakers/')
         curl_delete(curl_url + bgp_speaker_id)
 
     def create_bgp_peer_curl(self, name, peer_ip, remote_as, auth_type='none',
@@ -645,7 +654,7 @@ class NeutronTestCase(TestCase):
 
     def delete_bgp_peer_curl(self, bgp_peer_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
-                    '/bgp-peers.json/')
+                    '/bgp-peers/')
         curl_delete(curl_url + bgp_peer_id)
 
     def create_remote_mac_entry(self, ip, mac, segment_id, gwdev_id):
