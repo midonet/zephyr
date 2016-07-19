@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import operator
-
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 from zephyr.tsm import test_case
 

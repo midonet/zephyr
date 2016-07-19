@@ -17,21 +17,40 @@ from zephyr.common import utils
 from zephyr_ptm.ptm.application import application
 
 
-def create_vm(hv_host_obj, ip_addr, mac, gw_ip, name, log=None):
+def create_vm(hv_host_obj, mac=None, name=None, log=None):
     app_type = application.APPLICATION_TYPE_HYPERVISOR
     hv_app = hv_host_obj.applications_by_type[app_type][0]
     """ :type: zephyr_ptm.ptm.application.netns_hv.NetnsHV"""
 
+    if not name:
+        name = 'vm_ns'
+
     if log:
-        log.debug("Creating VM with IP: " + str(ip_addr) +
-                  ' on host: ' + hv_host_obj.name + ' with name: ' + name)
+        log.debug("Creating VM [" + name + "] on host: " +
+                  hv_host_obj.name + ' with name: ' + name)
 
     new_vm = hv_app.create_vm(name)
 
-    real_ip = ip.IP.make_ip(ip_addr)
-    new_vm.create_interface('eth0', ip_list=[real_ip], mac=mac)
+    new_vm.create_interface('eth0', ip_list=[], mac=mac)
+
+    return new_vm
+
+
+def setup_vm_network(new_vm, ip_addr=None, gw_ip=None, log=None):
+    if ip_addr is None:
+        new_vm.request_ip_from_dhcp('eth0')
+    else:
+        new_vm.interfaces['eth0'].add_ip(ip_addr)
+
+    eth0_ip = new_vm.get_ip('eth0')
+    new_vm.main_ip = eth0_ip
+
+    if log:
+        log.debug("Setting VM [" + new_vm.name + "] IP: " +
+                  str(new_vm.main_ip))
+
     if gw_ip is None:
-        gw_ip = utils.make_gateway_ip(real_ip)
+        gw_ip = utils.make_gateway_ip(ip.IP.make_ip(eth0_ip))
 
     if log:
         log.debug("Adding default route for VM: " + gw_ip)

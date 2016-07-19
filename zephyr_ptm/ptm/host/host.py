@@ -15,6 +15,7 @@
 import datetime
 import json
 import logging
+import time
 import uuid
 
 from zephyr.common.cli import LinuxCLI
@@ -74,6 +75,7 @@ class Host(PTMObject):
         self.on_namespace = False
         self.log_file_name = zephyr_constants.ZEPHYR_LOG_FILE_NAME
         self.main_ip = '127.0.0.1'
+        self.dhcpcd_is_running = set()
 
     def configure_logging(self,
                           log_file_name, debug=False):
@@ -290,6 +292,8 @@ class Host(PTMObject):
 
     def shutdown(self):
         for interface in self.interfaces.itervalues():
+            if interface.name in self.dhcpcd_is_running:
+                self.stop_dhcp_client(interface.name)
             interface.remove()
 
         for bridge in self.bridges.itervalues():
@@ -417,6 +421,44 @@ class Host(PTMObject):
 
     def del_route(self, route_ip):
         self.cli.cmd('ip route del ' + str(route_ip.ip))
+
+    def get_ip(self, iface_name):
+        return (
+            self.cli.cmd(
+                'ip addr show dev ' + iface_name +
+                " | grep -w inet | awk '{print $2}' | sed 's/\/.*//g'")
+            .stdout
+            .strip())
+
+    def stop_dhcp_client(self, iface='eth0'):
+        file_name = self.name + '.' + iface
+        self.cli.cmd(
+            'dhclient -r '
+            '-pf /run/dhclient-' + file_name + '.pid '
+            '-lf /var/lib/dhcp/dhclient-' + file_name + '.lease ' +
+            iface)
+        self.cli.rm('/run/dhclient-' + file_name + '.pid')
+        self.cli.rm('/var/lib/dhcp/dhclient-' + file_name + '.lease')
+
+    def request_ip_from_dhcp(self, iface='eth0', timeout=10):
+        file_name = self.name + '.' + iface
+        self.cli.cmd(
+            'dhclient -nw '
+            '-pf /run/dhclient-' + file_name + '.pid '
+            '-lf /var/lib/dhcp/dhclient-' + file_name + '.lease ' +
+            iface)
+        deadline = time.time() + timeout
+        while not self.get_ip(iface):
+            if time.time() > deadline:
+                self.stop_dhcp_client(iface)
+                raise exceptions.HostNotFoundException(
+                    'No IP addr received from DHCP')
+            time.sleep(0)
+
+        ip_addr = self.get_ip(iface)
+        self.dhcpcd_is_running.add(iface)
+        self.LOG.debug("Received IP from DHCP server: " + ip_addr)
+        return ip_addr
 
     def print_config(self, indent=0):
         print(('    ' * indent) + self.name + ": Impl class " +

@@ -275,7 +275,7 @@ class NeutronTestCase(TestCase):
 
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
                          allowed_address_pairs=None, hv_host=None,
-                         port_security_enabled=True):
+                         port_security_enabled=True, use_dhcp=True):
         """
         :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
         """
@@ -295,14 +295,12 @@ class NeutronTestCase(TestCase):
         port = self.api.create_port({'port': port_data})['port']
         vm = None
         try:
-            ip_addr = port['fixed_ips'][0]['ip_address']
             vm = self.vtm.create_vm(name=name,
-                                    ip_addr=ip_addr,
                                     mac=port['mac_address'],
-                                    gw_ip=gw_ip,
                                     hv_host=hv_host)
-
             vm.plugin_vm('eth0', port['id'])
+            ip_addr = None if use_dhcp else port['fixed_ips'][0]['ip_address']
+            vm.setup_vm_network(ip_addr=ip_addr, gw_ip=gw_ip)
             self.servers.append((vm, ip_addr, port))
             return port, vm, ip_addr
         except Exception:

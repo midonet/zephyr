@@ -71,14 +71,11 @@ class VirtualTopologyManager(object):
     def get_host(self, name):
         return self.underlay_system.hosts.get(name, None)
 
-    def create_vm(self, ip_addr, mac=None,
-                  gw_ip=None, hv_host=None, name=None):
+    def create_vm(self, mac=None, hv_host=None, name=None):
         """
         Creates a guest VM on the Physical Topology and returns the Guest
         object representing the VM as part of the virtual topology.
-        :param ip_addr: str IP Address to use for the VM (required)
         :param mac: str Ether Address to use for the VM
-        :param gw_ip: str Gateway IP to use for the VM
         :param hv_host: str: Hypervisor to use, otherwise the least-loaded HV
         host is chosen.
         :param name: str: Name to use for the VM.  Otherwise one is generated.
@@ -88,8 +85,7 @@ class VirtualTopologyManager(object):
             raise exceptions.ArgMismatchException(
                 "Can't create VM without an underlay system")
         vm_underlay = self.underlay_system.create_vm(
-            ip_addr=ip_addr, mac=mac,
-            gw_ip=gw_ip, hv_host=hv_host, name=name)
+            mac=mac, hv_host=hv_host, name=name)
         return Guest(vm_underlay=vm_underlay)
 
     def read_underlay_config(

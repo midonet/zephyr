@@ -37,16 +37,17 @@ class TestBasicPing(test_case.TestCase):
         port2 = TestBasicPing.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3', name='vm1')
+        vm1 = TestBasicPing.vtm.create_vm(name='vm1')
         """ :type: Guest"""
-        vm2 = TestBasicPing.vtm.create_vm('10.0.1.4',
-                                          name='vm2',
+        vm2 = TestBasicPing.vtm.create_vm(name='vm2',
                                           hv_host=vm1.get_hypervisor_name())
         """ :type: Guest"""
 
         try:
             vm1.plugin_vm('eth0', port1.get_id())
+            vm1.setup_vm_network('10.0.1.3')
             vm2.plugin_vm('eth0', port2.get_id())
+            vm2.setup_vm_network('10.0.1.4')
 
             vm1.ping(target_ip='10.0.1.4', on_iface='eth0')
 
@@ -61,16 +62,18 @@ class TestBasicPing(test_case.TestCase):
         port2 = TestBasicPing.main_bridge.add_port().create()
         """ :type: Port"""
 
-        vm1 = TestBasicPing.vtm.create_vm('10.0.1.3',
-                                          name='vm1')
+        vm1 = TestBasicPing.vtm.create_vm(name='vm1')
         """ :type: Guest"""
         vm2 = TestBasicPing.vtm.create_vm(
-            '10.0.1.4', name='vm2', hv_host='!' + vm1.get_hypervisor_name())
+            name='vm2',
+            hv_host='!' + vm1.get_hypervisor_name())
         """ :type: Guest"""
 
         try:
             vm1.plugin_vm('eth0', port1.get_id())
+            vm1.setup_vm_network('10.0.1.3')
             vm2.plugin_vm('eth0', port2.get_id())
+            vm1.setup_vm_network('10.0.1.4')
 
             vm1.ping(target_ip='10.0.1.4', on_iface='eth0')
         finally:

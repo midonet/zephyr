@@ -64,8 +64,7 @@ class PTMUnderlaySystem(underlay_system.UnderlaySystem):
             if hv in self.hosts:
                 self.hypervisors[hv] = self.hosts[hv]
 
-    def create_vm(self, ip_addr, mac=None,
-                  gw_ip=None, hv_host=None, name=None):
+    def create_vm(self, mac=None, hv_host=None, name=None):
         def get_vm_count(item):
             app_type = application.APPLICATION_TYPE_HYPERVISOR
             host_obj = item.underlay_host_obj
@@ -73,10 +72,12 @@ class PTMUnderlaySystem(underlay_system.UnderlaySystem):
             return hv_app.get_vm_count()
         return self.provision_vm_on_most_open_hv(
             hv_map=self.hypervisors, vm_count_fn=get_vm_count,
-            ip_addr=ip_addr, mac=mac, gw_ip=gw_ip, name=name,
+            mac=mac, name=name,
             requested_host=hv_host)
 
     def get_topology_feature(self, name):
         if name == "underlay_type":
             return "ptm"
+        if name == "auth_type":
+            return "noauth"
         return self.ptm.get_topology_feature(name)

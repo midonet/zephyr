@@ -200,11 +200,13 @@ class TestVPNaaSSingleSite(NeutronTestCase):
             self.LOG.info('Created port 1 on right net: ' + str(portR1))
             self.LOG.info("Got VM R1 IP: " + str(ipR1))
 
-            vmL1 = self.vtm.create_vm(ip_addr=ipL1, mac=portL1['mac_address'])
-            vmR1 = self.vtm.create_vm(ip_addr=ipR1, mac=portR1['mac_address'])
+            vmL1 = self.vtm.create_vm(mac=portL1['mac_address'])
+            vmR1 = self.vtm.create_vm(mac=portR1['mac_address'])
 
             vmL1.plugin_vm('eth0', portL1['id'])
+            vmL1.setup_vm_network()
             vmR1.plugin_vm('eth0', portR1['id'])
+            vmR1.setup_vm_network()
             f = vmL1.execute('ls')
 
             self.LOG.info('Pinging from VM L1 to VM R1')

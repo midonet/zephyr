@@ -26,7 +26,10 @@ class UnderlayHost(object):
         self.overlay_settings = None
         self.cached_ips = set()
 
-    def create_vm(self, ip, mac, gw_ip, name):
+    def create_vm(self, mac=None, name=None):
+        return None
+
+    def setup_vm_network(self, ip_addr=None, gw_ip=None):
         return None
 
     def fetch_file(self, file_name, **kwargs):
@@ -67,6 +70,9 @@ class UnderlayHost(object):
         return None
 
     def reboot(self):
+        return None
+
+    def get_ip_from_dhcp(self, iface='eth0'):
         return None
 
     def start_echo_server(self, ip_addr='', port=DEFAULT_ECHO_PORT,

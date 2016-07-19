@@ -51,25 +51,22 @@ class UnderlaySystem(object):
     def get_topology_feature(self, name):
         return None
 
-    def create_vm(self, ip_addr, mac=None,
-                  gw_ip=None, hv_host=None, name=None):
+    def create_vm(self, mac=None, hv_host=None, name=None):
         pass
 
     def provision_vm_on_most_open_hv(
             self, hv_map, vm_count_fn,
-            ip_addr, mac=None, gw_ip=None, name=None,
+            mac=None, name=None,
             requested_host=None):
         """
         :type hv_map: dict[str, UnderlayHost]
         :type vm_count_fn: runnable
-        :type ip_addr: str
         :type mac: str
-        :type gw_ip: str
         :type name: str
         :type requested_host: str | list[str]
         """
         self.LOG.debug(
-            "Attempting to provision VM with IP: " + str(ip_addr) +
+            "Attempting to provision VM " +
             (' on host: ' + str(requested_host) if requested_host else '') +
             (' with name: ' + name if name else ''))
 
@@ -110,5 +107,4 @@ class UnderlaySystem(object):
         start_hv_host = reduce(
             lambda a, b: a if vm_count_fn(a) <= vm_count_fn(b) else b,
             valid_host_map.values())
-        return start_hv_host.create_vm(
-            ip_addr=ip_addr, mac=mac, gw_ip=gw_ip, name=requested_vm_name)
+        return start_hv_host.create_vm(mac=mac, name=requested_vm_name)

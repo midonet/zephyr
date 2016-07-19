@@ -33,7 +33,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
         self.parent_host = parent_host
         self.main_ip = self.underlay_host_obj.main_ip
 
-    def create_vm(self, ip_addr, mac, gw_ip, name):
+    def create_vm(self, mac=None, name=None):
         if self.vm_host:
             raise exceptions.ArgMismatchException(
                 "Error; create_vm operation not valid on a VM host")
@@ -44,14 +44,25 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
 
         new_vm = ptm_utils.create_vm(
             hv_host_obj=self.underlay_host_obj,
-            ip_addr=ip_addr,
             mac=mac,
-            gw_ip=gw_ip,
             name=name,
             log=self.LOG)
 
         return PTMUnderlayHost(name=new_vm.name, host_obj=new_vm,
                                vm_host=True, parent_host=self)
+
+    def setup_vm_network(self, ip_addr=None, gw_ip=None):
+        if not self.vm_host:
+            raise exceptions.ArgMismatchException(
+                "Error; setup_vm_network operation only valid on a VM host")
+        return ptm_utils.setup_vm_network(
+            self.underlay_host_obj, ip_addr, gw_ip, self.LOG)
+
+    def get_ip_from_dhcp(self, iface='eth0'):
+        return self.underlay_host_obj.request_ip_from_dhcp(iface)
+
+    def start_sshd(self):
+        self.execute('sshd -o PidFile=/run/sshd.' + self.name + '.pid')
 
     def plugin_iface(self, iface, port_id):
         if not self.vm_host:
@@ -112,8 +123,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
             ip.IP.make_ip(ip_addr))
 
     def get_ip(self, iface_name):
-        iface = self.underlay_host_obj.interfaces[iface_name]
-        return str(iface.ip_list[0].ip) if len(iface.ip_list) > 0 else None
+        return self.underlay_host_obj.get_ip(iface_name)
 
     def request_ip(self, iface_name):
         iface = self.underlay_host_obj.interfaces[iface_name]

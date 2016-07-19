@@ -48,7 +48,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
             self.LOG.addHandler(logging.NullHandler())
         self.main_ip = '127.0.0.1'
 
-    def create_vm(self, ip_addr, mac, gw_ip, name):
+    def create_vm(self, mac=None, name=None):
         if not self.hypervisor:
             raise exceptions.ArgMismatchException(
                 "Cannot start VM on: " + self.name + ", not a hypervisor.")
@@ -67,9 +67,39 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
             overlay=self.overlay,
             hypervisor=self,
             logger=self.LOG)
-        new_vm.vm_startup(ip_addr, mac, gw_ip)
+
+        if mac is not None:
+            new_vm.execute('ip link set dev ' + self.main_iface_name +
+                           ' address ' + mac)
+
         self.vms[name] = new_vm
         return new_vm
+
+    def setup_vm_network(self, ip_addr=None, gw_ip=None):
+        new_vm.vm_startup(ip_addr, gw_ip)
+
+    def get_ip_from_dhcp(self, iface='eth0', timeout=10):
+        file_name = self.name + '.' + iface
+        self.cli.cmd(
+            'dhclient -nw '
+            '-pf /run/dhclient-' + file_name + '.pid '
+            '-lf /var/lib/dhcp/dhclient-' + file_name + '.lease ' +
+            iface)
+        deadline = time.time() + timeout
+        while not self.get_ip(iface):
+            if time.time() > deadline:
+                self.stop_dhcp_client(iface)
+                raise exceptions.HostNotFoundException(
+                    'No IP addr received from DHCP')
+            time.sleep(0)
+
+        ip_addr = self.get_ip(iface)
+        self.dhcpcd_is_running.add(iface)
+        self.LOG.debug("Received IP from DHCP server: " + ip_addr)
+        return ip_addr
+
+    def start_sshd(self):
+        self.execute('sshd -o PidFile=/run/sshd.' + self.name + '.pid')
 
     def plugin_iface(self, iface, port_id):
         raise exceptions.ArgMismatchException(

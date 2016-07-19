@@ -136,8 +136,7 @@ class VMHostTest(unittest.TestCase):
 
             vm_host1.create_interface('eth0', ip_list=[IP('10.50.50.3')])
 
-            vm_host1.start_capture('lo', save_dump_file=True,
-                                   save_dump_filename='tcp.vmhost.out')
+            vm_host1.start_capture('lo')
 
             ping_ret = vm_host1.ping('10.50.50.3')
             vm_host1.send_tcp_packet(iface='lo', dest_ip='10.50.50.3',

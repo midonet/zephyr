@@ -29,8 +29,10 @@ class Guest(object):
         """ :type: zephyr.vtm.underlay.underlay_host.UnderlayHost"""
         self.open_ports_by_id = set()
         """ :type: set[str]"""
-        self.main_ip = vm_underlay.get_ip('eth0')
         self.name = vm_underlay.name
+
+    def setup_vm_network(self, ip_addr=None, gw_ip=None):
+        return self.vm_underlay.setup_vm_network(ip_addr, gw_ip)
 
     def plugin_vm(self, iface, port_id):
         """Links an interface on this VM to a virtual network port
@@ -158,7 +160,9 @@ class Guest(object):
                                   target_port=DEFAULT_ECHO_PORT,
                                   use_icmp=True, use_tcp=True,
                                   timeout=20):
-        target_ip = target_ip_addr if target_ip_addr else far_host.main_ip
+        target_ip = (target_ip_addr
+                     if target_ip_addr
+                     else far_host.get_ip('eth0'))
 
         if use_tcp:
             deadline = time.time() + timeout

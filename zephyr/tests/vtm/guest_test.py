@@ -58,8 +58,7 @@ class GuestTest(unittest.TestCase):
                 'tenant_id': 'admin'}})['subnet']
 
     def test_host_plugin_vm(self):
-        vm = self.vtm.create_vm(
-            name='vm1', ip_addr="10.3.3.3")
+        vm = self.vtm.create_vm(name='vm1')
         port1def = {'port': {'name': 'port1',
                              'network_id': self.main_network['id'],
                              'admin_state_up': True,
@@ -80,8 +79,7 @@ class GuestTest(unittest.TestCase):
             vm.terminate()
 
     def test_echo_server_tcp(self):
-        vm1 = self.vtm.create_vm(
-            name='vm1', ip_addr="10.3.3.3")
+        vm1 = self.vtm.create_vm(name='vm1')
 
         try:
             vm1.start_echo_server(echo_data='test')

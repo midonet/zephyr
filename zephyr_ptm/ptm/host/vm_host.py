@@ -40,15 +40,24 @@ class VMHost(IPNetNSHost):
 
     def create_interface(self, iface, mac=None, ip_list=None,
                          linked_bridge=None, vlans=None):
+
+        self.LOG.debug("Creating VM interface: " + iface +
+                       " with MAC [" + str(mac if mac else 'Auto') + "]")
+
         new_if = Interface(iface, self, mac, ip_list, linked_bridge, vlans)
         self.interfaces[iface] = new_if
 
+        received_ips = self.get_ip(iface)
+
+        self.LOG.debug(
+            "Interface: " + iface + " set with IP(s): " +
+            (str(received_ips) if received_ips else '[]'))
+
         near_if_name = self.name + new_if.name
-        self.LOG.debug("Creating VM interface: " + iface +
-                       " and veth peer on hypervisor [" +
+        self.LOG.debug("Creating veth peer on hypervisor [" +
                        str(self.hypervisor_host.name) +
-                       "] with name [" + str(near_if_name) + "] and IPs [" +
-                       str([str(ip) for ip in ip_list]))
+                       "] with name [" + str(near_if_name) + "]")
+
         self.hypervisor_host.link_interface(
             Interface(near_if_name, self.hypervisor_host), self, new_if)
 

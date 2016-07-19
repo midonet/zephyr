@@ -17,9 +17,11 @@ from zephyr.common import exceptions
 from zephyr.common import ip
 from zephyr.common import utils
 from zephyr.vtm.underlay import direct_underlay_host
+from zephyr.vtm.underlay import vm_base
 
 
-class IPNetnsVM(direct_underlay_host.DirectUnderlayHost):
+class IPNetnsVM(direct_underlay_host.DirectUnderlayHost,
+                vm_base.VMBase):
     def __init__(self, name, overlay, host, logger=None):
         super(IPNetnsVM, self).__init__(name, overlay, hypervisor=False,
                                         logger=logger)
@@ -28,7 +30,7 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost):
         self.main_iface_name = 'eth0'
         self.host_iface_name = self.name + self.main_iface_name
 
-    def vm_startup(self, ip_addr, mac=None, gw_ip=None):
+    def vm_startup(self, ip_addr=None, gw_ip=None):
         cli.CREATENSCMD(self.name)
         peer_name = self.host_iface_name + '.p'
 
@@ -49,11 +51,11 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost):
         self.host.execute('ip link set dev ' + self.host_iface_name + ' up')
         self.execute('ip link set dev ' + self.main_iface_name + ' up')
 
-        if mac is not None:
-            self.execute('ip link set dev ' + self.main_iface_name +
-                         ' address ' + mac)
-        self.execute('ip addr add ' + str(ip.IP.make_ip(ip_addr)) +
-                     ' dev ' + self.main_iface_name)
+        if ip_addr is not None:
+            self.execute('ip addr add ' + str(ip.IP.make_ip(ip_addr)) +
+                         ' dev ' + self.main_iface_name)
+        else:
+            self.get_ip_from_dhcp('eth0')
 
         if gw_ip is None:
             gw_ip = utils.make_gateway_ip(ip.IP.make_ip(ip_addr))
@@ -61,7 +63,7 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost):
         self.LOG.debug("Adding default route for VM: " + gw_ip)
         self.add_route(gw_ip=ip.IP.make_ip(gw_ip))
 
-    def create_vm(self, ip_addr, mac, gw_ip, name):
+    def create_vm(self, mac=None, name=None):
         raise exceptions.ArgMismatchException(
             "Cannot create a VM inside a VM.")
 

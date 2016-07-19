@@ -27,7 +27,9 @@ class DirectUnderlaySystem(underlay_system.UnderlaySystem):
         self.hosts = {}
         self.overlay_manager = None
         self.features = {
-            "underlay_type": "direct"}
+            "dhcp_on_vms": True,
+            "underlay_type": "direct",
+            "auth_type": "keystone"}
 
     def read_config(self, config_map):
         super(DirectUnderlaySystem, self).read_config(config_map)
@@ -90,12 +92,11 @@ class DirectUnderlaySystem(underlay_system.UnderlaySystem):
     def get_topology_feature(self, name):
         return self.features.get(name, None)
 
-    def create_vm(self, ip_addr, mac=None,
-                  gw_ip=None, hv_host=None, name=None):
+    def create_vm(self, mac=None, hv_host=None, name=None):
         def get_vm_count(item):
             return len(item.vms)
 
         return self.provision_vm_on_most_open_hv(
             hv_map=self.hosts, vm_count_fn=get_vm_count,
-            ip_addr=ip_addr, mac=mac, gw_ip=gw_ip, name=name,
+            mac=mac, name=name,
             requested_host=hv_host)

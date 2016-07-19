@@ -154,4 +154,4 @@ def make_gateway_ip(real_ip):
 
     gw_ip_split[3] += 1
     gw_ip = '.'.join(map(lambda x: str(x), gw_ip_split))
-    return gw_ip
+    return gw_ip.strip()
