@@ -142,11 +142,18 @@ class Guest(object):
             far_host.start_echo_server(
                 ip_addr="", port=target_port)
             try:
-                while not self.send_echo_request(
-                        dest_ip=target_ip,
-                        dest_port=target_port):
-                    if time.time() > deadline:
-                        return False
+                replied = False
+                while not replied:
+                    try:
+                        if time.time() > deadline:
+                            return False
+                        reply = self.send_echo_request(
+                            dest_ip=target_ip,
+                            dest_port=target_port)
+                        if reply != "":
+                            replied = True
+                    except exceptions.SubprocessFailedException:
+                        pass
             finally:
                 far_host.stop_echo_server(
                     ip_addr="", port=target_port)
