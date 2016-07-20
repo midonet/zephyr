@@ -15,7 +15,7 @@
 from zephyr.tsm.neutron_test_case import NeutronTestCase
 
 
-class TestRouterPeeringSecurityGroups(NeutronTestCase):
+class TestSecurityGroupsBasic(NeutronTestCase):
 
     def test_security_group_basic_remote_group(self):
         cidr = "192.168.20.0/24"
