@@ -92,7 +92,7 @@ class NeutronTestCase(TestCase):
                               for (i, r) in cleanup_errors]
                 if self in result.successes:
                     result.successes.remove(self)
-                    
+
                 result.failures.append(
                     (self,
                      'Error(s) cleaning up resources: [' +
@@ -189,7 +189,8 @@ class NeutronTestCase(TestCase):
             except Exception as e:
                 self.LOG.error(
                     'Error cleaning: ' + str(item) + ': ' + str(e.message))
-                cleanup_errors.append((res_name + ": " + item, e.message))
+                cleanup_errors.append(
+                    (res_name + ": " + str(item), e.message))
 
         if res_name != 'router route':
             del items[:]
