@@ -10,7 +10,10 @@
     "master-ds": {
       "host_type": "local",
       "vm_type": "zephyr.vtm.underlay.ipnetns_vm.IPNetnsVM",
-      "hypervisor": true
+      "hypervisor": true,
+      "overlay_settings": {
+        "pre_caching_required": True
+      }
     }
   }
 }

@@ -23,12 +23,23 @@ class UnderlayHost(object):
         self.name = name
         self.LOG = None
         self.main_ip = None
+        self.overlay_settings = None
+        self.cached_ips = set()
 
     def create_vm(self, ip, mac, gw_ip, name):
         return None
 
     def fetch_file(self, file_name, **kwargs):
         return None
+
+    def get_overlay_settings(self):
+        if not self.overlay_settings:
+            self.overlay_settings = self.fetch_overlay_settings()
+        return self.overlay_settings
+
+    @abc.abstractmethod
+    def fetch_overlay_settings(self):
+        return {}
 
     def get_hypervisor_name(self):
         return None
@@ -136,11 +147,30 @@ class UnderlayHost(object):
         :param timeout: int
         :rtype: str
         """
+        overlay_settings = self.get_overlay_settings()
+        if (dest_ip != 'localhost' and
+                dest_ip != '127.0.0.1' and
+                dest_ip not in self.cached_ips and
+                'pre_caching_required' in overlay_settings and
+                overlay_settings['pre_caching_required']):
+            self.LOG.debug(
+                'Sending packet to pre-cache topology to: ' +
+                dest_ip + '/' + str(dest_port))
+            try:
+                self.do_send_echo_request(dest_ip, dest_port, 'pre-cache')
+            except exceptions.SubprocessFailedException:
+                pass
+            self.cached_ips.add(dest_ip)
+
         self.LOG.debug(
             'Sending TCP echo [' + echo_request +
             '] to far host IP: ' + dest_ip + ' on port: ' + str(dest_port))
-        return self.do_send_echo_request(dest_ip, dest_port, echo_request,
-                                         protocol, timeout)
+        reply = self.do_send_echo_request(
+            dest_ip, dest_port, echo_request, protocol, timeout)
+        self.LOG.debug(
+            'Got reply from IP/PORT: ' + dest_ip + '/' + str(dest_port) +
+            '= [' + str(reply) + ']')
+        return reply
 
     @abc.abstractmethod
     def do_send_echo_request(self, dest_ip='localhost',
@@ -164,6 +194,28 @@ class UnderlayHost(object):
         return None
 
     def ping(self, target_ip, iface=None, count=1, timeout=None):
+        overlay_settings = self.get_overlay_settings()
+
+        if (target_ip not in self.cached_ips and
+                'pre_caching_required' in overlay_settings and
+                overlay_settings['pre_caching_required']):
+            self.LOG.debug(
+                'Sending ICMP packet to pre-cache topology to: ' + target_ip)
+            self.do_ping(target_ip=target_ip, iface=iface,
+                         count=count, timeout=timeout)
+            self.cached_ips.add(target_ip)
+
+        self.LOG.debug(
+            'Sending ICMP ping to far host IP: ' + target_ip)
+        resp = self.do_ping(
+            target_ip=target_ip, iface=iface, count=count, timeout=timeout)
+        self.LOG.debug(
+            'Ping ' + ('responded' if resp else 'did not respond'))
+
+        return resp
+
+    @abc.abstractmethod
+    def do_ping(self, target_ip, iface=None, count=1, timeout=None):
         return None
 
     def start_capture(self, interface, count=0, ptype='', pfilter=None,

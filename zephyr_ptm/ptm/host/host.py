@@ -15,7 +15,6 @@
 import datetime
 import json
 import logging
-import time
 import uuid
 
 from zephyr.common.cli import LinuxCLI
@@ -187,6 +186,23 @@ class Host(PTMObject):
         app_type = application.APPLICATION_TYPE_HYPERVISOR
         return (app_type in self.applications_by_type and
                 len(self.applications_by_type[app_type]) > 0)
+
+    def get_application_settings(self, app_types=None):
+        """
+        Returns a map of all settings on this host for the given app_type
+        (defaults to all applications on host)
+        :type app_types: list[int]
+        :rtype: dict[str, any]
+        """
+        if not app_types:
+            app_types = application.APPLICATION_TYPE_ALL
+        ret_map = {}
+        for app_type in app_types:
+            if app_type in self.applications_by_type:
+                for app in self.applications_by_type[app_type]:
+                    set_return = app.get_application_settings()
+                    ret_map.update(set_return)
+        return ret_map
 
     def fetch_resources_from_apps(
             self, resource_name, app_types=None,
@@ -506,7 +522,6 @@ class Host(PTMObject):
         :param dest_ip: str
         :param dest_port: int
         :param echo_request: str
-        :param source_ip: str
         :param protocol: str
         :param timeout: int
         :return: str

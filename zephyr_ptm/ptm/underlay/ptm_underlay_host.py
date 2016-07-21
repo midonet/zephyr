@@ -125,6 +125,11 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
         return self.underlay_host_obj.fetch_resources_from_apps(
             file_type, **kwargs)
 
+    def fetch_overlay_settings(self):
+        if self.vm_host:
+            return self.parent_host.get_overlay_settings()
+        return self.underlay_host_obj.get_application_settings()
+
     def add_route(self, route_ip='default', gw_ip=None, dev=None):
         return self.underlay_host_obj.add_route(route_ip, gw_ip, dev)
 
@@ -168,7 +173,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
             iface, dest_ip, source_port, dest_port, data,
             packet_options, count)
 
-    def ping(self, target_ip, iface=None, count=1, timeout=None):
+    def do_ping(self, target_ip, iface=None, count=1, timeout=None):
         return self.underlay_host_obj.ping(
             target_ip, iface, count, timeout)
 

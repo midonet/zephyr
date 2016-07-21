@@ -24,6 +24,13 @@ APPLICATION_TYPE_NSDB = 3
 APPLICATION_TYPE_API = 4
 APPLICATION_TYPE_RESOURCE_RETRIEVAL = 5
 APPLICATION_TYPE_SUPPLEMENTARY = 6
+APPLICATION_TYPE_ALL = [APPLICATION_TYPE_UNKNOWN,
+                        APPLICATION_TYPE_NETWORK_OVERLAY,
+                        APPLICATION_TYPE_HYPERVISOR,
+                        APPLICATION_TYPE_NSDB,
+                        APPLICATION_TYPE_API,
+                        APPLICATION_TYPE_RESOURCE_RETRIEVAL,
+                        APPLICATION_TYPE_SUPPLEMENTARY]
 APPLICATION_MULTI_ALLOWED = [APPLICATION_TYPE_RESOURCE_RETRIEVAL,
                              APPLICATION_TYPE_SUPPLEMENTARY]
 
@@ -77,6 +84,9 @@ class Application(object):
 
     def configure(self, host_cfg, app_config):
         pass
+
+    def get_application_settings(self):
+        return {}
 
     def get_resource(self, resource_name, **kwargs):
         """

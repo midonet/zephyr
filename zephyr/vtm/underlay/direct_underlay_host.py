@@ -86,6 +86,9 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def fetch_file(self, file_name, **kwargs):
         self.cli.cat(file_name)
 
+    def fetch_overlay_settings(self):
+        return {}
+
     def add_route(self, route_ip='default', gw_ip=None, dev=None):
         """
         :type route_ip: IP
@@ -215,7 +218,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
                                 packet_options=packet_options,
                                 count=count).stdout
 
-    def ping(self, target_ip, iface=None, count=1, timeout=None):
+    def do_ping(self, target_ip, iface=None, count=1, timeout=None):
         """
         Ping a target IP.  Can specify the interface to use and/or the number
         of pings to send.  Returns true if all pings succeeded, false

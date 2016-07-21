@@ -62,6 +62,11 @@ class Midolman(application.Application):
             self.configurator = ComputeFileConfiguration()
         self.my_ip = '127.0.0.1'
 
+    def get_application_settings(self):
+        return {
+            'pre_caching_required': True
+        }
+
     def get_resource(self, resource_name, **kwargs):
         """
         Resource Type | Return Type
