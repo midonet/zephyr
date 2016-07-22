@@ -21,7 +21,6 @@ from zephyr.common.utils import curl_delete
 from zephyr.common.utils import curl_post
 from zephyr.common.utils import curl_put
 from zephyr.tsm.test_case import TestCase
-from zephyr.vtm.guest import Guest
 from zephyr.vtm import neutron_api
 
 GuestData = namedtuple('GuestData', 'port vm ip')
@@ -30,10 +29,20 @@ EdgeData = namedtuple('EdgeData', "edge_net router")
 MAIN_NET_CIDR = '192.168.0.0/24'
 PUB_NET_CIDR = '200.200.0.0/24'
 
+# TODO(joe+micucci): Move non-standard extensions to extension-helper modules
+# Things like firewall, bgp, router_peering, etc. should all be moved
+# out of the base "NeutronTestCase" and moved to their own module helper
+# files, so that tests can pull those extensions in as mixins, and call
+# self.createXYZ(), etc. as normal, but they don't get pulled in unless
+# the user asks for them (and hence won't confuse the basic test case module).
+
+# TODO(joe+micucci): The same goes for the cleanups as well
+# A mechanism must be established to allow extensions to chain to a specific
+# point in the cleanup cycle, so that certain elements can come before certain
+# base elements, but after others, etc.
+
 
 class NeutronTestCase(TestCase):
-
-    # TODO(Joe): Split the cleanup into a per-test-group set of files
     servers = list()
     bgp_speakers = list()
     bgp_peers = list()
@@ -123,12 +132,6 @@ class NeutronTestCase(TestCase):
             echo_response = vm.send_echo_request(dest_ip=dest_ip)
             self.assertEqual('ping:pong', echo_response)
 
-            # TODO(micucci): Fix UDP
-            # for i in range(0, count):
-            #     echo_response = vm.send_echo_request(dest_ip=dest_ip,
-            #                                          protocol='udp')
-            #     self.assertEqual('ping:pong', echo_response)
-
     def verify_connection(self, vm, dest_ip, count=2):
         self.assertTrue(vm.ping(target_ip=dest_ip, count=count, timeout=20))
 
@@ -136,40 +139,71 @@ class NeutronTestCase(TestCase):
             echo_response = vm.send_echo_request(dest_ip=dest_ip)
             self.assertEqual('ping:pong', echo_response)
 
-            # TODO(micucci): Fix UDP
-            # for i in range(0, count):
-            #     echo_response = vm.send_echo_request(dest_ip=dest_ip,
-            #                                          protocol='udp')
-            #     self.assertEqual('ping:pong', echo_response)
-
     def clean_topo(self):
         cleanup_errors = []
         topo_info = [
             (self.sgrs, 'security group rule',
              self.api.delete_security_group_rule),
+
             (self.logging_resources, 'log resource',
-             self.delete_logging_resource),
+             self.curl_delete_logging_resource),
+
             (self.firewall_logs, 'fw logging object',
-             self.remove_firewall_logs),
-            (self.bgp_peers, 'bgp peer', self.delete_bgp_peer_curl),
-            (self.bgp_speakers, 'bgp speaker', self.delete_bgp_speaker_curl),
-            (self.fw_ras, 'firewall policy rule', self.delete_fpr),
-            (self.fwprs, 'firewall rule', self.api.delete_firewall_rule),
-            (self.fws, 'firewall', self.api.delete_firewall),
-            (self.fwps, 'firewall policy', self.api.delete_firewall_policy),
-            (self.rmacs, 'remote mac entry', self.delete_rmac),
-            (self.l2gw_conns, 'l2 gateway conn', self.delete_l2_gateway_conn),
-            (self.l2gws, 'l2 gateway', self.delete_l2gw),
-            (self.fips, 'floating ips', self.api.delete_floatingip),
-            (self.nrouters, 'router route', self.clear_route),
+             self.curl_delete_firewall_log),
+
+            (self.bgp_peers, 'bgp peer',
+             self.curl_delete_bgp_peer),
+
+            (self.bgp_speakers, 'bgp speaker',
+             self.curl_delete_bgp_speaker),
+
+            (self.fw_ras, 'firewall policy rule',
+             self.neutron_remove_firewall_policy_rule),
+
+            (self.fwprs, 'firewall rule',
+             self.api.delete_firewall_rule),
+
+            (self.fws, 'firewall',
+             self.api.delete_firewall),
+
+            (self.fwps, 'firewall policy',
+             self.api.delete_firewall_policy),
+
+            (self.rmacs, 'remote mac entry',
+             self.curl_delete_remote_mac_entry),
+
+            (self.l2gw_conns, 'l2 gateway conn',
+             self.curl_delete_l2_gateway_conn),
+
+            (self.l2gws, 'l2 gateway',
+             self.curl_delete_l2_gateway),
+
+            (self.fips, 'floating ips',
+             self.api.delete_floatingip),
+
+            (self.nrouters, 'router route',
+             self.clear_route),
+
             (self.nr_ifaces, 'router interface',
-             self.remove_interface_router),
-            (self.gws, 'gateway', self.delete_gw_dev),
-            (self.nports, 'port', self.api.delete_port),
-            (self.sgs, 'security group', self.api.delete_security_group),
-            (self.nrouters, 'router', self.api.delete_router),
-            (self.nsubs, 'subnet', self.api.delete_subnet),
-            (self.nnets, 'network', self.api.delete_network)]
+             self.neutron_remove_router_interface),
+
+            (self.gws, 'gateway',
+             self.curl_delete_gateway_device),
+
+            (self.nports, 'port',
+             self.api.delete_port),
+
+            (self.sgs, 'security group',
+             self.api.delete_security_group),
+
+            (self.nrouters, 'router',
+             self.api.delete_router),
+
+            (self.nsubs, 'subnet',
+             self.api.delete_subnet),
+
+            (self.nnets, 'network',
+             self.api.delete_network)]
 
         for (items, res_name, del_func) in topo_info:
             cleanup_errors += self.clean_resource(
@@ -197,7 +231,6 @@ class NeutronTestCase(TestCase):
 
         return cleanup_errors
 
-    # TODO(micucci): Change this to use the GuestData namedtuple
     def cleanup_vms(self, vm_port_list):
         """
         :type vm_port_list: list[(zephyr.vtm.guest.Guest, port)]
@@ -304,8 +337,8 @@ class NeutronTestCase(TestCase):
         return sg['security_group']
 
     def delete_security_group(self, sg_id):
-        self.sgs.remove(sg_id)
         self.api.delete_security_group(sg_id)
+        self.sgs.remove(sg_id)
 
     def create_security_group_rule(self, sg_id, remote_group_id=None,
                                    tenant_id='admin', direction='ingress',
@@ -328,8 +361,8 @@ class NeutronTestCase(TestCase):
         return sgr['security_group_rule']
 
     def delete_security_group_rule(self, sgr_id):
-        self.sgrs.remove(sgr_id)
         self.api.delete_security_group_rule(sgr_id)
+        self.sgrs.remove(sgr_id)
 
     def create_floating_ip(self, pub_net_id, port_id=None, tenant_id='admin'):
         fip_data = {
@@ -354,8 +387,8 @@ class NeutronTestCase(TestCase):
         return fip['floatingip']
 
     def delete_floating_ip(self, fip_id):
+        self.api.delete_floating_ip(fip_id)
         self.fips.remove(fip_id)
-        self.api.delete_floatingip(fip_id)
 
     def create_port(self, name, net_id, tenant_id='admin', host=None,
                     host_iface=None, sub_id=None, ip_addr=None, mac=None,
@@ -395,8 +428,8 @@ class NeutronTestCase(TestCase):
         return port['port']
 
     def delete_port(self, port_id):
-        self.nports.remove(port_id)
         self.api.delete_port(port_id)
+        self.nports.remove(port_id)
 
     def create_network(self, name, admin_state_up=True, tenant_id='admin',
                        external=False, uplink=False,
@@ -417,8 +450,8 @@ class NeutronTestCase(TestCase):
         return net['network']
 
     def delete_network(self, net_id):
-        self.nnets.remove(net_id)
         self.api.delete_network(net_id)
+        self.nnets.remove(net_id)
 
     def create_subnet(self, name, net_id, cidr, tenant_id='admin',
                       enable_dhcp=True):
@@ -434,8 +467,8 @@ class NeutronTestCase(TestCase):
         return sub['subnet']
 
     def delete_subnet(self, sub_id):
-        self.nsubs.remove(sub_id)
         self.api.delete_subnet(sub_id)
+        self.nsubs.remove(sub_id)
 
     def create_router(self, name, tenant_id='admin', pub_net_id=None,
                       admin_state_up=True, priv_sub_ids=list()):
@@ -452,8 +485,8 @@ class NeutronTestCase(TestCase):
         return router
 
     def delete_router(self, rid):
-        self.nrouters.remove(rid)
         self.api.delete_router(rid)
+        self.nrouters.remove(rid)
 
     def create_router_interface(self, router_id, port_id=None, sub_id=None):
         data = {}
@@ -468,14 +501,13 @@ class NeutronTestCase(TestCase):
         return iface
 
     def remove_router_interface(self, router_id, iface):
+        self.neutron_remove_router_interface(router_id, iface)
         self.nr_ifaces.remove((router_id, iface))
-        self.nports.remove(iface['port_id'])
-        self.api.remove_interface_router(router_id, iface)
 
-    def remove_interface_router(self, rid, iface):
+    def neutron_remove_router_interface(self, router_id, iface):
+        self.api.remove_interface_router(router_id, iface)
         if iface['port_id'] in self.nports:
             self.nports.remove(iface['port_id'])
-        self.api.remove_interface_router(rid, iface)
 
     def add_routes(self, rid, route_dest_gw_pairs):
         if 'extraroute' in self.api_extension_map:
@@ -584,7 +616,7 @@ class NeutronTestCase(TestCase):
                         self.LOG.debug("Removing interface: " +
                                        str(iface) + " from router: " +
                                        str(er))
-                        self.remove_interface_router(er['id'], iface)
+                        self.remove_router_interface(er['id'], iface)
                 self.LOG.debug("Deleting router: " + str(er))
                 self.delete_router(er['id'])
             if edge_data.edge_net.subnet:
@@ -596,20 +628,14 @@ class NeutronTestCase(TestCase):
                 self.LOG.debug("Deleting network: " + str(en))
                 self.delete_network(en['id'])
 
-    def add_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
-        curl_url = (neutron_api.get_neutron_api_url(self.api) +
-                    '/bgp-speakers/' +
-                    bgp_speaker_id + '/add_bgp_peer.json')
-        curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
+    def create_uplink_port(self, name, tun_net_id, tun_host, uplink_iface,
+                           tun_sub_id, tunnel_ip):
+        return self.create_port(name, tun_net_id, host=tun_host,
+                                host_iface=uplink_iface, sub_id=tun_sub_id,
+                                ip_addr=tunnel_ip)
 
-    def remove_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
-        curl_url = (neutron_api.get_neutron_api_url(self.api) +
-                    '/bgp-speakers/' +
-                    bgp_speaker_id + '/remove_bgp_peer.json')
-        curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
-
-    def create_bgp_speaker_curl(self, name, local_as, router_id,
-                                tenant_id='admin', ip_version=4):
+    def create_bgp_speaker(self, name, local_as, router_id,
+                           tenant_id='admin', ip_version=4):
         speaker_data = {'name': name,
                         'logical_router': router_id,
                         'tenant_id': tenant_id,
@@ -627,15 +653,15 @@ class NeutronTestCase(TestCase):
 
     def delete_bgp_speaker(self, bgp_speaker_id):
         self.bgp_speakers.remove(bgp_speaker_id)
-        self.delete_bgp_speaker_curl(bgp_speaker_id)
+        self.curl_delete_bgp_speaker(bgp_speaker_id)
 
-    def delete_bgp_speaker_curl(self, bgp_speaker_id):
+    def curl_delete_bgp_speaker(self, bgp_speaker_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/bgp-speakers/')
         curl_delete(curl_url + bgp_speaker_id)
 
-    def create_bgp_peer_curl(self, name, peer_ip, remote_as, auth_type='none',
-                             tenant_id='admin'):
+    def create_bgp_peer(self, name, peer_ip, remote_as, auth_type='none',
+                        tenant_id='admin'):
         peer_data = {'name': name,
                      'tenant_id': tenant_id,
                      'peer_ip': peer_ip,
@@ -653,12 +679,24 @@ class NeutronTestCase(TestCase):
 
     def delete_bgp_peer(self, bgp_peer_id):
         self.bgp_peers.remove(bgp_peer_id)
-        self.delete_bgp_peer_curl(bgp_peer_id)
+        self.curl_delete_bgp_peer(bgp_peer_id)
 
-    def delete_bgp_peer_curl(self, bgp_peer_id):
+    def curl_delete_bgp_peer(self, bgp_peer_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/bgp-peers/')
         curl_delete(curl_url + bgp_peer_id)
+
+    def add_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/bgp-speakers/' +
+                    bgp_speaker_id + '/add_bgp_peer.json')
+        curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
+
+    def remove_bgp_speaker_peer(self, bgp_speaker_id, bgp_peer_id):
+        curl_url = (neutron_api.get_neutron_api_url(self.api) +
+                    '/bgp-speakers/' +
+                    bgp_speaker_id + '/remove_bgp_peer.json')
+        curl_put(curl_url, {'bgp_peer_id': bgp_peer_id})
 
     def create_remote_mac_entry(self, ip, mac, segment_id, gwdev_id):
         curl_url = neutron_api.get_neutron_api_url(self.api)
@@ -680,23 +718,15 @@ class NeutronTestCase(TestCase):
         self.LOG.debug('Created RMAC entry: ' + str(rmac))
         return rmac['remote_mac_entry']
 
-    def delete_l2_gateway_conn(self, l2gwconn_id):
-        curl_url = neutron_api.get_neutron_api_url(self.api)
-        curl_delete(curl_url + "/l2-gateway-connections/" + l2gwconn_id)
+    def delete_remote_mac_entry(self, gwdev_id, rme_id):
+        self.curl_delete_remote_mac_entry(gwdev_id, rme_id)
+        self.rmacs.remove((gwdev_id, rme_id))
 
-    def delete_l2_gw_conn(self, l2gwconn_id):
-        self.delete_l2_gateway_conn(l2gwconn_id)
-        self.l2gw_conns.remove(l2gwconn_id)
-
-    def delete_rmac(self, gwdev_id, rme_id):
+    def curl_delete_remote_mac_entry(self, gwdev_id, rme_id):
         curl_url = neutron_api.get_neutron_api_url(self.api)
         curl_delete(curl_url +
                     "/gw/gateway_devices/" + str(gwdev_id) +
                     "/remote_mac_entries/" + str(rme_id))
-
-    def delete_remote_mac_entry(self, gwdev_id, rme_id):
-        self.delete_rmac(gwdev_id, rme_id)
-        self.rmacs.remove((gwdev_id, rme_id))
 
     def create_gateway_device(self, resource_id, dev_type='router_vtep',
                               tunnel_ip=None, name=None):
@@ -721,7 +751,7 @@ class NeutronTestCase(TestCase):
         self.LOG.debug("Created GW Device: " + str(gw))
         return gw['gateway_device']
 
-    def update_gw_device(self, gwdev_id, tunnel_ip=None, name=None):
+    def update_gateway_device(self, gwdev_id, tunnel_ip=None, name=None):
         gwdict = {}
         if name:
             gwdict['name'] = 'vtep_router_' + name
@@ -734,20 +764,14 @@ class NeutronTestCase(TestCase):
             curl_url + '/gw/gateway_devices/' + gwdev_id, curl_req)
         self.LOG.debug("Update gateway device" + device_json_ret)
 
-    def delete_gw_dev(self, gwdev_id):
+    def delete_gateway_device(self, gwdev_id):
+        self.curl_delete_gateway_device(gwdev_id)
+        self.gws.remove(gwdev_id)
+
+    def curl_delete_gateway_device(self, gwdev_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/gw/gateway_devices/')
         curl_delete(curl_url + gwdev_id)
-
-    def delete_gateway_device(self, gwdev_id):
-        self.delete_gw_dev(gwdev_id)
-        self.gws.remove(gwdev_id)
-
-    def create_uplink_port(self, name, tun_net_id, tun_host, uplink_iface,
-                           tun_sub_id, tunnel_ip):
-        return self.create_port(name, tun_net_id, host=tun_host,
-                                host_iface=uplink_iface, sub_id=tun_sub_id,
-                                ip_addr=tunnel_ip)
 
     def create_l2_gateway(self, name, gwdev_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
@@ -765,13 +789,13 @@ class NeutronTestCase(TestCase):
         self.LOG.debug("Created L2GW: " + str(l2gw))
         return l2gw['l2_gateway']
 
-    def delete_l2gw(self, l2gw_id):
+    def delete_l2_gateway(self, l2gw_id):
+        self.curl_delete_l2_gateway(l2gw_id)
+        self.l2gws.remove(l2gw_id)
+
+    def curl_delete_l2_gateway(self, l2gw_id):
         curl_url = neutron_api.get_neutron_api_url(self.api)
         curl_delete(curl_url + "/l2-gateways/" + str(l2gw_id))
-
-    def delete_l2_gateway(self, l2gw_id):
-        self.delete_l2gw(l2gw_id)
-        self.l2gws.remove(l2gw_id)
 
     def create_l2_gateway_connection(self, net_id, segment_id, l2gw_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
@@ -792,76 +816,13 @@ class NeutronTestCase(TestCase):
         self.LOG.debug("Created GW Device: " + str(l2_conn))
         return l2_conn['l2_gateway_connection']
 
-    # TODO(Joe): Move to firewall specific helper file
-    def create_firewall(self, fw_policy_id, tenant_id="admin",
-                        router_ids=list()):
-        fw_data = {'firewall_policy_id': fw_policy_id,
-                   'tenant_id': tenant_id,
-                   'router_ids': router_ids}
-        fw = self.api.create_firewall({'firewall': fw_data})['firewall']
-        self.fws.append(fw['id'])
-        return fw
+    def delete_l2_gateway_connection(self, l2gwconn_id):
+        self.curl_delete_l2_gateway_conn(l2gwconn_id)
+        self.l2gw_conns.remove(l2gwconn_id)
 
-    # TODO(Joe): Move to firewall specific helper file
-    def delete_firewall(self, fw_id):
-        self.fws.remove(fw_id)
-        self.api.delete_firewall(fw_id)
-
-    # TODO(Joe): Move to firewall specific helper file
-    def create_firewall_policy(self, name, tenant_id='admin'):
-        fwp_data = {'name': name,
-                    'tenant_id': tenant_id}
-        fwp = self.api.create_firewall_policy({'firewall_policy': fwp_data})
-        self.fwps.append(fwp['firewall_policy']['id'])
-        return fwp['firewall_policy']
-
-    # TODO(Joe): Move to firewall specific helper file
-    def delete_firewall_policy(self, fw_id):
-        self.fwps.remove(fw_id)
-        self.api.delete_firewall_policy(fw_id)
-
-    def delete_fpr(self, fw_policy_id, fw_rule_id):
-        data = {"firewall_rule_id": fw_rule_id}
-        self.api.firewall_policy_remove_rule(fw_policy_id, data)
-
-    # TODO(Joe): Move to firewall specific helper file
-    def create_firewall_rule(self, source_ip=None, dest_ip=None,
-                             src_port=None, dest_port=None,
-                             action='allow', protocol='tcp',
-                             tenant_id='admin'):
-
-        fwpr_data = {'action': action,
-                     'protocol': protocol,
-                     'ip_version': 4,
-                     'shared': False,
-                     'source_ip_address': source_ip,
-                     'destination_ip_address': dest_ip,
-                     'tenant_id': tenant_id}
-
-        if dest_port is not None:
-            fwpr_data['destination_port'] = dest_port
-        if src_port is not None:
-            fwpr_data['source_port'] = src_port
-        fwpr = self.api.create_firewall_rule({'firewall_rule': fwpr_data})
-        self.fwprs.append(fwpr['firewall_rule']['id'])
-        return fwpr['firewall_rule']
-
-    # TODO(Joe): Move to firewall specific helper file
-    def delete_firewall_rule(self, fwpr_id):
-        self.fwprs.remove(fwpr_id)
-        self.api.delete_firewall_rule(fwpr_id)
-
-    # TODO(Joe): Move to firewall specific helper file
-    def insert_firewall_rule(self, fw_policy_id, fw_rule_id):
-        data = {"firewall_rule_id": fw_rule_id}
-        self.fw_ras.append((fw_policy_id, fw_rule_id))
-        self.api.firewall_policy_insert_rule(fw_policy_id, data)
-
-    # TODO(Joe): Move to firewall specific helper file
-    def remove_firewall_rule(self, fw_policy_id, fw_rule_id):
-        self.fw_ras.remove((fw_policy_id, fw_rule_id))
-        data = {"firewall_rule_id": fw_rule_id}
-        self.api.firewall_policy_remove_rule(fw_policy_id, data)
+    def curl_delete_l2_gateway_conn(self, l2gwconn_id):
+        curl_url = neutron_api.get_neutron_api_url(self.api)
+        curl_delete(curl_url + "/l2-gateway-connections/" + l2gwconn_id)
 
     def create_logging_resource(
             self, name, description='Logger resource', enabled=True):
@@ -905,11 +866,76 @@ class NeutronTestCase(TestCase):
         return logr['logging_resource']
 
     def delete_logging_resource(self, lgr_id):
+        self.curl_delete_logging_resource(lgr_id)
+        self.logging_resources.remove(lgr_id)
+
+    def curl_delete_logging_resource(self, lgr_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/logging/logging_resources/' + str(lgr_id))
         curl_delete(curl_url)
-        self.logging_resources.remove(lgr_id)
         self.LOG.debug('Deleted logging resource: ' + str(lgr_id))
+
+    def create_firewall(self, fw_policy_id, tenant_id="admin",
+                        router_ids=list()):
+        fw_data = {'firewall_policy_id': fw_policy_id,
+                   'tenant_id': tenant_id,
+                   'router_ids': router_ids}
+        fw = self.api.create_firewall({'firewall': fw_data})['firewall']
+        self.fws.append(fw['id'])
+        return fw
+
+    def delete_firewall(self, fw_id):
+        self.api.delete_firewall(fw_id)
+        self.fws.remove(fw_id)
+
+    def create_firewall_policy(self, name, tenant_id='admin'):
+        fwp_data = {'name': name,
+                    'tenant_id': tenant_id}
+        fwp = self.api.create_firewall_policy({'firewall_policy': fwp_data})
+        self.fwps.append(fwp['firewall_policy']['id'])
+        return fwp['firewall_policy']
+
+    def delete_firewall_policy(self, fw_id):
+        self.api.delete_firewall_policy(fw_id)
+        self.fwps.remove(fw_id)
+
+    def create_firewall_rule(self, source_ip=None, dest_ip=None,
+                             src_port=None, dest_port=None,
+                             action='allow', protocol='tcp',
+                             tenant_id='admin'):
+
+        fwpr_data = {'action': action,
+                     'protocol': protocol,
+                     'ip_version': 4,
+                     'shared': False,
+                     'source_ip_address': source_ip,
+                     'destination_ip_address': dest_ip,
+                     'tenant_id': tenant_id}
+
+        if dest_port is not None:
+            fwpr_data['destination_port'] = dest_port
+        if src_port is not None:
+            fwpr_data['source_port'] = src_port
+        fwpr = self.api.create_firewall_rule({'firewall_rule': fwpr_data})
+        self.fwprs.append(fwpr['firewall_rule']['id'])
+        return fwpr['firewall_rule']
+
+    def delete_firewall_rule(self, fwpr_id):
+        self.api.delete_firewall_rule(fwpr_id)
+        self.fwprs.remove(fwpr_id)
+
+    def insert_firewall_rule(self, fw_policy_id, fw_rule_id):
+        data = {"firewall_rule_id": fw_rule_id}
+        self.fw_ras.append((fw_policy_id, fw_rule_id))
+        self.api.firewall_policy_insert_rule(fw_policy_id, data)
+
+    def remove_firewall_rule(self, fw_policy_id, fw_rule_id):
+        self.neutron_remove_firewall_policy_rule(fw_policy_id, fw_rule_id)
+        self.fw_ras.remove((fw_policy_id, fw_rule_id))
+
+    def neutron_remove_firewall_policy_rule(self, fw_policy_id, fw_rule_id):
+        data = {"firewall_rule_id": fw_rule_id}
+        self.api.firewall_policy_remove_rule(fw_policy_id, data)
 
     def create_firewall_log(self, res_id, fw_event, fw_id,
                             description="Firewall log object"):
@@ -960,16 +986,16 @@ class NeutronTestCase(TestCase):
         self.LOG.debug('Updated firewall log: ' + str(fwlog))
         return fwlog['firewall_log']
 
-    def delete_firewall_log(self, res_id, fwlog_id):
+    def delete_firewall_logs(self, res_id, fwlog_id):
+        self.curl_delete_firewall_log(res_id, fwlog_id)
+        self.firewall_logs.remove((res_id, fwlog_id))
+
+    def curl_delete_firewall_log(self, res_id, fwlog_id):
         curl_url = (neutron_api.get_neutron_api_url(self.api) +
                     '/logging/logging_resources/' + str(res_id) +
                     '/firewall_logs/' + str(fwlog_id))
         curl_delete(curl_url)
-        self.firewall_logs.remove((res_id, fwlog_id))
         self.LOG.debug('Deleted firewall log object: ' + str(fwlog_id))
-
-    def remove_firewall_logs(self, *id_tuple):
-        self.delete_firewall_log(*id_tuple)
 
 
 class require_extension(object):  # noqa

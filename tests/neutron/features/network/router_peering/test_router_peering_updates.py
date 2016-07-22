@@ -330,7 +330,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         vma.start_echo_server(ip_addr=ipa)
         self.check_ping_and_tcp(vmb, ipa)
 
-        self.delete_l2_gw_conn(a_top['l2_gateway_conn']['id'])
+        self.delete_l2_gateway_connection(a_top['l2_gateway_conn']['id'])
         self.delete_l2_gateway(a_top['l2_gateway']['id'])
 
         self.assertFalse(vma.ping(target_ip=ipb))
@@ -414,7 +414,7 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
         vma.start_echo_server(ip_addr=ipa)
         self.check_ping_and_tcp(vmb, ipa)
 
-        self.delete_l2_gw_conn(a_top['l2_gateway_conn']['id'])
+        self.delete_l2_gateway_connection(a_top['l2_gateway_conn']['id'])
 
         self.assertFalse(vma.ping(target_ip=ipb))
         self.assertFalse(vmb.ping(target_ip=ipa))
@@ -498,8 +498,8 @@ class TestRouterPeeringUpdates(L2GWNeutronTestCase):
 
         new_tunnel_ip = '2.2.2.6'
 
-        self.update_gw_device(b_top['gateway_device']['id'],
-                              new_tunnel_ip)
+        self.update_gateway_device(b_top['gateway_device']['id'],
+                                   new_tunnel_ip)
 
         self.api.update_router(b_top['vtep_router']['id'],
                                {'router': {'routes': None}})
