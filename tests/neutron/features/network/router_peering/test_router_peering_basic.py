@@ -33,7 +33,7 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
         a_tenant_router = self.create_router('EAST',
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
-        a_edge = self.create_edge_router(
+        self.create_edge_router(
             pub_subnets=[a_pub_sub],
             router_host_name='router1',
             edge_host_name='edge2',
@@ -55,7 +55,7 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
         b_tenant_router = self.create_router('WEST',
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
-        b_edge = self.create_edge_router(
+        self.create_edge_router(
             pub_subnets=[b_pub_sub],
             router_host_name='router1',
             edge_host_name='edge1',
@@ -93,12 +93,12 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             segment_id="100")
 
         b_router_mac = b_peer_topo['az_iface_port']['mac_address']
-        a_rme = self.add_peer(
+        self.add_peer(
             a_peer_topo, a_tenant_router['id'], "100",
             "192.168.200.3", b_router_mac, b_cidr,
             b_peer_topo['az_iface_port']['id'], "2.2.2.2")
         a_router_mac = a_peer_topo['az_iface_port']['mac_address']
-        b_rme = self.add_peer(
+        self.add_peer(
             b_peer_topo, b_tenant_router['id'], "100",
             "192.168.200.2", a_router_mac, a_cidr,
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
@@ -122,7 +122,7 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
         a_net = self.create_network('EAST')
         a_sub = self.create_subnet('EAST', a_net['id'], a_cidr)
         a_pub_net = self.create_network('PUB_EAST', external=True)
-        a_pub_sub = self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
+        self.create_subnet('PUB_EAST', a_pub_net['id'], a_pub_cidr)
         a_tenant_router = self.create_router('EAST',
                                              pub_net_id=a_pub_net['id'],
                                              priv_sub_ids=[a_sub['id']])
@@ -135,13 +135,19 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
         b_net = self.create_network('WEST')
         b_sub = self.create_subnet('WEST', b_net['id'], b_cidr)
         b_pub_net = self.create_network('PUB_WEST', external=True)
-        b_pub_sub = self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
+        self.create_subnet('PUB_WEST', b_pub_net['id'], b_pub_cidr)
         b_tenant_router = self.create_router('WEST',
                                              pub_net_id=b_pub_net['id'],
                                              priv_sub_ids=[b_sub['id']])
         (portb, vmb, ipb) = self.create_vm_server(
             "B", b_net['id'], b_sub['gateway_ip'],
             port_security_enabled=False)
+
+        # Test that VM canNOT reach via internal IP
+        # Ping
+        self.assertFalse(vma.verify_connection_to_host(vmb, timeout=5))
+        self.assertFalse(vmb.verify_connection_to_host(vma, timeout=5))
+
         a_peer_topo = self.create_router_peering_topo(
             name="EAST",
             az_cidr="192.168.200.0/24",
@@ -167,18 +173,17 @@ class TestRouterPeeringBasic(L2GWNeutronTestCase):
             segment_id="100")
 
         b_router_mac = b_peer_topo['az_iface_port']['mac_address']
-        a_rme = self.add_peer(
+        self.add_peer(
             a_peer_topo, a_tenant_router['id'], "100",
             "192.168.200.3", b_router_mac, b_cidr,
             b_peer_topo['az_iface_port']['id'], "2.2.2.2")
         a_router_mac = a_peer_topo['az_iface_port']['mac_address']
-        b_rme = self.add_peer(
+        self.add_peer(
             b_peer_topo, b_tenant_router['id'], "100",
             "192.168.200.2", a_router_mac, a_cidr,
             a_peer_topo['az_iface_port']['id'], "1.1.1.2")
 
-        vmb.start_echo_server(ip_addr=ipb)
-        self.check_ping_and_tcp(vma, ipb)
-
-        vma.start_echo_server(ip_addr=ipa)
-        self.check_ping_and_tcp(vmb, ipa)
+        # Test that VM can now reach via internal IP
+        # Ping
+        self.assertTrue(vma.verify_connection_to_host(vmb, timeout=20))
+        self.assertTrue(vmb.verify_connection_to_host(vma, timeout=20))
