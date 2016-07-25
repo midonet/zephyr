@@ -240,7 +240,7 @@ class TestFWaaSLogging(NeutronTestCase):
     def test_logging_two_fw(self):
         (vm1_2, ip1_2, vm2_2,
          ip2_2, fw_2,
-         near_far_router_2) = self.make_simple_topology(name='b')
+         near_far_router_2) = self.make_simple_topology(name='B')
 
         log_res = self.create_logging_resource(
             name='fw_logging',
@@ -279,8 +279,14 @@ class TestFWaaSLogging(NeutronTestCase):
         except exceptions.SubprocessFailedException:
             pass
 
-        self.check_fwaas_logs(uuid=fw_log_obj['id'], accept=2, drop=1)
-        self.check_fwaas_logs(uuid=fw_log_obj2['id'], accept=2, drop=1)
+        self.check_fwaas_logs(
+            uuid=fw_log_obj['id'],
+            host=self.vm1.get_hypervisor_name(),
+            accept=2, drop=1)
+        self.check_fwaas_logs(
+            uuid=fw_log_obj2['id'],
+            host=vm1_2.get_hypervisor_name(),
+            accept=2, drop=1)
 
     @require_extension("fwaas")
     @test_case.require_hosts(['cmp1'])
