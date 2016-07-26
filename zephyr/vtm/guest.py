@@ -21,7 +21,7 @@ PACKET_CAPTURE_TIMEOUT = 10
 
 class Guest(object):
     """
-    A class to wrap a VM from the Physical Topology Manager
+    A class to wrap a VM from the physical topology
     """
 
     def __init__(self, vm_underlay):
@@ -54,6 +54,29 @@ class Guest(object):
 
     def get_hypervisor_name(self):
         return self.vm_underlay.get_hypervisor_name()
+
+    def add_route(self, route_ip='default', gw_ip=None, dev=None):
+        return self.vm_underlay.add_route(route_ip, gw_ip, dev)
+
+    def del_route(self, route_ip):
+        return self.vm_underlay.del_route(route_ip)
+
+    def create_interface(self, iface, mac=None, ip_list=None,
+                         linked_bridge=None, vlans=None):
+        return self.vm_underlay.create_interface(
+            iface, mac, ip_list, linked_bridge, vlans)
+
+    def add_ip(self, iface_name, ip_addr):
+        return self.vm_underlay.add_ip(iface_name, ip_addr)
+
+    def request_ip(self, iface_name):
+        return self.vm_underlay.request_ip(iface_name)
+
+    def get_ip(self, iface_name):
+        return self.vm_underlay.get_ip(iface_name)
+
+    def reset_default_route(self, ip_addr):
+        return self.vm_underlay.reset_default_route(ip_addr)
 
     def clear_arp(self):
         return self.vm_underlay.flush_arp()

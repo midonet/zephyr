@@ -438,7 +438,8 @@ class PhysicalTopologyManager(object):
         self.LOG.debug("ptm-host-ctl finished")
 
     def get_topology_features(self):
-        return {'compute_hosts': len(self.hypervisors),
+        return {'dhcp_on_vms': False,
+                'compute_hosts': len(self.hypervisors),
                 'edge_hosts': len([h for h in self.hosts_by_name.iterkeys()
                                    if h.startswith('edge')]),
                 'host_names': [h for h in self.hosts_by_name.iterkeys()]}

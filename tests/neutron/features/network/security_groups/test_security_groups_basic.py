@@ -16,7 +16,6 @@ from zephyr.tsm.neutron_test_case import NeutronTestCase
 
 
 class TestSecurityGroupsBasic(NeutronTestCase):
-
     def test_security_group_basic_remote_group(self):
         cidr = "192.168.20.0/24"
         net = self.create_network('SG_BASIC')
@@ -37,13 +36,65 @@ class TestSecurityGroupsBasic(NeutronTestCase):
         (portc, vmc, ipc) = self.create_vm_server(
             "C", net['id'], sub['gateway_ip'], sgs=[sg2['id']])
 
-        vmb.start_echo_server(ip_addr=ipb)
-        self.check_ping_and_tcp(vma, ipb)
+        self.assertTrue(vmb.verify_connection_to_host(vma))
+        self.assertTrue(vma.verify_connection_to_host(vmb))
+        self.assertFalse(vmc.verify_connection_to_host(vma, timeout=5))
+        self.assertTrue(vma.verify_connection_to_host(vmc))
 
-        vma.start_echo_server(ip_addr=ipa)
-        self.check_ping_and_tcp(vmb, ipa)
+    def test_security_group_two_subnets(self):
+        cidr = "192.168.20.0/24"
+        net1 = self.create_network('SG_BASIC1')
+        sub1 = self.create_subnet('SG_BASIC1', net1['id'], cidr)
 
-        self.assertFalse(vmc.ping(ipa))
+        net2 = self.create_network('SG_BASIC2')
+        sub2 = self.create_subnet('SG_BASIC2', net2['id'], cidr)
 
-        vmc.start_echo_server(ip_addr=ipc)
-        self.check_ping_and_tcp(vma, ipc)
+        self.create_router(
+            'RTR1_2', priv_sub_ids=[net1['id'], net2['id']])
+
+        sg1 = self.create_security_group('SG_1')
+        self.create_security_group_rule(sg1['id'])
+
+        sg2 = self.create_security_group('SG_2')
+        self.create_security_group_rule(sg2['id'])
+
+        (porta, vma, ipa) = self.create_vm_server(
+            "A", net1['id'], sub1['gateway_ip'], sgs=[sg1['id']])
+
+        (portb, vmb, ipb) = self.create_vm_server(
+            "B", net2['id'], sub2['gateway_ip'], sgs=[sg1['id']])
+
+        (portc, vmc, ipc) = self.create_vm_server(
+            "C", net1['id'], sub1['gateway_ip'], sgs=[sg2['id']])
+
+        self.assertTrue(vmb.verify_connection_to_host(vma))
+        self.assertTrue(vma.verify_connection_to_host(vmb))
+        self.assertFalse(vmc.verify_connection_to_host(vma, timeout=5))
+        self.assertFalse(vmc.verify_connection_to_host(vmb, timeout=5))
+
+    def test_security_group_rules(self):
+        cidr = "192.168.20.0/24"
+        net1 = self.create_network('SG_BASIC1')
+        sub1 = self.create_subnet('SG_BASIC1', net1['id'], cidr)
+
+        net2 = self.create_network('SG_BASIC2')
+        sub2 = self.create_subnet('SG_BASIC2', net2['id'], cidr)
+
+        self.create_router(
+            'RTR1_2', priv_sub_ids=[net1['id'], net2['id']])
+
+        sg1 = self.create_security_group('SG_1')
+
+        (porta, vma, ipa) = self.create_vm_server(
+            "A", net1['id'], sub1['gateway_ip'], sgs=[sg1['id']])
+
+        (portb, vmb, ipb) = self.create_vm_server(
+            "B", net2['id'], sub2['gateway_ip'], sgs=[sg1['id']])
+
+        self.assertFalse(vmb.verify_connection_to_host(vma, timeout=5))
+        self.assertFalse(vma.verify_connection_to_host(vmb, timeout=5))
+
+        self.create_security_group_rule(sg1['id'])
+
+        self.assertTrue(vmb.verify_connection_to_host(vma))
+        self.assertTrue(vma.verify_connection_to_host(vmb))

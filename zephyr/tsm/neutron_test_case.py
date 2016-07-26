@@ -427,6 +427,36 @@ class NeutronTestCase(TestCase):
         self.LOG.debug('Created Neutron port: ' + str(port))
         return port['port']
 
+    def update_port(self, port_id, name=None, sub_id=None, ip_addr=None,
+                    mac=None, port_security_enabled=None, sg_ids=None,
+                    allowed_address_pairs=None, admin_state_up=None):
+        port_data = {}
+        if name:
+            port_data['name'] = name
+        if admin_state_up:
+            port_data['admin_state_up'] = admin_state_up
+        if ip_addr and sub_id:
+            port_data['fixed_ips'] = [{'subnet_id': sub_id,
+                                       'ip_address': ip_addr}]
+        elif ip_addr:
+            port_data['fixed_ips'] = [{'ip_address': ip_addr}]
+        if mac:
+            port_data['mac_address'] = mac
+        if port_security_enabled:
+            port_data['port_security_enabled'] = port_security_enabled
+        if sg_ids:
+            port_data['security_groups'] = sg_ids
+        if allowed_address_pairs:
+            port_data['allowed_address_pairs'] = (
+                [{'ip_address': pair[0],
+                  'mac_address': pair[1]} if len(pair) > 1
+                 else {'ip_address': pair[0]}
+                 for pair in allowed_address_pairs])
+
+        port = self.api.update_port(
+            port_id, {'port': port_data})['port']
+        return port
+
     def delete_port(self, port_id):
         self.api.delete_port(port_id)
         self.nports.remove(port_id)
@@ -449,6 +479,20 @@ class NeutronTestCase(TestCase):
         self.LOG.debug('Created Neutron network: ' + str(net))
         return net['network']
 
+    def update_network(self, sub_id, name=None, port_security_enabled=None,
+                       admin_state_up=None):
+        network_data = {}
+        if name:
+            network_data['name'] = name
+        if admin_state_up:
+            network_data['admin_state_up'] = admin_state_up
+        if port_security_enabled:
+            network_data['port_security_enabled'] = port_security_enabled
+
+        network = self.api.update_network(
+            sub_id, {'network': network_data})['network']
+        return network
+
     def delete_network(self, net_id):
         self.api.delete_network(net_id)
         self.nnets.remove(net_id)
@@ -466,6 +510,17 @@ class NeutronTestCase(TestCase):
         self.LOG.debug('Created Neutron subnet: ' + str(sub))
         return sub['subnet']
 
+    def update_subnet(self, sub_id, name=None, enable_dhcp=None):
+        sub_data = {}
+        if name:
+            sub_data['name'] = name
+        if enable_dhcp:
+            sub_data['enable_dhcp'] = enable_dhcp
+
+        subnet = self.api.update_subnet(
+            sub_id, {'subnet': sub_data})['subnet']
+        return subnet
+
     def delete_subnet(self, sub_id):
         self.api.delete_subnet(sub_id)
         self.nsubs.remove(sub_id)
@@ -482,6 +537,18 @@ class NeutronTestCase(TestCase):
             self.create_router_interface(router['id'], sub_id=sub_id)
         self.nrouters.append(router['id'])
         self.LOG.debug('Created Neutron router: ' + str(router))
+        return router
+
+    def update_router(self, router_id, name=None,
+                      admin_state_up=None):
+        router_data = {}
+        if name:
+            router_data['name'] = name
+        if admin_state_up:
+            router_data['admin_state_up'] = admin_state_up
+
+        router = self.api.update_router(
+            router_id, {'router': router_data})['router']
         return router
 
     def delete_router(self, rid):

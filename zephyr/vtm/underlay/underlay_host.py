@@ -60,6 +60,9 @@ class UnderlayHost(object):
     def get_ip(self, iface_name):
         return None
 
+    def request_ip(self, iface_name):
+        return None
+
     def reset_default_route(self, ip_addr):
         return None
 

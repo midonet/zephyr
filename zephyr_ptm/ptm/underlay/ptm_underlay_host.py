@@ -115,6 +115,11 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
         iface = self.underlay_host_obj.interfaces[iface_name]
         return str(iface.ip_list[0].ip) if len(iface.ip_list) > 0 else None
 
+    def request_ip(self, iface_name):
+        iface = self.underlay_host_obj.interfaces[iface_name]
+        self.underlay_host_obj.cli.cmd('dhclient ' + iface_name)
+        return self.get_ip(iface_name)
+
     def reset_default_route(self, ip_addr):
         return self.underlay_host_obj.reset_default_route(ip_addr)
 

@@ -127,6 +127,9 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
             'ip addr show dev ' + iface_name +
             " | grep -w inet | awk '{print $2}'").stdout
 
+    def request_ip(self, iface_name):
+        return None
+
     def reset_default_route(self, ip_addr):
         pass
 
