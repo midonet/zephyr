@@ -19,17 +19,17 @@ import platform
 from zephyr.common.cli import LinuxCLI
 from zephyr.common.exceptions import *
 
-LINUX_CENTOS = 1
-LINUX_UBUNTU = 2
+LINUX_CENTOS = "centos"
+LINUX_UBUNTU = "ubuntu"
 
-supported_linux_dist_map = {"Ubuntu": LINUX_UBUNTU, "centos": LINUX_CENTOS}
+supported_linux_dist_set = {LINUX_UBUNTU, LINUX_CENTOS}
 
 
 def get_linux_dist():
     dist, version, dist_id = platform.linux_distribution()
-    if dist not in supported_linux_dist_map:
+    if dist.lower() not in supported_linux_dist_set:
         raise ArgMismatchException('Unsupported Linux distribution: ' + dist)
-    return supported_linux_dist_map[dist]
+    return dist.lower()
 
 
 class Version(object):
@@ -77,7 +77,9 @@ def parse_midolman_version(mnv, tag_ver=''):
     if len(epoch_version) > 1:
         epoch = epoch_version[0]
 
-    major_minor_patch = epoch_version[-1].split('.')[0:3]
+    major_minor_patch = ['0'] * 3
+    ver_triplet = epoch_version[-1].split('.', 3)[0:3]
+    major_minor_patch = ver_triplet + major_minor_patch[len(ver_triplet):]
 
     tag_array = tag_ver.rstrip('.el7').rstrip('.el6').split('.')
     if len(tag_array) > 2:
