@@ -26,7 +26,7 @@ class UnderlayHost(object):
         self.overlay_settings = None
         self.cached_ips = set()
 
-    def create_vm(self, mac=None, name=None):
+    def create_vm(self, name=None):
         return None
 
     def setup_vm_network(self, ip_addr=None, gw_ip=None):
@@ -51,10 +51,6 @@ class UnderlayHost(object):
         return None
 
     def del_route(self, route_ip):
-        return None
-
-    def create_interface(self, iface, mac=None, ip_list=None,
-                         linked_bridge=None, vlans=None):
         return None
 
     def add_ip(self, iface_name, ip_addr):
@@ -241,10 +237,10 @@ class UnderlayHost(object):
     def flush_arp(self):
         return None
 
-    def plugin_iface(self, iface, port_id):
+    def plugin_port(self, iface, port_id, mac=None, vlans=None):
         return None
 
-    def unplug_iface(self, port_id):
+    def unplug_port(self, port_id):
         return None
 
     def execute(self, cmd_line, timeout=None, blocking=True):

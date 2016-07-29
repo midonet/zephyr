@@ -235,16 +235,15 @@ class Midolman(application.Application):
     def is_virtual_network_host():
         return True
 
-    def connect_iface_to_port(self, vm_host_name, iface, port_id):
-        near_if_name = vm_host_name + iface
-        self.LOG.debug('Binding interface: ' + near_if_name +
+    def connect_iface_to_port(self, tap_iface, port_id):
+        self.LOG.debug('Binding interface: ' + tap_iface +
                        ' to port ID: ' + port_id)
         midonet_mm_ctl.bind_port(
             mn_api_url=version_config.ConfigMap.get_configured_parameter(
                 'param_midonet_api_url'),
             host_id=str(self.unique_id),
             port_id=port_id,
-            interface_name=near_if_name)
+            interface_name=tap_iface)
 
     def disconnect_port(self, port_id):
         self.LOG.debug('Unbinding port ID: ' + port_id)

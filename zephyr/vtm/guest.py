@@ -34,24 +34,28 @@ class Guest(object):
     def setup_vm_network(self, ip_addr=None, gw_ip=None):
         return self.vm_underlay.setup_vm_network(ip_addr, gw_ip)
 
-    def plugin_vm(self, iface, port_id):
-        """Links an interface on this VM to a virtual network port
+    def plugin_port(self, iface, port_id, mac=None, vlans=None):
+        """Created and links an interface on this VM to a virtual
+        network port, then plugs that
             * bind interface to MidoNet with mm-ctl
             * set iface to the indicated mac address (if provided)
         :type iface: str
         :type port_id: str
+        :type mac: str | None
+        :type vlans: list[str] | None
         """
+
         self.vm_underlay.LOG.debug("Plugging in VM interface: " + iface +
                                    " to port: " + str(port_id))
-        self.vm_underlay.plugin_iface(iface, port_id)
+        self.vm_underlay.plugin_port(iface, port_id, mac=mac, vlans=vlans)
         self.open_ports_by_id.add(port_id)
 
-    def unplug_vm(self, port_id):
+    def unplug_port(self, port_id):
         """Unlinks a port on this VM from the virtual network
         :type port_id: str
         """
         self.vm_underlay.LOG.debug("Unplugging VM port: " + str(port_id))
-        self.vm_underlay.unplug_iface(port_id)
+        self.vm_underlay.unplug_port(port_id)
         self.open_ports_by_id.remove(port_id)
 
     def get_hypervisor_name(self):
@@ -62,11 +66,6 @@ class Guest(object):
 
     def del_route(self, route_ip):
         return self.vm_underlay.del_route(route_ip)
-
-    def create_interface(self, iface, mac=None, ip_list=None,
-                         linked_bridge=None, vlans=None):
-        return self.vm_underlay.create_interface(
-            iface, mac, ip_list, linked_bridge, vlans)
 
     def add_ip(self, iface_name, ip_addr):
         return self.vm_underlay.add_ip(iface_name, ip_addr)
@@ -191,10 +190,11 @@ class Guest(object):
                     target_ip=target_ip, count=1, timeout=3):
                 if time.time() > deadline:
                     return False
+                time.sleep(0)
 
         return True
 
-    def ping(self, target_ip, on_iface='eth0', count=3, timeout=None):
+    def ping(self, target_ip, on_iface=None, count=3, timeout=None):
         """
         Ping the target_ip on given interface and return true if the ping
         succeeds, false otherwise.
@@ -276,6 +276,6 @@ class Guest(object):
         :return:
         """
         for p in self.open_ports_by_id:
-            self.vm_underlay.unplug_iface(p)
+            self.vm_underlay.unplug_port(p)
         self.open_ports_by_id.clear()
         self.vm_underlay.terminate()

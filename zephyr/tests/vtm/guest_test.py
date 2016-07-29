@@ -66,11 +66,11 @@ class GuestTest(unittest.TestCase):
         port1 = self.api.create_port(port1def)['port']
         ip1 = port1['fixed_ips'][0]['ip_address']
         try:
-            vm.plugin_vm('eth0', port1['id'])
+            vm.plugin_port('eth0', port1['id'])
 
             self.assertTrue(port1['id'] in vm.open_ports_by_id)
 
-            vm.unplug_vm(port1['id'])
+            vm.unplug_port(port1['id'])
 
             self.assertFalse(port1['id'] in vm.open_ports_by_id)
         finally:

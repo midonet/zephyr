@@ -12,15 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from zephyr_ptm.ptm.host.interface import Interface
+import uuid
 from zephyr_ptm.ptm.host.ip_netns_host import IPNetNSHost
 
 
 class VMHost(IPNetNSHost):
-    def __init__(self, name, hypervisor_app):
+    def __init__(self, name, hypervisor_app, uniqueid=uuid.uuid4()):
         super(VMHost, self).__init__(name, hypervisor_app.host.ptm)
         self.hypervisor_app = hypervisor_app
         self.hypervisor_host = hypervisor_app.host
+        self.id = str(uniqueid)
 
     def wait_for_process_start(self):
         pass
@@ -30,42 +31,5 @@ class VMHost(IPNetNSHost):
 
     def shutdown(self):
         super(VMHost, self).shutdown()
-        for iface in self.interfaces.iterkeys():
-            near_if_name = self.name + iface
-            old_tap_iface = self.hypervisor_host.interfaces.pop(
-                near_if_name, None)
-            """ :type: PTM.host.VirtualInterface.VirtualInterface """
-            old_tap_iface.remove()
-        self.hypervisor_app.remove_vm(self.name)
-
-    def create_interface(self, iface, mac=None, ip_list=None,
-                         linked_bridge=None, vlans=None):
-
-        self.LOG.debug("Creating VM interface: " + iface +
-                       " with MAC [" + str(mac if mac else 'Auto') + "]")
-
-        new_if = Interface(iface, self, mac, ip_list, linked_bridge, vlans)
-        self.interfaces[iface] = new_if
-
-        received_ips = self.get_ip(iface)
-
-        self.LOG.debug(
-            "Interface: " + iface + " set with IP(s): " +
-            (str(received_ips) if received_ips else '[]'))
-
-        near_if_name = self.name + new_if.name
-        self.LOG.debug("Creating veth peer on hypervisor [" +
-                       str(self.hypervisor_host.name) +
-                       "] with name [" + str(near_if_name) + "]")
-
-        self.hypervisor_host.link_interface(
-            Interface(near_if_name, self.hypervisor_host), self, new_if)
-
-        near_if = self.hypervisor_host.interfaces[near_if_name]
-        """ :type: VirtualInterface"""
-        near_if.create()
-        near_if.up()
-        near_if.config_addr()
-        new_if.up()
-        new_if.config_addr()
-        new_if.start_vlans()
+        self.hypervisor_host.remove_taps(self)
+        self.hypervisor_app.remove_vm(self)

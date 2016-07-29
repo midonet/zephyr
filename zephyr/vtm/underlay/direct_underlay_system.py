@@ -92,11 +92,10 @@ class DirectUnderlaySystem(underlay_system.UnderlaySystem):
     def get_topology_feature(self, name):
         return self.features.get(name, None)
 
-    def create_vm(self, mac=None, hv_host=None, name=None):
+    def create_vm(self, hv_host=None, name=None):
         def get_vm_count(item):
             return len(item.vms)
 
         return self.provision_vm_on_most_open_hv(
             hv_map=self.hosts, vm_count_fn=get_vm_count,
-            mac=mac, name=name,
-            requested_host=hv_host)
+            name=name, requested_host=hv_host)

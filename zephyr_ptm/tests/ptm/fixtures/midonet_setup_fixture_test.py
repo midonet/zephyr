@@ -99,9 +99,9 @@ class MNAPITest(unittest.TestCase):
         vm2 = self.vtm.create_vm(hv_host=vm1.get_hypervisor_name())
 
         try:
-            vm1.plugin_vm('eth0', port1.get_id())
+            vm1.plugin_port('eth0', port1.get_id())
             vm1.setup_vm_network(ip_addr='10.1.1.2/24')
-            vm2.plugin_vm('eth0', port2.get_id())
+            vm2.plugin_port('eth0', port2.get_id())
             vm2.setup_vm_network(ip_addr='10.1.1.3/24')
             time.sleep(1)
             self.assertTrue(vm1.ping(target_ip='10.1.1.3', on_iface='eth0'))
@@ -123,9 +123,9 @@ class MNAPITest(unittest.TestCase):
         vm2 = self.vtm.create_vm(hv_host='!' + vm1.get_hypervisor_name())
 
         try:
-            vm1.plugin_vm('eth0', port1.get_id())
+            vm1.plugin_port('eth0', port1.get_id())
             vm1.setup_vm_network(ip_addr='172.16.55.2/24')
-            vm2.plugin_vm('eth0', port2.get_id())
+            vm2.plugin_port('eth0', port2.get_id())
             vm2.setup_vm_network(ip_addr='172.16.55.3/24')
             time.sleep(1)
             self.assertTrue(vm1.ping(target_ip='172.16.55.3', on_iface='eth0'))

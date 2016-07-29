@@ -126,14 +126,17 @@ class MidolmanTest(unittest.TestCase):
         """ :type: ptm.application.netns_hv.NetnsHV"""
 
         vm1 = hv_app.create_vm("vm1")
-        vm1.create_interface('eth0', ip_list=['10.1.1.2'])
+        cmp1.create_tap_interface_for_vm(
+            tap_iface_name='tapvm1eth0',
+            vm_host=vm1, vm_iface_name='eth0',
+            vm_ip_list=['10.1.1.2'])
 
         self.assertTrue('eth0' in vm1.interfaces)
 
         self.assertTrue(LinuxCLI().grep_cmd(
             'ip netns exec vm1 ip l', 'eth0'))
         self.assertTrue(LinuxCLI().grep_cmd(
-            'ip netns exec cmp1 ip l', 'vm1eth0'))
+            'ip netns exec cmp1 ip l', 'tapvm1eth0'))
         vm1.net_down()
         vm1.shutdown()
         vm1.remove()

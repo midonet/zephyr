@@ -33,7 +33,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
         self.parent_host = parent_host
         self.main_ip = self.underlay_host_obj.main_ip
 
-    def create_vm(self, mac=None, name=None):
+    def create_vm(self, name=None):
         if self.vm_host:
             raise exceptions.ArgMismatchException(
                 "Error; create_vm operation not valid on a VM host")
@@ -44,7 +44,6 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
 
         new_vm = ptm_utils.create_vm(
             hv_host_obj=self.underlay_host_obj,
-            mac=mac,
             name=name,
             log=self.LOG)
 
@@ -64,7 +63,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
     def start_sshd(self):
         self.execute('sshd -o PidFile=/run/sshd.' + self.name + '.pid')
 
-    def plugin_iface(self, iface, port_id):
+    def plugin_port(self, iface, port_id, mac=None, vlans=None):
         if not self.vm_host:
             raise exceptions.ArgMismatchException(
                 "Error; plugin_iface operation only valid on a VM host")
@@ -78,10 +77,16 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
                 "VM even get started?")
         hv_app = hv_host.applications_by_type[hv_app_type][0]
         """:type: zephyr_ptm.ptm.application.netns_hv.NetnsHV"""
-        return hv_app.plugin_iface_to_network(
-            vm_host_name=self.name, iface=iface, port_id=port_id)
 
-    def unplug_iface(self, port_id):
+        tapname = 'tap' + port_id[0:8]
+        hv_host.create_tap_interface_for_vm(
+            tap_iface_name=tapname, vm_host=self.underlay_host_obj,
+            vm_iface_name=iface, vm_mac=mac, vm_vlans=vlans)
+
+        return hv_app.plugin_iface_to_network(
+            tap_iface=tapname, port_id=port_id)
+
+    def unplug_port(self, port_id):
         if not self.vm_host:
             raise exceptions.ArgMismatchException(
                 "Error; unplug_iface operation only valid on a VM host")
@@ -102,15 +107,6 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
             raise exceptions.ArgMismatchException(
                 "Error; unplug_iface operation only valid on a VM host")
         return self.parent_host.name
-
-    def create_interface(self, iface, mac=None, ip_list=None,
-                         linked_bridge=None, vlans=None):
-        if not self.vm_host:
-            raise exceptions.ArgMismatchException(
-                "Error; create_interface operation only valid on a VM host")
-        return self.underlay_host_obj.create_interface(
-            iface=iface, mac=mac, ip_list=ip_list,
-            linked_bridge=linked_bridge, vlans=vlans)
 
     def interface_down(self, iface):
         return self.underlay_host_obj.interfaces[iface].down()
@@ -190,7 +186,7 @@ class PTMUnderlayHost(underlay_host.UnderlayHost):
 
     def do_ping(self, target_ip, iface=None, count=1, timeout=None):
         return self.underlay_host_obj.ping(
-            target_ip, iface, count, timeout)
+            target_ip=target_ip, iface=iface, count=count, timeout=timeout)
 
     def start_capture(self, interface, count=0, ptype='', pfilter=None,
                       callback=None, callback_args=None, save_dump_file=False,

@@ -248,7 +248,7 @@ class NeutronTestCase(TestCase):
                         ('TCP Capture: ' + vm.name, e.message))
                 try:
                     if port is not None:
-                        vm.unplug_vm(port['id'])
+                        vm.unplug_port(port['id'])
                 except Exception as e:
                     self.LOG.error(
                         "Error unplugging VM: " + str(e.message))
@@ -275,37 +275,43 @@ class NeutronTestCase(TestCase):
 
     def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
                          allowed_address_pairs=None, hv_host=None,
-                         port_security_enabled=True, use_dhcp=True):
+                         port_security_enabled=True, use_dhcp=True,
+                         neutron_port=None):
         """
         :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
         """
-        port_data = {'name': name,
-                     'network_id': net_id,
-                     'admin_state_up': True,
-                     'port_security_enabled': port_security_enabled,
-                     'tenant_id': 'admin'}
-        if sgs:
-            port_data['security_groups'] = sgs
-        if allowed_address_pairs:
-            port_data['allowed_address_pairs'] = (
-                [{'ip_address': pair[0],
-                  'mac_address': pair[1]} if len(pair) > 1
-                 else {'ip_address': pair[0]}
-                 for pair in allowed_address_pairs])
-        port = self.api.create_port({'port': port_data})['port']
+        if not neutron_port:
+            port_data = {'name': name,
+                         'network_id': net_id,
+                         'admin_state_up': True,
+                         'port_security_enabled': port_security_enabled,
+                         'tenant_id': 'admin'}
+            if sgs:
+                port_data['security_groups'] = sgs
+            if allowed_address_pairs:
+                port_data['allowed_address_pairs'] = (
+                    [{'ip_address': pair[0],
+                      'mac_address': pair[1]} if len(pair) > 1
+                     else {'ip_address': pair[0]}
+                     for pair in allowed_address_pairs])
+            port = self.api.create_port({'port': port_data})['port']
+            self.LOG.debug("Created port for VM: " + str(port))
+        else:
+            port = neutron_port
+            self.LOG.debug("Using existing port for VM: " + str(port))
         vm = None
         try:
             vm = self.vtm.create_vm(name=name,
-                                    mac=port['mac_address'],
                                     hv_host=hv_host)
-            vm.plugin_vm('eth0', port['id'])
+            vm.plugin_port('eth0', port['id'], mac=port['mac_address'])
             ip_addr = None if use_dhcp else port['fixed_ips'][0]['ip_address']
             vm.setup_vm_network(ip_addr=ip_addr, gw_ip=gw_ip)
             self.servers.append((vm, ip_addr, port))
             ip_addr = vm.get_ip('eth0')
             return port, vm, ip_addr
         except Exception:
-            self.api.delete_port(port['id'])
+            if not neutron_port:
+                self.api.delete_port(port['id'])
             if vm is not None:
                 vm.terminate()
             raise

@@ -30,7 +30,7 @@ class HypervisorService(object):
     def get_vm_count(self):
         pass
 
-    def connect_iface_to_port(self, vm_host, iface, port_id):
+    def connect_iface_to_port(self, tap_iface, port_id):
         pass
 
     def disconnect_port(self, port_id):

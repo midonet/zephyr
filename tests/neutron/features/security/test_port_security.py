@@ -54,142 +54,85 @@ class TestPortSecurity(NeutronTestCase):
 
     @require_extension('port-security')
     def test_port_security_basic_normal_antispoof(self):
-        port1 = None
-        port2 = None
-        vm1 = None
-        vm2 = None
         new_ip1 = '192.168.99.99'
         new_ip2 = '192.168.99.235'
+        port1, vm1, ip1 = self.create_vm_server(
+            name='vm1', net_id=self.main_network['id'],
+            gw_ip=self.main_subnet['id'])
+        port2, vm2, ip2 = self.create_vm_server(
+            name='vm2', net_id=self.main_network['id'],
+            gw_ip=self.main_subnet['id'])
+
+        self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
+
+        # Default state should be PS enabled on net and any created ports
+        # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
         try:
-            port1 = self.api.create_port(
-                {'port': {'name': 'port1',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port1: ' + str(port1))
+            self.send_and_capture_spoof(sender=vm1, receiver=vm2,
+                                        receiver_ip=ip2,
+                                        with_mac=False,
+                                        spoof_ip=new_ip1)
+            self.fail('Spoofed packet should not have been received!')
+        except exceptions.SubprocessTimeoutException:
+            pass
 
-            port2 = self.api.create_port(
-                {'port': {'name': 'port2',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port2: ' + str(port2))
+        # Next, add new IPs to the sender and receiver, and add an allowed
+        # address pair to the sender for its spoofed IP, but do NOT add the
+        # new IP allowed pair to the receiver, so we can check a returning
+        # packet still gets blocked.  Also add the IP to the actual iface
+        # and the route so the return packet gets generated successfully
+        # (but still blocked at the neutron port)
 
-            ip1 = port1['fixed_ips'][0]['ip_address']
-            ip2 = port2['fixed_ips'][0]['ip_address']
+        vm2.vm_underlay.add_ip('eth0', new_ip2)
 
-            vm1 = self.vtm.create_vm(mac=port1['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-            vm2 = self.vtm.create_vm(mac=port2['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
+        vm1.vm_underlay.add_route(route_ip=IP(new_ip2, '32'),
+                                  gw_ip=IP.make_ip(ip2))
+        vm2.vm_underlay.add_route(route_ip=IP(new_ip1, '32'),
+                                  gw_ip=IP.make_ip(ip1))
 
-            vm1.plugin_vm('eth0', port1['id'])
-            vm1.setup_vm_network()
-            vm2.plugin_vm('eth0', port2['id'])
-            vm2.setup_vm_network()
+        self.api.update_port(
+            port1['id'],
+            {'port':
+                {'allowed_address_pairs':
+                 [{"ip_address": new_ip1}]}})
 
-            self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
+        vm2.start_echo_server(ip_addr=new_ip2)
 
-            # Default state should be PS enabled on net and any created ports
-            # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
-            try:
-                self.send_and_capture_spoof(sender=vm1, receiver=vm2,
-                                            receiver_ip=ip2,
-                                            with_mac=False,
-                                            spoof_ip=new_ip1)
-                self.fail('Spoofed packet should not have been received!')
-            except exceptions.SubprocessTimeoutException:
-                pass
+        # Look for packets on the receiver from the spoofed new_ip1 address
+        # to the new_ip2
+        vm2.start_capture(on_iface='eth0', count=1,
+                          pfilter=pcap.And([pcap.TCPProto(),
+                                            pcap.Host(ip1, proto='ip',
+                                                      source=True),
+                                            pcap.Host(new_ip2, proto='ip',
+                                                      dest=True)]))
 
-            # Next, add new IPs to the sender and receiver, and add an allowed
-            # address pair to the sender for its spoofed IP, but do NOT add the
-            # new IP allowed pair to the receiver, so we can check a returning
-            # packet still gets blocked.  Also add the IP to the actual iface
-            # and the route so the return packet gets generated successfully
-            # (but still blocked at the neutron port)
+        try:
+            reply = vm1.send_echo_request(dest_ip=new_ip2)
 
-            vm2.vm_underlay.add_ip('eth0', new_ip2)
+            # No reply should make it all the way back
+            self.assertEqual('', reply)
+        except exceptions.SubprocessFailedException:
+            pass
 
-            vm1.vm_underlay.add_route(route_ip=IP(new_ip2, '32'),
-                                      gw_ip=IP.make_ip(ip2))
-            vm2.vm_underlay.add_route(route_ip=IP(new_ip1, '32'),
-                                      gw_ip=IP.make_ip(ip1))
+        packets = vm2.capture_packets(on_iface='eth0', count=1, timeout=3)
+        vm1.stop_capture(on_iface='eth0')
 
-            port1 = self.api.update_port(
-                port1['id'],
-                {'port':
-                    {'allowed_address_pairs':
-                     [{"ip_address": new_ip1}]}})['port']
-
-            vm2.start_echo_server(ip_addr=new_ip2)
-
-            # Look for packets on the receiver from the spoofed new_ip1 address
-            # to the new_ip2
-            vm2.start_capture(on_iface='eth0', count=1,
-                              pfilter=pcap.And([pcap.TCPProto(),
-                                                pcap.Host(ip1, proto='ip',
-                                                          source=True),
-                                                pcap.Host(new_ip2, proto='ip',
-                                                          dest=True)]))
-
-            try:
-                reply = vm1.send_echo_request(dest_ip=new_ip2)
-
-                # No reply should make it all the way back
-                self.assertEqual('', reply)
-            except exceptions.SubprocessFailedException:
-                pass
-
-            packets = vm2.capture_packets(on_iface='eth0', count=1, timeout=3)
-            vm1.stop_capture(on_iface='eth0')
-
-            # VM2 still should have received the ping, even if the reply
-            # didn't go through
-            self.assertEqual(1, len(packets))
-
-        finally:
-            vm2.stop_echo_server(ip_addr=new_ip2)
-            self.cleanup_vms([(vm1, port1), (vm2, port2)])
+        # VM2 still should have received the ping, even if the reply
+        # didn't go through
+        self.assertEqual(1, len(packets))
 
     @require_extension('port-security')
     def test_port_security_basic_disable_port(self):
-        port1 = None
-        port2 = None
-        vm1 = None
-        vm2 = None
         try:
-            port1 = self.api.create_port(
-                {'port': {'name': 'port1',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'port_security_enabled': False,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port1: ' + str(port1))
-
-            port2 = self.api.create_port(
-                {'port': {'name': 'port2',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'port_security_enabled': False,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port2: ' + str(port2))
-
-            ip1 = port1['fixed_ips'][0]['ip_address']
-            ip2 = port2['fixed_ips'][0]['ip_address']
-
-            vm1 = self.vtm.create_vm(mac=port1['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-            vm2 = self.vtm.create_vm(mac=port2['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-
-            vm1.plugin_vm('eth0', port1['id'])
-            vm1.setup_vm_network()
-            vm2.plugin_vm('eth0', port2['id'])
-            vm2.setup_vm_network()
+            port1, vm1, ip1 = self.create_vm_server(
+                name='vm1', net_id=self.main_network['id'],
+                gw_ip=self.main_subnet['id'],
+                port_security_enabled=False)
+            port2, vm2, ip2 = self.create_vm_server(
+                name='vm2', net_id=self.main_network['id'],
+                gw_ip=self.main_subnet['id'],
+                port_security_enabled=False)
 
             self.assertTrue(vm1.verify_connection_to_host(vm2, use_tcp=False))
 
@@ -208,8 +151,6 @@ class TestPortSecurity(NeutronTestCase):
             self.assertEqual(1, len(packets))
 
         finally:
-            self.cleanup_vms([(vm1, port1), (vm2, port2)])
-
             self.LOG.debug("Re-enabling port security on main network")
             self.api.update_network(
                 self.main_network['id'],
@@ -219,10 +160,6 @@ class TestPortSecurity(NeutronTestCase):
 
     @require_extension('port-security')
     def test_port_security_disable_entire_net(self):
-        port1 = None
-        port2 = None
-        vm1 = None
-        vm2 = None
         try:
             # Disable port security on entire network before creating ports
             self.api.update_network(
@@ -231,34 +168,12 @@ class TestPortSecurity(NeutronTestCase):
             net = self.api.show_network(self.main_network['id'])
             self.LOG.debug('net=' + str(net))
 
-            port1 = self.api.create_port(
-                {'port': {'name': 'port1',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port1: ' + str(port1))
-
-            port2 = self.api.create_port(
-                {'port': {'name': 'port2',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port2: ' + str(port2))
-
-            ip1 = port1['fixed_ips'][0]['ip_address']
-            ip2 = port2['fixed_ips'][0]['ip_address']
-
-            vm1 = self.vtm.create_vm(mac=port1['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-            vm2 = self.vtm.create_vm(mac=port2['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-
-            vm1.plugin_vm('eth0', port1['id'])
-            vm1.setup_vm_network()
-            vm2.plugin_vm('eth0', port2['id'])
-            vm2.setup_vm_network()
+            port1, vm1, ip1 = self.create_vm_server(
+                name='vm1', net_id=self.main_network['id'],
+                gw_ip=self.main_subnet['id'])
+            port2, vm2, ip2 = self.create_vm_server(
+                name='vm2', net_id=self.main_network['id'],
+                gw_ip=self.main_subnet['id'])
 
             packets = self.send_and_capture_spoof(sender=vm1, receiver=vm2,
                                                   receiver_ip=ip2)
@@ -268,7 +183,6 @@ class TestPortSecurity(NeutronTestCase):
             self.assertEqual(1, len(packets))
 
         finally:
-            self.cleanup_vms([(vm1, port1), (vm2, port2)])
             self.LOG.debug("Re-enabling port security on main network")
             self.api.update_network(
                 self.main_network['id'],
@@ -278,43 +192,13 @@ class TestPortSecurity(NeutronTestCase):
 
     @require_extension('port-security')
     def test_port_security_defaults_on_net(self):
-        port1 = None
-        port2 = None
-        port3 = None
-        port4 = None
-        vm1 = None
-        vm2 = None
-        vm3 = None
-        vm4 = None
         try:
-            port1 = self.api.create_port(
-                {'port': {'name': 'port1',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port1: ' + str(port1))
-
-            port2 = self.api.create_port(
-                {'port': {'name': 'port2',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port2: ' + str(port2))
-
-            ip1 = port1['fixed_ips'][0]['ip_address']
-            ip2 = port2['fixed_ips'][0]['ip_address']
-
-            vm1 = self.vtm.create_vm(mac=port1['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-            vm2 = self.vtm.create_vm(mac=port2['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-
-            vm1.plugin_vm('eth0', port1['id'])
-            vm1.setup_vm_network()
-            vm2.plugin_vm('eth0', port2['id'])
-            vm2.setup_vm_network()
+            port1, vm1, ip1 = self.create_vm_server(
+                name='vm1', net_id=self.main_network['id'],
+                gw_ip=self.main_subnet['id'])
+            port2, vm2, ip2 = self.create_vm_server(
+                name='vm2', net_id=self.main_network['id'],
+                gw_ip=self.main_subnet['id'])
 
             # Default state should be PS enabled on net and any created ports
             # Should fail as port-security is still on, so NO SPOOFING ALLOWED!
@@ -350,34 +234,12 @@ class TestPortSecurity(NeutronTestCase):
 
             self.LOG.debug("Creating ports on net with PS disabled")
             # New ports should be created with PS disabled
-            port3 = self.api.create_port(
-                {'port': {'name': 'port3',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port3: ' + str(port3))
-
-            port4 = self.api.create_port(
-                {'port': {'name': 'port4',
-                          'network_id': self.main_network['id'],
-                          'admin_state_up': True,
-                          'tenant_id': 'admin'}})['port']
-            self.LOG.debug('Created port4: ' + str(port4))
-
-            ip3 = port3['fixed_ips'][0]['ip_address']
-            ip4 = port4['fixed_ips'][0]['ip_address']
-
-            vm3 = self.vtm.create_vm(mac=port3['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-            vm4 = self.vtm.create_vm(mac=port4['mac_address'],
-                                     gw_ip=self.main_subnet['gateway_ip'])
-            """ :type: zephyr.vtm.guest.Guest"""
-
-            vm3.plugin_vm('eth0', port3['id'])
-            vm3.setup_vm_network()
-            vm4.plugin_vm('eth0', port4['id'])
-            vm4.setup_vm_network()
+            port3, vm3, ip3 = self.create_vm_server(
+                name='vm3', net_id=self.main_network['id'],
+                gw_ip=self.main_subnet['id'])
+            port4, vm4, ip4 = self.create_vm_server(
+                name='vm4', net_id=self.main_network['id'],
+                gw_ip=self.main_subnet['id'])
 
             # Should send okay because port and net security is disabled
             packets = self.send_and_capture_spoof(sender=vm3, receiver=vm4,
@@ -406,8 +268,6 @@ class TestPortSecurity(NeutronTestCase):
             self.assertEqual(1, len(packets))
 
         finally:
-            self.cleanup_vms([(vm1, port1), (vm2, port2), (vm3, port3),
-                              (vm4, port4)])
             self.LOG.debug("Re-enabling port security on main network")
             self.api.update_network(
                 self.main_network['id'],

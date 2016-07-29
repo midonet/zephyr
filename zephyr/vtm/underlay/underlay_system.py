@@ -51,13 +51,12 @@ class UnderlaySystem(object):
     def get_topology_feature(self, name):
         return None
 
-    def create_vm(self, mac=None, hv_host=None, name=None):
+    def create_vm(self, hv_host=None, name=None):
         pass
 
     def provision_vm_on_most_open_hv(
             self, hv_map, vm_count_fn,
-            mac=None, name=None,
-            requested_host=None):
+            name=None, requested_host=None):
         """
         :type hv_map: dict[str, UnderlayHost]
         :type vm_count_fn: runnable
@@ -107,4 +106,4 @@ class UnderlaySystem(object):
         start_hv_host = reduce(
             lambda a, b: a if vm_count_fn(a) <= vm_count_fn(b) else b,
             valid_host_map.values())
-        return start_hv_host.create_vm(mac=mac, name=requested_vm_name)
+        return start_hv_host.create_vm(name=requested_vm_name)

@@ -14,9 +14,11 @@
 
 import json
 import os
+import time
 import unittest
 
 from zephyr.common.cli import LinuxCLI
+from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
 from zephyr.common.utils import run_unit_test
 from zephyr.midonet import mn_api_utils
@@ -109,6 +111,13 @@ class VMHostTest(unittest.TestCase):
         vm_host = self.hv_app.create_vm('test_vm')
         self.assertIs(vm_host, self.hv_app.get_vm('test_vm'))
 
+        vm_host2 = self.hv_app.create_vm('test_vm')
+
+        vm_list = self.hv_app.get_vm('test_vm')
+        self.assertTrue(isinstance(vm_list, list))
+        self.assertIs(vm_host, vm_list[0])
+        self.assertIs(vm_host2, vm_list[1])
+
         vm_host.create()
         vm_host.boot()
         vm_host.net_up()
@@ -117,40 +126,55 @@ class VMHostTest(unittest.TestCase):
         vm_host.shutdown()
         vm_host.remove()
 
-    def test_create_vm_interface(self):
+        vm_list = self.hv_app.get_vm('test_vm')
 
-        vm_host = self.hv_app.create_vm('test_vm')
-        self.assertIs(vm_host, self.hv_app.get_vm('test_vm'))
+        self.assertIs(vm_host2, vm_list)
 
-        vm_host.create_interface('eth0', ip_list=[IP('10.50.50.3')])
+        vm_host2.shutdown()
 
-        self.assertTrue(vm_host.cli.grep_cmd('ip l', 'eth0'))
-        self.assertTrue(self.hypervisor.cli.grep_cmd('ip l', 'test_vmeth0'))
+        self.assertIsNone(self.hv_app.get_vm('test_vm'))
 
-        vm_host.shutdown()
-        vm_host.remove()
-
-    def test_packet_communication(self):
+    def test_cross_vm_communication(self):
         vm_host1 = self.hv_app.create_vm('test_vm1')
+        vm_host2 = self.hv_app.create_vm('test_vm2')
         try:
+            self.hypervisor.create_tap_interface_for_vm(
+                tap_iface_name='tapvm1eth0', vm_host=vm_host1,
+                vm_iface_name='eth0', vm_ip_list=[IP('10.50.50.3')])
 
-            vm_host1.create_interface('eth0', ip_list=[IP('10.50.50.3')])
+            self.hypervisor.create_tap_interface_for_vm(
+                tap_iface_name='tapvm2eth0', vm_host=vm_host2,
+                vm_iface_name='eth0', vm_ip_list=[IP('10.50.50.4')])
 
-            vm_host1.start_capture('lo')
+            port1 = self.main_bridge.add_port().create()
+            port2 = self.main_bridge.add_port().create()
 
-            ping_ret = vm_host1.ping('10.50.50.3')
-            vm_host1.send_tcp_packet(iface='lo', dest_ip='10.50.50.3',
-                                     source_port=6015, dest_port=6055)
+            self.hv_app.plugin_iface_to_network(
+                tap_iface='tapvm1eth0', port_id=port1.get_id())
+            self.hv_app.plugin_iface_to_network(
+                tap_iface='tapvm2eth0', port_id=port2.get_id())
 
-            ret1 = vm_host1.capture_packets('lo', count=1, timeout=5)
-            vm_host1.capture_packets('lo', count=1, timeout=5)
+            self.assertTrue(vm_host2.ping('10.50.50.3'))
 
-            vm_host1.stop_capture('lo')
-
-            self.assertTrue(ping_ret)
-            self.assertEqual(1, len(ret1))
+            vm_host1.start_echo_server(ip_addr='')
+            deadline = time.time() + 10
+            connected = False
+            resp = ''
+            while not connected:
+                try:
+                    resp = vm_host2.send_echo_request(dest_ip='10.50.50.3')
+                    connected = True
+                except exceptions.SubprocessFailedException:
+                    if time.time() > deadline:
+                        raise exceptions.SubprocessTimeoutException(
+                            'Failed to send TCP echo to VM2')
+                    time.sleep(0)
+            self.assertEqual('ping:pong', resp)
 
         finally:
+            vm_host2.shutdown()
+            vm_host2.remove()
+            vm_host1.stop_echo_server(ip_addr='')
             vm_host1.shutdown()
             vm_host1.remove()
 

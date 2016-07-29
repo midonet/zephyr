@@ -221,10 +221,9 @@ class IPNetnsVMTest(unittest.TestCase):
         self.ports.append(port1)
         ip1 = port1['fixed_ips'][0]['ip_address']
 
-        vm = self.vtm.create_vm(name='vm1',
-                                mac=port1['mac_address'])
+        vm = self.vtm.create_vm(name='vm1')
         self.vms.append(vm)
-        vm.plugin_vm('eth0', port1['id'])
+        vm.plugin_port('eth0', port1['id'], mac=port1['mac_address'])
         vm.setup_vm_network(ip_addr=None,
                             gw_ip=main_subnet['gateway_ip'])
 
@@ -255,7 +254,7 @@ class IPNetnsVMTest(unittest.TestCase):
         vm = self.vtm.create_vm(
             name='vm1')
         self.vms.append(vm)
-        vm.plugin_vm('eth0', port1['id'])
+        vm.plugin_port('eth0', port1['id'], mac=port1['mac_address'])
         vm.setup_vm_network(ip_addr=ip1,
                             gw_ip=main_subnet['gateway_ip'])
 
@@ -290,18 +289,16 @@ class IPNetnsVMTest(unittest.TestCase):
         port2 = self.api.create_port(port2def)['port']
         self.ports.append(port2)
 
-        vm1 = self.vtm.create_vm(name='vm1',
-                                 mac=port1['mac_address'])
+        vm1 = self.vtm.create_vm(name='vm1')
         self.vms.append(vm1)
-        vm2 = self.vtm.create_vm(name='vm2',
-                                 mac=port2['mac_address'])
+        vm2 = self.vtm.create_vm(name='vm2')
         self.vms.append(vm2)
 
-        vm1.plugin_vm('eth0', port1['id'])
+        vm1.plugin_port('eth0', port1['id'], mac=port1['mac_address'])
         vm1.setup_vm_network(ip_addr=None,
                              gw_ip=main_subnet['gateway_ip'])
 
-        vm2.plugin_vm('eth0', port2['id'])
+        vm2.plugin_port('eth0', port2['id'], mac=port2['mac_address'])
         vm2.setup_vm_network(ip_addr=None,
                              gw_ip=main_subnet['gateway_ip'])
 

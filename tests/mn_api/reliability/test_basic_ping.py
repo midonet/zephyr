@@ -44,9 +44,10 @@ class TestBasicPing(test_case.TestCase):
         """ :type: Guest"""
 
         try:
-            vm1.plugin_vm('eth0', port1.get_id())
+            vm1.plugin_port('eth0', port1.get_id())
             vm1.setup_vm_network('10.0.1.3')
-            vm2.plugin_vm('eth0', port2.get_id())
+
+            vm2.plugin_port('eth0', port2.get_id())
             vm2.setup_vm_network('10.0.1.4')
 
             vm1.ping(target_ip='10.0.1.4', on_iface='eth0')
@@ -70,9 +71,10 @@ class TestBasicPing(test_case.TestCase):
         """ :type: Guest"""
 
         try:
-            vm1.plugin_vm('eth0', port1.get_id())
+            vm1.plugin_port('eth0', port1.get_id())
             vm1.setup_vm_network('10.0.1.3')
-            vm2.plugin_vm('eth0', port2.get_id())
+
+            vm2.plugin_port('eth0', port2.get_id())
             vm1.setup_vm_network('10.0.1.4')
 
             vm1.ping(target_ip='10.0.1.4', on_iface='eth0')

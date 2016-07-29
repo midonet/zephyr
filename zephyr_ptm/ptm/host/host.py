@@ -76,6 +76,7 @@ class Host(PTMObject):
         self.log_file_name = zephyr_constants.ZEPHYR_LOG_FILE_NAME
         self.main_ip = '127.0.0.1'
         self.dhcpcd_is_running = set()
+        self.tap_interfaces = {}
 
     def configure_logging(self,
                           log_file_name, debug=False):
@@ -422,13 +423,13 @@ class Host(PTMObject):
     def del_route(self, route_ip):
         self.cli.cmd('ip route del ' + str(route_ip.ip))
 
+    # noinspection PyUnresolvedReferences
     def get_ip(self, iface_name):
         return (
             self.cli.cmd(
                 'ip addr show dev ' + iface_name +
                 " | grep -w inet | awk '{print $2}' | sed 's/\/.*//g'")
-            .stdout
-            .strip())
+            .stdout.strip().split('\n')[0])
 
     def stop_dhcp_client(self, iface='eth0'):
         file_name = self.name + '.' + iface
@@ -482,6 +483,56 @@ class Host(PTMObject):
             print(('    ' * (indent + 1)) + '[applications]')
             for i in self.applications:
                 i.print_config(indent + 2)
+
+    def remove_taps(self, vm_id):
+        if vm_id in self.tap_interfaces:
+            taps_for_vm = self.tap_interfaces[vm_id]
+            for iface in taps_for_vm:
+                iface.remove()
+
+    def create_tap_interface_for_vm(
+            self, tap_iface_name,
+            vm_host, vm_iface_name,
+            vm_mac=None, vm_ip_list=None,
+            vm_linked_bridge=None, vm_vlans=None):
+        if not self.is_hypervisor():
+            raise exceptions.ArgMismatchException(
+                "Can only create a tap for a VM on a hypervisor host")
+
+        self.LOG.debug(
+            "Creating TAP interface: " + tap_iface_name + " to connect to"
+            " VM interface: " + vm_iface_name +
+            " with MAC [" + (str(vm_mac if vm_mac else 'Auto')) + "]" +
+            " and IP(s) " +
+            (str(vm_ip_list) if vm_ip_list else 'discovered via DHCP') +
+            (" and VLANS " +
+             str(vm_vlans) if vm_vlans else ''))
+
+        new_if = Interface(
+            vm_iface_name, vm_host, vm_mac, vm_ip_list,
+            vm_linked_bridge, vm_vlans)
+        vm_host.interfaces[vm_iface_name] = new_if
+
+        self.LOG.debug("Creating tap interface on hypervisor [" +
+                       str(self.name) +
+                       "] with name [" + str(tap_iface_name) + "]")
+
+        self.link_interface(
+            Interface(tap_iface_name, self),
+            vm_host, new_if)
+
+        tap_if = self.interfaces[tap_iface_name]
+        self.tap_interfaces[vm_host.id] = tap_if
+
+        """ :type: VirtualInterface"""
+        tap_if.create()
+        tap_if.up()
+        tap_if.config_addr()
+        new_if.up()
+        new_if.config_addr()
+        new_if.start_vlans()
+
+        return tap_if
 
     def run_app_command(self, command, app, arg_list=list()):
         host_cfg_str = (json.dumps(

@@ -29,28 +29,13 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost,
         self.cli = cli.NetNSCLI(self.name)
         self.host = host
         self.main_iface_name = 'eth0'
-        self.host_iface_name = self.name + self.main_iface_name
+
+    def create_vm(self, name=None):
+        raise exceptions.ArgMismatchException(
+            "Cannot create a VM inside a VM.")
 
     def vm_startup(self, ip_addr=None, gw_ip=None):
         cli.CREATENSCMD(self.name)
-        peer_name = self.host_iface_name + '.p'
-
-        self.LOG.debug("Creating VM interface: " + self.main_iface_name +
-                       " and veth peer on hypervisor [" +
-                       self.host.name + "] with name [" +
-                       self.host_iface_name + "] and IP: " +
-                       str(ip_addr))
-
-        self.host.execute(
-            'ip link add dev ' + self.host_iface_name +
-            ' type veth peer name ' + peer_name)
-
-        self.host.execute(
-            'ip link set dev ' + peer_name + ' netns ' +
-            self.name + ' name ' + self.main_iface_name)
-
-        self.host.execute('ip link set dev ' + self.host_iface_name + ' up')
-        self.execute('ip link set dev ' + self.main_iface_name + ' up')
 
         if ip_addr is not None:
             self.execute('ip addr add ' + str(ip.IP.make_ip(ip_addr)) +
@@ -64,18 +49,22 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost,
         self.LOG.debug("Adding default route for VM: " + gw_ip)
         self.add_route(gw_ip=ip.IP.make_ip(gw_ip))
 
-    def create_vm(self, mac=None, name=None):
-        raise exceptions.ArgMismatchException(
-            "Cannot create a VM inside a VM.")
+    def setup_vm_network(self, ip_addr=None, gw_ip=None):
+        pass
 
     def get_hypervisor_name(self):
         return self.hypervisor.name
 
-    def plugin_iface(self, iface, port_id):
-        self.overlay.plugin_iface(self.host.unique_id,
-                                  self.name + iface, port_id)
+    def plugin_port(self, iface, port_id, mac=None, vlans=None):
+        tapname = 'tap' + port_id[0:8]
+        self.hypervisor.create_tap_interface_for_vm(
+            tap_iface_name=tapname, vm_host=self,
+            vm_iface_name=iface, vm_mac=mac, vm_vlans=vlans)
 
-    def unplug_iface(self, port_id):
+        self.overlay.plugin_iface(self.host.unique_id,
+                                  tapname, port_id)
+
+    def unplug_port(self, port_id):
         self.overlay.unplug_iface(self.host.unique_id, port_id)
 
     def request_ip_from_dhcp(self, iface='eth0', timeout=10):
@@ -114,7 +103,7 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost,
         Kill this Host.
         :return:
         """
-        self.host.execute('ip link del dev ' + self.host_iface_name)
+        self.host.remove_taps(self)
         cli.REMOVENSCMD(self.name)
         self.host.vms.pop(self.name)
 

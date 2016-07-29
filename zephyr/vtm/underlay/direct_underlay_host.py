@@ -47,8 +47,9 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
             self.LOG.addHandler(logging.NullHandler())
         self.main_ip = '127.0.0.1'
         self.dhcpcd_is_running = set()
+        self.taps = {}
 
-    def create_vm(self, mac=None, name=None):
+    def create_vm(self, name=None):
         if not self.hypervisor:
             raise exceptions.ArgMismatchException(
                 "Cannot start VM on: " + self.name + ", not a hypervisor.")
@@ -68,15 +69,12 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
             hypervisor=self,
             logger=self.LOG)
 
-        if mac is not None:
-            new_vm.execute('ip link set dev ' + self.main_iface_name +
-                           ' address ' + mac)
-
         self.vms[name] = new_vm
         return new_vm
 
     def setup_vm_network(self, ip_addr=None, gw_ip=None):
-        new_vm.vm_startup(ip_addr, gw_ip)
+        raise exceptions.ArgMismatchException(
+            "Error; plugin_iface operation only valid on a VM host")
 
     def request_ip_from_dhcp(self, iface='eth0', timeout=10):
         raise exceptions.ArgMismatchException(
@@ -89,13 +87,61 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def start_sshd(self):
         self.execute('sshd -o PidFile=/run/sshd.' + self.name + '.pid')
 
-    def plugin_iface(self, iface, port_id):
+    def plugin_port(self, iface, port_id, mac=None, vlans=None):
         raise exceptions.ArgMismatchException(
             "Error; plugin_iface operation only valid on a VM host")
 
-    def unplug_iface(self, port_id):
+    def unplug_port(self, port_id):
         raise exceptions.ArgMismatchException(
             "Error; unplug_iface operation only valid on a VM host")
+
+    def create_tap_interface_for_vm(
+            self, tap_iface_name,
+            vm_host, vm_iface_name,
+            vm_mac=None, vm_ip_list=None,
+            vm_linked_bridge=None, vm_vlans=None):
+        if not self.hypervisor:
+            raise exceptions.ArgMismatchException(
+                "Can only create a tap for a VM on a hypervisor host")
+
+        peer_name = vm_host.name
+
+        self.LOG.debug(
+            "Creating TAP interface: " + tap_iface_name + " to connect to"
+            " VM interface: " + vm_iface_name +
+            " with MAC [" + (str(vm_mac if vm_mac else 'Auto')) + "]" +
+            " and IP(s) " +
+            (str(vm_ip_list) if vm_ip_list else 'discovered via DHCP') +
+            (" and VLANS " +
+             str(vm_vlans) if vm_vlans else ''))
+
+        self.execute(
+            'ip link add dev ' + tap_iface_name +
+            ' type veth peer name ' + peer_name)
+
+        self.execute(
+            'ip link set dev ' + peer_name + ' netns ' +
+            self.name + ' name ' + vm_iface_name)
+
+        self.execute('ip link set dev ' + tap_iface_name + ' up')
+        vm_host.execute('ip link set dev ' + vm_iface_name + ' up')
+
+        self.cli.cmd(
+            'ip link add dev ' + tap_iface_name +
+            ' type veth peer name ' + tap_iface_name + '.p')
+
+        if vm_host.name not in self.taps:
+            self.taps[vm_host.name] = set()
+        self.taps[vm_host.unique_id].add(tap_iface_name)
+
+        self.LOG.debug("Creating tap interface on hypervisor [" +
+                       str(self.name) +
+                       "] with name [" + str(tap_iface_name) + "]")
+
+    def remove_taps(self, vm_host):
+        if vm_host.unique_id in self.taps:
+            for tap in self.taps[vm_host.unique_id]:
+                self.execute('ip link del dev ' + tap)
 
     def get_hypervisor_name(self):
         raise exceptions.ArgMismatchException(
@@ -126,10 +172,6 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def del_route(self, route_ip):
         self.execute('ip route del ' + str(route_ip.ip))
 
-    def create_interface(self, iface, mac=None, ip_list=None,
-                         linked_bridge=None, vlans=None):
-        pass
-
     def interface_down(self, iface):
         self.cli.cmd('ip link set dev ' + iface + ' down')
 
@@ -142,9 +184,11 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
 
     # noinspection PyUnresolvedReferences
     def get_ip(self, iface_name):
-        return self.cli.cmd(
-            'ip addr show dev ' + iface_name +
-            " | grep -w inet | awk '{print $2}'").stdout
+        return (
+            self.cli.cmd(
+                'ip addr show dev ' + iface_name +
+                " | grep -w inet | awk '{print $2}' | sed 's/\/.*//g'")
+            .stdout.strip().split('\n')[0])
 
     def request_ip(self, iface_name):
         return None

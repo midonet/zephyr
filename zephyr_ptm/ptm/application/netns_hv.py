@@ -24,6 +24,7 @@ class NetnsHV(application.Application):
     def __init__(self, host, app_id=''):
         super(NetnsHV, self).__init__(host, app_id)
         self.vms = {}
+        self.vms_by_name = {}
 
     @staticmethod
     def get_name():
@@ -54,21 +55,33 @@ class NetnsHV(application.Application):
         new_host.net_up()
         new_host.net_up()
         new_host.net_finalize()
-        self.vms[name] = new_host
+        self.vms[new_host.id] = new_host
+        if new_host.name not in self.vms_by_name:
+            self.vms_by_name[new_host.name] = [new_host]
+        else:
+            self.vms_by_name[new_host.name].append(new_host)
         return new_host
 
-    def remove_vm(self, name):
-        self.vms.pop(name)
+    def remove_vm(self, vm):
+        if vm.id in self.vms:
+            self.vms.pop(vm.id)
+        if vm.name in self.vms_by_name:
+            self.vms_by_name[vm.name].remove(vm)
+            if len(self.vms_by_name[vm.name]) == 0:
+                self.vms_by_name.pop(vm.name)
 
     def get_vm(self, name):
-        if name not in self.vms:
-            raise exceptions.HostNotFoundException(name)
-        return self.vms[name]
+        if name not in self.vms_by_name:
+            return None
+        named_vms = self.vms_by_name[name]
+        if len(named_vms) == 1:
+            return named_vms[0]
+        return named_vms
 
     def get_vm_count(self):
         return len(self.vms)
 
-    def plugin_iface_to_network(self, vm_host_name, iface, port_id):
+    def plugin_iface_to_network(self, tap_iface, port_id):
         net_type = application.APPLICATION_TYPE_NETWORK_OVERLAY
         if net_type not in self.host.applications_by_type:
             raise exceptions.ArgMismatchException(
@@ -76,7 +89,7 @@ class NetnsHV(application.Application):
                 ' because there is no network overlay app running.')
         net_overlay_app = self.host.applications_by_type[net_type][0]
         net_overlay_app.connect_iface_to_port(
-            vm_host_name=vm_host_name, iface=iface, port_id=port_id)
+            tap_iface=tap_iface, port_id=port_id)
 
     def disconnect_port(self, port_id):
         net_type = application.APPLICATION_TYPE_NETWORK_OVERLAY

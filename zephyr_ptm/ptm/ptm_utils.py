@@ -17,7 +17,7 @@ from zephyr.common import utils
 from zephyr_ptm.ptm.application import application
 
 
-def create_vm(hv_host_obj, mac=None, name=None, log=None):
+def create_vm(hv_host_obj, name=None, log=None):
     app_type = application.APPLICATION_TYPE_HYPERVISOR
     hv_app = hv_host_obj.applications_by_type[app_type][0]
     """ :type: zephyr_ptm.ptm.application.netns_hv.NetnsHV"""
@@ -30,8 +30,6 @@ def create_vm(hv_host_obj, mac=None, name=None, log=None):
                   hv_host_obj.name + ' with name: ' + name)
 
     new_vm = hv_app.create_vm(name)
-
-    new_vm.create_interface('eth0', ip_list=[], mac=mac)
 
     return new_vm
 

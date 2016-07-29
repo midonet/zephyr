@@ -109,13 +109,12 @@ class NeutronAPITest(unittest.TestCase):
             self.vtm.LOG.info("Got port 1 IP: " + str(ip1))
             self.vtm.LOG.info("Got port 2 IP: " + str(ip2))
 
-            vm1 = self.vtm.create_vm(mac=port1['mac_address'])
-            vm2 = self.vtm.create_vm(mac=port2['mac_address'],
-                                     hv_host=vm1.get_hypervisor_name())
+            vm1 = self.vtm.create_vm()
+            vm2 = self.vtm.create_vm(hv_host=vm1.get_hypervisor_name())
 
-            vm1.plugin_vm('eth0', port1['id'])
+            vm1.plugin_port('eth0', port1['id'], mac=port1['mac_address'])
             vm1.setup_vm_network()
-            vm2.plugin_vm('eth0', port2['id'])
+            vm2.plugin_port('eth0', port2['id'], mac=port2['mac_address'])
             vm2.setup_vm_network()
 
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
@@ -155,17 +154,15 @@ class NeutronAPITest(unittest.TestCase):
             self.vtm.LOG.info("Got port 1 IP: " + str(ip1))
             self.vtm.LOG.info("Got port 2 IP: " + str(ip2))
 
-            vm1 = self.vtm.create_vm(mac=port1['mac_address'],
-                                     name='vm1')
+            vm1 = self.vtm.create_vm(name='vm1')
             """ :type: Guest"""
-            vm2 = self.vtm.create_vm(mac=port2['mac_address'],
-                                     name='vm2',
+            vm2 = self.vtm.create_vm(name='vm2',
                                      hv_host='!' + vm1.get_hypervisor_name())
             """ :type: Guest"""
 
-            vm1.plugin_vm('eth0', port1['id'])
+            vm1.plugin_port('eth0', port1['id'], mac=port1['mac_address'])
             vm1.setup_vm_network()
-            vm2.plugin_vm('eth0', port2['id'])
+            vm2.plugin_port('eth0', port2['id'], mac=port2['mac_address'])
             vm2.setup_vm_network()
             self.assertTrue(vm1.ping(target_ip=ip2, on_iface='eth0'))
 
