@@ -302,6 +302,7 @@ class NeutronTestCase(TestCase):
             ip_addr = None if use_dhcp else port['fixed_ips'][0]['ip_address']
             vm.setup_vm_network(ip_addr=ip_addr, gw_ip=gw_ip)
             self.servers.append((vm, ip_addr, port))
+            ip_addr = vm.get_ip('eth0')
             return port, vm, ip_addr
         except Exception:
             self.api.delete_port(port['id'])
