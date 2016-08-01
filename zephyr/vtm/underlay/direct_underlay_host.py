@@ -27,7 +27,6 @@ from zephyr.vtm.underlay import underlay_host
 ECHO_SERVER_TIMEOUT = 3
 
 
-# noinspection PyUnresolvedReferences
 class DirectUnderlayHost(underlay_host.UnderlayHost):
     def __init__(self, name, unique_id=None, overlay=None,
                  vm_type='zephyr.vtm.underlay.ipnetns_vm.IPNetnsVM',
@@ -47,6 +46,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
             self.LOG = logging.getLogger("host-" + self.name)
             self.LOG.addHandler(logging.NullHandler())
         self.main_ip = '127.0.0.1'
+        self.dhcpcd_is_running = set()
 
     def create_vm(self, mac=None, name=None):
         if not self.hypervisor:
@@ -78,25 +78,13 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def setup_vm_network(self, ip_addr=None, gw_ip=None):
         new_vm.vm_startup(ip_addr, gw_ip)
 
-    def get_ip_from_dhcp(self, iface='eth0', timeout=10):
-        file_name = self.name + '.' + iface
-        self.cli.cmd(
-            'dhclient -nw '
-            '-pf /run/dhclient-' + file_name + '.pid '
-            '-lf /var/lib/dhcp/dhclient-' + file_name + '.lease ' +
-            iface)
-        deadline = time.time() + timeout
-        while not self.get_ip(iface):
-            if time.time() > deadline:
-                self.stop_dhcp_client(iface)
-                raise exceptions.HostNotFoundException(
-                    'No IP addr received from DHCP')
-            time.sleep(0)
+    def request_ip_from_dhcp(self, iface='eth0', timeout=10):
+        raise exceptions.ArgMismatchException(
+            "Error; request_ip_from_dhcp operation only valid on a VM host")
 
-        ip_addr = self.get_ip(iface)
-        self.dhcpcd_is_running.add(iface)
-        self.LOG.debug("Received IP from DHCP server: " + ip_addr)
-        return ip_addr
+    def stop_dhcp_client(self, iface):
+        raise exceptions.ArgMismatchException(
+            "Error; stop_dhcp_client operation only valid on a VM host")
 
     def start_sshd(self):
         self.execute('sshd -o PidFile=/run/sshd.' + self.name + '.pid')
@@ -152,6 +140,7 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
         self.cli.cmd('ip addr add ' + str(ip_addr) + ' dev ' + iface_name)
         self.main_ip = ip_addr
 
+    # noinspection PyUnresolvedReferences
     def get_ip(self, iface_name):
         return self.cli.cmd(
             'ip addr show dev ' + iface_name +
