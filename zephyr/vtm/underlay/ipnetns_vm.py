@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
 from zephyr.common import cli
 from zephyr.common import exceptions
 from zephyr.common import ip
@@ -77,6 +78,37 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost,
     def unplug_iface(self, port_id):
         self.overlay.unplug_iface(self.host.unique_id, port_id)
 
+    def request_ip_from_dhcp(self, iface='eth0', timeout=10):
+        file_name = self.name + '.' + iface
+        self.cli.cmd(
+            'dhclient -nw '
+            '-pf /run/dhclient-' + file_name + '.pid '
+            '-lf /var/lib/dhcp/dhclient-' + file_name + '.lease ' +
+            iface)
+        deadline = time.time() + timeout
+        while not self.get_ip(iface):
+            if time.time() > deadline:
+                self.stop_dhcp_client(iface)
+                raise exceptions.HostNotFoundException(
+                    'No IP addr received from DHCP')
+            time.sleep(0)
+
+        ip_addr = self.get_ip(iface)
+        self.dhcpcd_is_running.add(iface)
+        self.LOG.debug("Received IP from DHCP server: " + ip_addr)
+        return ip_addr
+
+    def stop_dhcp_client(self, iface):
+        if iface in self.dhcpcd_is_running:
+            file_name = self.name + '.' + iface
+            self.cli.cmd(
+                'dhclient -r '
+                '-pf /run/dhclient-' + file_name + '.pid '
+                '-lf /var/lib/dhcp/dhclient-' + file_name + '.lease ' +
+                iface)
+            self.cli.rm('/run/dhclient-' + file_name + '.pid')
+            self.cli.rm('/var/lib/dhcp/dhclient-' + file_name + '.lease')
+
     def terminate(self):
         """
         Kill this Host.
@@ -85,3 +117,6 @@ class IPNetnsVM(direct_underlay_host.DirectUnderlayHost,
         self.host.execute('ip link del dev ' + self.host_iface_name)
         cli.REMOVENSCMD(self.name)
         self.host.vms.pop(self.name)
+
+        if self.main_iface_name in self.dhcpcd_is_running:
+            self.stop_dhcp_client(self.main_iface_name)
