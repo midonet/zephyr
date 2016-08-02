@@ -42,21 +42,21 @@ class TestSecurityGroupsBasic(NeutronTestCase):
         self.assertTrue(vma.verify_connection_to_host(vmc))
 
     def test_security_group_two_subnets(self):
-        cidr = "192.168.20.0/24"
+        cidr1 = "192.168.20.0/24"
+        cidr2 = "192.168.21.0/24"
         net1 = self.create_network('SG_BASIC1')
-        sub1 = self.create_subnet('SG_BASIC1', net1['id'], cidr)
+        sub1 = self.create_subnet('SG_BASIC1', net1['id'], cidr1)
 
         net2 = self.create_network('SG_BASIC2')
-        sub2 = self.create_subnet('SG_BASIC2', net2['id'], cidr)
+        sub2 = self.create_subnet('SG_BASIC2', net2['id'], cidr2)
 
         self.create_router(
-            'RTR1_2', priv_sub_ids=[net1['id'], net2['id']])
+            'RTR1_2', priv_sub_ids=[sub1['id'], sub2['id']])
 
         sg1 = self.create_security_group('SG_1')
-        self.create_security_group_rule(sg1['id'])
-
+        self.create_security_group_rule(sg1['id'], remote_group_id=sg1['id'])
         sg2 = self.create_security_group('SG_2')
-        self.create_security_group_rule(sg2['id'])
+        self.create_security_group_rule(sg2['id'], remote_group_id=sg2['id'])
 
         (porta, vma, ipa) = self.create_vm_server(
             "A", net1['id'], sub1['gateway_ip'], sgs=[sg1['id']])
@@ -66,22 +66,22 @@ class TestSecurityGroupsBasic(NeutronTestCase):
 
         (portc, vmc, ipc) = self.create_vm_server(
             "C", net1['id'], sub1['gateway_ip'], sgs=[sg2['id']])
-
         self.assertTrue(vmb.verify_connection_to_host(vma))
         self.assertTrue(vma.verify_connection_to_host(vmb))
         self.assertFalse(vmc.verify_connection_to_host(vma, timeout=5))
         self.assertFalse(vmc.verify_connection_to_host(vmb, timeout=5))
 
     def test_security_group_rules(self):
-        cidr = "192.168.20.0/24"
+        cidr1 = "192.168.20.0/24"
+        cidr2 = "192.168.21.0/24"
         net1 = self.create_network('SG_BASIC1')
-        sub1 = self.create_subnet('SG_BASIC1', net1['id'], cidr)
+        sub1 = self.create_subnet('SG_BASIC1', net1['id'], cidr1)
 
         net2 = self.create_network('SG_BASIC2')
-        sub2 = self.create_subnet('SG_BASIC2', net2['id'], cidr)
+        sub2 = self.create_subnet('SG_BASIC2', net2['id'], cidr2)
 
         self.create_router(
-            'RTR1_2', priv_sub_ids=[net1['id'], net2['id']])
+            'RTR1_2', priv_sub_ids=[sub1['id'], sub2['id']])
 
         sg1 = self.create_security_group('SG_1')
 
