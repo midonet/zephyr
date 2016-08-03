@@ -31,6 +31,7 @@ class SampleTestCase(NeutronTestCase):
         self.fail("This test shouldn't be run!")
 
 
+# TODO(micucci) Expand to include all features of NeutronTestCase
 class NeutronTestCaseTest(unittest.TestCase):
     def test_require_extension(self):
         vtm = VirtualTopologyManager(

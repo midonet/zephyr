@@ -50,3 +50,30 @@ class TestBasicPing(NeutronTestCase):
         self.assertTrue(vm1.verify_connection_to_host(vm2))
         self.LOG.info('Verifying from VM2 to VM1')
         self.assertTrue(vm2.verify_connection_to_host(vm1))
+
+    def test_neutron_api_ping_existing_port(self):
+        port1 = self.api.create_port({
+            'port': {'name': 'vm1',
+                     'network_id': self.main_network['id'],
+                     'admin_state_up': True,
+                     'port_security_enabled': True,
+                     'tenant_id': 'admin'}})['port']
+        self.LOG.debug("Created port for VM: " + str(port1))
+
+        port2 = self.api.create_port({
+            'port': {'name': 'vm2',
+                     'network_id': self.main_network['id'],
+                     'admin_state_up': True,
+                     'port_security_enabled': True,
+                     'tenant_id': 'admin'}})['port']
+        self.LOG.debug("Created port for VM: " + str(port2))
+
+        (port1, vm1, ip1) = self.create_vm_server(
+            name='vm1', neutron_port=port1)
+        (port2, vm2, ip2) = self.create_vm_server(
+            name='vm2', neutron_port=port2)
+
+        self.LOG.info('Verifying from VM1 to VM2')
+        self.assertTrue(vm1.verify_connection_to_host(vm2))
+        self.LOG.info('Verifying from VM2 to VM1')
+        self.assertTrue(vm2.verify_connection_to_host(vm1))

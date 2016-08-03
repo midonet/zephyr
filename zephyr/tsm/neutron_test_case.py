@@ -16,6 +16,7 @@ from collections import namedtuple
 import json
 import logging
 
+from zephyr.common import exceptions
 from zephyr.common.ip import IP
 from zephyr.common.utils import curl_delete
 from zephyr.common.utils import curl_post
@@ -273,7 +274,7 @@ class NeutronTestCase(TestCase):
 
         return cleanup_errors
 
-    def create_vm_server(self, name, net_id, gw_ip, sgs=list(),
+    def create_vm_server(self, name, net_id=None, gw_ip=None, sgs=list(),
                          allowed_address_pairs=None, hv_host=None,
                          port_security_enabled=True, use_dhcp=True,
                          neutron_port=None):
@@ -281,6 +282,11 @@ class NeutronTestCase(TestCase):
         :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
         """
         if not neutron_port:
+            if not net_id:
+                raise exceptions.ArgMismatchException(
+                    "If no existing port is specified, a network "
+                    "ID on which to create a new port MUST be provided")
+
             port_data = {'name': name,
                          'network_id': net_id,
                          'admin_state_up': True,
