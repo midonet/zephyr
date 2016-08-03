@@ -78,6 +78,11 @@ class NetnsHV(application.Application):
             return named_vms[0]
         return named_vms
 
+    def get_vm_by_id(self, vm_id):
+        if vm_id not in self.vms:
+            return None
+        return self.vms[vm_id]
+
     def get_vm_count(self):
         return len(self.vms)
 

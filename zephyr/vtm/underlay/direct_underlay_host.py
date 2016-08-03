@@ -199,6 +199,9 @@ class DirectUnderlayHost(underlay_host.UnderlayHost):
     def reboot(self):
         pass
 
+    def restart_host(self):
+        pass
+
     def do_start_echo_server(self, ip_addr='localhost',
                              port=zephyr_constants.DEFAULT_ECHO_PORT,
                              echo_data="pong", protocol='tcp'):

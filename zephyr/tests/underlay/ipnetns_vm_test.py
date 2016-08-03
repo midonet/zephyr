@@ -304,6 +304,53 @@ class IPNetnsVMTest(unittest.TestCase):
 
         self.assertTrue(vm1.verify_connection_to_host(vm2))
 
+    def test_vtm_restart_hosts(self):
+        main_network = self.api.create_network(
+            {'network': {
+                'name': 'main',
+                'tenant_id': 'admin'}})['network']
+        self.networks.append(main_network)
+        main_subnet = self.api.create_subnet(
+            {'subnet': {
+                'name': 'main_sub',
+                'ip_version': 4,
+                'network_id': main_network['id'],
+                'cidr': '192.168.10.0/24',
+                'tenant_id': 'admin'}})['subnet']
+        self.subnets.append(main_subnet)
+
+        port1def = {'port': {'name': 'port1',
+                             'network_id': main_network['id'],
+                             'admin_state_up': True,
+                             'tenant_id': 'admin'}}
+        port1 = self.api.create_port(port1def)['port']
+        self.ports.append(port1)
+
+        port2def = {'port': {'name': 'port2',
+                             'network_id': main_network['id'],
+                             'admin_state_up': True,
+                             'tenant_id': 'admin'}}
+        port2 = self.api.create_port(port2def)['port']
+        self.ports.append(port2)
+
+        vm1 = self.vtm.create_vm(name='vm1')
+        self.vms.append(vm1)
+        vm2 = self.vtm.create_vm(name='vm2')
+        self.vms.append(vm2)
+
+        vm1.plugin_port('eth0', port1['id'], mac=port1['mac_address'])
+        vm1.setup_vm_network(ip_addr=None,
+                             gw_ip=main_subnet['gateway_ip'])
+
+        vm2.plugin_port('eth0', port2['id'], mac=port2['mac_address'])
+        vm2.setup_vm_network(ip_addr=None,
+                             gw_ip=main_subnet['gateway_ip'])
+
+        self.assertTrue(vm1.verify_connection_to_host(vm2))
+
+        self.vtm.restart_hosts()
+        self.assertTrue(vm1.verify_connection_to_host(vm2))
+
     def tearDown(self):
         for vm in self.vms:
             vm.terminate()

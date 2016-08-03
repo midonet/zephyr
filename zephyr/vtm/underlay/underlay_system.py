@@ -107,3 +107,7 @@ class UnderlaySystem(object):
             lambda a, b: a if vm_count_fn(a) <= vm_count_fn(b) else b,
             valid_host_map.values())
         return start_hv_host.create_vm(name=requested_vm_name)
+
+    def restart_hosts(self):
+        for h in self.hosts.values():
+            h.restart_host()

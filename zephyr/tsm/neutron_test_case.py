@@ -315,6 +315,7 @@ class NeutronTestCase(TestCase):
             self.servers.append((vm, ip_addr, port))
             ip_addr = vm.get_ip('eth0')
             return port, vm, ip_addr
+
         except Exception:
             if not neutron_port:
                 self.api.delete_port(port['id'])

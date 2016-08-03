@@ -68,6 +68,9 @@ class UnderlayHost(object):
     def reboot(self):
         return None
 
+    def restart_host(self):
+        return None
+
     def get_ip_from_dhcp(self, iface='eth0'):
         return None
 

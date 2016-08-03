@@ -362,37 +362,54 @@ class Host(PTMObject):
         for app in self.applications:
             app.prepare_config(lm)
 
-    def start_applications(self):
+    def start_applications(self, app_type=None):
         for app in self.applications:
-            self.LOG.debug('ptm starting app: ' + app.name)
-            start_process = self.run_app_command('start', app)
-            stdout, stderr = start_process.communicate()
-            start_process.poll()
-            # if start_process.returncode != 0:
-            self.LOG.debug("Host control process output: ")
-            self.LOG.debug(stdout)
-            self.LOG.debug("Host control process error output: ")
-            self.LOG.debug(stderr)
+            if not app_type or app.get_type() in app_type:
+                self.LOG.debug('ptm starting app: ' + app.name)
+                start_process = self.run_app_command('start', app)
+                stdout, stderr = start_process.communicate()
+                start_process.poll()
+                # if start_process.returncode != 0:
+                self.LOG.debug("Host control process output: ")
+                self.LOG.debug(stdout)
+                self.LOG.debug("Host control process error output: ")
+                self.LOG.debug(stderr)
 
-    def wait_for_all_applications_to_start(self):
+    def wait_for_all_applications_to_start(self, app_type=None):
         for app in self.applications:
-            app.wait_for_process_start()
+            if not app_type or app.get_type() in app_type:
+                self.LOG.debug('Waiting for app: ' + app.get_name() +
+                               ' to start')
+                app.wait_for_process_start()
 
-    def stop_applications(self):
+    def stop_applications(self, app_type=None):
         for app in self.applications:
-            self.LOG.debug('ptm stopping app: ' + app.name)
-            stop_process = self.run_app_command('stop', app)
-            stdout, stderr = stop_process.communicate()
-            stop_process.poll()
-            # if stop_process.returncode != 0:
-            self.LOG.debug("Host control process output: ")
-            self.LOG.debug(stdout)
-            self.LOG.debug("Host control process error output: ")
-            self.LOG.debug(stderr)
+            if not app_type or app.get_type() in app_type:
+                self.LOG.debug('ptm stopping app: ' + app.name)
+                stop_process = self.run_app_command('stop', app)
+                stdout, stderr = stop_process.communicate()
+                stop_process.poll()
+                # if stop_process.returncode != 0:
+                self.LOG.debug("Host control process output: ")
+                self.LOG.debug(stdout)
+                self.LOG.debug("Host control process error output: ")
+                self.LOG.debug(stderr)
 
-    def wait_for_all_applications_to_stop(self):
+    def wait_for_all_applications_to_stop(self, app_type=None):
         for app in self.applications:
-            app.wait_for_process_stop()
+            if not app_type or app.get_type() in app_type:
+                self.LOG.debug('Waiting for app: ' + app.get_name() +
+                               ' to stop')
+                app.wait_for_process_stop()
+
+    def restart_apps(self, app_type=None):
+        self.stop_applications(app_type=app_type)
+        self.wait_for_all_applications_to_stop(app_type=app_type)
+
+        time.sleep(3)
+
+        self.start_applications(app_type=app_type)
+        self.wait_for_all_applications_to_start(app_type=app_type)
 
     def set_loopback(self, ip_addr=IP('127.0.0.1', '8')):
         if not self.cli.grep_cmd('ip addr | grep lo | grep inet',

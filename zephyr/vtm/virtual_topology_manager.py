@@ -71,6 +71,9 @@ class VirtualTopologyManager(object):
     def get_host(self, name):
         return self.underlay_system.hosts.get(name, None)
 
+    def restart_hosts(self):
+        self.underlay_system.restart_hosts()
+
     def create_vm(self, hv_host=None, name=None):
         """
         Creates a guest VM on the Physical Topology and returns the
