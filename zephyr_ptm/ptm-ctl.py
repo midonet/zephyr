@@ -22,23 +22,58 @@ import traceback
 from zephyr.common import cli
 from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
-from zephyr.common import zephyr_constants
+from zephyr.common import zephyr_constants as zc
 from zephyr_ptm.ptm.config import version_config
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
-from zephyr_ptm.ptm import ptm_constants
 
 
-# noinspection PyUnresolvedReferences
 def usage(except_obj):
-    print('Usage: ' + ptm_constants.CONTROL_CMD_NAME +
-          ' {--startup|--shutdown|--print|--features|--json}'
-          ' [--config-file <config_file>]' +
-          ' [--underlay-output-file <out_file>]')
+    und_file = zc.DEFAULT_UNDERLAY_CONFIG
+    print("Usage: ptm-ctl.py --startup [-c <config_file>] [-d]")
+    print("       ptm-ctl.py --shutdown [-d]")
+    print("       ptm-ctl.py --print")
+    print("       ptm-ctl.py --features")
+    print("       ptm-ctl.py --json")
+    print('')
+    print("Commands:")
+    print("    --startup")
+    print("        Starts up an underlay topology.  Use -c or --config-file")
+    print("        to specify a PTM config file with a proper PTM-config")
+    print("        JSON representing the underlay topology.  This file can be")
+    print("        an absolute path, or a path relative from the")
+    print("        zephyr_ptm/config/physical_topologies directory.  This")
+    print("        will also output the zephyr general underlay configuration")
+    print("        JSON to a file named: " + und_file + " in the current")
+    print("        directory.")
+    print("        Use -d or --debug for debug information to be logged.")
+    print("    --shutdown")
+    print("        Shuts down the existing underlay topology defined in the")
+    print("        zephyr underlay: " + und_file + ".  This file will be")
+    print("        used to shut down the system, so it must be accurate and")
+    print("        current.")
+    print("        Use -d or --debug for debug information to be logged.")
+    print("    --print")
+    print("        Prints the existing underlay topology defined in the")
+    print("        zephyr underlay: " + und_file + ".  This file will be")
+    print("        used to display the configuration of the system, so it")
+    print("        must be accurate and current.")
+    print("    --features")
+    print("        Prints a list of the existing underlay supported")
+    print("        topology features for the topology defined in the current")
+    print("        zephyr underlay: " + und_file + ".  This file will be")
+    print("        used to inform the configuration of the system, so it")
+    print("        must be accurate and current.")
+    print("    --json")
+    print("        Prints the existing underlay topology defined in the")
+    print("        zephyr underlay: " + und_file + ".  This file will be")
+    print("        used to display the underlay topology of the currently")
+    print("        running system, so it must be accurate and current.")
+
     if except_obj is not None:
         raise except_obj
 
 
-def print_json(output_file, ptm_imp, dbg_on, log_base_dir):
+def print_json(ptm_imp, dbg_on, log_base_dir, output_file=None):
     config_map = {
         'debug': dbg_on,
         'log_dir': log_base_dir,
@@ -52,24 +87,32 @@ def print_json(output_file, ptm_imp, dbg_on, log_base_dir):
                 'param_midonet_api_url')
     }
     out_str = json.dumps(config_map)
-    with open(output_file, 'w') as fp:
-        fp.write(out_str)
-
+    if output_file:
+        with open(output_file, 'w') as fp:
+            fp.write(out_str)
+    else:
+        print(out_str)
 
 try:
     arg_map, extra_args = getopt.getopt(
         sys.argv[1:], 'hdpc:l:fju:',
         ['help', 'debug', 'startup', 'shutdown',
          'print', 'features', 'config-file=',
-         'log-dir=', 'json', 'underlay-output-file='])
+         'log-dir=', 'json'])
 
     # Defaults
+    ptm_ctl_dir = os.path.dirname(os.path.abspath(__file__))
+
+    zc.ZephyrInit.init(ptm_ctl_dir + "/../zephyr.conf")
+    root_dir = zc.ZephyrInit.BIN_ROOT_DIR
+    conf_dir = zc.ZephyrInit.CONF_ROOT_DIR
+
     command = ''
-    ptm_config_file = '1z-2c-1edge.json'
+    ptm_topo = '1z-2c-1edge.json'
     neutron_command = ''
     log_dir = '/tmp/zephyr/logs'
     debug = False
-    json_out_file = zephyr_constants.DEFAULT_UNDERLAY_CONFIG
+    underlay_config_file = conf_dir + '/' + zc.DEFAULT_UNDERLAY_CONFIG
 
     for arg, value in arg_map:
         if arg in ('-h', '--help'):
@@ -82,9 +125,7 @@ try:
         elif arg in '--shutdown':
             command = 'shutdown'
         elif arg in ('-c', '--config-file'):
-            ptm_config_file = value
-        elif arg in ('-u', '--underlay-output-file'):
-            json_out_file = value
+            ptm_topo = value
         elif arg in ('-l', '--log-dir'):
             log_dir = value
         elif arg in ('-p', '--print'):
@@ -100,11 +141,6 @@ try:
         usage(exceptions.ArgMismatchException(
             'Must specify at least one command option'))
 
-    ptm_ctl_dir = os.path.dirname(os.path.abspath(__file__))
-
-    zephyr_constants.ZephyrInit.init(ptm_ctl_dir + "/../zephyr.conf")
-    root_dir = zephyr_constants.ZephyrInit.BIN_ROOT_DIR
-
     log_manager = LogManager(root_dir=log_dir)
     if command == 'startup':
         log_manager.rollover_logs_fresh(file_filter='ptm*.log')
@@ -112,20 +148,26 @@ try:
     ptm = PhysicalTopologyManager(root_dir=root_dir,
                                   log_manager=log_manager)
     ptm.configure_logging(debug=debug)
-    ptm.configure(ptm_config_file)
+
+    if cli.LinuxCLI().exists(underlay_config_file):
+        with open(underlay_config_file, "r") as f:
+            ptm_underlay_map = json.load(f)
+        ptm_topo = ptm_underlay_map['topology_config_file']
+
+    ptm.configure(ptm_topo)
 
     if command == 'startup':
         ptm.startup()
-        print_json(json_out_file, ptm, debug, log_dir)
+        print_json(ptm, debug, log_dir, underlay_config_file)
     elif command == 'shutdown':
         ptm.shutdown()
-        cli.LinuxCLI().rm(json_out_file)
+        cli.LinuxCLI().rm(underlay_config_file)
     elif command == 'print':
         ptm.print_config()
     elif command == 'features':
         ptm.print_features()
     elif command == 'json':
-        print_json(json_out_file, ptm, debug, log_dir)
+        print_json(ptm, debug, log_dir)
     else:
         usage(exceptions.ArgMismatchException(
             'Command option not recognized: ' + command))

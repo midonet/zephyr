@@ -65,8 +65,7 @@ class MNAPITest(unittest.TestCase):
                 log_manager=lm)
             self.ptm.configure_logging(
                 log_file_name="test-ptm.log", debug=True)
-            self.ptm.configure(
-                "test-basic-ptm.json", config_dir=dir_path + '/..')
+            self.ptm.configure(dir_path + "/../test-basic-ptm.json")
             self.ptm.startup()
 
             print_json('./underlay-config.json', self.ptm, True, './test-logs')

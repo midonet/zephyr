@@ -68,8 +68,7 @@ class VMHostTest(unittest.TestCase):
             path = os.path.abspath(__file__)
             dir_path = os.path.dirname(path)
             cls.ptm.configure(
-                config_file='test-basic-ptm.json',
-                config_dir=dir_path + '/..')
+                config_file=dir_path + '/../test-basic-ptm.json')
             cls.ptm.startup()
 
             print_json('./underlay-config.json', cls.ptm, True, './test-logs')

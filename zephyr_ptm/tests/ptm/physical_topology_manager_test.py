@@ -34,8 +34,7 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
             log_manager=lm)
         ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
-        ptm.configure(config_file='test-config.json',
-                      config_dir=dir_path)
+        ptm.configure(config_file=dir_path + '/test-config.json')
 
         self.assertTrue('zoo1' in ptm.hosts_by_name)
         self.assertTrue('edge1' in ptm.hosts_by_name)
@@ -64,8 +63,7 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         ptm = PhysicalTopologyManager(root_dir=ROOT_DIR, log_manager=lm)
         ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
-        ptm.configure(config_file='test-config.json',
-                      config_dir=dir_path)
+        ptm.configure(config_file=dir_path + '/test-config.json')
 
         ptm.print_config()
         self.assertTrue(True)
@@ -78,8 +76,7 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         ptm = PhysicalTopologyManager(root_dir=ROOT_DIR, log_manager=lm)
         ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
-        ptm.configure(config_file='test-config.json',
-                      config_dir=dir_path)
+        ptm.configure(config_file=dir_path + '/test-config.json')
 
         for l in ptm.host_by_start_order:
             for h in l:
@@ -123,8 +120,7 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         ptm.configure_logging(log_file_name="test-ptm.log", debug=True)
 
         try:
-            ptm.configure(config_file='test-config.json',
-                          config_dir=dir_path)
+            ptm.configure(config_file=dir_path + '/test-config.json')
             ptm.startup()
 
             self.assertTrue(LinuxCLI().grep_cmd('ip netns', 'zoo1'))

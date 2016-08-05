@@ -22,7 +22,7 @@ import traceback
 from zephyr.common import cli
 from zephyr.common import exceptions
 from zephyr.common.log_manager import LogManager
-from zephyr.common import zephyr_constants
+from zephyr.common import zephyr_constants as zc
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.host import vm_host
 from zephyr_ptm.ptm.physical_topology_manager import PhysicalTopologyManager
@@ -90,15 +90,23 @@ commands = ['add-vm', 'del-vm', 'add-interface',
 try:
 
     arg_map, extra_args = getopt.getopt(
-        sys.argv[1:], 'hc:',
+        sys.argv[1:], 'h',
         [c + '=' for c in commands] +
-        ['config-file=',
-         'help'])
+        ['help'])
 
     # Defaults
+
+    ptm_ctl_dir = os.path.dirname(os.path.abspath(__file__))
+
+    zc.ZephyrInit.init(ptm_ctl_dir + "/../zephyr.conf")
+    root_dir = zc.ZephyrInit.BIN_ROOT_DIR
+    conf_dir = zc.ZephyrInit.CONF_ROOT_DIR
+    print('Setting bin root dir to: ' + root_dir +
+          ' and config dir to: ' + conf_dir)
+
     command = None
     params = []
-    underlay_config_file = 'underlay-config.json'
+    underlay_config_file = conf_dir + '/' + zc.DEFAULT_UNDERLAY_CONFIG
 
     log_dir = '/tmp/zephyr/logs'
 
@@ -106,11 +114,9 @@ try:
         if arg in ('-h', '--help'):
             usage(None)
             sys.exit(0)
-        elif arg in map(lambda c: '--' + c, commands):
+        elif arg in map(lambda cmd: '--' + cmd, commands):
             command = arg[2:]
             params = value.split(',')
-        elif arg in ('-c', '--config-file'):
-            underlay_config_file = value
         else:
             usage(exceptions.ArgMismatchException('Invalid argument' + arg))
 
@@ -128,18 +134,12 @@ try:
 
     ptm_config_file = ptm_underlay_map['topology_config_file']
 
-    ptm_ctl_dir = os.path.dirname(os.path.abspath(__file__))
-
-    zephyr_constants.ZephyrInit.init(ptm_ctl_dir + "/../zephyr.conf")
-    root_dir = zephyr_constants.ZephyrInit.BIN_ROOT_DIR
-    print('Setting root dir to: ' + root_dir)
-
     log_manager = LogManager(root_dir=log_dir)
 
     ptm = PhysicalTopologyManager(root_dir=root_dir,
                                   log_manager=log_manager)
     ptm.configure_logging(
-        log_file_name=zephyr_constants.ZEPHYR_LOG_FILE_NAME, debug=True)
+        log_file_name=zc.ZEPHYR_LOG_FILE_NAME, debug=True)
 
     ptm.configure(ptm_config_file)
 

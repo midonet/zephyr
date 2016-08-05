@@ -49,10 +49,7 @@ class PTMUnderlaySystem(underlay_system.UnderlaySystem):
         self.ptm.configure_logging(
             log_file_name=self.ptm_log_file,
             debug=self.debug)
-        config_path = os.path.dirname(topo_config)
-        config_file = os.path.basename(topo_config)
-        self.ptm.configure(config_file=config_file,
-                           config_dir=config_path)
+        self.ptm.configure(config_file=topo_config)
 
         self.hosts = {
             name: ptm_underlay_host.PTMUnderlayHost(

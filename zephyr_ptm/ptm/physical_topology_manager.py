@@ -93,8 +93,7 @@ class PhysicalTopologyManager(object):
         self.neutron_setup.configure_logging(self.LOG)
         self.midonet_setup.configure_logging(self.LOG)
 
-    def configure(self, config_file, file_type='json',
-                  config_dir=None):
+    def configure(self, config_file, file_type='json'):
         """
         IMPORTANT NOTE!!!  For Hosts and for Applications, the
         implementation class name in the [implementation] section
@@ -114,23 +113,17 @@ class PhysicalTopologyManager(object):
         self.config_file = config_file
         default_cfg_path = '/zephyr_ptm/ptm/config/physical_topologies'
 
-        if self.config_file.startswith('/'):
-            config_dir = '/'
-
-        full_path_config_file = (
-            (config_dir
-             if config_dir
-             else (self.root_dir + default_cfg_path)) +
-            '/' + config_file)
+        self.topo_file = (config_file if self.config_file.startswith('/')
+                          else (self.root_dir + default_cfg_path +
+                                '/' + config_file))
 
         config_obj = None
-        self.topo_file = full_path_config_file
-        with open(full_path_config_file, 'r') as f:
+        with open(self.topo_file, 'r') as f:
             if file_type == 'json':
                 config_obj = json.load(f)
             else:
                 raise exceptions.InvalidConfigurationException(
-                    full_path_config_file,
+                    self.topo_file,
                     'Could not open file of type: ' + file_type)
 
         self.LOG.debug('Read JSON, configure object=' + str(config_obj))

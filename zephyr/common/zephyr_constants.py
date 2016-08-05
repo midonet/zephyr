@@ -20,8 +20,10 @@ DEFAULT_UNDERLAY_CONFIG = 'underlay-config.json'
 
 
 class ZephyrInit(object):
-    CONFIG_FILE = 'zephyr.conf'
     BIN_ROOT_DIR = '.'
+    CONF_ROOT_DIR = '.'
+
+    CONFIG_FILE = 'zephyr.conf'
 
     @classmethod
     def init(cls, config_file=None):
@@ -31,10 +33,14 @@ class ZephyrInit(object):
         with open(config_file, "r") as f:
             config = json.load(f)
 
-        if 'root_dir' not in config:
-            raise ValueError("root_dir not found in config")
+        if 'bin_dir' not in config:
+            raise ValueError("bin_dir not found in config")
 
-        cls.BIN_ROOT_DIR = os.path.abspath(config['root_dir'])
+        if 'config_dir' not in config:
+            raise ValueError("config_dir not found in config")
+
+        cls.BIN_ROOT_DIR = os.path.abspath(config['bin_dir'])
+        cls.CONF_ROOT_DIR = os.path.abspath(config['config_dir'])
 
 
 DEFAULT_ECHO_PORT = 5080
