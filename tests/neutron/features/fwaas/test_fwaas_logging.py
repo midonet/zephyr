@@ -94,11 +94,14 @@ class TestFWaaSLogging(NeutronTestCase):
             file_type='fwaas_log', uuid=uuid)
         if exist:
             self.assertEqual(1, len(fwaas_logs))
-            self.assertTrue(
-                utils.check_string_for_tag(fwaas_logs[0], 'ACCEPT', accept,
-                                           exact))
-            self.assertTrue(
-                utils.check_string_for_tag(fwaas_logs[0], 'DROP', drop, exact))
+            accepted = sum(e['result'] == 'ACCEPT' for e in fwaas_logs[0])
+            dropped = sum(e['result'] == 'DROP' for e in fwaas_logs[0])
+            if exact:
+                self.assertEqual(accept, accepted)
+                self.assertEqual(drop, dropped)
+            else:
+                self.assertGreaterEqual(accepted, accept)
+                self.assertGreaterEqual(dropped, drop)
         else:
             self.assertEqual(0, len(fwaas_logs))
 

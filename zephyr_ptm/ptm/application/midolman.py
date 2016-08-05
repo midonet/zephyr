@@ -13,7 +13,9 @@
 # limitations under the License.
 
 import datetime
+import dateutil.parser
 from os import path
+import re
 import time
 import uuid
 
@@ -30,6 +32,24 @@ from zephyr_ptm.ptm import ptm_constants
 
 
 class Midolman(application.Application):
+
+    """For parsing old FWaaS text logs"""
+    fwaas_txtlog_rex = re.compile(
+        'TIMESTAMP=(?P<time>\S+) SRC=(?P<src_ip>\S+) DST=(?P<dst_ip>\S+) '
+        'SPT=(?P<src_port>\S+) DPT=(?P<dst_port>\S+) PROTO=(?P<proto>\S+) '
+        'CHAIN=(?P<chain_id>\S+) RULE=(?P<rule_id>\S+) '
+        'MD=\[(?P<metadata>[^]]+)\] (?P<result>\S+)')
+
+    """For getting UUID from old FWaaS text log file name"""
+    fwaas_txtlog_filename_rex = re.compile('.*firewall-([-a-f0-9]+).log')
+
+    """For parsing binary FWaaS logs converted via mm-logxl"""
+    fwaas_binlog_rex = re.compile(
+        'LOGGER=(?P<logger_id>\S+) TIME=(?P<time>\S+) SRC=(?P<src_ip>\S+) '
+        'DST=(?P<dst_ip>\S+) SPT=(?P<src_port>\S+) DPT=(?P<dst_port>\S+) '
+        'PROTO=(?P<proto>\S+) CHAIN=(?P<chain_id>\S+) RULE=(?P<rule_id>\S+) '
+        'MD=\[(?P<metadata>[^]]+)\] (?P<result>\S+)')
+
     @staticmethod
     def get_name():
         return 'midolman'
@@ -85,24 +105,74 @@ class Midolman(application.Application):
             floc = FileLocation(self.log_dir + '/midolman.log')
             return floc.fetch_file()
         elif resource_name == 'fwaas_log':
-            if 'uuid' not in kwargs:
+            if 'uuid' not in kwargs:  # This path not currently used or tested.
                 # Get ALL firewall logs as a dict of filename -> contents
-                files = {}
-                fwaas_logs = LinuxCLI().ls('firewall-*.log')
-                for log in fwaas_logs:
-                    floc = FileLocation(log)
-                    self.LOG.debug("Fetching fwaas log from: " +
-                                   log)
-                    files[floc.filename] = floc.fetch_file()
-                return files
+                loggers = {}
+                txt_logs = LinuxCLI().ls(self.log_dir + '/firewall-*.log')
+                if txt_logs:
+                    # Old text log format.
+                    for log in txt_logs:
+                        floc = FileLocation(log)
+                        self.LOG.debug(
+                            "Fetching fwaas legacy text log from: " + log)
+                        uuid = fwaas_txtlog_filename_rex.match(log).groups()[0]
+                        self.LOG.debug("Logger UUID: " + uuid)
+                        loggers[uuid] = self.parseFwaasTxtLog(
+                            floc.fetch_file())
+                    return loggers
+                else:
+                    # New binary log format.
+                    return self.readFwaasBinLog()
             else:
-                log_name = (self.log_dir + '/firewall-' +
-                            str(kwargs['uuid']) + '.log')
-                self.LOG.debug("Fetching fwaas log from: " +
-                               log_name)
-                floc = FileLocation(log_name)
-            return floc.fetch_file()
+                uuid = str(kwargs['uuid'])
+                txt_log = self.log_dir + '/firewall-' + uuid + '.log'
+                if path.isfile(txt_log):
+                    # Old text log format
+                    self.LOG.debug("Fetching fwaas legacy text log from: " +
+                                   txt_log)
+                    floc = FileLocation(txt_log)
+                    return self.parseFwaasTxtLog(floc.fetch_file())
+                else:
+                    loggers = self.readFwaasBinLog()
+                    if uuid in loggers:
+                        return loggers[uuid]
+                    else:
+                        self.LOG.debug(
+                            "Found no log entries for UUID: " + uuid)
+                        return []
         return None
+
+    def parseFwaasTxtLog(self, log_txt):
+        entries = []
+        # Skip empty lines
+        for line in filter(None, log_txt.split('\n')):
+            self.LOG.debug("Parsing line: " + line)
+            m = self.fwaas_txtlog_rex.match(line)
+            entry = m.groupdict()
+            entry['time'] = dateutil.parser.parse(entry['time'])
+            entries.append(entry)
+        return entries
+
+    def readFwaasBinLog(self):
+        log_file = self.log_dir + '/rule-binlog.rlg'
+        if path.isfile(log_file):
+            self.LOG.debug("Decoding fwaas binary log file at: " + log_file)
+            log_txt = LinuxCLI().cmd('mm-logxl ' + log_file).stdout
+            return self.parseFwaasBinLog(log_txt)
+        else:
+            raise exceptions.FileNotFoundException("No FWaaS log files found.")
+
+    def parseFwaasBinLog(self, log_text):
+        loggers = {}
+        for line in filter(None, log_text.split('\n')):
+            m = self.fwaas_binlog_rex.match(line)
+            entry = m.groupdict()
+            entry['time'] = datetime.datetime.fromtimestamp(
+                long(entry['time']) / 1000.0)
+            logger_id = entry.pop('logger_id')
+            logger = loggers.setdefault(logger_id, [])
+            logger.append(entry)
+        return loggers
 
     def configure(self, host_cfg, app_cfg):
         """

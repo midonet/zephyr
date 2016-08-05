@@ -77,3 +77,8 @@ class PacketParsingException(TestException):
     def __init__(self, info, fatal=True):
         super(PacketParsingException, self).__init__(info)
         self.fatal = fatal
+
+
+class FileNotFoundException(TestException):
+    def __init__(self, info):
+        super(FileNotFoundException, self).__init__(info)

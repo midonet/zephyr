@@ -58,7 +58,7 @@ class MidonetSetupFixture(object):
                     break
 
         mn_api_utils.wait_for_all_mn_apps(
-            self.api, mm_name_list, self.LOG, timeout=40)
+            self.api, mm_name_list, self.LOG, timeout=120)
         mn_api_utils.setup_main_tunnel_zone(
             self.api, tunnel_zone_host_map, self.LOG)
 
