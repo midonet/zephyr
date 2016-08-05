@@ -105,7 +105,8 @@ class Midolman(application.Application):
             floc = FileLocation(self.log_dir + '/midolman.log')
             return floc.fetch_file()
         elif resource_name == 'fwaas_log':
-            if 'uuid' not in kwargs:  # This path not currently used or tested.
+            if 'uuid' not in kwargs:
+                # This path not currently used or tested.
                 # Get ALL firewall logs as a dict of filename -> contents
                 loggers = {}
                 txt_logs = LinuxCLI().ls(self.log_dir + '/firewall-*.log')
@@ -115,14 +116,15 @@ class Midolman(application.Application):
                         floc = FileLocation(log)
                         self.LOG.debug(
                             "Fetching fwaas legacy text log from: " + log)
-                        uuid = fwaas_txtlog_filename_rex.match(log).groups()[0]
+                        uuid = self.fwaas_txtlog_filename_rex.match(
+                            log).groups()[0]
                         self.LOG.debug("Logger UUID: " + uuid)
-                        loggers[uuid] = self.parseFwaasTxtLog(
+                        loggers[uuid] = self.parse_fwaas_txt_log(
                             floc.fetch_file())
                     return loggers
                 else:
                     # New binary log format.
-                    return self.readFwaasBinLog()
+                    return self.read_fwaas_bin_log()
             else:
                 uuid = str(kwargs['uuid'])
                 txt_log = self.log_dir + '/firewall-' + uuid + '.log'
@@ -131,9 +133,9 @@ class Midolman(application.Application):
                     self.LOG.debug("Fetching fwaas legacy text log from: " +
                                    txt_log)
                     floc = FileLocation(txt_log)
-                    return self.parseFwaasTxtLog(floc.fetch_file())
+                    return self.parse_fwaas_txt_log(floc.fetch_file())
                 else:
-                    loggers = self.readFwaasBinLog()
+                    loggers = self.read_fwaas_bin_log()
                     if uuid in loggers:
                         return loggers[uuid]
                     else:
@@ -142,7 +144,7 @@ class Midolman(application.Application):
                         return []
         return None
 
-    def parseFwaasTxtLog(self, log_txt):
+    def parse_fwaas_txt_log(self, log_txt):
         entries = []
         # Skip empty lines
         for line in filter(None, log_txt.split('\n')):
@@ -153,16 +155,16 @@ class Midolman(application.Application):
             entries.append(entry)
         return entries
 
-    def readFwaasBinLog(self):
+    def read_fwaas_bin_log(self):
         log_file = self.log_dir + '/rule-binlog.rlg'
         if path.isfile(log_file):
             self.LOG.debug("Decoding fwaas binary log file at: " + log_file)
             log_txt = LinuxCLI().cmd('mm-logxl ' + log_file).stdout
-            return self.parseFwaasBinLog(log_txt)
+            return self.parse_fwaas_bin_log(log_txt)
         else:
             raise exceptions.FileNotFoundException("No FWaaS log files found.")
 
-    def parseFwaasBinLog(self, log_text):
+    def parse_fwaas_bin_log(self, log_text):
         loggers = {}
         for line in filter(None, log_text.split('\n')):
             m = self.fwaas_binlog_rex.match(line)

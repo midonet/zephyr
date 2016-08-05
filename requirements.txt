@@ -9,3 +9,4 @@ futures
 pyyaml
 pyhamcrest
 xmlrunner
+dateutils

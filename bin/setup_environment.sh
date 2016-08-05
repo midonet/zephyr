@@ -55,7 +55,7 @@ $INSTALL openjdk-8-jre-headless openjdk-8-jdk
 
 $INSTALL libcurl4-gnutls-dev
 
-sudo pip install xmlrunner
+sudo pip install -r requirements.txt
 
 sudo update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
 
