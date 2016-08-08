@@ -15,7 +15,8 @@
 import socket
 import time
 
-from zephyr.common.exceptions import *
+from zephyr.common import cli
+from zephyr.common import exceptions
 from zephyr.common.file_location import *
 from zephyr_ptm.ptm.application import application
 from zephyr_ptm.ptm.physical_topology_config import *
@@ -40,6 +41,7 @@ class Zookeeper(application.Application):
         self.ip = IP('', '')
         self.pid = 0
         self.configurator = ZookeeperFileConfiguration()
+        self.snapshot_file = None
 
     def get_resource(self, resource_name, **kwargs):
         """
@@ -74,6 +76,9 @@ class Zookeeper(application.Application):
         if 'id' in app_cfg.kwargs:
             self.num_id = app_cfg.kwargs['id']
 
+        if 'snapshot_file' in app_cfg.kwargs:
+            self.snapshot_file = app_cfg.kwargs['snapshot_file']
+
         log_dir = '/var/log/zookeeper.' + self.num_id
         self.host.log_manager.add_external_log_file(
             FileLocation(log_dir + '/zookeeper.log'), self.num_id,
@@ -87,7 +92,8 @@ class Zookeeper(application.Application):
         self.ip = IP.from_map(cfg_map['ip'])
 
     def prepare_config(self, log_manager):
-        self.configurator.configure(self.num_id, self.zookeeper_ips, self.LOG)
+        self.configurator.configure(self.num_id, self.zookeeper_ips, self.LOG,
+                                    snapshot_file=self.snapshot_file)
 
     def print_config(self, indent=0):
         super(Zookeeper, self).print_config(indent)
@@ -117,7 +123,7 @@ class Zookeeper(application.Application):
                 if not connected:
                     retries += 1
                     if retries > max_retries:
-                        raise SubprocessFailedException(
+                        raise exceptions.SubprocessFailedException(
                             'Zookeeper host ' + self.num_id +
                             ' timed out while starting')
                     time.sleep(1)
@@ -164,7 +170,7 @@ class Zookeeper(application.Application):
         print(process.stderr)
 
         if process.process.pid == -1:
-            raise SubprocessFailedException('java-zookeeper')
+            raise exceptions.SubprocessFailedException('java-zookeeper')
 
         real_pid = self.cli.get_parent_pids(process.process.pid)[-1]
         self.cli.write_to_file('/run/zookeeper/pid', str(real_pid))
@@ -180,7 +186,7 @@ class ZookeeperFileConfiguration(FileConfigurationHandler):
     def __init__(self):
         super(ZookeeperFileConfiguration, self).__init__()
 
-    def configure(self, num_id, zookeeper_ips, log):
+    def configure(self, num_id, zookeeper_ips, log, snapshot_file=None):
         if num_id == '1':
             etc_dir = '/etc/zookeeper.test'
             self.cli.rm(etc_dir)
@@ -201,6 +207,18 @@ class ZookeeperFileConfiguration(FileConfigurationHandler):
 
         self.cli.rm(var_lib_dir)
         self.cli.mkdir(var_lib_dir + '/data')
+
+        if snapshot_file:
+            tar_cli = cli.LinuxCLI(log_cmd=True,
+                                   print_cmd_out=True,
+                                   logger=log)
+            cmd_out = tar_cli.cmd(
+                'tar xvfz ' + snapshot_file + ' -C ' + var_lib_dir)
+            if cmd_out.ret_code != 0:
+                raise exceptions.SubprocessFailedException(
+                    "extract of zk data failed: " + cmd_out.stdout +
+                    '/' + cmd_out.stderr)
+
         self.cli.write_to_file(var_lib_dir + '/data/myid', num_id, False)
         self.cli.write_to_file(var_lib_dir + '/myid', num_id, False)
         self.cli.chown(var_lib_dir, 'zookeeper', 'zookeeper')
