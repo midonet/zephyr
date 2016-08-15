@@ -277,7 +277,7 @@ class NeutronTestCase(TestCase):
     def create_vm_server(self, name, net_id=None, gw_ip=None, sgs=list(),
                          allowed_address_pairs=None, hv_host=None,
                          port_security_enabled=True, use_dhcp=True,
-                         neutron_port=None):
+                         neutron_port=None, router_ip=None):
         """
         :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
         """
@@ -300,6 +300,11 @@ class NeutronTestCase(TestCase):
                       'mac_address': pair[1]} if len(pair) > 1
                      else {'ip_address': pair[0]}
                      for pair in allowed_address_pairs])
+            if router_ip:
+                opt = {"opt_value": router_ip,
+                       "ip_version": 4,
+                       "opt_name": "3"}
+                port_data['extra_dhcp_opts'] = [opt]
             port = self.api.create_port({'port': port_data})['port']
             self.LOG.debug("Created port for VM: " + str(port))
         else:
