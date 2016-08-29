@@ -14,6 +14,7 @@
 
 import json
 import logging
+import os
 
 from zephyr.common import cli
 from zephyr.common import exceptions
@@ -110,10 +111,10 @@ class PhysicalTopologyManager(object):
         self.LOG.debug('Configuring ptm with file: ' + config_file)
         # TODO(micucci): Enable multiple config files to define roots
         # across several Linux hosts
-        self.config_file = config_file
+        self.config_file = os.path.basename(config_file)
         default_cfg_path = '/zephyr_ptm/ptm/config/physical_topologies'
 
-        self.topo_file = (config_file if self.config_file.startswith('/')
+        self.topo_file = (config_file if config_file.startswith('/')
                           else (self.root_dir + default_cfg_path +
                                 '/' + config_file))
 
