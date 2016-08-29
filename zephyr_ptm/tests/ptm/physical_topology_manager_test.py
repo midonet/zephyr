@@ -39,6 +39,8 @@ class PhysicalTopologyManagerTest(unittest.TestCase):
         self.assertTrue('zoo1' in ptm.hosts_by_name)
         self.assertTrue('edge1' in ptm.hosts_by_name)
 
+        self.assertEqual('test-config.json', ptm.config_file)
+
         self.assertEqual(ptm.host_by_start_order[0][0].name, 'root')
         self.assertEqual(ptm.host_by_start_order[1][0].name, 'external1')
         self.assertEqual(ptm.host_by_start_order[2][0].name, 'test-host1')
