@@ -276,7 +276,7 @@ class NeutronTestCase(TestCase):
 
     def create_vm_server(self, name, net_id=None, gw_ip=None, sgs=list(),
                          allowed_address_pairs=None, hv_host=None,
-                         port_security_enabled=True, use_dhcp=True,
+                         port_security_enabled=None, use_dhcp=True,
                          neutron_port=None, router_ip=None):
         """
         :rtype: (dict[str, str], zephyr.vtm.guest.Guest, str)
@@ -290,10 +290,11 @@ class NeutronTestCase(TestCase):
             port_data = {'name': name,
                          'network_id': net_id,
                          'admin_state_up': True,
-                         'port_security_enabled': port_security_enabled,
                          'tenant_id': 'admin'}
             if sgs:
                 port_data['security_groups'] = sgs
+            if port_security_enabled is not None:
+                port_data['port_security_enabled'] = port_security_enabled
             if allowed_address_pairs:
                 port_data['allowed_address_pairs'] = (
                     [{'ip_address': pair[0],
@@ -409,11 +410,10 @@ class NeutronTestCase(TestCase):
 
     def create_port(self, name, net_id, tenant_id='admin', host=None,
                     host_iface=None, sub_id=None, ip_addr=None, mac=None,
-                    port_security_enabled=True, device_owner=None,
+                    port_security_enabled=None, device_owner=None,
                     device_id=None, sg_ids=None, allowed_address_pairs=None):
         port_data = {'name': name,
                      'network_id': net_id,
-                     'port_security_enabled': port_security_enabled,
                      'tenant_id': tenant_id}
         if host:
             port_data['binding:host_id'] = host
@@ -424,6 +424,8 @@ class NeutronTestCase(TestCase):
                                        'ip_address': ip_addr}]
         elif ip_addr:
             port_data['fixed_ips'] = [{'ip_address': ip_addr}]
+        if port_security_enabled is not None:
+            port_data['port_security_enabled'] = port_security_enabled
         if device_owner:
             port_data['device_owner'] = device_owner
         if device_id:
