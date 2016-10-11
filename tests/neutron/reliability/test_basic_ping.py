@@ -56,7 +56,6 @@ class TestBasicPing(NeutronTestCase):
             'port': {'name': 'vm1',
                      'network_id': self.main_network['id'],
                      'admin_state_up': True,
-                     'port_security_enabled': True,
                      'tenant_id': 'admin'}})['port']
         self.LOG.debug("Created port for VM: " + str(port1))
 
@@ -64,7 +63,6 @@ class TestBasicPing(NeutronTestCase):
             'port': {'name': 'vm2',
                      'network_id': self.main_network['id'],
                      'admin_state_up': True,
-                     'port_security_enabled': True,
                      'tenant_id': 'admin'}})['port']
         self.LOG.debug("Created port for VM: " + str(port2))
 
