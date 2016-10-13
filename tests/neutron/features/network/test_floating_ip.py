@@ -91,13 +91,20 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
     @test_case.expected_failure('MI-115')
     @neutron_test_case.require_extension('extraroute')
     def test_fip_to_fip_connectivity_one_site_source_has_private_ip(self):
-        self.create_edge_router()
+        my_sg = self.create_security_group('my sg')
+        self.create_security_group_rule(
+            sg_id=my_sg['id'],
+            remote_group_id=my_sg['id'],
+            direction='ingress')
+
         (port1, vm1, ip1) = self.create_vm_server(
             'vm1', self.main_network['id'],
-            self.main_subnet['gateway_ip'])
+            self.main_subnet['gateway_ip'],
+            sgs=[my_sg['id']])
         (port2, vm2, ip2) = self.create_vm_server(
             'vm2', self.main_network['id'],
-            self.main_subnet['gateway_ip'])
+            self.main_subnet['gateway_ip'],
+            sgs=[my_sg['id']])
 
         floating_ip1 = self.create_floating_ip(
             pub_net_id=self.pub_network['id'],
@@ -106,11 +113,23 @@ class TestFloatingIP(neutron_test_case.NeutronTestCase):
         fip1 = floating_ip1['floating_ip_address']
         self.LOG.debug("Received floating IP1: " + str(fip1))
 
-        # Test that VM can reach via internal IP
+        # Test that VM can reach via internal IP.
+        # These don't involve the router.
         self.assertTrue(vm1.verify_connection_to_host(vm2))
         self.assertTrue(vm2.verify_connection_to_host(vm1))
 
-        # Test that VM can reach via floating IP
+        # Test that VM can reach via floating IP.
+        # This goes via the router.
+        # Note: "vm2 -> fip1" packet will be translated to
+        # "router_gw_ip -> vm1"
+        self.assertFalse(vm2.verify_connection_to_host(
+            vm1, target_ip_addr=fip1, timeout=5))
+        router_gw_ip = self.public_router['external_gateway_info'][
+            'external_fixed_ips'][0]['ip_address']
+        self.create_security_group_rule(
+            sg_id=my_sg['id'],
+            remote_ip_prefix=router_gw_ip + '/32',
+            direction='ingress')
         self.assertTrue(vm2.verify_connection_to_host(
             vm1, target_ip_addr=fip1))
 
