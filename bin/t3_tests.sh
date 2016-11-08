@@ -125,10 +125,8 @@ if [ "${ost_version}" = "kilo" ]; then
 sudo pip install networking-l2gw==2015.1.1
 else
 sudo sed '$ a[service_providers]' -i /etc/neutron/neutron.conf
-sudo sed '$ aservice_provider=${l2gw_service_provider}' \
-  -i /etc/neutron/neutron.conf
-sudo sed '$ aservice_provider=${lbaas_service_provider}' \
-  -i /etc/neutron/neutron.conf
+sudo sed "$ aservice_provider=${l2gw_service_provider}" -i /etc/neutron/neutron.conf
+sudo sed "$ aservice_provider=${lbaas_service_provider}" -i /etc/neutron/neutron.conf
 
 sudo pip install networking-l2gw
 fi
