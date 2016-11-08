@@ -74,7 +74,7 @@ else
       lbaas_service_provider="LOADBALANCER:Midonet:midonet.neutron.services.loadbalancer.driver.MidonetLoadbalancerDriver:default"
       plugin_package='python-networking-midonet'
 fi
-plugin_repo: 'openstack-${ost_version}-deb'
+plugin_repo='openstack-${ost_version}-deb'
 
 sudo bash -c "echo 1 > /proc/sys/net/ipv4/ip_forward"
 
