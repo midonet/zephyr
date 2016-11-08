@@ -36,8 +36,8 @@ tests.neutron.features.network.bgp_ip,\
 tests.neutron.features.network.router_peering"
 
 # Set variables based on OST_VERSION and MN_VERSION
-midonet-api-url: 'http:\/\/localhost:8181\/midonet-api'
-midonet-db-manage: 'neutron-db-manage --subproject networking-midonet'
+midonet_api_url='http:\/\/localhost:8181\/midonet-api'
+midonet_db_manage='neutron-db-manage --subproject networking-midonet'
 if [ "x${mn_version}" = "x1.9" ]; then
     mn_repo='mem-1.9'
     mn_dist='unstable'
