@@ -89,10 +89,10 @@ sudo apt-get install openjdk-8-jdk
 fi
 
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 5EDB1B62EC4926EA
-sudo add-apt-repository -y "deb ${ART_SERVER}/{mn-repo}-deb {mn-dist} main"
+sudo add-apt-repository -y "deb ${ART_SERVER}/${mn_repo}-deb ${mn_dist} main"
 sudo add-apt-repository -y "deb ${ART_SERVER}/misc-deb stable main"
-sudo add-apt-repository -y "deb ${ART_SERVER}/{plugin-repo} {plugin-dist} main"
-sudo add-apt-repository -y "cloud-archive:{ost-version}"
+sudo add-apt-repository -y "deb ${ART_SERVER}/${plugin_repo} ${plugin_dist} main"
+sudo add-apt-repository -y "cloud-archive:${ost_version}"
 
 curl "${ART_SERVER}/api/gpg/key/public" | sudo apt-key add -
 
